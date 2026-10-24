@@ -131,8 +131,57 @@ public final class WorldgenReport {
                 100.0 * s.probeLand / s.samples, s.probeLand == 0 ? 0 : (double) s.probeSolid / s.probeLand,
                 s.probeLand == 0 ? 0 : (double) s.probeTopSum / s.probeLand)));
         basinSurvey(level, originX, originZ, radius, lines);
+        if (Boolean.getBoolean("altered_aether.report.structures")) {
+            structureHeights(level, originX, originZ, lines);
+        }
         lines.forEach(AlteredAether.LOGGER::info);
         return lines;
+    }
+
+    /**
+     * The nearest of each Aether and Deep Aether structure, with its bounding box against the ground under its
+     * centre: a check that the tall-Aether height remap puts structures where they belong. Only structure starts
+     * are generated, never whole chunks.
+     */
+    private static void structureHeights(ServerLevel level, int originX, int originZ, List<String> lines) {
+        var registry = level.registryAccess().registryOrThrow(net.minecraft.core.registries.Registries.STRUCTURE);
+        ChunkGenerator generator = level.getChunkSource().getGenerator();
+        RandomState random = level.getChunkSource().randomState();
+        lines.add(String.format("%-44s %-22s %-14s %s", "structure", "at", "box y", "ground under centre"));
+        registry.holders().filter(h -> {
+            String ns = h.key().location().getNamespace();
+            return ns.equals("aether") || ns.equals("deep_aether");
+        }).sorted(java.util.Comparator.comparing(h -> h.key().location().toString())).forEach(holder -> {
+            var found = generator.findNearestMapStructure(level, net.minecraft.core.HolderSet.direct(holder),
+                    new net.minecraft.core.BlockPos(originX, 64, originZ), 64, false);
+            String id = holder.key().location().toString();
+            if (found == null) {
+                lines.add(String.format("%-44s none within 64 chunks", id));
+                return;
+            }
+            var pos = found.getFirst();
+            var chunk = level.getChunk(pos.getX() >> 4, pos.getZ() >> 4,
+                    net.minecraft.world.level.chunk.status.ChunkStatus.STRUCTURE_STARTS);
+            var start = chunk.getStartForStructure(holder.value());
+            if (start == null || !start.isValid()) {
+                lines.add(String.format("%-44s %-22s no start", id, pos.toShortString()));
+                return;
+            }
+            var box = start.getBoundingBox();
+            int cx = box.getCenter().getX(), cz = box.getCenter().getZ();
+            NoiseColumn column = generator.getBaseColumn(cx, cz, level, random);
+            List<String> ground = new ArrayList<>();
+            boolean wasSolid = false;
+            for (int y = level.getMaxBuildHeight() - 1; y >= level.getMinBuildHeight(); y--) {
+                boolean solid = !column.getBlock(y).isAir();
+                if (solid && !wasSolid) {
+                    ground.add(String.valueOf(y));
+                }
+                wasSolid = solid;
+            }
+            lines.add(String.format("%-44s %-22s %-14s tops %s", id, cx + "," + cz, box.minY() + ".." + box.maxY(),
+                    ground.isEmpty() ? "void" : String.join(" ", ground.subList(0, Math.min(4, ground.size())))));
+        });
     }
 
     /** Every basin and atoll site over the area, validated without generating anything, and why candidates failed. */

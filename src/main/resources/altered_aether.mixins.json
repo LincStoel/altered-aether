@@ -4,7 +4,14 @@
   "package": "com.linc.alteredaether.mixin",
   "compatibilityLevel": "JAVA_21",
   "mixins": [
-    "LargeAercloudStructureMixin"
+    "DeepAetherHeightChecksMixin",
+    "LargeAercloudStructureMixin",
+    "TallRemapExclusionMixins$Features",
+    "TallRemapExclusionMixins$Jigsaw",
+    "TallRemapExclusionMixins$Structures",
+    "VerticalAnchorMixins$AboveBottom",
+    "VerticalAnchorMixins$Absolute",
+    "WorldGenerationContextMixin"
   ],
   "injectors": {
     "defaultRequire": 1

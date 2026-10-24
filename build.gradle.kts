@@ -45,6 +45,8 @@ neoForge {
             // -PaaBench=radius[,biome] generates that many chunks around a point in the Aether (centred on the nearest
             // biome if one is named), logs the time and a surface tally, then stops.
             systemProperty("altered_aether.bench", (findProperty("aaBench") as String?) ?: "")
+            // -PaaStructures=true adds each Aether structure's height against its ground to the report.
+            systemProperty("altered_aether.report.structures", (findProperty("aaStructures") as String?) ?: "false")
         }
         // Writes the mod's generated data (worldgen JSON, tags, lang, models) into src/generated/resources.
         register("data") {

@@ -94,6 +94,8 @@ public final class AATerrainProvider extends JsonDataProvider {
         skylands();
         if (mode == HeightMode.TALL) {
             dimensionType();
+            quicksoilShelf();
+            aetherStructures();
             packMeta();
         }
     }
@@ -389,6 +391,44 @@ public final class AATerrainProvider extends JsonDataProvider {
             return copy;
         }
         return node.deepCopy();
+    }
+
+    /**
+     * The Aether's quicksoil shelves read their {@code y_range} as absolute heights in Java, where the anchor remap
+     * can't reach, so the tall pack carries the Aether's own file with that range stretched the same way.
+     */
+    private void quicksoilShelf() {
+        JsonObject feature = ModResources.json("aether", "data", "aether", "worldgen", "configured_feature",
+                "quicksoil_shelf.json");
+        JsonObject range = feature.getAsJsonObject("config").getAsJsonObject("y_range");
+        for (String key : new String[]{"min_inclusive", "max_inclusive"}) {
+            range.addProperty(key, -64 + Math.floorDiv(3 * range.get(key).getAsInt(), 2));
+        }
+        data("worldgen/configured_feature", ResourceLocation.fromNamespaceAndPath("aether", "quicksoil_shelf"), feature);
+    }
+
+    /**
+     * The Aether's dungeons and large aerclouds take their heights as plain numbers read in Java, which the anchor
+     * remap can't reach, so the tall pack carries the Aether's own files with those numbers stretched: heights mapped
+     * like the terrain, and spans and offsets scaled by 1.5. These are the same values the old datapack used.
+     */
+    private void aetherStructures() {
+        Set<String> heights = Set.of("minY", "maxY");
+        Set<String> spans = Set.of("rangeY", "aboveTerrain", "belowTerrain", "aboveBottom", "belowTop");
+        for (String name : new String[]{"bronze_dungeon", "silver_dungeon", "gold_dungeon", "large_aercloud"}) {
+            JsonObject structure = ModResources.json("aether", "data", "aether", "worldgen", "structure", name + ".json");
+            for (String key : heights) {
+                if (structure.has(key)) {
+                    structure.addProperty(key, Math.round(1.5 * structure.get(key).getAsInt()) - 64);
+                }
+            }
+            for (String key : spans) {
+                if (structure.has(key)) {
+                    structure.addProperty(key, Math.round(1.5 * structure.get(key).getAsInt()));
+                }
+            }
+            data("worldgen/structure", ResourceLocation.fromNamespaceAndPath("aether", name), structure);
+        }
     }
 
     /** The taller Aether: -64..319, matching the Overworld. */
