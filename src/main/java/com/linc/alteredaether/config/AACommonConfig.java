@@ -41,7 +41,7 @@ public final class AACommonConfig {
     public static final DoubleValue REGION_FALLOFF;
     public static final DoubleValue CRAG_STRENGTH;
     public static final DoubleValue TEMPEST_STRENGTH;
-    public static final IntValue PLATEAU_TERRACE_STEPS;
+    public static final IntValue PLATEAU_TERRACE_HEIGHT;
     public static final DoubleValue RIFT_FRACTURE_SIZE;
     public static final DoubleValue RIFT_DRIFT;
     public static final DoubleValue DUNE_HEIGHT;
@@ -129,8 +129,9 @@ public final class AACommonConfig {
         CRAG_STRENGTH = b.comment("Frozen Crags ridge sharpness.").defineInRange("crag_strength", 1.0, 0.0, 3.0);
         TEMPEST_STRENGTH = b.comment("Tempest Peaks spire sharpness and height.")
                 .defineInRange("tempest_strength", 1.0, 0.0, 3.0);
-        PLATEAU_TERRACE_STEPS = b.comment("Number of terrace steps on Aether Plateau mesas. 0 disables terracing.")
-                .defineInRange("plateau_terrace_steps", 5, 0, 16);
+        PLATEAU_TERRACE_HEIGHT = b.comment("Height of each terrace step on Aether Plateau mesas, in blocks. 0 disables",
+                        "terracing.")
+                .defineInRange("plateau_terrace_height", 8, 0, 32);
         RIFT_FRACTURE_SIZE = b.comment("Shattered Rift slab size multiplier.")
                 .defineInRange("rift_fracture_size", 1.0, 0.25, 4.0);
         RIFT_DRIFT = b.comment("How far Shattered Rift slabs are displaced and tilted, as a multiplier.")

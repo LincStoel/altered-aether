@@ -32,19 +32,120 @@
         "argument": {
           "type": "minecraft:blend_density",
           "argument": {
-            "type": "minecraft:add",
-            "argument1": {
-              "type": "minecraft:mul",
-              "argument1": {
-                "type": "minecraft:add",
-                "argument1": 1.0,
-                "argument2": {
-                  "type": "minecraft:mul",
-                  "argument1": -1.0,
-                  "argument2": "altered_aether:terrain/plateau_weight"
+            "type": "minecraft:range_choice",
+            "input": "altered_aether:terrain/plateau_weight",
+            "max_exclusive": 1.0E-4,
+            "min_inclusive": -1.0,
+            "when_in_range": {
+              "type": "minecraft:range_choice",
+              "input": "altered_aether:terrain/crag_weight",
+              "max_exclusive": 1.0E-4,
+              "min_inclusive": -1.0,
+              "when_in_range": {
+                "type": "minecraft:range_choice",
+                "input": "altered_aether:terrain/rift_weight",
+                "max_exclusive": 1.0E-4,
+                "min_inclusive": -1.0,
+                "when_in_range": "altered_aether:terrain/island_dunes",
+                "when_out_of_range": {
+                  "type": "minecraft:range_choice",
+                  "input": "altered_aether:terrain/rift_weight",
+                  "max_exclusive": 2.0,
+                  "min_inclusive": 0.9999,
+                  "when_in_range": "altered_aether:terrain/rift",
+                  "when_out_of_range": {
+                    "type": "minecraft:add",
+                    "argument1": {
+                      "type": "minecraft:mul",
+                      "argument1": {
+                        "type": "minecraft:add",
+                        "argument1": 1.0,
+                        "argument2": {
+                          "type": "minecraft:mul",
+                          "argument1": -1.0,
+                          "argument2": "altered_aether:terrain/rift_weight"
+                        }
+                      },
+                      "argument2": "altered_aether:terrain/island_dunes"
+                    },
+                    "argument2": {
+                      "type": "minecraft:mul",
+                      "argument1": "altered_aether:terrain/rift_weight",
+                      "argument2": "altered_aether:terrain/rift"
+                    }
+                  }
                 }
               },
-              "argument2": {
+              "when_out_of_range": {
+                "type": "minecraft:range_choice",
+                "input": "altered_aether:terrain/crag_weight",
+                "max_exclusive": 2.0,
+                "min_inclusive": 0.9999,
+                "when_in_range": "altered_aether:terrain/crag_tier",
+                "when_out_of_range": {
+                  "type": "minecraft:add",
+                  "argument1": {
+                    "type": "minecraft:mul",
+                    "argument1": {
+                      "type": "minecraft:add",
+                      "argument1": 1.0,
+                      "argument2": {
+                        "type": "minecraft:mul",
+                        "argument1": -1.0,
+                        "argument2": "altered_aether:terrain/crag_weight"
+                      }
+                    },
+                    "argument2": {
+                      "type": "minecraft:range_choice",
+                      "input": "altered_aether:terrain/rift_weight",
+                      "max_exclusive": 1.0E-4,
+                      "min_inclusive": -1.0,
+                      "when_in_range": "altered_aether:terrain/island_dunes",
+                      "when_out_of_range": {
+                        "type": "minecraft:range_choice",
+                        "input": "altered_aether:terrain/rift_weight",
+                        "max_exclusive": 2.0,
+                        "min_inclusive": 0.9999,
+                        "when_in_range": "altered_aether:terrain/rift",
+                        "when_out_of_range": {
+                          "type": "minecraft:add",
+                          "argument1": {
+                            "type": "minecraft:mul",
+                            "argument1": {
+                              "type": "minecraft:add",
+                              "argument1": 1.0,
+                              "argument2": {
+                                "type": "minecraft:mul",
+                                "argument1": -1.0,
+                                "argument2": "altered_aether:terrain/rift_weight"
+                              }
+                            },
+                            "argument2": "altered_aether:terrain/island_dunes"
+                          },
+                          "argument2": {
+                            "type": "minecraft:mul",
+                            "argument1": "altered_aether:terrain/rift_weight",
+                            "argument2": "altered_aether:terrain/rift"
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "argument2": {
+                    "type": "minecraft:mul",
+                    "argument1": "altered_aether:terrain/crag_weight",
+                    "argument2": "altered_aether:terrain/crag_tier"
+                  }
+                }
+              }
+            },
+            "when_out_of_range": {
+              "type": "minecraft:range_choice",
+              "input": "altered_aether:terrain/plateau_weight",
+              "max_exclusive": 2.0,
+              "min_inclusive": 0.9999,
+              "when_in_range": "altered_aether:terrain/plateau_terraced",
+              "when_out_of_range": {
                 "type": "minecraft:add",
                 "argument1": {
                   "type": "minecraft:mul",
@@ -54,82 +155,119 @@
                     "argument2": {
                       "type": "minecraft:mul",
                       "argument1": -1.0,
-                      "argument2": "altered_aether:terrain/crag_weight"
+                      "argument2": "altered_aether:terrain/plateau_weight"
                     }
                   },
                   "argument2": {
-                    "type": "minecraft:add",
-                    "argument1": {
-                      "type": "minecraft:add",
-                      "argument1": {
-                        "type": "minecraft:add",
-                        "argument1": -0.05,
-                        "argument2": {
+                    "type": "minecraft:range_choice",
+                    "input": "altered_aether:terrain/crag_weight",
+                    "max_exclusive": 1.0E-4,
+                    "min_inclusive": -1.0,
+                    "when_in_range": {
+                      "type": "minecraft:range_choice",
+                      "input": "altered_aether:terrain/rift_weight",
+                      "max_exclusive": 1.0E-4,
+                      "min_inclusive": -1.0,
+                      "when_in_range": "altered_aether:terrain/island_dunes",
+                      "when_out_of_range": {
+                        "type": "minecraft:range_choice",
+                        "input": "altered_aether:terrain/rift_weight",
+                        "max_exclusive": 2.0,
+                        "min_inclusive": 0.9999,
+                        "when_in_range": "altered_aether:terrain/rift",
+                        "when_out_of_range": {
                           "type": "minecraft:add",
-                          "argument1": -0.1,
-                          "argument2": {
+                          "argument1": {
                             "type": "minecraft:mul",
                             "argument1": {
-                              "type": "minecraft:y_clamped_gradient",
-                              "from_value": 0.0,
-                              "from_y": 8,
-                              "to_value": 1.0,
-                              "to_y": 40
-                            },
-                            "argument2": {
                               "type": "minecraft:add",
-                              "argument1": 0.1,
+                              "argument1": 1.0,
                               "argument2": {
+                                "type": "minecraft:mul",
+                                "argument1": -1.0,
+                                "argument2": "altered_aether:terrain/rift_weight"
+                              }
+                            },
+                            "argument2": "altered_aether:terrain/island_dunes"
+                          },
+                          "argument2": {
+                            "type": "minecraft:mul",
+                            "argument1": "altered_aether:terrain/rift_weight",
+                            "argument2": "altered_aether:terrain/rift"
+                          }
+                        }
+                      }
+                    },
+                    "when_out_of_range": {
+                      "type": "minecraft:range_choice",
+                      "input": "altered_aether:terrain/crag_weight",
+                      "max_exclusive": 2.0,
+                      "min_inclusive": 0.9999,
+                      "when_in_range": "altered_aether:terrain/crag_tier",
+                      "when_out_of_range": {
+                        "type": "minecraft:add",
+                        "argument1": {
+                          "type": "minecraft:mul",
+                          "argument1": {
+                            "type": "minecraft:add",
+                            "argument1": 1.0,
+                            "argument2": {
+                              "type": "minecraft:mul",
+                              "argument1": -1.0,
+                              "argument2": "altered_aether:terrain/crag_weight"
+                            }
+                          },
+                          "argument2": {
+                            "type": "minecraft:range_choice",
+                            "input": "altered_aether:terrain/rift_weight",
+                            "max_exclusive": 1.0E-4,
+                            "min_inclusive": -1.0,
+                            "when_in_range": "altered_aether:terrain/island_dunes",
+                            "when_out_of_range": {
+                              "type": "minecraft:range_choice",
+                              "input": "altered_aether:terrain/rift_weight",
+                              "max_exclusive": 2.0,
+                              "min_inclusive": 0.9999,
+                              "when_in_range": "altered_aether:terrain/rift",
+                              "when_out_of_range": {
                                 "type": "minecraft:add",
-                                "argument1": -0.2,
-                                "argument2": {
+                                "argument1": {
                                   "type": "minecraft:mul",
                                   "argument1": {
-                                    "type": "minecraft:y_clamped_gradient",
-                                    "from_value": 1.0,
-                                    "from_y": 56,
-                                    "to_value": 0.0,
-                                    "to_y": 128
-                                  },
-                                  "argument2": {
                                     "type": "minecraft:add",
-                                    "argument1": 0.2,
+                                    "argument1": 1.0,
                                     "argument2": {
-                                      "type": "minecraft:add",
-                                      "argument1": -0.13,
-                                      "argument2": "aether:base_3d_noise_aether"
+                                      "type": "minecraft:mul",
+                                      "argument1": -1.0,
+                                      "argument2": "altered_aether:terrain/rift_weight"
                                     }
-                                  }
+                                  },
+                                  "argument2": "altered_aether:terrain/island_dunes"
+                                },
+                                "argument2": {
+                                  "type": "minecraft:mul",
+                                  "argument1": "altered_aether:terrain/rift_weight",
+                                  "argument2": "altered_aether:terrain/rift"
                                 }
                               }
                             }
                           }
+                        },
+                        "argument2": {
+                          "type": "minecraft:mul",
+                          "argument1": "altered_aether:terrain/crag_weight",
+                          "argument2": "altered_aether:terrain/crag_tier"
                         }
-                      },
-                      "argument2": {
-                        "type": "minecraft:mul",
-                        "argument1": "altered_aether:terrain/dune_weight",
-                        "argument2": "altered_aether:terrain/dune_lean"
                       }
-                    },
-                    "argument2": {
-                      "type": "minecraft:mul",
-                      "argument1": -8.0,
-                      "argument2": "altered_aether:terrain/rift_weight"
                     }
                   }
                 },
                 "argument2": {
                   "type": "minecraft:mul",
-                  "argument1": "altered_aether:terrain/crag_weight",
-                  "argument2": "altered_aether:terrain/crags"
+                  "argument1": "altered_aether:terrain/plateau_weight",
+                  "argument2": "altered_aether:terrain/plateau_terraced"
                 }
               }
-            },
-            "argument2": {
-              "type": "minecraft:mul",
-              "argument1": "altered_aether:terrain/plateau_weight",
-              "argument2": "altered_aether:terrain/plateau"
             }
           }
         }

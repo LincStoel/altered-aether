@@ -1,0 +1,10 @@
+{
+  "type": "altered_aether:voronoi_fracture",
+  "argument": "altered_aether:terrain/island_dunes",
+  "cell_size": 48.0,
+  "crack_width": 4.0,
+  "max_offset": 10.666666666666666,
+  "max_tilt": 0.15,
+  "roughness": "altered_aether:terrain/jag",
+  "seed": "altered_aether:rift_cells"
+}

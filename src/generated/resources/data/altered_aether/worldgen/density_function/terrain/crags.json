@@ -1,41 +1,97 @@
 {
   "type": "minecraft:add",
-  "argument1": -0.15,
-  "argument2": {
-    "type": "minecraft:mul",
+  "argument1": {
+    "type": "minecraft:add",
     "argument1": {
-      "type": "minecraft:y_clamped_gradient",
-      "from_value": 0.0,
-      "from_y": 0,
-      "to_value": 1.0,
-      "to_y": 27
-    },
-    "argument2": {
-      "type": "minecraft:add",
-      "argument1": -0.22,
-      "argument2": {
-        "type": "minecraft:mul",
+      "type": "minecraft:min",
+      "argument1": {
+        "type": "minecraft:min",
         "argument1": {
-          "type": "minecraft:y_clamped_gradient",
-          "from_value": 1.0,
-          "from_y": 89,
-          "to_value": 0.0,
-          "to_y": 128
-        },
-        "argument2": {
-          "type": "minecraft:add",
-          "argument1": 0.07,
+          "type": "minecraft:mul",
+          "argument1": 0.125,
           "argument2": {
             "type": "minecraft:add",
-            "argument1": "altered_aether:terrain/crag_3d_noise",
+            "argument1": {
+              "type": "minecraft:clamp",
+              "input": {
+                "type": "minecraft:add",
+                "argument1": 46.0,
+                "argument2": {
+                  "type": "minecraft:mul",
+                  "argument1": {
+                    "type": "minecraft:mul",
+                    "argument1": {
+                      "type": "altered_aether:config",
+                      "key": "crag_strength"
+                    },
+                    "argument2": 60.0
+                  },
+                  "argument2": "altered_aether:terrain/crag_ridges"
+                }
+              },
+              "max": 125.0,
+              "min": 0.0
+            },
             "argument2": {
               "type": "minecraft:mul",
-              "argument1": 0.15,
-              "argument2": "altered_aether:terrain/jag"
+              "argument1": -1.0,
+              "argument2": {
+                "type": "minecraft:y_clamped_gradient",
+                "from_value": -2048.0,
+                "from_y": -2048,
+                "to_value": 2048.0,
+                "to_y": 2048
+              }
+            }
+          }
+        },
+        "argument2": {
+          "type": "minecraft:mul",
+          "argument1": 0.16666666666666666,
+          "argument2": {
+            "type": "minecraft:add",
+            "argument1": {
+              "type": "minecraft:y_clamped_gradient",
+              "from_value": -2048.0,
+              "from_y": -2048,
+              "to_value": 2048.0,
+              "to_y": 2048
+            },
+            "argument2": {
+              "type": "minecraft:mul",
+              "argument1": -1.0,
+              "argument2": {
+                "type": "minecraft:add",
+                "argument1": 23.0,
+                "argument2": {
+                  "type": "minecraft:mul",
+                  "argument1": -21.333333333333332,
+                  "argument2": "altered_aether:terrain/crag_ridges"
+                }
+              }
             }
           }
         }
+      },
+      "argument2": {
+        "type": "minecraft:mul",
+        "argument1": 6.0,
+        "argument2": {
+          "type": "minecraft:add",
+          "argument1": "altered_aether:terrain/crag_massif",
+          "argument2": 0.05
+        }
       }
+    },
+    "argument2": {
+      "type": "minecraft:mul",
+      "argument1": 0.3,
+      "argument2": "altered_aether:terrain/jag"
     }
+  },
+  "argument2": {
+    "type": "minecraft:mul",
+    "argument1": 0.2,
+    "argument2": "altered_aether:terrain/crag_3d_noise"
   }
 }

@@ -1,0 +1,22 @@
+{
+  "type": "minecraft:flat_cache",
+  "argument": {
+    "type": "minecraft:mul",
+    "argument1": {
+      "type": "minecraft:mul",
+      "argument1": {
+        "type": "altered_aether:config",
+        "key": "dune_height"
+      },
+      "argument2": 4.666666666666667
+    },
+    "argument2": {
+      "type": "altered_aether:wind_ridges",
+      "lee": 0.25,
+      "swell": "altered_aether:dune_swell",
+      "warp": "altered_aether:dune_warp",
+      "warp_amount": 24.0,
+      "wavelength": 40.0
+    }
+  }
+}

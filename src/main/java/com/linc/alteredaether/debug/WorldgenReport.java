@@ -65,7 +65,7 @@ public final class WorldgenReport {
         Map<String, Stats> byBiome = new TreeMap<>();
         Stats all = new Stats();
         int minY = level.getMinBuildHeight();
-        DensityFunction probe = probe(level, random, "terrain/crags");
+        DensityFunction probe = probe(level, random, "terrain/crag_tier");
 
         for (int x = originX - radius; x <= originX + radius; x += step) {
             for (int z = originZ - radius; z <= originZ + radius; z += step) {
@@ -119,7 +119,7 @@ public final class WorldgenReport {
                         + "Altered Aether's region", level.dimension().location(), originX, originZ, radius, step,
                 all.samples, 100.0 * all.inRegion / all.samples));
         lines.add(String.format("%-44s %7s %8s %5s %7s %9s %13s   %s", "biome", "share", "inRegion", "mask", "land",
-                "solid/col", "top avg[min,max]", "crags alone: land solid/col top"));
+                "solid/col", "top avg[min,max]", "crag tier alone: land solid/col top"));
         byBiome.forEach((id, s) -> lines.add(String.format("%-44s %6.2f%% %7.0f%% %5.2f %6.0f%% %9.1f %6.0f [%d,%d]   %5.0f%% %5.1f %4.0f",
                 id, 100.0 * s.samples / all.samples, 100.0 * s.inRegion / s.samples, s.maskSum / s.samples,
                 100.0 * s.columnsWithLand / s.samples,

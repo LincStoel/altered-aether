@@ -26,12 +26,14 @@ import java.util.Map;
 import java.util.Set;
 
 import static com.linc.alteredaether.data.Df.add;
+import static com.linc.alteredaether.data.Df.clamp;
 import static com.linc.alteredaether.data.Df.flatCache;
-import static com.linc.alteredaether.data.Df.lerp;
 import static com.linc.alteredaether.data.Df.min;
 import static com.linc.alteredaether.data.Df.mul;
 import static com.linc.alteredaether.data.Df.oldBlendedNoise;
 import static com.linc.alteredaether.data.Df.ramp;
+import static com.linc.alteredaether.data.Df.ridged;
+import static com.linc.alteredaether.data.Df.square;
 import static com.linc.alteredaether.data.Df.ref;
 import static com.linc.alteredaether.data.Df.shiftedNoise;
 import static com.linc.alteredaether.data.Df.yGradient;
@@ -71,11 +73,10 @@ public final class AATerrainProvider extends JsonDataProvider {
 
     private static final String NS = AlteredAether.MOD_ID + ":";
     private static final String TERRAIN = NS + "terrain/";
-    /** Strength of the rift carve: far beyond anything the island expression reaches, so a full weight is air. */
-    private static final double RIFT_CARVE_STRENGTH = 8.0;
     /** Density functions whose shape depends on height, and so are overridden by the tall pack. */
     private static final Set<String> HEIGHT_DEPENDENT =
-            Set.of("crag_3d_noise", "crags", "dune_lean", "plateau", "rift_carve_noise", "jag", "tall_base_3d_noise");
+            Set.of("crag_3d_noise", "jag", "crags", "tempest", "tempest_spires", "dune_lean", "dune_ridges", "plateau",
+                    "plateau_terraced", "island", "tall_base_3d_noise");
 
     private final HeightMode mode;
 
@@ -116,7 +117,14 @@ public final class AATerrainProvider extends JsonDataProvider {
         noise("crag_jag", -4, 1.0, 0.5);
         // Same recipe as the crags, an independent field, so CRAG_E's measured threshold carries over.
         noise("rift", -9, 1.0, 1.5, 1.2, 0.6);
-        noise("rift_carve", -3, 1.0, 0.5);
+        // Ridged landforms. Lattice sizes: -7 is 128 blocks, -6 is 64, -4 is 16, -3 is 8.
+        noise("crag_ridges", -6, 1.0, 0.5);
+        noise("crag_spurs", -4, 1.0);
+        noise("crag_massif", -7, 1.0, 0.6);
+        noise("tempest_spires", -3, 1.0);
+        noise("rift_cells", -3, 1.0);
+        noise("dune_warp", -6, 1.0);
+        noise("dune_swell", -7, 1.0);
         noise("dune_lean", -6, 1.0);
         noise("mesa", -5, 1.0, 0.5, 0.25);
         noise("mesa_height", -6, 1.0);
@@ -153,30 +161,45 @@ public final class AATerrainProvider extends JsonDataProvider {
                         yGradient(mode.y(-40), -1.0, mode.y(0), 1.0)),
                 mul(0.125, shiftedNoise(NS + "plateau_relief", 0.35, 0.0))));
 
+        // Stepped mesas: the plateau sampled at stepped heights. The config's step height is in tall-Aether blocks.
+        JsonObject terraced = Df.type(NS + "terrace");
+        terraced.add("argument", terrain("plateau"));
+        terraced.addProperty("sharpness", 4.0);
+        terraced.addProperty("step_scale", mode == HeightMode.TALL ? 1.0 : 1 / 1.5);
+        df("plateau_terraced", terraced);
+
         // Crag tier, on erosion: the same field drives the biome (erosion > 0.6125) and this mask, which ramps
         // 0 -> 1 across 0.4875..0.7375, so the biome edge sits mid-ramp. Tempest Peaks is the top slice of the same
-        // tier, where the mask is already saturated.
+        // tier (erosion > 0.8044), where the crag mask is saturated and the tempest mask takes over.
         df("crag_noise", flatCache(shiftedNoise(NS + "crags", 0.25, 0.0)));
         df("crag_mask", ramp(terrain("crag_noise"), -1.95, 4.0));
-        // The island noise made half as wide and twice as tall; same value distribution, taller thinner shapes.
+        df("tempest_mask", ramp(terrain("crag_noise"), -0.76 / 0.09, 1 / 0.09));
+        // The island noise made half as wide and twice as tall, for overhangs and hollows inside the massifs.
         df("crag_3d_noise", oldBlendedNoise(0.25, 0.25, 40.0, mode.height(480.0), 8.0));
-        // A fine wobble that roughens isosurfaces so carved and crag walls don't look stamped.
+        // A fine wobble that roughens isosurfaces so cliffs and crack walls don't look stamped.
         df("jag", shiftedNoise(NS + "crag_jag", 1.0, mode.frequency(0.5)));
-        // The island expression with its envelope stretched (full strength over y -24..70 in tall mode instead of
-        // about 25 blocks). The taller envelope needs a higher solid threshold (-0.22, not -0.1) or the same fill
-        // fraction over 95 blocks reads as a wall of stone rather than tall thin islands.
-        df("crags", add(-0.15, mul(yGradient(mode.y(-64), 0.0, mode.y(-24), 1.0),
-                add(-0.22, mul(yGradient(mode.y(70), 1.0, mode.y(128), 0.0),
-                        add(0.07, add(terrain("crag_3d_noise"), mul(0.15, terrain("jag")))))))));
 
-        // Shattered Rift, on weirdness. The carve uses a second, higher-frequency field so only about a fifth of
-        // the rift's footprint is removed (cracks, not scattered islands), and it varies with height so the walls
-        // look eroded rather than cut by a cookie cutter.
+        // Ridgelines: sharp crests along the zero contours of a 64-block noise, with 16-block spurs branching off
+        // them. 1 on a crest, falling to 0 between crests.
+        JsonObject crest = ridged(shiftedNoise(NS + "crag_ridges", 1.0, 0.0));
+        JsonObject spur = ridged(shiftedNoise(NS + "crag_spurs", 1.0, 0.0));
+        df("crag_ridges", flatCache(clamp(add(mul(0.8, crest), mul(0.4, mul(crest, spur))), 0.0, 1.0)));
+        // Where the crags stand at all: separate floating massifs about 128 blocks across, open sky between them.
+        df("crag_massif", flatCache(shiftedNoise(NS + "crag_massif", 1.0, 0.0)));
+        // Frozen Crags: massifs whose summits follow the ridgelines up to 90 blocks above their base, with roots
+        // hanging below the highest peaks, so each massif looks like a broken-off mountain range.
+        df("crags", massif(terrain("crag_ridges"), 5, 90, "crag_strength", -30, 32, 0.0, 0.3, 0.2));
+        // Tempest Peaks: the ridges squared (thinner, sharper crests), taller, and studded with needle spires.
+        df("tempest_spires", flatCache(mul(mode.height(48), square(square(
+                clamp(mul(1.6, shiftedNoise(NS + "tempest_spires", 1.0, 0.0)), 0.0, 1.0))))));
+        df("tempest", massif(mul(terrain("crag_ridges"), terrain("crag_ridges")), 10, 105, "tempest_strength",
+                -24, 36, 1.0, 0.4, 0.15));
+        df("crag_tier", Df.choose(terrain("tempest_mask"), terrain("crags"), terrain("tempest")));
+
+        // Shattered Rift, on weirdness: inside the rift the island breaks into Voronoi slabs about 48 blocks
+        // across, each lifted or dropped and tilted, with long straight cracks between them.
         df("rift_noise", flatCache(shiftedNoise(NS + "rift", 0.25, 0.0)));
         df("rift_mask", ramp(terrain("rift_noise"), -1.95, 4.0));
-        df("rift_carve_noise", add(shiftedNoise(NS + "rift_carve", 0.25, mode.frequency(0.15)),
-                mul(0.15, terrain("jag"))));
-        df("rift_carve_mask", ramp(terrain("rift_carve_noise"), -1.58267, 8.3333));
 
         // Windswept Dunes: a box on the same temperature and humidity fields the biome selector reads, so the lean
         // lines up with the biome window exactly.
@@ -185,6 +208,14 @@ public final class AATerrainProvider extends JsonDataProvider {
         df("dune_mask", mul(
                 min(ramp(terrain("dune_temperature"), -1.6, 10.0), ramp(terrain("dune_temperature"), 4.6, -10.0)),
                 min(ramp(terrain("dune_humidity"), 7.3, 10.0), ramp(terrain("dune_humidity"), -0.3, -10.0))));
+        // Dune crests across the prevailing wind: gentle windward slopes, steep lee faces, up to 7 blocks high.
+        JsonObject ridges = Df.type(NS + "wind_ridges");
+        ridges.addProperty("wavelength", 40.0);
+        ridges.addProperty("lee", 0.25);
+        ridges.addProperty("warp", NS + "dune_warp");
+        ridges.addProperty("warp_amount", 24.0);
+        ridges.addProperty("swell", NS + "dune_swell");
+        df("dune_ridges", flatCache(mul(mul(Df.config("dune_height"), mode.height(7)), ridges)));
         // Sampling the lean noise at a point that drifts sideways with height shears each island from base to top.
         df("dune_lean", mul(0.35, shiftedNoise(NS + "dune_lean",
                 add(ref("minecraft:shift_x"), mul(32.0, yGradient(mode.y(-52), 0.0, mode.y(20), 1.0))),
@@ -193,13 +224,42 @@ public final class AATerrainProvider extends JsonDataProvider {
         // Each landform's weight, confined to our region.
         df("plateau_weight", mul(terrain("region_mask"), terrain("plateau_mask")));
         df("crag_weight", mul(terrain("region_mask"), terrain("crag_mask")));
-        df("rift_weight", mul(terrain("region_mask"), mul(terrain("rift_mask"), terrain("rift_carve_mask"))));
+        df("rift_weight", mul(terrain("region_mask"), terrain("rift_mask")));
         df("dune_weight", mul(terrain("region_mask"), terrain("dune_mask")));
 
         if (mode == HeightMode.TALL) {
             // The Aether's own island noise, stretched to the taller band (y_factor 160 -> 240).
             df("tall_base_3d_noise", oldBlendedNoise(0.25, 0.25, 80.0, 240.0, 8.0));
         }
+    }
+
+    /**
+     * A floating mountain massif as a density: solid below a summit surface that follows {@code ridges}, above a
+     * root surface that hangs deepest under the highest ridges, and inside the massif footprint. Heights are in
+     * tall-Aether blocks.
+     *
+     * @param base     summit height where the ridge value is 0
+     * @param peak     summit rise on a full ridge, scaled by the {@code strength} config value
+     * @param root     underside height where the ridge value is 0
+     * @param rootDrop how much further the underside hangs on a full ridge
+     * @param spires   multiplier on the tempest spires added to the summit (0 for none)
+     * @param jag      weight of the fine 3D roughening
+     * @param hollows  weight of the coarse 3D noise that cuts overhangs and hollows
+     */
+    private JsonObject massif(JsonElement ridges, int base, int peak, String strength, int root, int rootDrop,
+                              double spires, double jag, double hollows) {
+        JsonObject summit = add(mode.y(base), mul(mul(Df.config(strength), mode.height(peak)), ridges));
+        if (spires > 0) {
+            summit = add(summit, mul(spires, terrain("tempest_spires")));
+        }
+        // Clamped just under the top of the noise band so no summit is sliced flat by the band's ceiling.
+        summit = clamp(summit, mode.y(-64), mode.y(124));
+        JsonObject underside = add(mode.y(root), mul(-mode.height(rootDrop), ridges));
+        JsonObject below = mul(0.125, add(summit, mul(-1.0, Df.y())));
+        JsonObject above = mul(1.0 / 6, add(Df.y(), mul(-1.0, underside)));
+        JsonObject footprint = mul(6.0, add(terrain("crag_massif"), 0.05));
+        return add(add(min(min(below, above), footprint), mul(jag, terrain("jag"))),
+                mul(hollows, terrain("crag_3d_noise")));
     }
 
     private void df(String name, JsonElement function) {
@@ -228,7 +288,7 @@ public final class AATerrainProvider extends JsonDataProvider {
      *   <li>wires continentalness, erosion and weirdness to our landform noises (all three were a constant 0, so
      *   unusable for biome selection; Deep Aether's regions span them fully, so their biomes are unaffected);</li>
      *   <li>weaves our landforms into the island expression:
-     *   {@code lerp(plateau, lerp(crags, island + dunes - rift, crags), plateau)}. The crag blend sits inside the
+     *   {@code choose(plateau, choose(crags, choose(rift, island + dunes, rift), crags), plateau)}. The crag blend sits inside the
      *   plateau blend so crag terrain can never appear under a plateau biome.</li>
      * </ul>
      * Sea level stays at -64: the generator places lava below min(-54, sea level), so it must never rise.
@@ -255,12 +315,34 @@ public final class AATerrainProvider extends JsonDataProvider {
             noise.addProperty("height", 192);
             island = remapIsland(island);
         }
-        JsonObject withDunes = add(island, mul(terrain("dune_weight"), terrain("dune_lean")));
-        JsonObject rifted = add(withDunes, mul(-RIFT_CARVE_STRENGTH, terrain("rift_weight")));
-        JsonObject islandTier = lerp(terrain("crag_weight"), rifted, terrain("crags"));
-        blend.add("argument", lerp(terrain("plateau_weight"), islandTier, terrain("plateau")));
+        // The island expression gets a file of its own, so every blend below refers to it rather than copying it.
+        df("island", island);
+        // Dunes: the island sheared by the lean, then raised along the wind ridges.
+        JsonObject leaning = add(terrain("island"), mul(terrain("dune_weight"), terrain("dune_lean")));
+        JsonObject shifted = Df.type(NS + "shift_y");
+        shifted.add("argument", leaning);
+        shifted.add("offset", mul(terrain("dune_weight"), terrain("dune_ridges")));
+        df("island_dunes", shifted);
+        // The rift: the same island broken into drifting slabs, so the slabs carry the dunes too.
+        rift(terrain("island_dunes"));
+        JsonObject islandTier = Df.choose(terrain("rift_weight"), terrain("island_dunes"), terrain("rift"));
+        JsonObject withCrags = Df.choose(terrain("crag_weight"), islandTier, terrain("crag_tier"));
+        blend.add("argument", Df.choose(terrain("plateau_weight"), withCrags, terrain("plateau_terraced")));
 
         data("worldgen/noise_settings", ResourceLocation.fromNamespaceAndPath("aether", "skylands"), settings);
+    }
+
+    /** The fractured island under the rift. Written here because it wraps the island expression itself. */
+    private void rift(JsonElement island) {
+        JsonObject fracture = Df.type(NS + "voronoi_fracture");
+        fracture.add("argument", island);
+        fracture.addProperty("seed", NS + "rift_cells");
+        fracture.addProperty("cell_size", 48.0);
+        fracture.addProperty("crack_width", 4.0);
+        fracture.addProperty("max_offset", mode.height(16));
+        fracture.addProperty("max_tilt", 0.15);
+        fracture.add("roughness", terrain("jag"));
+        df("rift", fracture);
     }
 
     /** The island expression's height anchors, remapped to the tall band, and its base noise stretched to match. */

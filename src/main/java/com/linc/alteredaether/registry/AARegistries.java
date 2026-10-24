@@ -15,7 +15,12 @@
 package com.linc.alteredaether.registry;
 
 import com.linc.alteredaether.AlteredAether;
+import com.linc.alteredaether.worldgen.density.ConfigValue;
 import com.linc.alteredaether.worldgen.density.RegionMask;
+import com.linc.alteredaether.worldgen.density.ShiftY;
+import com.linc.alteredaether.worldgen.density.Terrace;
+import com.linc.alteredaether.worldgen.density.VoronoiFracture;
+import com.linc.alteredaether.worldgen.density.WindRidges;
 import com.linc.alteredaether.worldgen.modifier.AetherExclusiveModifier;
 import com.linc.alteredaether.worldgen.modifier.ClimateModifier;
 import com.linc.alteredaether.worldgen.modifier.ConfiguredSpawnsModifier;
@@ -53,6 +58,14 @@ public final class AARegistries {
 
     public static final DeferredHolder<MapCodec<? extends DensityFunction>, MapCodec<RegionMask>> REGION_MASK =
             DENSITY_FUNCTIONS.register("region_mask", () -> RegionMask.MAP_CODEC);
+
+    static {
+        DENSITY_FUNCTIONS.register("shift_y", () -> ShiftY.MAP_CODEC);
+        DENSITY_FUNCTIONS.register("terrace", () -> Terrace.MAP_CODEC);
+        DENSITY_FUNCTIONS.register("wind_ridges", () -> WindRidges.MAP_CODEC);
+        DENSITY_FUNCTIONS.register("voronoi_fracture", () -> VoronoiFracture.MAP_CODEC);
+        DENSITY_FUNCTIONS.register("config", () -> ConfigValue.MAP_CODEC);
+    }
 
     public static void register(IEventBus modBus) {
         DENSITY_FUNCTIONS.register(modBus);

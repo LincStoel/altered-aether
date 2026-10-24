@@ -49,6 +49,52 @@ final class Df {
         return add(mul(add(1.0, mul(-1.0, mask)), low), mul(mask, high));
     }
 
+    static JsonObject abs(Object argument) {
+        return wrap("minecraft:abs", argument);
+    }
+
+    static JsonObject square(Object argument) {
+        return wrap("minecraft:square", argument);
+    }
+
+    /** The block's own Y coordinate, across the whole build height. */
+    static JsonObject y() {
+        return yGradient(-2048, -2048.0, 2048, 2048.0);
+    }
+
+    /** {@code (1 - |noise|)^2}: sharp crests along the noise's zero contour, the shape of a mountain ridge. */
+    static JsonObject ridged(Object noise) {
+        return square(add(1.0, mul(-1.0, abs(noise))));
+    }
+
+    /** A value from the common config (see ConfigValue). */
+    static JsonObject config(String key) {
+        JsonObject json = type("altered_aether:config");
+        json.addProperty("key", key);
+        return json;
+    }
+
+    /**
+     * {@link #lerp}, but evaluating only the side that matters where {@code mask} is exactly 0 or 1. A plain lerp
+     * computes both sides everywhere, so an expensive landform would cost its full price across the whole world
+     * even where its weight is 0. The mask must stay within [0, 1].
+     */
+    static JsonObject choose(Object mask, Object low, Object high) {
+        JsonObject mix = rangeChoice(mask, 0.9999, 2.0, high, lerp(mask, low, high));
+        return rangeChoice(mask, -1.0, 0.0001, low, mix);
+    }
+
+    static JsonObject rangeChoice(Object input, double minInclusive, double maxExclusive, Object inRange,
+                                  Object outOfRange) {
+        JsonObject json = type("minecraft:range_choice");
+        json.add("input", of(input));
+        json.addProperty("min_inclusive", minInclusive);
+        json.addProperty("max_exclusive", maxExclusive);
+        json.add("when_in_range", of(inRange));
+        json.add("when_out_of_range", of(outOfRange));
+        return json;
+    }
+
     static JsonObject clamp(Object input, double min, double max) {
         JsonObject json = type("minecraft:clamp");
         json.addProperty("min", min);

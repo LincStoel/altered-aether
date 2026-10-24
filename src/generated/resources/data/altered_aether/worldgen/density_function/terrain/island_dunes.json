@@ -1,0 +1,17 @@
+{
+  "type": "altered_aether:shift_y",
+  "argument": {
+    "type": "minecraft:add",
+    "argument1": "altered_aether:terrain/island",
+    "argument2": {
+      "type": "minecraft:mul",
+      "argument1": "altered_aether:terrain/dune_weight",
+      "argument2": "altered_aether:terrain/dune_lean"
+    }
+  },
+  "offset": {
+    "type": "minecraft:mul",
+    "argument1": "altered_aether:terrain/dune_weight",
+    "argument2": "altered_aether:terrain/dune_ridges"
+  }
+}
