@@ -17,6 +17,7 @@ package com.linc.alteredaether.data;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.linc.alteredaether.AlteredAether;
+import com.linc.alteredaether.worldgen.AABiomes;
 import net.minecraft.data.PackOutput;
 import net.minecraft.resources.ResourceLocation;
 
@@ -47,6 +48,31 @@ public final class AATagProvider extends JsonDataProvider {
                 "deep_aether:aether_coarse_dirt");
         tag("worldgen/biome", ResourceLocation.withDefaultNamespace("allows_tropical_fish_spawns_at_any_height"),
                 "altered_aether:sunken_atoll");
+        aetherBiomes();
+    }
+
+    /**
+     * Our biomes join {@code #aether:is_aether}, which the Aether and other mods use to find the dimension's biomes
+     * (spawns, structures, our own biome modifiers). Biomes that need an optional mod are optional entries, since
+     * they don't exist without it.
+     */
+    private void aetherBiomes() {
+        JsonArray values = new JsonArray();
+        for (AABiomes.Entry entry : AABiomes.ALL) {
+            String id = entry.key().location().toString();
+            if (entry.requiredMods().isEmpty()) {
+                values.add(id);
+            } else {
+                JsonObject optional = new JsonObject();
+                optional.addProperty("id", id);
+                optional.addProperty("required", false);
+                values.add(optional);
+            }
+        }
+        JsonObject json = new JsonObject();
+        json.addProperty("replace", false);
+        json.add("values", values);
+        data("tags/worldgen/biome", ResourceLocation.fromNamespaceAndPath("aether", "is_aether"), json);
     }
 
     private void tag(String registry, ResourceLocation id, String... entries) {

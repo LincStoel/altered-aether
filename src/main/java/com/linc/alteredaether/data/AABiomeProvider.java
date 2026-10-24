@@ -71,6 +71,7 @@ public final class AABiomeProvider extends JsonDataProvider {
                 .particle(BiomeJson.particleType("aether:crystal_leaves"), 0.0025f)
                 // The stock lake is a fixed 16x16x8 blob that hangs off island edges; this grove gets real lakes.
                 .drop("aether:water_lake")
+                .add(BiomeJson.SPRINGS, AAFeatureProvider.WATERFALL_CASCADING)
                 .weight("aether:blue_swet", 20), "ars_nouveau");
         biome("flashing_archwood_grove", grove("flashing", ARIA)
                 .climate(1.95f, 0.0f)
@@ -84,7 +85,9 @@ public final class AABiomeProvider extends JsonDataProvider {
         biome("vexing_archwood_grove", grove("vexing", "ars_nouveau:firel_the_wild_hunt")
                 .climate(0.75f, 0.9f)
                 .effect("fog_color", 14386175).effect("foliage_color", 8732340).effect("grass_color", 10384582)
-                .effect("sky_color", 10979583).effect("water_color", 12080623).effect("water_fog_color", 11832560),
+                .effect("sky_color", 10979583).effect("water_color", 12080623).effect("water_fog_color", 11832560)
+                .drop("aether:water_lake")
+                .add(BiomeJson.SPRINGS, AAFeatureProvider.WATERFALL_VEXING),
                 "ars_nouveau");
     }
 
@@ -104,6 +107,9 @@ public final class AABiomeProvider extends JsonDataProvider {
         return base()
                 .climate(0.75f, 0.4f)
                 .replace(FOREST_TREES, "aether:skyroot_meadow_trees")
+                // Pools and deep lakes replace the stock lake, a fixed blob that hangs off island edges.
+                .drop("aether:water_lake")
+                .add(BiomeJson.SPRINGS, AAFeatureProvider.WATERFALL_PLATEAU)
                 .creatureProbability(0.07f)
                 .packScale(0.5)
                 .budgetScale(0.6);
@@ -114,6 +120,7 @@ public final class AABiomeProvider extends JsonDataProvider {
         return base()
                 .climate(-0.05f, 0.5f)
                 .drop(BARREN).drop(FOREST_TREES)
+                .drop("aether:water_lake")
                 .effect("fog_color", 12575730).effect("foliage_color", 9418436).effect("grass_color", 10470345)
                 .effect("sky_color", 11984111).effect("water_color", 4025996).effect("water_fog_color", 1981520)
                 .particle(BiomeJson.particleType("minecraft:snowflake"), 0.0035f)

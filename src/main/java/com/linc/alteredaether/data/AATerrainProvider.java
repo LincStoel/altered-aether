@@ -327,9 +327,24 @@ public final class AATerrainProvider extends JsonDataProvider {
         rift(terrain("island_dunes"));
         JsonObject islandTier = Df.choose(terrain("rift_weight"), terrain("island_dunes"), terrain("rift"));
         JsonObject withCrags = Df.choose(terrain("crag_weight"), islandTier, terrain("crag_tier"));
-        blend.add("argument", Df.choose(terrain("plateau_weight"), withCrags, terrain("plateau_terraced")));
+        // Atolls stand over whatever tier is beneath them, each kept wholly inside our region by its site check.
+        JsonObject atoll = Df.type(NS + "atoll");
+        atoll.add("argument", Df.choose(terrain("plateau_weight"), withCrags, terrain("plateau_terraced")));
+        atoll.add("weight", terrain("region_mask"));
+        atoll.addProperty("surface", mode.y(32));
+        atoll.addProperty("vertical_scale", vertical());
+        blend.add("argument", atoll);
+        // Basins are cut last, outside the interpolation, so their bowls and water lines are exact to the block.
+        JsonObject carve = Df.type(NS + "basin_carve");
+        carve.add("argument", squeeze);
+        carve.addProperty("vertical_scale", vertical());
+        router.add("final_density", carve);
 
         data("worldgen/noise_settings", ResourceLocation.fromNamespaceAndPath("aether", "skylands"), settings);
+    }
+
+    private double vertical() {
+        return mode == HeightMode.TALL ? 1.0 : 1 / 1.5;
     }
 
     /** The fractured island under the rift. Written here because it wraps the island expression itself. */

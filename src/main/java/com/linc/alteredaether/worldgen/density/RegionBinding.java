@@ -19,7 +19,11 @@ import com.linc.alteredaether.config.AACommonConfig;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.biome.BiomeSource;
 import net.minecraft.world.level.biome.MultiNoiseBiomeSource;
+import com.linc.alteredaether.worldgen.basin.BasinField;
 import net.minecraft.world.level.levelgen.DensityFunction;
+import net.minecraft.world.level.levelgen.NoiseBasedChunkGenerator;
+import net.minecraft.world.level.levelgen.NoiseSettings;
+import net.minecraft.world.level.levelgen.RandomState;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.level.LevelEvent;
@@ -28,7 +32,9 @@ import terrablender.worldgen.IExtendedParameterList;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.level.Level;
 
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import java.util.IdentityHashMap;
 import java.util.Map;
 import java.util.Set;
@@ -55,11 +61,18 @@ public final class RegionBinding {
             return;
         }
         Set<RegionMask.Binding> bindings = Collections.newSetFromMap(new IdentityHashMap<>());
-        level.getChunkSource().randomState().router().mapAll(new DensityFunction.Visitor() {
+        List<BasinCarve> carves = new ArrayList<>();
+        List<Atoll> atolls = new ArrayList<>();
+        RandomState randomState = level.getChunkSource().randomState();
+        randomState.router().mapAll(new DensityFunction.Visitor() {
             @Override
             public DensityFunction apply(DensityFunction function) {
                 if (function instanceof RegionMask mask && mask.binding() != null) {
                     bindings.add(mask.binding());
+                } else if (function instanceof BasinCarve carve && carve.binding() != null) {
+                    carves.add(carve);
+                } else if (function instanceof Atoll atoll && atoll.binding() != null) {
+                    atolls.add(atoll);
                 }
                 return function;
             }
@@ -74,16 +87,40 @@ public final class RegionBinding {
             bindings.forEach(binding -> binding.bind(solver));
             SOLVERS.put(level.dimension(), solver);
             AlteredAether.LOGGER.info("Bound Altered Aether's region mask for {}", level.dimension().location());
+            bindBasins(level, randomState, source, carves, atolls);
         } else {
             AlteredAether.LOGGER.warn("{} uses Altered Aether's region mask but its biome source has no TerraBlender "
                     + "regions; our landforms are disabled there.", level.dimension().location());
         }
     }
 
+    /**
+     * Builds the world's basin field from the carve and atoll functions in its router. The carve's argument, as wired
+     * here, is the exact uninterpolated terrain, which is what sites are validated against.
+     */
+    private static void bindBasins(ServerLevel level, RandomState randomState, BiomeSource source,
+                                   List<BasinCarve> carves, List<Atoll> atolls) {
+        if (carves.isEmpty() && atolls.isEmpty()
+                || !(level.getChunkSource().getGenerator() instanceof NoiseBasedChunkGenerator generator)) {
+            return;
+        }
+        NoiseSettings noise = generator.generatorSettings().value().noiseSettings();
+        BasinCarve carve = carves.isEmpty() ? null : carves.getFirst();
+        Atoll atoll = atolls.isEmpty() ? null : atolls.getFirst();
+        BasinField field = new BasinField(level.getSeed(), source, randomState.sampler(),
+                carve == null ? null : carve.argument(), carve == null ? 1 : carve.verticalScale(),
+                atoll == null ? null : new BasinField.AtollSettings(atoll.weight(), atoll.surface(), atoll.verticalScale()),
+                noise.minY(), noise.minY() + noise.height());
+        carves.forEach(c -> c.binding().bind(field));
+        atolls.forEach(a -> a.binding().bind(field));
+        BasinField.put(level.dimension(), field);
+    }
+
     @SubscribeEvent
     public static void onLevelUnload(LevelEvent.Unload event) {
         if (event.getLevel() instanceof ServerLevel level) {
             SOLVERS.remove(level.dimension());
+            BasinField.put(level.dimension(), null);
         }
     }
 

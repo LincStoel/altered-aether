@@ -15,6 +15,8 @@
 package com.linc.alteredaether.debug;
 
 import com.linc.alteredaether.AlteredAether;
+import com.linc.alteredaether.worldgen.basin.BasinField;
+import com.linc.alteredaether.worldgen.basin.BasinSite;
 import com.linc.alteredaether.worldgen.density.RegionBinding;
 import net.minecraft.core.Holder;
 import net.minecraft.core.QuartPos;
@@ -128,8 +130,27 @@ public final class WorldgenReport {
                 s.columnsWithLand == 0 ? 0 : s.topMin, s.columnsWithLand == 0 ? 0 : s.topMax,
                 100.0 * s.probeLand / s.samples, s.probeLand == 0 ? 0 : (double) s.probeSolid / s.probeLand,
                 s.probeLand == 0 ? 0 : (double) s.probeTopSum / s.probeLand)));
+        basinSurvey(level, originX, originZ, radius, lines);
         lines.forEach(AlteredAether.LOGGER::info);
         return lines;
+    }
+
+    /** Every basin and atoll site over the area, validated without generating anything, and why candidates failed. */
+    private static void basinSurvey(ServerLevel level, int originX, int originZ, int radius, List<String> lines) {
+        BasinField field = BasinField.get(level.dimension());
+        if (field == null) {
+            lines.add("Basins: no basin field in this world");
+            return;
+        }
+        List<BasinSite> sites = field.sitesTouching(originX - radius, originZ - radius, originX + radius,
+                originZ + radius);
+        Map<String, List<BasinSite>> byType = new TreeMap<>();
+        sites.forEach(site -> byType.computeIfAbsent(site.type().name().toLowerCase(), k -> new ArrayList<>()).add(site));
+        lines.add(String.format("Basins: %d sites; rejected %s", sites.size(), field.rejections()));
+        byType.forEach((type, list) -> lines.add(String.format("  %-16s %4d  radius avg %.1f  water level avg %.0f  e.g. %s",
+                type, list.size(), list.stream().mapToDouble(BasinSite::radius).average().orElse(0),
+                list.stream().mapToInt(BasinSite::waterLevel).average().orElse(0),
+                list.stream().limit(3).map(site -> site.x() + "," + site.z()).toList())));
     }
 
     /**

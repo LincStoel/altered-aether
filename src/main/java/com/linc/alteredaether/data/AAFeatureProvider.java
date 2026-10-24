@@ -25,6 +25,9 @@ import java.util.Map;
 public final class AAFeatureProvider extends JsonDataProvider {
     private static final String CONFIGURED = "worldgen/configured_feature";
     private static final String PLACED = "worldgen/placed_feature";
+    private static final String NS = AlteredAether.MOD_ID + ":";
+    /** The basin fill, in every biome that holds basins. */
+    static final String BASIN_FILL = NS + "basin_fill";
 
     public AAFeatureProvider(PackOutput output) {
         super(output, "features");
@@ -33,6 +36,50 @@ public final class AAFeatureProvider extends JsonDataProvider {
     @Override
     protected void generate() {
         groveTrees();
+        basinFill();
+        waterfalls();
+    }
+
+    static final String WATERFALL_WATER = NS + "waterfall/water", WATERFALL_POISON = NS + "waterfall/poison";
+    static final String WATERFALL_CASCADING = NS + "waterfall/cascading", WATERFALL_VEXING = NS + "waterfall/vexing",
+            WATERFALL_PLATEAU = NS + "waterfall/plateau";
+
+    /**
+     * Springs set into cliff faces at island edges, pouring off into the sky. The cascading grove is named for them;
+     * the vexing grove's run with Deep Aether's poison where it can; the plateau's high cliffs get the odd one.
+     */
+    private void waterfalls() {
+        configured("waterfall/water", NS + "edge_spring", spring("minecraft:water"));
+        configured("waterfall/poison", NS + "edge_spring", spring("deep_aether:poison", "minecraft:water"));
+        placed("waterfall/cascading", WATERFALL_WATER, waterfallPlacement(4), "ars_nouveau");
+        placed("waterfall/vexing", WATERFALL_POISON, waterfallPlacement(2), "ars_nouveau");
+        placed("waterfall/plateau", WATERFALL_WATER, waterfallPlacement(0.4));
+    }
+
+    private static JsonObject spring(String... fluids) {
+        JsonObject config = new JsonObject();
+        JsonArray list = new JsonArray();
+        for (String fluid : fluids) {
+            list.add(fluid);
+        }
+        config.add("fluid", list);
+        config.addProperty("min_depth", 2);
+        config.addProperty("max_depth", 8);
+        return config;
+    }
+
+    private static JsonArray waterfallPlacement(double perChunk) {
+        return Placement.list(
+                Placement.configCount(perChunk, "waterfall_frequency"),
+                Placement.inSquare(),
+                Placement.islandEdge(12, 24),
+                Placement.biome());
+    }
+
+    /** Fills every basin reaching into a chunk. It places nothing itself, so it takes no placement modifiers. */
+    private void basinFill() {
+        configured("basin_fill", NS + "basin_fill", new JsonObject());
+        placed("basin_fill", NS + "basin_fill", new JsonArray());
     }
 
     /**
@@ -64,7 +111,6 @@ public final class AAFeatureProvider extends JsonDataProvider {
         data(PLACED, AlteredAether.id(name), json, requiredMods);
     }
 
-    @SuppressWarnings("unused")
     private void configured(String name, String type, JsonObject config, String... requiredMods) {
         JsonObject json = new JsonObject();
         json.addProperty("type", type);

@@ -1,0 +1,27 @@
+{
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:mod_loaded",
+      "modid": "ars_nouveau"
+    }
+  ],
+  "feature": "altered_aether:waterfall/water",
+  "placement": [
+    {
+      "type": "altered_aether:config_count",
+      "count": 4.0,
+      "key": "waterfall_frequency"
+    },
+    {
+      "type": "minecraft:in_square"
+    },
+    {
+      "type": "altered_aether:island_edge",
+      "drop": 24,
+      "reach": 12
+    },
+    {
+      "type": "minecraft:biome"
+    }
+  ]
+}

@@ -1,0 +1,31 @@
+{
+  "replace": false,
+  "values": [
+    "altered_aether:aether_plateau",
+    "altered_aether:frozen_crags",
+    "altered_aether:tempest_peaks",
+    "altered_aether:shattered_rift",
+    "altered_aether:windswept_dunes",
+    "altered_aether:sunken_atoll",
+    {
+      "id": "altered_aether:blazing_archwood_grove",
+      "required": false
+    },
+    {
+      "id": "altered_aether:cascading_archwood_grove",
+      "required": false
+    },
+    {
+      "id": "altered_aether:flashing_archwood_grove",
+      "required": false
+    },
+    {
+      "id": "altered_aether:flourishing_archwood_grove",
+      "required": false
+    },
+    {
+      "id": "altered_aether:vexing_archwood_grove",
+      "required": false
+    }
+  ]
+}

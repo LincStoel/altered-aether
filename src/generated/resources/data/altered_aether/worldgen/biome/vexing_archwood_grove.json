@@ -26,9 +26,7 @@
     [
       "aether:quicksoil_shelf"
     ],
-    [
-      "aether:water_lake"
-    ],
+    [],
     [],
     [],
     [],
@@ -43,7 +41,8 @@
     ],
     [],
     [
-      "aether:water_spring"
+      "aether:water_spring",
+      "altered_aether:waterfall/vexing"
     ],
     [
       "altered_aether:grove_trees/vexing",

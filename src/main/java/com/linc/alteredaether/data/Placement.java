@@ -41,6 +41,22 @@ final class Placement {
         return json;
     }
 
+    /** {@code count} per chunk, times a common-config multiplier (see ConfigCount). */
+    static JsonObject configCount(double count, String key) {
+        JsonObject json = type("altered_aether:config_count");
+        json.addProperty("count", count);
+        json.addProperty("key", key);
+        return json;
+    }
+
+    /** Moves the position to the top of the nearest island edge column (see IslandEdge). */
+    static JsonObject islandEdge(int reach, int drop) {
+        JsonObject json = type("altered_aether:island_edge");
+        json.addProperty("reach", reach);
+        json.addProperty("drop", drop);
+        return json;
+    }
+
     static JsonObject inSquare() {
         return type("minecraft:in_square");
     }

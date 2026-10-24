@@ -15,7 +15,13 @@
 package com.linc.alteredaether.registry;
 
 import com.linc.alteredaether.AlteredAether;
+import com.linc.alteredaether.worldgen.density.Atoll;
+import com.linc.alteredaether.worldgen.density.BasinCarve;
 import com.linc.alteredaether.worldgen.density.ConfigValue;
+import com.linc.alteredaether.worldgen.feature.BasinFillFeature;
+import com.linc.alteredaether.worldgen.feature.EdgeSpringFeature;
+import com.linc.alteredaether.worldgen.placement.ConfigCount;
+import com.linc.alteredaether.worldgen.placement.IslandEdge;
 import com.linc.alteredaether.worldgen.density.RegionMask;
 import com.linc.alteredaether.worldgen.density.ShiftY;
 import com.linc.alteredaether.worldgen.density.Terrace;
@@ -33,6 +39,8 @@ import com.mojang.serialization.MapCodec;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.world.level.levelgen.DensityFunction;
 import net.minecraft.world.level.levelgen.SurfaceRules;
+import net.minecraft.world.level.levelgen.feature.Feature;
+import net.minecraft.world.level.levelgen.placement.PlacementModifierType;
 import net.minecraft.world.level.levelgen.feature.stateproviders.BlockStateProviderType;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.common.world.BiomeModifier;
@@ -70,7 +78,24 @@ public final class AARegistries {
         DENSITY_FUNCTIONS.register("wind_ridges", () -> WindRidges.MAP_CODEC);
         DENSITY_FUNCTIONS.register("voronoi_fracture", () -> VoronoiFracture.MAP_CODEC);
         DENSITY_FUNCTIONS.register("config", () -> ConfigValue.MAP_CODEC);
+        DENSITY_FUNCTIONS.register("basin_carve", () -> BasinCarve.MAP_CODEC);
+        DENSITY_FUNCTIONS.register("atoll", () -> Atoll.MAP_CODEC);
     }
+
+    public static final DeferredRegister<Feature<?>> FEATURES = DeferredRegister.create(Registries.FEATURE, AlteredAether.MOD_ID);
+
+    public static final DeferredHolder<Feature<?>, BasinFillFeature> BASIN_FILL =
+            FEATURES.register("basin_fill", BasinFillFeature::new);
+    public static final DeferredHolder<Feature<?>, EdgeSpringFeature> EDGE_SPRING =
+            FEATURES.register("edge_spring", EdgeSpringFeature::new);
+
+    public static final DeferredRegister<PlacementModifierType<?>> PLACEMENT_MODIFIERS =
+            DeferredRegister.create(Registries.PLACEMENT_MODIFIER_TYPE, AlteredAether.MOD_ID);
+
+    public static final DeferredHolder<PlacementModifierType<?>, PlacementModifierType<ConfigCount>> CONFIG_COUNT =
+            PLACEMENT_MODIFIERS.register("config_count", () -> () -> ConfigCount.CODEC);
+    public static final DeferredHolder<PlacementModifierType<?>, PlacementModifierType<IslandEdge>> ISLAND_EDGE =
+            PLACEMENT_MODIFIERS.register("island_edge", () -> () -> IslandEdge.CODEC);
 
     public static final DeferredRegister<MapCodec<? extends SurfaceRules.ConditionSource>> SURFACE_CONDITIONS =
             DeferredRegister.create(Registries.MATERIAL_CONDITION, AlteredAether.MOD_ID);
@@ -90,6 +115,8 @@ public final class AARegistries {
         DENSITY_FUNCTIONS.register(modBus);
         BIOME_MODIFIER_SERIALIZERS.register(modBus);
         BLOCK_STATE_PROVIDERS.register(modBus);
+        FEATURES.register(modBus);
+        PLACEMENT_MODIFIERS.register(modBus);
     }
 
     private AARegistries() {

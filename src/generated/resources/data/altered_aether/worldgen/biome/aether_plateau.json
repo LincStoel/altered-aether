@@ -20,9 +20,7 @@
     [
       "aether:quicksoil_shelf"
     ],
-    [
-      "aether:water_lake"
-    ],
+    [],
     [],
     [],
     [],
@@ -37,7 +35,8 @@
     ],
     [],
     [
-      "aether:water_spring"
+      "aether:water_spring",
+      "altered_aether:waterfall/plateau"
     ],
     [
       "aether:skyroot_meadow_trees",

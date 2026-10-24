@@ -1,6 +1,6 @@
-// 1.21.1	2026-10-24T17:10:20.9214903	Altered Aether terrain (tall)
+// 1.21.1	2026-10-24T18:16:10.7372324	Altered Aether terrain (tall)
 f42ea67ddb2a016ae6e8bcabfc213cce31a103fe datapacks/tall_aether/data/aether/dimension_type/the_aether.json
-340cce1965a4ddc98b9de82943973e647df8c955 datapacks/tall_aether/data/aether/worldgen/noise_settings/skylands.json
+f179bb8d076002f1e7cabda1533c261af1d82e7a datapacks/tall_aether/data/aether/worldgen/noise_settings/skylands.json
 ec98ef181daf868f8f2eaf6ec56a7ea537bf9d56 datapacks/tall_aether/data/altered_aether/worldgen/density_function/terrain/crags.json
 cd662e8515d689bfcf0c8545e650107e7209faff datapacks/tall_aether/data/altered_aether/worldgen/density_function/terrain/crag_3d_noise.json
 8517c59bd27cdb9214f344857f08fd0a04224674 datapacks/tall_aether/data/altered_aether/worldgen/density_function/terrain/dune_lean.json

@@ -1,5 +1,5 @@
-// 1.21.1	2026-10-24T17:10:20.9234946	Altered Aether terrain (stock)
-da2825778ee2eac5f81d5b847014a2777bc2b448 data/aether/worldgen/noise_settings/skylands.json
+// 1.21.1	2026-10-24T18:16:10.7382321	Altered Aether terrain (stock)
+6e1c6daa9ca35629945fa6a959f1d27e2d2f0797 data/aether/worldgen/noise_settings/skylands.json
 61e0afce1f675a399c74c1d2351d35010c0080dd data/altered_aether/worldgen/density_function/terrain/continentalness.json
 6c374c43e2c82f6900903f53adaa73848dda3da8 data/altered_aether/worldgen/density_function/terrain/crags.json
 c7721994ea55d605399c1d6e2ee8ab4855ded239 data/altered_aether/worldgen/density_function/terrain/crag_3d_noise.json

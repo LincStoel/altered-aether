@@ -1,0 +1,11 @@
+{
+  "type": "altered_aether:edge_spring",
+  "config": {
+    "fluid": [
+      "deep_aether:poison",
+      "minecraft:water"
+    ],
+    "max_depth": 8,
+    "min_depth": 2
+  }
+}

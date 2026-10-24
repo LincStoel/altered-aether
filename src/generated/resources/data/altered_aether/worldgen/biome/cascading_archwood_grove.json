@@ -47,7 +47,8 @@
     ],
     [],
     [
-      "aether:water_spring"
+      "aether:water_spring",
+      "altered_aether:waterfall/cascading"
     ],
     [
       "altered_aether:grove_trees/cascading",

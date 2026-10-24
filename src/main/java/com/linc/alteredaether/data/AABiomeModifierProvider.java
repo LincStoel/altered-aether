@@ -39,6 +39,15 @@ public final class AABiomeModifierProvider extends JsonDataProvider {
         exclusive.addProperty("aether_biomes", IS_AETHER);
         data(FOLDER, AlteredAether.id("aether_exclusive"), exclusive);
 
+        // The basin fill runs in every Aether chunk, so a lake that strays over a biome border, ours or another
+        // mod's, is still filled on both sides. Chunks with no basin nearby cost one cache lookup.
+        JsonObject fill = new JsonObject();
+        fill.addProperty("type", "neoforge:add_features");
+        fill.addProperty("biomes", IS_AETHER);
+        fill.addProperty("features", AAFeatureProvider.BASIN_FILL);
+        fill.addProperty("step", "lakes");
+        data(FOLDER, AlteredAether.id("basin_fill"), fill);
+
         // Breezes only spawn standing on cold aerclouds (see SpawnPlacementEvents); the spawn cost keeps them rare.
         // Most Aether biomes have nothing else in the monster category, so weight barely matters there.
         spawns("breeze", "breeze", List.of(IS_AETHER), "monster", 2, 2, 3);
