@@ -48,8 +48,9 @@ neoForge {
     }
 }
 
-// The Aether and the mods it needs at runtime, copied from the CurseForge instance into libs/ (not committed):
-// aether, accessories (newer than the copy bundled in the Aether's jar) and owo-lib (which Accessories requires).
+// The Aether, Aeroblender and the mods they need at runtime, copied from the CurseForge instance into libs/ (not
+// committed): aether, aeroblender, TerraBlender (which Aeroblender requires), accessories (newer than the copy
+// bundled in the Aether's jar) and owo-lib (which Accessories requires).
 // They are compiled against, and loaded at runtime from the run folders' mods/ (see copyClientDevMods), so jar-in-jar
 // dependencies (Cumulus and Nitrogen inside the Aether's jar) resolve exactly as they do in a real instance.
 val devMods = fileTree("libs") { include("*.jar") }

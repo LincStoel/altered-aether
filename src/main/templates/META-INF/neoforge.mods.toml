@@ -29,3 +29,10 @@ type="required"
 versionRange="[1.5.10,)"
 ordering="AFTER"
 side="BOTH"
+
+[[dependencies."${mod_id}"]]
+modId="aeroblender"
+type="required"
+versionRange="[1.0.0,)"
+ordering="AFTER"
+side="BOTH"
