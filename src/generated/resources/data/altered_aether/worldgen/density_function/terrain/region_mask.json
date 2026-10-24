@@ -1,0 +1,6 @@
+{
+  "type": "minecraft:flat_cache",
+  "argument": {
+    "type": "altered_aether:region_mask"
+  }
+}

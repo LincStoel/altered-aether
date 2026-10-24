@@ -1,0 +1,11 @@
+// 1.21.1	2026-10-24T16:33:18.1332293	Altered Aether terrain (tall)
+f42ea67ddb2a016ae6e8bcabfc213cce31a103fe datapacks/tall_aether/data/aether/dimension_type/the_aether.json
+5c0f7e10fac70b30d70dbff13e518be8c2a1bbdb datapacks/tall_aether/data/aether/worldgen/noise_settings/skylands.json
+16a779a797a16c8ccf723b3790f3e369fbc7c091 datapacks/tall_aether/data/altered_aether/worldgen/density_function/terrain/crags.json
+cd662e8515d689bfcf0c8545e650107e7209faff datapacks/tall_aether/data/altered_aether/worldgen/density_function/terrain/crag_3d_noise.json
+8517c59bd27cdb9214f344857f08fd0a04224674 datapacks/tall_aether/data/altered_aether/worldgen/density_function/terrain/dune_lean.json
+c46ac2a682aaed2da21192610462cb1a1103da16 datapacks/tall_aether/data/altered_aether/worldgen/density_function/terrain/jag.json
+a28d5637cf33a9471afd76d1fe48eaf616d13a8f datapacks/tall_aether/data/altered_aether/worldgen/density_function/terrain/plateau.json
+58fe95c3330e8ffaade7522b80ad449c3d314003 datapacks/tall_aether/data/altered_aether/worldgen/density_function/terrain/rift_carve_noise.json
+f02de65797a266fa6be8a68a33651a6bda300ac8 datapacks/tall_aether/data/altered_aether/worldgen/density_function/terrain/tall_base_3d_noise.json
+7c43fa370e5f9d71dc6dbd1270e1f78f82670c43 datapacks/tall_aether/pack.mcmeta

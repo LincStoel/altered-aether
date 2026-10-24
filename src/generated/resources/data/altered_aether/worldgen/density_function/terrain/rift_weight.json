@@ -1,0 +1,9 @@
+{
+  "type": "minecraft:mul",
+  "argument1": "altered_aether:terrain/region_mask",
+  "argument2": {
+    "type": "minecraft:mul",
+    "argument1": "altered_aether:terrain/rift_mask",
+    "argument2": "altered_aether:terrain/rift_carve_mask"
+  }
+}

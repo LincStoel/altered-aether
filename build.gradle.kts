@@ -40,6 +40,8 @@ neoForge {
             server()
             gameDirectory = layout.projectDirectory.dir("run-server")
             programArgument("--nogui")
+            // -PaaReport=radius,step prints a worldgen report for the Aether on startup, then stops the server.
+            systemProperty("altered_aether.report", (findProperty("aaReport") as String?) ?: "")
         }
         // Writes the mod's generated data (worldgen JSON, tags, lang, models) into src/generated/resources.
         register("data") {

@@ -55,6 +55,14 @@ public abstract class JsonDataProvider implements DataProvider {
         add(PackOutput.Target.DATA_PACK, folder, id, json, requiredMods);
     }
 
+    /** Adds a file at the pack root, such as pack.mcmeta. */
+    protected void root(String fileName, JsonObject json) {
+        Path path = output.getOutputFolder().resolve(fileName);
+        if (files.put(path, json) != null) {
+            throw new IllegalStateException("Duplicate data file " + path);
+        }
+    }
+
     protected void asset(String folder, ResourceLocation id, JsonObject json) {
         add(PackOutput.Target.RESOURCE_PACK, folder, id, json);
     }

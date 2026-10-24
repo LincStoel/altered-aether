@@ -1,0 +1,41 @@
+{
+  "type": "minecraft:add",
+  "argument1": -0.15,
+  "argument2": {
+    "type": "minecraft:mul",
+    "argument1": {
+      "type": "minecraft:y_clamped_gradient",
+      "from_value": 0.0,
+      "from_y": 0,
+      "to_value": 1.0,
+      "to_y": 27
+    },
+    "argument2": {
+      "type": "minecraft:add",
+      "argument1": -0.22,
+      "argument2": {
+        "type": "minecraft:mul",
+        "argument1": {
+          "type": "minecraft:y_clamped_gradient",
+          "from_value": 1.0,
+          "from_y": 89,
+          "to_value": 0.0,
+          "to_y": 128
+        },
+        "argument2": {
+          "type": "minecraft:add",
+          "argument1": 0.07,
+          "argument2": {
+            "type": "minecraft:add",
+            "argument1": "altered_aether:terrain/crag_3d_noise",
+            "argument2": {
+              "type": "minecraft:mul",
+              "argument1": 0.15,
+              "argument2": "altered_aether:terrain/jag"
+            }
+          }
+        }
+      }
+    }
+  }
+}

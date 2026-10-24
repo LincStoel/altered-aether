@@ -1,0 +1,60 @@
+{
+  "type": "minecraft:add",
+  "argument1": {
+    "type": "minecraft:min",
+    "argument1": {
+      "type": "minecraft:add",
+      "argument1": {
+        "type": "minecraft:y_clamped_gradient",
+        "from_value": 1.0,
+        "from_y": 45,
+        "to_value": -1.0,
+        "to_y": 99
+      },
+      "argument2": {
+        "type": "minecraft:mul",
+        "argument1": "altered_aether:terrain/mesa_mask",
+        "argument2": {
+          "type": "minecraft:add",
+          "argument1": 0.25,
+          "argument2": {
+            "type": "minecraft:mul",
+            "argument1": 0.125,
+            "argument2": {
+              "type": "minecraft:flat_cache",
+              "argument": {
+                "type": "minecraft:shifted_noise",
+                "noise": "altered_aether:mesa_height",
+                "shift_x": "minecraft:shift_x",
+                "shift_y": 0.0,
+                "shift_z": "minecraft:shift_z",
+                "xz_scale": 0.25,
+                "y_scale": 0.0
+              }
+            }
+          }
+        }
+      }
+    },
+    "argument2": {
+      "type": "minecraft:y_clamped_gradient",
+      "from_value": -1.0,
+      "from_y": 16,
+      "to_value": 1.0,
+      "to_y": 43
+    }
+  },
+  "argument2": {
+    "type": "minecraft:mul",
+    "argument1": 0.125,
+    "argument2": {
+      "type": "minecraft:shifted_noise",
+      "noise": "altered_aether:plateau_relief",
+      "shift_x": "minecraft:shift_x",
+      "shift_y": 0.0,
+      "shift_z": "minecraft:shift_z",
+      "xz_scale": 0.35,
+      "y_scale": 0.0
+    }
+  }
+}

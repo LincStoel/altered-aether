@@ -15,6 +15,7 @@
 package com.linc.alteredaether.data;
 
 import com.linc.alteredaether.AlteredAether;
+import com.linc.alteredaether.TallAetherPack;
 import net.minecraft.data.DataGenerator;
 import net.minecraft.data.PackOutput;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -32,6 +33,11 @@ public final class AADataGen {
         generator.addProvider(event.includeServer(), new AABiomeProvider(output));
         generator.addProvider(event.includeServer(), new AAFeatureProvider(output));
         generator.addProvider(event.includeServer(), new AATagProvider(output));
+        generator.addProvider(event.includeServer(),
+                new AATerrainProvider(output, AATerrainProvider.HeightMode.STOCK));
+        generator.addProvider(event.includeServer(), new AATerrainProvider(
+                new PackOutput(output.getOutputFolder().resolve(TallAetherPack.PATH)),
+                AATerrainProvider.HeightMode.TALL));
     }
 
     private AADataGen() {

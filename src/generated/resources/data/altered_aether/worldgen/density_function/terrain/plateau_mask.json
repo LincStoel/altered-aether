@@ -1,0 +1,14 @@
+{
+  "type": "minecraft:clamp",
+  "input": {
+    "type": "minecraft:add",
+    "argument1": -1.68,
+    "argument2": {
+      "type": "minecraft:mul",
+      "argument1": 4.0,
+      "argument2": "altered_aether:terrain/continentalness"
+    }
+  },
+  "max": 1.0,
+  "min": 0.0
+}
