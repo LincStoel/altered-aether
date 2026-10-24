@@ -42,7 +42,8 @@ neoForge {
             programArgument("--nogui")
             // -PaaReport=radius,step prints a worldgen report for the Aether on startup, then stops the server.
             systemProperty("altered_aether.report", (findProperty("aaReport") as String?) ?: "")
-            // -PaaBench=radius generates that many chunks around a point in the Aether, logs the time, then stops.
+            // -PaaBench=radius[,biome] generates that many chunks around a point in the Aether (centred on the nearest
+            // biome if one is named), logs the time and a surface tally, then stops.
             systemProperty("altered_aether.bench", (findProperty("aaBench") as String?) ?: "")
         }
         // Writes the mod's generated data (worldgen JSON, tags, lang, models) into src/generated/resources.

@@ -33,6 +33,7 @@ public final class AADataGen {
         generator.addProvider(event.includeServer(), new AABiomeProvider(output));
         generator.addProvider(event.includeServer(), new AAFeatureProvider(output));
         generator.addProvider(event.includeServer(), new AATagProvider(output));
+        generator.addProvider(event.includeServer(), new AASurfaceRuleProvider(output));
         generator.addProvider(event.includeServer(),
                 new AATerrainProvider(output, AATerrainProvider.HeightMode.STOCK));
         generator.addProvider(event.includeServer(), new AATerrainProvider(

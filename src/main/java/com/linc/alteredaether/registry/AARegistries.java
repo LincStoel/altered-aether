@@ -25,9 +25,14 @@ import com.linc.alteredaether.worldgen.modifier.AetherExclusiveModifier;
 import com.linc.alteredaether.worldgen.modifier.ClimateModifier;
 import com.linc.alteredaether.worldgen.modifier.ConfiguredSpawnsModifier;
 import com.linc.alteredaether.worldgen.provider.SubstituteStateProvider;
+import com.linc.alteredaether.worldgen.surface.IslandPosition;
+import com.linc.alteredaether.worldgen.surface.Steep;
+import com.linc.alteredaether.worldgen.surface.Strata;
+import com.linc.alteredaether.worldgen.surface.SubstituteBlock;
 import com.mojang.serialization.MapCodec;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.world.level.levelgen.DensityFunction;
+import net.minecraft.world.level.levelgen.SurfaceRules;
 import net.minecraft.world.level.levelgen.feature.stateproviders.BlockStateProviderType;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.common.world.BiomeModifier;
@@ -67,7 +72,21 @@ public final class AARegistries {
         DENSITY_FUNCTIONS.register("config", () -> ConfigValue.MAP_CODEC);
     }
 
+    public static final DeferredRegister<MapCodec<? extends SurfaceRules.ConditionSource>> SURFACE_CONDITIONS =
+            DeferredRegister.create(Registries.MATERIAL_CONDITION, AlteredAether.MOD_ID);
+    public static final DeferredRegister<MapCodec<? extends SurfaceRules.RuleSource>> SURFACE_RULES =
+            DeferredRegister.create(Registries.MATERIAL_RULE, AlteredAether.MOD_ID);
+
+    static {
+        SURFACE_CONDITIONS.register("steep", () -> Steep.MAP_CODEC);
+        SURFACE_CONDITIONS.register("island_position", () -> IslandPosition.MAP_CODEC);
+        SURFACE_RULES.register("strata", () -> Strata.MAP_CODEC);
+        SURFACE_RULES.register("substitute_block", () -> SubstituteBlock.MAP_CODEC);
+    }
+
     public static void register(IEventBus modBus) {
+        SURFACE_CONDITIONS.register(modBus);
+        SURFACE_RULES.register(modBus);
         DENSITY_FUNCTIONS.register(modBus);
         BIOME_MODIFIER_SERIALIZERS.register(modBus);
         BLOCK_STATE_PROVIDERS.register(modBus);

@@ -1,0 +1,1105 @@
+{
+  "type": "minecraft:sequence",
+  "sequence": [
+    {
+      "type": "minecraft:condition",
+      "if_true": {
+        "type": "minecraft:stone_depth",
+        "add_surface_depth": false,
+        "offset": 0,
+        "secondary_depth_range": 0,
+        "surface_type": "floor"
+      },
+      "then_run": {
+        "type": "minecraft:sequence",
+        "sequence": [
+          {
+            "type": "minecraft:sequence",
+            "sequence": [
+              {
+                "type": "minecraft:condition",
+                "if_true": {
+                  "type": "altered_aether:steep",
+                  "distance": 2,
+                  "rise": 3
+                },
+                "then_run": {
+                  "type": "minecraft:sequence",
+                  "sequence": [
+                    {
+                      "type": "minecraft:condition",
+                      "if_true": {
+                        "type": "minecraft:biome",
+                        "biome_is": [
+                          "altered_aether:aether_plateau"
+                        ]
+                      },
+                      "then_run": {
+                        "type": "altered_aether:strata",
+                        "band_height": 3,
+                        "bands": [
+                          {
+                            "Name": "aether:holystone",
+                            "Properties": {
+                              "double_drops": "true"
+                            }
+                          },
+                          {
+                            "Name": "aether:holystone",
+                            "Properties": {
+                              "double_drops": "true"
+                            }
+                          },
+                          {
+                            "Name": "aether:mossy_holystone",
+                            "Properties": {
+                              "double_drops": "true"
+                            }
+                          },
+                          {
+                            "Name": "aether:holystone",
+                            "Properties": {
+                              "double_drops": "true"
+                            }
+                          },
+                          {
+                            "Name": "aether:icestone"
+                          },
+                          {
+                            "Name": "aether:holystone",
+                            "Properties": {
+                              "double_drops": "true"
+                            }
+                          },
+                          {
+                            "Name": "aether:mossy_holystone",
+                            "Properties": {
+                              "double_drops": "true"
+                            }
+                          },
+                          {
+                            "Name": "aether:mossy_holystone",
+                            "Properties": {
+                              "double_drops": "true"
+                            }
+                          }
+                        ],
+                        "undulation": 2.5
+                      }
+                    },
+                    {
+                      "type": "minecraft:condition",
+                      "if_true": {
+                        "type": "minecraft:biome",
+                        "biome_is": [
+                          "altered_aether:frozen_crags"
+                        ]
+                      },
+                      "then_run": {
+                        "type": "minecraft:sequence",
+                        "sequence": [
+                          {
+                            "type": "minecraft:condition",
+                            "if_true": {
+                              "type": "minecraft:noise_threshold",
+                              "max_threshold": 4.0,
+                              "min_threshold": 0.18,
+                              "noise": "minecraft:surface_secondary"
+                            },
+                            "then_run": {
+                              "type": "altered_aether:substitute_block",
+                              "candidates": [
+                                {
+                                  "Name": "deep_aether:clorite"
+                                },
+                                {
+                                  "Name": "aether:icestone"
+                                }
+                              ]
+                            }
+                          },
+                          {
+                            "type": "minecraft:block",
+                            "result_state": {
+                              "Name": "aether:icestone"
+                            }
+                          }
+                        ]
+                      }
+                    },
+                    {
+                      "type": "minecraft:condition",
+                      "if_true": {
+                        "type": "minecraft:biome",
+                        "biome_is": [
+                          "altered_aether:tempest_peaks"
+                        ]
+                      },
+                      "then_run": {
+                        "type": "minecraft:sequence",
+                        "sequence": [
+                          {
+                            "type": "minecraft:condition",
+                            "if_true": {
+                              "type": "minecraft:noise_threshold",
+                              "max_threshold": 4.0,
+                              "min_threshold": 0.18,
+                              "noise": "minecraft:surface_secondary"
+                            },
+                            "then_run": {
+                              "type": "minecraft:block",
+                              "result_state": {
+                                "Name": "minecraft:blackstone"
+                              }
+                            }
+                          },
+                          {
+                            "type": "minecraft:block",
+                            "result_state": {
+                              "Name": "minecraft:cobbled_deepslate"
+                            }
+                          }
+                        ]
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "type": "minecraft:condition",
+                "if_true": {
+                  "type": "altered_aether:steep",
+                  "distance": 2,
+                  "rise": 5
+                },
+                "then_run": {
+                  "type": "minecraft:condition",
+                  "if_true": {
+                    "type": "minecraft:biome",
+                    "biome_is": [
+                      "altered_aether:shattered_rift",
+                      "altered_aether:sunken_atoll",
+                      "altered_aether:blazing_archwood_grove",
+                      "altered_aether:cascading_archwood_grove",
+                      "altered_aether:flashing_archwood_grove",
+                      "altered_aether:flourishing_archwood_grove",
+                      "altered_aether:vexing_archwood_grove"
+                    ]
+                  },
+                  "then_run": {
+                    "type": "minecraft:sequence",
+                    "sequence": [
+                      {
+                        "type": "minecraft:condition",
+                        "if_true": {
+                          "type": "minecraft:noise_threshold",
+                          "max_threshold": 4.0,
+                          "min_threshold": 0.26,
+                          "noise": "minecraft:calcite"
+                        },
+                        "then_run": {
+                          "type": "minecraft:block",
+                          "result_state": {
+                            "Name": "aether:mossy_holystone",
+                            "Properties": {
+                              "double_drops": "true"
+                            }
+                          }
+                        }
+                      },
+                      {
+                        "type": "minecraft:block",
+                        "result_state": {
+                          "Name": "aether:holystone",
+                          "Properties": {
+                            "double_drops": "true"
+                          }
+                        }
+                      }
+                    ]
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "type": "minecraft:condition",
+            "if_true": {
+              "type": "minecraft:biome",
+              "biome_is": [
+                "altered_aether:frozen_crags"
+              ]
+            },
+            "then_run": {
+              "type": "minecraft:condition",
+              "if_true": {
+                "type": "altered_aether:island_position",
+                "max": 1.0,
+                "min": 0.7,
+                "min_thickness": 16
+              },
+              "then_run": {
+                "type": "minecraft:block",
+                "result_state": {
+                  "Name": "minecraft:snow_block"
+                }
+              }
+            }
+          },
+          {
+            "type": "minecraft:condition",
+            "if_true": {
+              "type": "minecraft:biome",
+              "biome_is": [
+                "altered_aether:aether_plateau"
+              ]
+            },
+            "then_run": {
+              "type": "minecraft:sequence",
+              "sequence": [
+                {
+                  "type": "minecraft:condition",
+                  "if_true": {
+                    "type": "minecraft:noise_threshold",
+                    "max_threshold": 4.0,
+                    "min_threshold": 0.15,
+                    "noise": "altered_aether:path_region"
+                  },
+                  "then_run": {
+                    "type": "minecraft:condition",
+                    "if_true": {
+                      "type": "minecraft:noise_threshold",
+                      "max_threshold": 0.0125,
+                      "min_threshold": -0.0125,
+                      "noise": "altered_aether:plateau_path"
+                    },
+                    "then_run": {
+                      "type": "minecraft:block",
+                      "result_state": {
+                        "Name": "aether:aether_dirt_path"
+                      }
+                    }
+                  }
+                },
+                {
+                  "type": "minecraft:condition",
+                  "if_true": {
+                    "type": "minecraft:noise_threshold",
+                    "max_threshold": 4.0,
+                    "min_threshold": 0.15,
+                    "noise": "altered_aether:path_region"
+                  },
+                  "then_run": {
+                    "type": "minecraft:condition",
+                    "if_true": {
+                      "type": "minecraft:noise_threshold",
+                      "max_threshold": 0.008,
+                      "min_threshold": -0.008,
+                      "noise": "altered_aether:plateau_quicksoil_vein"
+                    },
+                    "then_run": {
+                      "type": "minecraft:block",
+                      "result_state": {
+                        "Name": "aether:quicksoil",
+                        "Properties": {
+                          "double_drops": "true"
+                        }
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "type": "minecraft:condition",
+            "if_true": {
+              "type": "minecraft:biome",
+              "biome_is": [
+                "altered_aether:cascading_archwood_grove"
+              ]
+            },
+            "then_run": {
+              "type": "altered_aether:substitute_block",
+              "candidates": [
+                {
+                  "Name": "deep_aether:aether_coarse_dirt",
+                  "Properties": {
+                    "double_drops": "true"
+                  }
+                },
+                {
+                  "Name": "aether:aether_dirt",
+                  "Properties": {
+                    "double_drops": "true"
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "type": "minecraft:condition",
+            "if_true": {
+              "type": "minecraft:biome",
+              "biome_is": [
+                "altered_aether:flashing_archwood_grove"
+              ]
+            },
+            "then_run": {
+              "type": "altered_aether:substitute_block",
+              "candidates": [
+                {
+                  "Name": "deep_aether:golden_heights_grass_block",
+                  "Properties": {
+                    "double_drops": "true",
+                    "snowy": "false"
+                  }
+                },
+                {
+                  "Name": "aether:enchanted_aether_grass_block",
+                  "Properties": {
+                    "snowy": "false"
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "type": "minecraft:condition",
+            "if_true": {
+              "type": "minecraft:biome",
+              "biome_is": [
+                "altered_aether:flourishing_archwood_grove"
+              ]
+            },
+            "then_run": {
+              "type": "minecraft:block",
+              "result_state": {
+                "Name": "aether:enchanted_aether_grass_block",
+                "Properties": {
+                  "snowy": "false"
+                }
+              }
+            }
+          },
+          {
+            "type": "minecraft:condition",
+            "if_true": {
+              "type": "minecraft:biome",
+              "biome_is": [
+                "altered_aether:vexing_archwood_grove"
+              ]
+            },
+            "then_run": {
+              "type": "minecraft:sequence",
+              "sequence": [
+                {
+                  "type": "minecraft:condition",
+                  "if_true": {
+                    "type": "minecraft:noise_threshold",
+                    "max_threshold": 4.0,
+                    "min_threshold": 0.7,
+                    "noise": "minecraft:surface_swamp"
+                  },
+                  "then_run": {
+                    "type": "altered_aether:substitute_block",
+                    "candidates": [
+                      {
+                        "Name": "deep_aether:virulent_quicksand"
+                      },
+                      {
+                        "Name": "minecraft:soul_sand"
+                      }
+                    ]
+                  }
+                },
+                {
+                  "type": "altered_aether:substitute_block",
+                  "candidates": [
+                    {
+                      "Name": "deep_aether:aether_mud",
+                      "Properties": {
+                        "double_drops": "true"
+                      }
+                    },
+                    {
+                      "Name": "minecraft:mud"
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "type": "minecraft:condition",
+            "if_true": {
+              "type": "minecraft:biome",
+              "biome_is": [
+                "altered_aether:blazing_archwood_grove"
+              ]
+            },
+            "then_run": {
+              "type": "minecraft:sequence",
+              "sequence": [
+                {
+                  "type": "minecraft:condition",
+                  "if_true": {
+                    "type": "minecraft:noise_threshold",
+                    "max_threshold": 4.0,
+                    "min_threshold": 0.15,
+                    "noise": "minecraft:surface"
+                  },
+                  "then_run": {
+                    "type": "minecraft:block",
+                    "result_state": {
+                      "Name": "aether:aether_dirt",
+                      "Properties": {
+                        "double_drops": "true"
+                      }
+                    }
+                  }
+                },
+                {
+                  "type": "altered_aether:substitute_block",
+                  "candidates": [
+                    {
+                      "Name": "deep_aether:golden_heights_grass_block",
+                      "Properties": {
+                        "double_drops": "true",
+                        "snowy": "false"
+                      }
+                    },
+                    {
+                      "Name": "aether:enchanted_aether_grass_block",
+                      "Properties": {
+                        "snowy": "false"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "type": "minecraft:condition",
+            "if_true": {
+              "type": "minecraft:biome",
+              "biome_is": [
+                "altered_aether:frozen_crags"
+              ]
+            },
+            "then_run": {
+              "type": "minecraft:sequence",
+              "sequence": [
+                {
+                  "type": "minecraft:condition",
+                  "if_true": {
+                    "type": "minecraft:noise_threshold",
+                    "max_threshold": 4.0,
+                    "min_threshold": 0.44,
+                    "noise": "minecraft:surface"
+                  },
+                  "then_run": {
+                    "type": "altered_aether:substitute_block",
+                    "candidates": [
+                      {
+                        "Name": "deep_aether:aether_coarse_dirt",
+                        "Properties": {
+                          "double_drops": "true"
+                        }
+                      },
+                      {
+                        "Name": "aether:aether_dirt",
+                        "Properties": {
+                          "double_drops": "true"
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "type": "minecraft:condition",
+                  "if_true": {
+                    "type": "minecraft:noise_threshold",
+                    "max_threshold": 4.0,
+                    "min_threshold": 0.35,
+                    "noise": "minecraft:packed_ice"
+                  },
+                  "then_run": {
+                    "type": "minecraft:block",
+                    "result_state": {
+                      "Name": "minecraft:ice"
+                    }
+                  }
+                },
+                {
+                  "type": "minecraft:condition",
+                  "if_true": {
+                    "type": "minecraft:noise_threshold",
+                    "max_threshold": 4.0,
+                    "min_threshold": 0.12,
+                    "noise": "minecraft:powder_snow"
+                  },
+                  "then_run": {
+                    "type": "minecraft:block",
+                    "result_state": {
+                      "Name": "minecraft:snow_block"
+                    }
+                  }
+                },
+                {
+                  "type": "minecraft:block",
+                  "result_state": {
+                    "Name": "aether:icestone"
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "type": "minecraft:condition",
+            "if_true": {
+              "type": "minecraft:biome",
+              "biome_is": [
+                "altered_aether:tempest_peaks"
+              ]
+            },
+            "then_run": {
+              "type": "minecraft:sequence",
+              "sequence": [
+                {
+                  "type": "minecraft:condition",
+                  "if_true": {
+                    "type": "minecraft:noise_threshold",
+                    "max_threshold": 4.0,
+                    "min_threshold": 0.44,
+                    "noise": "minecraft:surface"
+                  },
+                  "then_run": {
+                    "type": "minecraft:block",
+                    "result_state": {
+                      "Name": "minecraft:blackstone"
+                    }
+                  }
+                },
+                {
+                  "type": "minecraft:condition",
+                  "if_true": {
+                    "type": "minecraft:noise_threshold",
+                    "max_threshold": 4.0,
+                    "min_threshold": 0.12,
+                    "noise": "minecraft:powder_snow"
+                  },
+                  "then_run": {
+                    "type": "minecraft:block",
+                    "result_state": {
+                      "Name": "minecraft:gravel"
+                    }
+                  }
+                },
+                {
+                  "type": "minecraft:block",
+                  "result_state": {
+                    "Name": "minecraft:cobbled_deepslate"
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "type": "minecraft:condition",
+            "if_true": {
+              "type": "minecraft:biome",
+              "biome_is": [
+                "altered_aether:shattered_rift"
+              ]
+            },
+            "then_run": {
+              "type": "minecraft:sequence",
+              "sequence": [
+                {
+                  "type": "minecraft:condition",
+                  "if_true": {
+                    "type": "minecraft:noise_threshold",
+                    "max_threshold": 4.0,
+                    "min_threshold": 0.44,
+                    "noise": "minecraft:surface"
+                  },
+                  "then_run": {
+                    "type": "altered_aether:substitute_block",
+                    "candidates": [
+                      {
+                        "Name": "deep_aether:aether_coarse_dirt",
+                        "Properties": {
+                          "double_drops": "true"
+                        }
+                      },
+                      {
+                        "Name": "aether:aether_dirt",
+                        "Properties": {
+                          "double_drops": "true"
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "type": "minecraft:condition",
+                  "if_true": {
+                    "type": "minecraft:noise_threshold",
+                    "max_threshold": 4.0,
+                    "min_threshold": 0.26,
+                    "noise": "minecraft:calcite"
+                  },
+                  "then_run": {
+                    "type": "minecraft:block",
+                    "result_state": {
+                      "Name": "aether:mossy_holystone",
+                      "Properties": {
+                        "double_drops": "true"
+                      }
+                    }
+                  }
+                },
+                {
+                  "type": "minecraft:block",
+                  "result_state": {
+                    "Name": "aether:holystone",
+                    "Properties": {
+                      "double_drops": "true"
+                    }
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "type": "minecraft:condition",
+            "if_true": {
+              "type": "minecraft:biome",
+              "biome_is": [
+                "altered_aether:windswept_dunes"
+              ]
+            },
+            "then_run": {
+              "type": "minecraft:block",
+              "result_state": {
+                "Name": "aether:quicksoil",
+                "Properties": {
+                  "double_drops": "true"
+                }
+              }
+            }
+          },
+          {
+            "type": "minecraft:condition",
+            "if_true": {
+              "type": "minecraft:biome",
+              "biome_is": [
+                "altered_aether:sunken_atoll"
+              ]
+            },
+            "then_run": {
+              "type": "minecraft:condition",
+              "if_true": {
+                "type": "minecraft:noise_threshold",
+                "max_threshold": 4.0,
+                "min_threshold": 0.05,
+                "noise": "minecraft:surface"
+              },
+              "then_run": {
+                "type": "minecraft:block",
+                "result_state": {
+                  "Name": "minecraft:sand"
+                }
+              }
+            }
+          },
+          {
+            "type": "minecraft:condition",
+            "if_true": {
+              "type": "minecraft:water",
+              "add_stone_depth": false,
+              "offset": -1,
+              "surface_depth_multiplier": 0
+            },
+            "then_run": {
+              "type": "minecraft:block",
+              "result_state": {
+                "Name": "aether:aether_grass_block",
+                "Properties": {
+                  "double_drops": "true",
+                  "snowy": "false"
+                }
+              }
+            }
+          },
+          {
+            "type": "minecraft:block",
+            "result_state": {
+              "Name": "aether:aether_dirt",
+              "Properties": {
+                "double_drops": "true"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "type": "minecraft:condition",
+      "if_true": {
+        "type": "minecraft:stone_depth",
+        "add_surface_depth": true,
+        "offset": 0,
+        "secondary_depth_range": 0,
+        "surface_type": "floor"
+      },
+      "then_run": {
+        "type": "minecraft:sequence",
+        "sequence": [
+          {
+            "type": "minecraft:condition",
+            "if_true": {
+              "type": "minecraft:biome",
+              "biome_is": [
+                "altered_aether:vexing_archwood_grove"
+              ]
+            },
+            "then_run": {
+              "type": "altered_aether:substitute_block",
+              "candidates": [
+                {
+                  "Name": "deep_aether:aether_mud",
+                  "Properties": {
+                    "double_drops": "true"
+                  }
+                },
+                {
+                  "Name": "minecraft:mud"
+                }
+              ]
+            }
+          },
+          {
+            "type": "minecraft:condition",
+            "if_true": {
+              "type": "minecraft:biome",
+              "biome_is": [
+                "altered_aether:frozen_crags"
+              ]
+            },
+            "then_run": {
+              "type": "minecraft:block",
+              "result_state": {
+                "Name": "aether:icestone"
+              }
+            }
+          },
+          {
+            "type": "minecraft:condition",
+            "if_true": {
+              "type": "minecraft:biome",
+              "biome_is": [
+                "altered_aether:tempest_peaks"
+              ]
+            },
+            "then_run": {
+              "type": "minecraft:block",
+              "result_state": {
+                "Name": "minecraft:cobbled_deepslate"
+              }
+            }
+          },
+          {
+            "type": "minecraft:condition",
+            "if_true": {
+              "type": "minecraft:biome",
+              "biome_is": [
+                "altered_aether:shattered_rift"
+              ]
+            },
+            "then_run": {
+              "type": "minecraft:block",
+              "result_state": {
+                "Name": "aether:holystone",
+                "Properties": {
+                  "double_drops": "true"
+                }
+              }
+            }
+          },
+          {
+            "type": "minecraft:condition",
+            "if_true": {
+              "type": "minecraft:biome",
+              "biome_is": [
+                "altered_aether:windswept_dunes"
+              ]
+            },
+            "then_run": {
+              "type": "minecraft:block",
+              "result_state": {
+                "Name": "aether:quicksoil",
+                "Properties": {
+                  "double_drops": "true"
+                }
+              }
+            }
+          },
+          {
+            "type": "minecraft:condition",
+            "if_true": {
+              "type": "minecraft:biome",
+              "biome_is": [
+                "altered_aether:sunken_atoll"
+              ]
+            },
+            "then_run": {
+              "type": "minecraft:condition",
+              "if_true": {
+                "type": "minecraft:noise_threshold",
+                "max_threshold": 4.0,
+                "min_threshold": 0.05,
+                "noise": "minecraft:surface"
+              },
+              "then_run": {
+                "type": "minecraft:block",
+                "result_state": {
+                  "Name": "minecraft:sand"
+                }
+              }
+            }
+          },
+          {
+            "type": "minecraft:block",
+            "result_state": {
+              "Name": "aether:aether_dirt",
+              "Properties": {
+                "double_drops": "true"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "type": "minecraft:sequence",
+      "sequence": [
+        {
+          "type": "minecraft:condition",
+          "if_true": {
+            "type": "minecraft:biome",
+            "biome_is": [
+              "altered_aether:aether_plateau"
+            ]
+          },
+          "then_run": {
+            "type": "altered_aether:strata",
+            "band_height": 3,
+            "bands": [
+              {
+                "Name": "aether:holystone",
+                "Properties": {
+                  "double_drops": "true"
+                }
+              },
+              {
+                "Name": "aether:holystone",
+                "Properties": {
+                  "double_drops": "true"
+                }
+              },
+              {
+                "Name": "aether:mossy_holystone",
+                "Properties": {
+                  "double_drops": "true"
+                }
+              },
+              {
+                "Name": "aether:holystone",
+                "Properties": {
+                  "double_drops": "true"
+                }
+              },
+              {
+                "Name": "aether:icestone"
+              },
+              {
+                "Name": "aether:holystone",
+                "Properties": {
+                  "double_drops": "true"
+                }
+              },
+              {
+                "Name": "aether:mossy_holystone",
+                "Properties": {
+                  "double_drops": "true"
+                }
+              },
+              {
+                "Name": "aether:mossy_holystone",
+                "Properties": {
+                  "double_drops": "true"
+                }
+              }
+            ],
+            "undulation": 2.5
+          }
+        },
+        {
+          "type": "minecraft:condition",
+          "if_true": {
+            "type": "minecraft:biome",
+            "biome_is": [
+              "altered_aether:frozen_crags"
+            ]
+          },
+          "then_run": {
+            "type": "minecraft:sequence",
+            "sequence": [
+              {
+                "type": "minecraft:condition",
+                "if_true": {
+                  "type": "minecraft:noise_threshold",
+                  "max_threshold": 4.0,
+                  "min_threshold": 0.18,
+                  "noise": "minecraft:surface_secondary"
+                },
+                "then_run": {
+                  "type": "altered_aether:substitute_block",
+                  "candidates": [
+                    {
+                      "Name": "deep_aether:clorite"
+                    },
+                    {
+                      "Name": "aether:icestone"
+                    }
+                  ]
+                }
+              },
+              {
+                "type": "minecraft:condition",
+                "if_true": {
+                  "type": "minecraft:noise_threshold",
+                  "max_threshold": 4.0,
+                  "min_threshold": 0.26,
+                  "noise": "minecraft:calcite"
+                },
+                "then_run": {
+                  "type": "minecraft:block",
+                  "result_state": {
+                    "Name": "aether:holystone",
+                    "Properties": {
+                      "double_drops": "true"
+                    }
+                  }
+                }
+              },
+              {
+                "type": "minecraft:block",
+                "result_state": {
+                  "Name": "aether:icestone"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "type": "minecraft:condition",
+          "if_true": {
+            "type": "minecraft:biome",
+            "biome_is": [
+              "altered_aether:tempest_peaks"
+            ]
+          },
+          "then_run": {
+            "type": "minecraft:sequence",
+            "sequence": [
+              {
+                "type": "minecraft:condition",
+                "if_true": {
+                  "type": "minecraft:noise_threshold",
+                  "max_threshold": 4.0,
+                  "min_threshold": 0.18,
+                  "noise": "minecraft:surface_secondary"
+                },
+                "then_run": {
+                  "type": "minecraft:block",
+                  "result_state": {
+                    "Name": "minecraft:blackstone"
+                  }
+                }
+              },
+              {
+                "type": "minecraft:condition",
+                "if_true": {
+                  "type": "minecraft:noise_threshold",
+                  "max_threshold": 4.0,
+                  "min_threshold": 0.26,
+                  "noise": "minecraft:calcite"
+                },
+                "then_run": {
+                  "type": "minecraft:block",
+                  "result_state": {
+                    "Name": "aether:holystone",
+                    "Properties": {
+                      "double_drops": "true"
+                    }
+                  }
+                }
+              },
+              {
+                "type": "minecraft:block",
+                "result_state": {
+                  "Name": "minecraft:cobbled_deepslate"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "type": "minecraft:condition",
+          "if_true": {
+            "type": "minecraft:biome",
+            "biome_is": [
+              "altered_aether:shattered_rift"
+            ]
+          },
+          "then_run": {
+            "type": "minecraft:sequence",
+            "sequence": [
+              {
+                "type": "minecraft:condition",
+                "if_true": {
+                  "type": "minecraft:noise_threshold",
+                  "max_threshold": 4.0,
+                  "min_threshold": 0.18,
+                  "noise": "minecraft:surface_secondary"
+                },
+                "then_run": {
+                  "type": "minecraft:block",
+                  "result_state": {
+                    "Name": "aether:mossy_holystone",
+                    "Properties": {
+                      "double_drops": "true"
+                    }
+                  }
+                }
+              },
+              {
+                "type": "minecraft:block",
+                "result_state": {
+                  "Name": "aether:holystone",
+                  "Properties": {
+                    "double_drops": "true"
+                  }
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

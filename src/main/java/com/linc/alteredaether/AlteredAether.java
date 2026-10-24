@@ -18,15 +18,16 @@ import com.linc.alteredaether.config.AAClientConfig;
 import com.linc.alteredaether.config.AACommonConfig;
 import com.linc.alteredaether.registry.AARegistries;
 import com.linc.alteredaether.worldgen.region.AlteredRegion;
-import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
-import terrablender.api.Regions;
+import com.linc.alteredaether.worldgen.surface.AASurfaceRules;
 import com.mojang.logging.LogUtils;
 import net.minecraft.resources.ResourceLocation;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.config.ModConfig;
+import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
 import org.slf4j.Logger;
+import terrablender.api.Regions;
 
 @Mod(AlteredAether.MOD_ID)
 public final class AlteredAether {
@@ -46,6 +47,7 @@ public final class AlteredAether {
             if (weight > 0) {
                 Regions.register(new AlteredRegion(weight));
             }
+            AASurfaceRules.register();
         });
     }
 
