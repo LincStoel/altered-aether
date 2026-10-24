@@ -1,0 +1,15 @@
+{
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:mod_loaded",
+      "modid": "mowziesmobs"
+    }
+  ],
+  "type": "altered_aether:configured_spawns",
+  "biomes": "#aether:is_aether",
+  "category": "monster",
+  "max_count": 1,
+  "min_count": 1,
+  "mob": "naga",
+  "weight": 10
+}

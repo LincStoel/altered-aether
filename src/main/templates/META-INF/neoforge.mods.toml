@@ -36,3 +36,43 @@ type="required"
 versionRange="[1.0.0,)"
 ordering="AFTER"
 side="BOTH"
+
+# Optional integration: loading after it lets our Aether spawn rules attach to its own.
+[[dependencies."${mod_id}"]]
+modId="ars_nouveau"
+type="optional"
+versionRange="*"
+ordering="AFTER"
+side="BOTH"
+
+# Optional integration: loading after it lets our Aether spawn rules attach to its own.
+[[dependencies."${mod_id}"]]
+modId="ars_elemental"
+type="optional"
+versionRange="*"
+ordering="AFTER"
+side="BOTH"
+
+# Optional integration: loading after it lets our Aether spawn rules attach to its own.
+[[dependencies."${mod_id}"]]
+modId="snuffles"
+type="optional"
+versionRange="*"
+ordering="AFTER"
+side="BOTH"
+
+# Optional integration: loading after it lets our Aether spawn rules attach to its own.
+[[dependencies."${mod_id}"]]
+modId="deep_aether"
+type="optional"
+versionRange="*"
+ordering="AFTER"
+side="BOTH"
+
+# Optional integration: loading after it lets our Aether spawn rules attach to its own.
+[[dependencies."${mod_id}"]]
+modId="mowziesmobs"
+type="optional"
+versionRange="*"
+ordering="AFTER"
+side="BOTH"

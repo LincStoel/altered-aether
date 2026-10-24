@@ -1,0 +1,15 @@
+{
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:mod_loaded",
+      "modid": "ars_nouveau"
+    }
+  ],
+  "type": "altered_aether:configured_spawns",
+  "biomes": "altered_aether:flourishing_archwood_grove",
+  "category": "monster",
+  "max_count": 1,
+  "min_count": 1,
+  "mob": "wilden_hunter",
+  "weight": 2
+}

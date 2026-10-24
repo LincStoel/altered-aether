@@ -1,0 +1,14 @@
+{
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:mod_loaded",
+      "modid": "ars_nouveau"
+    }
+  ],
+  "type": "altered_aether:configured_spawns",
+  "biomes": "altered_aether:cascading_archwood_grove",
+  "max_count": 1,
+  "min_count": 1,
+  "mob": "cascading_weald_walker",
+  "weight": 2
+}

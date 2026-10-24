@@ -1,0 +1,14 @@
+{
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:mod_loaded",
+      "modid": "ars_nouveau"
+    }
+  ],
+  "type": "altered_aether:configured_spawns",
+  "biomes": "altered_aether:flourishing_archwood_grove",
+  "max_count": 2,
+  "min_count": 1,
+  "mob": "drygmy",
+  "weight": 4
+}

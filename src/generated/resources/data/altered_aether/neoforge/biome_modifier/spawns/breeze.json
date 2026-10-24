@@ -1,0 +1,9 @@
+{
+  "type": "altered_aether:configured_spawns",
+  "biomes": "#aether:is_aether",
+  "category": "monster",
+  "max_count": 3,
+  "min_count": 2,
+  "mob": "breeze",
+  "weight": 2
+}

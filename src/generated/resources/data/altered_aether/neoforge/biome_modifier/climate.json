@@ -1,0 +1,65 @@
+{
+  "type": "altered_aether:climate",
+  "climates": {
+    "aether:skyroot_forest": {
+      "downfall": 0.8,
+      "temperature": 0.65
+    },
+    "aether:skyroot_grove": {
+      "downfall": 0.8,
+      "temperature": -0.25
+    },
+    "aether:skyroot_meadow": {
+      "downfall": 0.8,
+      "temperature": 0.45
+    },
+    "aether:skyroot_woodland": {
+      "downfall": 0.8,
+      "temperature": 0.65
+    },
+    "deep_aether:aerglow_forest": {
+      "downfall": 0.8,
+      "temperature": 0.2
+    },
+    "deep_aether:aerlavender_fields": {
+      "downfall": 0.8,
+      "temperature": 0.45
+    },
+    "deep_aether:blue_aerglow_forest": {
+      "downfall": 0.8,
+      "temperature": 0.2
+    },
+    "deep_aether:cloud": {
+      "downfall": 0.5,
+      "temperature": 0.45
+    },
+    "deep_aether:golden_grove": {
+      "downfall": 0.65,
+      "temperature": 0.5
+    },
+    "deep_aether:golden_heights": {
+      "downfall": 0.3,
+      "temperature": 0.95
+    },
+    "deep_aether:luminescent_forest": {
+      "downfall": 0.9,
+      "temperature": 0.9
+    },
+    "deep_aether:mystic_aerglow_forest": {
+      "downfall": 0.8,
+      "temperature": 0.2
+    },
+    "deep_aether:overgrown_cloud": {
+      "downfall": 0.3,
+      "temperature": 0.95
+    },
+    "deep_aether:sacred_lands": {
+      "downfall": 0.8,
+      "temperature": 0.65
+    },
+    "deep_aether:yagroot_swamp": {
+      "downfall": 0.9,
+      "temperature": 0.75
+    }
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:mod_loaded",
+      "modid": "snuffles"
+    }
+  ],
+  "type": "altered_aether:configured_spawns",
+  "biomes": "altered_aether:frozen_crags",
+  "category": "creature",
+  "max_count": 4,
+  "min_count": 2,
+  "mob": "snuffle",
+  "weight": 14
+}

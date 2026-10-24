@@ -1,0 +1,19 @@
+{
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:mod_loaded",
+      "modid": "ars_nouveau"
+    },
+    {
+      "type": "neoforge:mod_loaded",
+      "modid": "deep_aether"
+    }
+  ],
+  "type": "altered_aether:configured_spawns",
+  "biomes": "deep_aether:yagroot_swamp",
+  "category": "monster",
+  "max_count": 1,
+  "min_count": 1,
+  "mob": "wilden_stalker",
+  "weight": 2
+}

@@ -1,0 +1,13 @@
+{
+  "replace": false,
+  "values": [
+    "aether:icestone",
+    "minecraft:snow_block",
+    "minecraft:ice",
+    "minecraft:packed_ice",
+    {
+      "id": "deep_aether:aether_coarse_dirt",
+      "required": false
+    }
+  ]
+}

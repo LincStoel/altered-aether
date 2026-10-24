@@ -41,6 +41,17 @@ neoForge {
             gameDirectory = layout.projectDirectory.dir("run-server")
             programArgument("--nogui")
         }
+        // Writes the mod's generated data (worldgen JSON, tags, lang, models) into src/generated/resources.
+        register("data") {
+            data()
+            gameDirectory = layout.projectDirectory.dir("run-data")
+            programArguments.addAll(
+                "--mod", property("mod_id") as String,
+                "--all",
+                "--output", file("src/generated/resources").absolutePath,
+                "--existing", file("src/main/resources").absolutePath,
+            )
+        }
         configureEach {
             systemProperty("forge.logging.markers", "REGISTRIES")
             logLevel = org.slf4j.event.Level.DEBUG
@@ -57,16 +68,55 @@ val devMods = fileTree("libs") { include("*.jar") }
 
 dependencies {
     compileOnly(devMods)
+
+    testImplementation(platform("org.junit:junit-bom:5.11.4"))
+    testImplementation("org.junit.jupiter:junit-jupiter")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 
+tasks.test {
+    useJUnitPlatform()
+}
+
+// Datagen output is committed and shipped like hand-written resources.
+sourceSets.main.get().resources {
+    srcDir("src/generated/resources")
+    exclude(".cache/")
+}
+
+// Optional mods the content integrates with (Ars Nouveau, Ars Elemental, Snuffles, and Ars Nouveau's dependencies
+// Curios and GeckoLib) live in libs/optional/ (not committed, not compiled against). -PoptionalMods picks which of them
+// go into a client or server run: "all" (the default), "none", or comma-separated jar name prefixes such as
+// -PoptionalMods=snuffles. Use it to test the mod both with and without each integration.
+val optionalJars = fileTree("libs/optional") { include("*.jar") }
+val optionalSelection = (findProperty("optionalMods") as String?) ?: "all"
+val selectedOptionalJars: FileCollection = when (optionalSelection) {
+    "all" -> optionalJars
+    "none" -> files()
+    else -> {
+        val prefixes = optionalSelection.split(',').map { it.trim() }
+        optionalJars.filter { jar -> prefixes.any { jar.name.startsWith(it) } }
+    }
+}
+val optionalJarNames = optionalJars.files.map { it.name }
+
 // Adds libs/ to the run's mods folder before each run. A copy rather than a sync, so other mods dropped into
-// run/mods by hand for play-testing are left alone.
-for ((run, dir) in listOf("Client" to "run", "Server" to "run-server")) {
+// run/mods by hand for play-testing are left alone; only optional jars that weren't selected are removed first.
+for ((run, dir) in listOf("Client" to "run", "Server" to "run-server", "Data" to "run-data")) {
+    val modsDir = layout.projectDirectory.dir("$dir/mods").asFile
+    val withOptional = run != "Data"
+    val optionalNames = optionalJarNames.toList()
     val copy = tasks.register<Copy>("copy${run}DevMods") {
         group = "mod development"
-        description = "Copies the mods in libs/ into $dir/mods."
+        description = "Copies the mods in libs/ (and the selected libs/optional/ mods) into $dir/mods."
         from(devMods)
-        into(layout.projectDirectory.dir("$dir/mods"))
+        if (withOptional) {
+            from(selectedOptionalJars)
+        }
+        into(modsDir)
+        doFirst {
+            optionalNames.forEach { modsDir.resolve(it).delete() }
+        }
     }
     tasks.configureEach {
         if (name == "run$run") {
