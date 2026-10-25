@@ -31,7 +31,9 @@
   "features": [
     [],
     [],
-    [],
+    [
+      "altered_aether:boulder/dune"
+    ],
     [],
     [],
     [],

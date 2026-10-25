@@ -21,7 +21,9 @@
       "aether:quicksoil_shelf"
     ],
     [],
-    [],
+    [
+      "altered_aether:boulder/plateau"
+    ],
     [],
     [],
     [],

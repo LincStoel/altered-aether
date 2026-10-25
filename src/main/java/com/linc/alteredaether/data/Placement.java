@@ -57,6 +57,60 @@ final class Placement {
         return json;
     }
 
+    /** One candidate per cell of {@code cellChunks} chunks, in a chunk chosen by the seed (see JitteredGrid). */
+    static JsonObject jitteredGrid(int cellChunks, int salt, double chance) {
+        JsonObject json = type("altered_aether:jittered_grid");
+        json.addProperty("cell_chunks", cellChunks);
+        json.addProperty("salt", salt);
+        json.addProperty("chance", chance);
+        return json;
+    }
+
+    /** Thins positions out toward the edge of their biome (see BiomeEdgeFalloff). */
+    static JsonObject biomeEdgeFalloff(int distance, double minKeep) {
+        JsonObject json = type("altered_aether:biome_edge_falloff");
+        json.addProperty("distance", distance);
+        json.addProperty("min_keep", minKeep);
+        return json;
+    }
+
+    /** Moves to the air block under a ledge above (see Overhang). */
+    static JsonObject overhang(int search, int clearance) {
+        JsonObject json = type("altered_aether:overhang");
+        json.addProperty("search", search);
+        json.addProperty("clearance", clearance);
+        return json;
+    }
+
+    /** A random offset of up to {@code xz} blocks sideways and between {@code yMin} and {@code yMax} vertically. */
+    static JsonObject randomOffset(int xz, int yMin, int yMax) {
+        JsonObject json = type("minecraft:random_offset");
+        json.add("xz_spread", uniform(-xz, xz));
+        json.add("y_spread", uniform(yMin, yMax));
+        return json;
+    }
+
+    /** A height from {@code above_bottom} offsets, uniform. */
+    static JsonObject heightRange(int minAboveBottom, int maxAboveBottom) {
+        JsonObject json = type("minecraft:height_range");
+        JsonObject range = type("minecraft:uniform");
+        JsonObject min = new JsonObject();
+        min.addProperty("above_bottom", minAboveBottom);
+        JsonObject max = new JsonObject();
+        max.addProperty("above_bottom", maxAboveBottom);
+        range.add("min_inclusive", min);
+        range.add("max_inclusive", max);
+        json.add("height", range);
+        return json;
+    }
+
+    static JsonObject uniform(int min, int max) {
+        JsonObject json = type("minecraft:uniform");
+        json.addProperty("min_inclusive", min);
+        json.addProperty("max_inclusive", max);
+        return json;
+    }
+
     static JsonObject inSquare() {
         return type("minecraft:in_square");
     }

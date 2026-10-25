@@ -1,0 +1,42 @@
+{
+  "type": "altered_aether:boulder",
+  "config": {
+    "burial": 0.25,
+    "floating": false,
+    "radius": {
+      "type": "minecraft:uniform",
+      "max_inclusive": 5,
+      "min_inclusive": 2
+    },
+    "squash": 0.8,
+    "state": {
+      "type": "minecraft:weighted_state_provider",
+      "entries": [
+        {
+          "data": {
+            "Name": "aether:icestone"
+          },
+          "weight": 6
+        },
+        {
+          "data": {
+            "Name": "minecraft:packed_ice"
+          },
+          "weight": 1
+        },
+        {
+          "data": {
+            "Name": "minecraft:blue_ice"
+          },
+          "weight": 1
+        }
+      ]
+    },
+    "top_cover": {
+      "type": "minecraft:simple_state_provider",
+      "state": {
+        "Name": "minecraft:snow_block"
+      }
+    }
+  }
+}

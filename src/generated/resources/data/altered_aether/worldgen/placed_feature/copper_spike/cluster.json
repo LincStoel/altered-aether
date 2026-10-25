@@ -1,0 +1,39 @@
+{
+  "feature": "altered_aether:copper_spike/cluster",
+  "placement": [
+    {
+      "type": "altered_aether:jittered_grid",
+      "cell_chunks": 4,
+      "chance": 0.8,
+      "salt": 11
+    },
+    {
+      "type": "minecraft:in_square"
+    },
+    {
+      "type": "altered_aether:config_count",
+      "count": 4.0,
+      "key": "copper_spikes"
+    },
+    {
+      "type": "minecraft:random_offset",
+      "xz_spread": {
+        "type": "minecraft:uniform",
+        "max_inclusive": 3,
+        "min_inclusive": -3
+      },
+      "y_spread": {
+        "type": "minecraft:uniform",
+        "max_inclusive": 0,
+        "min_inclusive": 0
+      }
+    },
+    {
+      "type": "minecraft:heightmap",
+      "heightmap": "WORLD_SURFACE_WG"
+    },
+    {
+      "type": "minecraft:biome"
+    }
+  ]
+}

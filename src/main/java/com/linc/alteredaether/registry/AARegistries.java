@@ -19,9 +19,14 @@ import com.linc.alteredaether.worldgen.density.Atoll;
 import com.linc.alteredaether.worldgen.density.BasinCarve;
 import com.linc.alteredaether.worldgen.density.ConfigValue;
 import com.linc.alteredaether.worldgen.feature.BasinFillFeature;
+import com.linc.alteredaether.worldgen.feature.BoulderFeature;
+import com.linc.alteredaether.worldgen.feature.CopperSpikeFeature;
 import com.linc.alteredaether.worldgen.feature.EdgeSpringFeature;
 import com.linc.alteredaether.worldgen.placement.ConfigCount;
+import com.linc.alteredaether.worldgen.placement.BiomeEdgeFalloff;
 import com.linc.alteredaether.worldgen.placement.IslandEdge;
+import com.linc.alteredaether.worldgen.placement.JitteredGrid;
+import com.linc.alteredaether.worldgen.placement.Overhang;
 import com.linc.alteredaether.worldgen.density.RegionMask;
 import com.linc.alteredaether.worldgen.density.ShiftY;
 import com.linc.alteredaether.worldgen.density.Terrace;
@@ -88,6 +93,10 @@ public final class AARegistries {
             FEATURES.register("basin_fill", BasinFillFeature::new);
     public static final DeferredHolder<Feature<?>, EdgeSpringFeature> EDGE_SPRING =
             FEATURES.register("edge_spring", EdgeSpringFeature::new);
+    public static final DeferredHolder<Feature<?>, BoulderFeature> BOULDER =
+            FEATURES.register("boulder", BoulderFeature::new);
+    public static final DeferredHolder<Feature<?>, CopperSpikeFeature> COPPER_SPIKE =
+            FEATURES.register("copper_spike", CopperSpikeFeature::new);
 
     public static final DeferredRegister<PlacementModifierType<?>> PLACEMENT_MODIFIERS =
             DeferredRegister.create(Registries.PLACEMENT_MODIFIER_TYPE, AlteredAether.MOD_ID);
@@ -96,6 +105,12 @@ public final class AARegistries {
             PLACEMENT_MODIFIERS.register("config_count", () -> () -> ConfigCount.CODEC);
     public static final DeferredHolder<PlacementModifierType<?>, PlacementModifierType<IslandEdge>> ISLAND_EDGE =
             PLACEMENT_MODIFIERS.register("island_edge", () -> () -> IslandEdge.CODEC);
+    public static final DeferredHolder<PlacementModifierType<?>, PlacementModifierType<JitteredGrid>> JITTERED_GRID =
+            PLACEMENT_MODIFIERS.register("jittered_grid", () -> () -> JitteredGrid.CODEC);
+    public static final DeferredHolder<PlacementModifierType<?>, PlacementModifierType<BiomeEdgeFalloff>> BIOME_EDGE_FALLOFF =
+            PLACEMENT_MODIFIERS.register("biome_edge_falloff", () -> () -> BiomeEdgeFalloff.CODEC);
+    public static final DeferredHolder<PlacementModifierType<?>, PlacementModifierType<Overhang>> OVERHANG =
+            PLACEMENT_MODIFIERS.register("overhang", () -> () -> Overhang.CODEC);
 
     public static final DeferredRegister<MapCodec<? extends SurfaceRules.ConditionSource>> SURFACE_CONDITIONS =
             DeferredRegister.create(Registries.MATERIAL_CONDITION, AlteredAether.MOD_ID);

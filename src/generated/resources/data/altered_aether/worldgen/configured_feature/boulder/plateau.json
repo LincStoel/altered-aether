@@ -1,0 +1,42 @@
+{
+  "type": "altered_aether:boulder",
+  "config": {
+    "burial": 0.3,
+    "floating": false,
+    "radius": {
+      "type": "minecraft:uniform",
+      "max_inclusive": 4,
+      "min_inclusive": 2
+    },
+    "squash": 0.7,
+    "state": {
+      "type": "minecraft:weighted_state_provider",
+      "entries": [
+        {
+          "data": {
+            "Name": "aether:holystone",
+            "Properties": {
+              "double_drops": "true"
+            }
+          },
+          "weight": 4
+        },
+        {
+          "data": {
+            "Name": "aether:mossy_holystone",
+            "Properties": {
+              "double_drops": "true"
+            }
+          },
+          "weight": 3
+        },
+        {
+          "data": {
+            "Name": "aether:icestone"
+          },
+          "weight": 1
+        }
+      ]
+    }
+  }
+}

@@ -25,7 +25,10 @@
   "features": [
     [],
     [],
-    [],
+    [
+      "altered_aether:boulder/crag",
+      "altered_aether:boulder/ambrosium"
+    ],
     [],
     [],
     [],

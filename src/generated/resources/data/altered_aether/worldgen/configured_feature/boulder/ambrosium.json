@@ -1,0 +1,19 @@
+{
+  "type": "altered_aether:boulder",
+  "config": {
+    "burial": 0.35,
+    "floating": false,
+    "radius": {
+      "type": "minecraft:uniform",
+      "max_inclusive": 3,
+      "min_inclusive": 1
+    },
+    "squash": 0.8,
+    "state": {
+      "type": "minecraft:simple_state_provider",
+      "state": {
+        "Name": "aether:ambrosium_block"
+      }
+    }
+  }
+}

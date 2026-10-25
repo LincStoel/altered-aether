@@ -167,6 +167,7 @@ public final class DebugCommands {
                     generated, chunks.size(), String.format("%.2f", seconds),
                     String.format("%.1f", seconds * 1000 / Math.max(1, generated)));
             server.submit(() -> surfaceTally(aether, positions)).join();
+            server.submit(() -> decorationTally(aether, positions)).join();
             // Long enough for freshly placed water to tick: any basin that leaks shows up as flowing water.
             try {
                 Thread.sleep(8000);
@@ -181,6 +182,53 @@ public final class DebugCommands {
             }
             server.halt(false);
         }, server);
+    }
+
+    /** Blocks that mark this mod's decoration; counted per biome by decorationTally. */
+    private static final java.util.Set<String> MARKERS = java.util.Set.of(
+            "minecraft:copper_block", "minecraft:exposed_copper", "minecraft:weathered_copper",
+            "minecraft:oxidized_copper", "minecraft:lightning_rod", "aether:ambrosium_block", "minecraft:blue_ice",
+            "minecraft:packed_ice", "minecraft:snow", "aether:aerogel", "minecraft:chain", "aether:ambrosium_ore",
+            "aether:zanite_ore", "aether:gravitite_ore", "minecraft:iron_ore", "create:deepslate_zinc_ore",
+            "altered_aether:ambrosium_campfire", "deep_aether:skyjade_block", "dried_ghast:dried_ghast",
+            "deep_aether:moa_totem", "deep_aether:zephyr_totem", "deep_aether:aerwhale_totem",
+            "aether:cold_aercloud", "aether:blue_aercloud", "aether:golden_aercloud",
+            "deep_aether:sterling_aercloud", "oreganized:silver_ore");
+
+    /**
+     * Counts the marker blocks per biome over the given chunks, and every entity by type. Boulders and the like have
+     * no marker of their own: they show in the surface tally instead.
+     */
+    private static void decorationTally(ServerLevel level, List<ChunkPos> positions) {
+        Map<String, Map<String, Integer>> byBiome = new TreeMap<>();
+        BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
+        for (ChunkPos chunk : positions) {
+            for (int x = chunk.getMinBlockX(); x <= chunk.getMaxBlockX(); x++) {
+                for (int z = chunk.getMinBlockZ(); z <= chunk.getMaxBlockZ(); z++) {
+                    String biome = null;
+                    for (int y = level.getMinBuildHeight(); y < level.getMaxBuildHeight(); y++) {
+                        var state = level.getBlockState(cursor.set(x, y, z));
+                        if (state.isAir()) {
+                            continue;
+                        }
+                        String id = BuiltInRegistries.BLOCK.getKey(state.getBlock()).toString();
+                        if (MARKERS.contains(id)) {
+                            if (biome == null) {
+                                biome = level.getBiome(cursor).unwrapKey().map(k -> k.location().getPath()).orElse("?");
+                            }
+                            byBiome.computeIfAbsent(biome, k -> new TreeMap<>()).merge(id.substring(id.indexOf(':') + 1), 1,
+                                    Integer::sum);
+                        }
+                    }
+                }
+            }
+        }
+        byBiome.forEach((biome, blocks) -> AlteredAether.LOGGER.info("Decoration {}: {}", biome, blocks));
+        Map<String, Integer> entities = new TreeMap<>();
+        level.getAllEntities().forEach(entity -> entities.merge(
+                BuiltInRegistries.ENTITY_TYPE.getKey(entity.getType()).toString(), 1, Integer::sum));
+        AlteredAether.LOGGER.info("Entities: {}", entities);
+        AlteredAether.LOGGER.info("Features placed: {}", com.linc.alteredaether.worldgen.feature.FeatureStats.snapshot());
     }
 
     /** The basins over the given chunks, the water they hold, and any water that has since started to flow. */

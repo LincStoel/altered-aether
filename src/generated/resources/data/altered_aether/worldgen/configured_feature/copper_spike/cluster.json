@@ -1,0 +1,29 @@
+{
+  "type": "altered_aether:copper_spike",
+  "config": {
+    "base_radius": 2.4,
+    "blocks": [
+      {
+        "Name": "minecraft:copper_block"
+      },
+      {
+        "Name": "minecraft:exposed_copper"
+      },
+      {
+        "Name": "minecraft:weathered_copper"
+      },
+      {
+        "Name": "minecraft:oxidized_copper"
+      }
+    ],
+    "branch_chance": 0.15,
+    "height": {
+      "type": "minecraft:uniform",
+      "max_inclusive": 24,
+      "min_inclusive": 8
+    },
+    "lean": 0.28,
+    "rod_chance": 0.55,
+    "taper": 1.4
+  }
+}

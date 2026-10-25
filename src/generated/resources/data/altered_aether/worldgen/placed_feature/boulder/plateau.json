@@ -1,0 +1,20 @@
+{
+  "feature": "altered_aether:boulder/plateau",
+  "placement": [
+    {
+      "type": "altered_aether:config_count",
+      "count": 0.1,
+      "key": "boulders"
+    },
+    {
+      "type": "minecraft:in_square"
+    },
+    {
+      "type": "minecraft:heightmap",
+      "heightmap": "WORLD_SURFACE_WG"
+    },
+    {
+      "type": "minecraft:biome"
+    }
+  ]
+}

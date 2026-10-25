@@ -25,7 +25,10 @@
   "features": [
     [],
     [],
-    [],
+    [
+      "altered_aether:copper_spike/cluster",
+      "altered_aether:copper_spike/lone"
+    ],
     [],
     [],
     [],

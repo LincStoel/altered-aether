@@ -1,0 +1,45 @@
+{
+  "type": "altered_aether:boulder",
+  "config": {
+    "burial": 0.35,
+    "floating": false,
+    "radius": {
+      "type": "minecraft:uniform",
+      "max_inclusive": 4,
+      "min_inclusive": 2
+    },
+    "squash": 0.6,
+    "state": {
+      "type": "minecraft:weighted_state_provider",
+      "entries": [
+        {
+          "data": {
+            "Name": "aether:quicksoil",
+            "Properties": {
+              "double_drops": "true"
+            }
+          },
+          "weight": 5
+        },
+        {
+          "data": {
+            "Name": "aether:aether_dirt",
+            "Properties": {
+              "double_drops": "true"
+            }
+          },
+          "weight": 2
+        },
+        {
+          "data": {
+            "Name": "aether:holystone",
+            "Properties": {
+              "double_drops": "true"
+            }
+          },
+          "weight": 1
+        }
+      ]
+    }
+  }
+}
