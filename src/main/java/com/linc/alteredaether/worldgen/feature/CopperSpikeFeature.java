@@ -131,8 +131,9 @@ public final class CopperSpikeFeature extends Feature<CopperSpikeFeature.Config>
                 continue;
             }
             double t = entry.getValue();
-            int index = (int) Math.round(top * (1 - t) * 0.85 + (random.nextDouble() - 0.5) * 0.9);
-            if (!shape.containsKey(pos.above())) {
+            // Oxidation gathers low down: most of a spire is still bright, its base and roots green.
+            int index = (int) Math.round(top * Math.pow(1 - t, 1.6) * 0.95 + (random.nextDouble() - 0.5) * 0.9);
+            if (t < 0.5 && !shape.containsKey(pos.above())) {
                 index++;
             }
             if (t > 0.9) {

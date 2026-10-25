@@ -57,6 +57,12 @@ neoForge {
             // centred on "landmark:<type>" goes to the nearest landmark of that type.
             systemProperty("altered_aether.render", (findProperty("aaRender") as String?) ?: "false")
         }
+        // Runs this mod's GameTests (see the gametest package) on a headless server and exits with their result.
+        register("gameTestServer") {
+            type = "gameTestServer"
+            gameDirectory = layout.projectDirectory.dir("run-gametest")
+            systemProperty("neoforge.enabledGameTestNamespaces", property("mod_id") as String)
+        }
         // Writes the mod's generated data (worldgen JSON, tags, lang, models) into src/generated/resources.
         register("data") {
             data()
@@ -118,7 +124,8 @@ val optionalJarNames = optionalJars.files.map { it.name }
 
 // Adds libs/ to the run's mods folder before each run. A copy rather than a sync, so other mods dropped into
 // run/mods by hand for play-testing are left alone; only optional jars that weren't selected are removed first.
-for ((run, dir) in listOf("Client" to "run", "Server" to "run-server", "Data" to "run-data")) {
+for ((run, dir) in listOf("Client" to "run", "Server" to "run-server", "Data" to "run-data",
+        "GameTestServer" to "run-gametest")) {
     val modsDir = layout.projectDirectory.dir("$dir/mods").asFile
     val withOptional = run != "Data"
     val optionalNames = optionalJarNames.toList()

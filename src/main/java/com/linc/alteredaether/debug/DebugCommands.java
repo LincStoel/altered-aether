@@ -75,11 +75,53 @@ public final class DebugCommands {
                                 .then(Commands.argument("step", IntegerArgumentType.integer(1, 1024))
                                         .executes(ctx -> report(ctx, IntegerArgumentType.getInteger(ctx, "radius"),
                                                 IntegerArgumentType.getInteger(ctx, "step"))))))
+                .then(Commands.literal("debug").executes(DebugCommands::here))
                 .then(Commands.literal("landmark")
                         .then(Commands.argument("type", StringArgumentType.word())
                                 .suggests((ctx, builder) -> SharedSuggestionProvider.suggest(
                                         java.util.Arrays.stream(LandmarkType.values()).map(LandmarkType::id), builder))
                                 .executes(DebugCommands::landmark))));
+    }
+
+    /**
+     * {@code /altered_aether debug}: what the worldgen thinks of the caller's position. The biome and the climate
+     * point that chose it, the region mask, the basin and landmark there if any, and the storm.
+     */
+    private static int here(CommandContext<CommandSourceStack> ctx) {
+        CommandSourceStack source = ctx.getSource();
+        ServerLevel level = source.getLevel();
+        BlockPos pos = BlockPos.containing(source.getPosition());
+        List<String> lines = new ArrayList<>();
+        lines.add("Biome " + level.getBiome(pos).unwrapKey().map(k -> k.location().toString()).orElse("?"));
+        var sampler = level.getChunkSource().randomState().sampler();
+        var point = sampler.sample(net.minecraft.core.QuartPos.fromBlock(pos.getX()),
+                net.minecraft.core.QuartPos.fromBlock(pos.getY()), net.minecraft.core.QuartPos.fromBlock(pos.getZ()));
+        lines.add(String.format("Climate: temperature %.2f, humidity %.2f, continents %.2f, erosion %.2f, weirdness %.2f",
+                net.minecraft.world.level.biome.Climate.unquantizeCoord(point.temperature()),
+                net.minecraft.world.level.biome.Climate.unquantizeCoord(point.humidity()),
+                net.minecraft.world.level.biome.Climate.unquantizeCoord(point.continentalness()),
+                net.minecraft.world.level.biome.Climate.unquantizeCoord(point.erosion()),
+                net.minecraft.world.level.biome.Climate.unquantizeCoord(point.weirdness())));
+        lines.add(String.format("Region mask %.3f (1 inside Altered Aether's region)",
+                com.linc.alteredaether.worldgen.density.RegionBinding.maskAt(level, pos.getX(), pos.getZ())));
+        BasinField basins = BasinField.get(level.dimension());
+        if (basins != null) {
+            List<BasinSite> sites = basins.sitesTouching(pos.getX(), pos.getZ(), pos.getX(), pos.getZ());
+            sites.stream().filter(site -> site.reach(pos.getX(), pos.getZ()) < 1.5).forEach(site -> lines.add(
+                    String.format("Basin: %s centred %d %d, radius %.1f, water at %d", site.type().name().toLowerCase(),
+                            site.x(), site.z(), site.radius(), site.waterLevel())));
+        }
+        LandmarkField landmarks = LandmarkField.get(level.dimension());
+        if (landmarks != null) {
+            landmarks.touching(pos.getX(), pos.getZ(), pos.getX(), pos.getZ()).forEach(site -> lines.add(String.format(
+                    "Landmark: %s centred %d %d, %.0f blocks away", site.type().id(), site.x(), site.z(),
+                    Math.hypot(site.x() - pos.getX(), site.z() - pos.getZ()))));
+        }
+        boolean stormy = level.getBiome(pos).is(com.linc.alteredaether.AATags.HAS_STORMS);
+        lines.add(String.format("Storm intensity %.2f%s", com.linc.alteredaether.storm.TempestStorms.intensityAt(level,
+                pos.getX(), pos.getZ()), stormy ? "" : " (no storms in this biome)"));
+        lines.forEach(line -> source.sendSuccess(() -> Component.literal(line), false));
+        return 1;
     }
 
     /** {@code /altered_aether landmark <type>}: the nearest landmark of a type, with a link to go and see it. */
@@ -234,6 +276,11 @@ public final class DebugCommands {
             }
             server.submit(() -> basinTally(aether, positions)).join();
             server.submit(() -> landmarkTally(aether, positions)).join();
+            // The debug command at the centre, so its output can be checked headlessly.
+            BlockPos centrePos = origin.atY(aether.getHeight(Heightmap.Types.MOTION_BLOCKING, origin.getX(), origin.getZ()));
+            server.submit(() -> server.getCommands().performPrefixedCommand(server.createCommandSourceStack()
+                    .withLevel(aether).withPosition(net.minecraft.world.phys.Vec3.atCenterOf(centrePos)),
+                    AlteredAether.MOD_ID + " debug")).join();
             if (Boolean.getBoolean("altered_aether.render")) {
                 ChunkPos first = positions.getFirst(), last = positions.getLast();
                 String name = biome == null ? "bench" : biome.replace(':', '_');

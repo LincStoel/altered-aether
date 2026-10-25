@@ -1,4 +1,4 @@
-// 1.21.1	2026-10-24T20:40:24.0097834	Altered Aether decoration
+// 1.21.1	2026-10-24T23:00:27.1027839	Altered Aether decoration
 cb17e24b40f7ff98f99e1958e007f11b758825a6 data/altered_aether/neoforge/biome_modifier/decoration/cloud_mass.json
 5d35db4334f44aaf1c1584843fbd2c02fcad39b6 data/altered_aether/neoforge/biome_modifier/decoration/spawn_fire_minion.json
 9a362299e9020a5cf59caa96ca8a3357b73d8a9f data/altered_aether/neoforge/biome_modifier/decoration/spawn_sentry.json
@@ -40,7 +40,7 @@ b0274abeea50812387c82ddeda459fe774b1ef94 data/altered_aether/worldgen/placed_fea
 f90afbbf66865ef7302392d30fd374ef6db94785 data/altered_aether/worldgen/placed_feature/boulder/clorite.json
 d7297c0daf7ad0af2e4b19c924b4ed4db0c1ba4d data/altered_aether/worldgen/placed_feature/boulder/crag.json
 9785d5ec193e9e72fa4c3d2552c33456ebd3c400 data/altered_aether/worldgen/placed_feature/boulder/dune.json
-f07b806fa4819f8c13d97bf8144bf98679e47b4b data/altered_aether/worldgen/placed_feature/boulder/plateau.json
+32300ec47fe5a6bcdd26e3a6063ff873083867be data/altered_aether/worldgen/placed_feature/boulder/plateau.json
 3f38b90dc851c133beba1f3cab3df99e4fca82e1 data/altered_aether/worldgen/placed_feature/camp/crag_campfire.json
 0ae3e884750f0e8c8eae5b3f45c8482b179542b9 data/altered_aether/worldgen/placed_feature/cloud/crag.json
 362dfbd780d4e2ec2407e3083f5b79bc66fcb0f3 data/altered_aether/worldgen/placed_feature/cloud/golden_high.json
@@ -48,7 +48,7 @@ f07b806fa4819f8c13d97bf8144bf98679e47b4b data/altered_aether/worldgen/placed_fea
 03d976504cb604797586f3e999ba47528e7f481b data/altered_aether/worldgen/placed_feature/cloud/mass.json
 ff5745813e913b448feb49d577983ad7b4a712e5 data/altered_aether/worldgen/placed_feature/cloud/plateau.json
 1272d0b2923dd04664bc632bb492882bf2d547ea data/altered_aether/worldgen/placed_feature/cloud/plateau_golden.json
-56ffebb9006ccf4d5e585230cc7ccbc82e2a3609 data/altered_aether/worldgen/placed_feature/cloud/rift_bridge.json
+1df37d90ef96ffdfbd82c1b1ecae559f77dac61a data/altered_aether/worldgen/placed_feature/cloud/rift_bridge.json
 b923c6129c63369d00ca4ba81aecb28fd0795fb2 data/altered_aether/worldgen/placed_feature/cloud/rift_strand.json
 08b03c462312762b1be19c84254e98f92a24b01b data/altered_aether/worldgen/placed_feature/cloud/tempest.json
 df38e0cedf995e7fa6673bc2387d26f80c5053e8 data/altered_aether/worldgen/placed_feature/copper_spike/cluster.json
@@ -66,7 +66,7 @@ ff17f23078bc19faed1a49430e6eae9ae2358837 data/altered_aether/worldgen/placed_fea
 c574538278c14df83ee40ccc1d897e5ca8087130 data/altered_aether/worldgen/placed_feature/ore/crag_zanite.json
 b19e941133df919280d4d2b00343ef202d00d246 data/altered_aether/worldgen/placed_feature/ore/tempest_copper.json
 8e84f55cf03fe3b022f963ebadebdcacff174afd data/altered_aether/worldgen/placed_feature/ruin/dune.json
-d4f57b9d5830f5acaca6ac5fc89087a7d89db014 data/altered_aether/worldgen/placed_feature/ruin/plateau.json
+bebdb7d4ed51434cb0d8d204d66031a7bfac6390 data/altered_aether/worldgen/placed_feature/ruin/plateau.json
 d9d91497182475347fa73d6ce33c088469514b8a data/altered_aether/worldgen/placed_feature/ruin/skyjade_pillar.json
 41ee45e2efc31f2081d6fa35d909a6353aa14866 data/altered_aether/worldgen/placed_feature/shard/icestone.json
 23abd743fa80f2dff3950a3c528b430291686479 data/altered_aether/worldgen/placed_feature/spawn/fire_minion.json

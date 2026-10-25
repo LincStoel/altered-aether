@@ -15,6 +15,7 @@
 package com.linc.alteredaether.data;
 
 import com.google.gson.JsonObject;
+import com.linc.alteredaether.AlteredAether;
 import net.minecraft.data.PackOutput;
 
 import java.util.ArrayList;
@@ -112,8 +113,15 @@ public final class AACompatProvider extends FeatureData {
      * also Ars Nouveau, and {@code deepAether} also Deep Aether.
      */
     private void curate(Ore ore, List<List<String>> own, List<List<String>> groves, List<List<String>> deepAether) {
+        // Ores placed in the crags and peaks must also replace their rock, not only holystone. Both tags include
+        // holystone, so the same ore still forms in the plateau and the groves.
+        String replaces = switch (ore.name()) {
+            case "copper" -> AlteredAether.MOD_ID + ":tempest_peak_ore_replaceables";
+            case "lapis", "zinc" -> AlteredAether.MOD_ID + ":frozen_crag_ore_replaceables";
+            default -> HOLYSTONE;
+        };
         configured("compat/aoo_" + ore.name(), "minecraft:ore", FeatureData.ore(ore.state(), ore.size(), ore.discard(),
-                HOLYSTONE), AOO);
+                replaces), AOO);
         placed("compat/aoo_" + ore.name(), "compat/aoo_" + ore.name(), Placement.list(Placement.count(ore.count()),
                 Placement.inSquare(), Placement.heightRange(ore.shape(), ore.min(), ore.max()), Placement.biome()), AOO);
         String name = "compat/aoo_" + ore.name();

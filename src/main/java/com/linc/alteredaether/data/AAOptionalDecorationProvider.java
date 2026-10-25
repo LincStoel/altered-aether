@@ -76,18 +76,20 @@ public final class AAOptionalDecorationProvider extends FeatureData {
         // the same placed feature; the flashing grove only exists with Ars Elemental, so it has its own modifier
         addFeature("totem/flashing", "totem/grove", biomes(groves("flashing").toArray(String[]::new)),
                 "vegetal_decoration", "deep_aether", "ars_nouveau", "ars_elemental");
+        // and the odd one standing on the rift's slabs, as in the old pack
+        addFeature("totem/rift", "totem/grove", biomes("shattered_rift"), "vegetal_decoration", "deep_aether");
 
         squash("cascading", "deep_aether:carved_blue_squash");
         squash("flourishing", "deep_aether:carved_green_squash");
         squash("vexing", "deep_aether:carved_purple_squash");
 
-        // Blue squash, growing wild on the crags' patches of bare ground.
+        // Blue squash, growing wild on the crags' and the rift's patches of bare ground.
         configured("squash/frozen_blue", "minecraft:random_patch",
                 patch(24, 6, 2, simple("deep_aether:blue_squash"), airOnTag(DIRT)), "deep_aether");
         placed("squash/frozen_blue", "squash/frozen_blue", Placement.list(
                 Placement.configCount(1 / 10.0, "vegetation"), Placement.inSquare(),
                 Placement.heightmap("MOTION_BLOCKING"), Placement.biome()), "deep_aether");
-        addFeature("squash/frozen_blue", biomes("frozen_crags"), "vegetal_decoration", "deep_aether");
+        addFeature("squash/frozen_blue", biomes("frozen_crags", "shattered_rift"), "vegetal_decoration", "deep_aether");
 
         // Sparse blue roseroot trees: Deep Aether's own selector tests whether the sapling would survive, which lands
         // the trees on the crags' patches of bare soil and nowhere else, so they read as lone trees in the snow.

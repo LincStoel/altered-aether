@@ -46,6 +46,7 @@ run/
 run-server/
 runs/
 run-data/
+run-gametest/
 .idea/workspace.xml
 
 ### Dependency mods, copied from the CurseForge instance ###

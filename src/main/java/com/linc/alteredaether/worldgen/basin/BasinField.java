@@ -246,10 +246,12 @@ public final class BasinField {
             return reject("no_ground");
         }
         // The rim, just outside the shore all the way round, sets the water level: one block under its lowest point.
-        // The water may sit at most 5 below the centre (no hill in the middle) and 9 below the highest rim (no cliff
+        // The water may sit at most 5 below the centre (no hill in the middle) and 9 below the highest rim, 12 for tarns (no cliff
         // left hanging over the bank cone), so the search stops as soon as either is out of reach. Compass points
         // go first: on a slope they fail soonest.
         int lowest = Integer.MAX_VALUE, highest = Integer.MIN_VALUE;
+        // Mountain tarns may sit under a taller back wall: the crags are mostly slope, and the bank cone clears 12.
+        int hill = type == BasinType.FROZEN_POOL ? 12 : 9;
         int[] rimX = new int[16], rimZ = new int[16];
         for (int i = 0; i < 16; i++) {
             int d = RIM_ORDER[i];
@@ -257,13 +259,13 @@ public final class BasinField {
             double r = radius * BasinSite.wobble(angle, phase1, phase2) + 3;
             rimX[d] = x + (int) Math.round(Math.cos(angle) * r);
             rimZ[d] = z + (int) Math.round(Math.sin(angle) * r);
-            int top = surfaceNear(rimX[d], rimZ[d], centre, centre - 5, centre + 10);
+            int top = surfaceNear(rimX[d], rimZ[d], centre, centre - 5, centre + hill + 1);
             if (top == Integer.MIN_VALUE) {
                 return reject("no_rim");
             }
             lowest = Math.min(lowest, top);
             highest = Math.max(highest, top);
-            if (highest - (lowest - 1) > 9) {
+            if (highest - (lowest - 1) > hill) {
                 return reject("hill");
             }
         }

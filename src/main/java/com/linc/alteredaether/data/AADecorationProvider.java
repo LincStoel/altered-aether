@@ -101,7 +101,8 @@ public final class AADecorationProvider extends FeatureData {
         boulder("dune", weighted("aether:quicksoil[double_drops=true]", 5, "aether:aether_dirt[double_drops=true]", 2,
                 "aether:holystone[double_drops=true]", 1), 2, 4, 0.6, 0.35, null, false);
 
-        placed("boulder/plateau", "boulder/plateau", surface(1 / 10.0, "boulders"));
+        // Tuned up in the awe pass: at 1 in 10 the plateau read as bare (2 boulders in 360 chunks of benches).
+        placed("boulder/plateau", "boulder/plateau", surface(1 / 4.0, "boulders"));
         placed("boulder/crag", "boulder/crag", surface(1 / 5.0, "boulders"));
         placed("boulder/ambrosium", "boulder/ambrosium", surface(1 / 16.0, "boulders"));
         placed("boulder/dune", "boulder/dune", surface(1 / 12.0, "boulders"));
@@ -186,7 +187,7 @@ public final class AADecorationProvider extends FeatureData {
         pillar("plateau", stone, plinth, 3, 8, 0.35f);
         pillar("dune", stone, plinth, 2, 6, 0.25f);
 
-        placed("ruin/plateau", "ruin/plateau", surface(0.04, "ruins"));
+        placed("ruin/plateau", "ruin/plateau", surface(0.1, "ruins"));
         placed("ruin/dune", "ruin/dune", surface(0.035, "ruins"));
 
         // The dunes' standing columns of green stone; a plain block of zanite stands in without Deep Aether.
@@ -282,7 +283,7 @@ public final class AADecorationProvider extends FeatureData {
         JsonObject bridge = new JsonObject();
         bridge.add("block", cold);
         configured("cloud/rift_bridge", "aercloud_bridge", bridge);
-        placed("cloud/rift_bridge", "cloud/rift_bridge", Placement.list(Placement.configCount(0.35, "aerclouds"),
+        placed("cloud/rift_bridge", "cloud/rift_bridge", Placement.list(Placement.configCount(1.2, "aerclouds"),
                 Placement.inSquare(), Placement.islandEdge(12, 16), Placement.biome()));
     }
 

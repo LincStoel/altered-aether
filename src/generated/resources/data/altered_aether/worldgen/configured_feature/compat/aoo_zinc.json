@@ -16,7 +16,7 @@
         },
         "target": {
           "predicate_type": "minecraft:tag_match",
-          "tag": "aether:holystone_ore_replaceables"
+          "tag": "altered_aether:frozen_crag_ore_replaceables"
         }
       }
     ]

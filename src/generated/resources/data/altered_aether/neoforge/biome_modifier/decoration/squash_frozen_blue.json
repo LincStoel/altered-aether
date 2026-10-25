@@ -6,7 +6,10 @@
     }
   ],
   "type": "neoforge:add_features",
-  "biomes": "altered_aether:frozen_crags",
+  "biomes": [
+    "altered_aether:frozen_crags",
+    "altered_aether:shattered_rift"
+  ],
   "features": "altered_aether:squash/frozen_blue",
   "step": "vegetal_decoration"
 }
