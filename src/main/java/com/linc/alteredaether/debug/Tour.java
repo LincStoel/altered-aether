@@ -63,7 +63,12 @@ public final class Tour {
      * campfire shot's camera is placed once the campfire has found its ground.
      */
     record Shot(String name, double x, double y, double z, double fx, double fy, double fz, long time, boolean storm,
-                boolean campfire) {
+                boolean campfire, boolean ground) {
+        Shot(String name, double x, double y, double z, double fx, double fy, double fz, long time, boolean storm,
+             boolean campfire) {
+            this(name, x, y, z, fx, fy, fz, time, storm, campfire, false);
+        }
+
         float yaw() {
             return (float) (Mth.atan2(fz - z, fx - x) * Mth.RAD_TO_DEG) - 90;
         }
@@ -74,7 +79,7 @@ public final class Tour {
         }
 
         Shot from(double cx, double cy, double cz, double tx, double ty, double tz) {
-            return new Shot(name, cx, cy, cz, tx, ty, tz, time, storm, campfire);
+            return new Shot(name, cx, cy, cz, tx, ty, tz, time, storm, campfire, ground);
         }
     }
 
@@ -123,6 +128,10 @@ public final class Tour {
                     shots.add(new Shot("campfire", x, 100, z, x, 100, z, 14000, false, true));
                     continue;
                 }
+                if (stop.startsWith("biome:")) {
+                    biomeShots(aether, stop.substring(6), spawn, shots);
+                    continue;
+                }
                 boolean storm = stop.equals("storm");
                 LandmarkType type = storm ? LandmarkType.TEMPEST_SPIRES : LandmarkType.valueOf(stop.toUpperCase(Locale.ROOT));
                 Landmark site = field.nearest(type, spawn.getX(), spawn.getZ(), 60000).orElse(null);
@@ -148,6 +157,71 @@ public final class Tour {
             return shots;
         }
 
+        /**
+         * Two views of a biome from near its middle: from high above, looking down across it, and from the ground,
+         * looking out over it.
+         */
+        private static void biomeShots(ServerLevel aether, String name, BlockPos spawn, List<Shot> shots) {
+            ResourceLocation id = name.contains(":") ? ResourceLocation.parse(name) : AlteredAether.id(name);
+            var found = aether.findClosestBiome3d(b -> b.is(id), spawn, 24000, 32, 64);
+            if (found == null) {
+                AlteredAether.LOGGER.error("Tour: no {} found", id);
+                return;
+            }
+            BlockPos middle = middle(aether, id, found.getFirst());
+            AlteredAether.LOGGER.info("Tour: {} middle at {} {}", id, middle.getX(), middle.getZ());
+            String label = "biome_" + id.getPath();
+            int x = middle.getX(), z = middle.getZ();
+            // Both shots stand on the ground found near the middle; the aerial one rises above and behind it.
+            shots.add(new Shot(label + "_aerial", x, 100, z, x, 90, z, 6000, false, false, true));
+            // The ground shot finds its own footing once the chunks are there, and looks out its most open side.
+            shots.add(new Shot(label + "_ground", x, 100, z, x, 90, z - 120, 6000, false, false, true));
+        }
+
+        /** Walks from a point toward where the biome is widest, so the shots sit well inside it. */
+        private static BlockPos middle(ServerLevel aether, ResourceLocation id, BlockPos start) {
+            BlockPos best = start;
+            int bestDepth = depth(aether, id, start);
+            for (int round = 0; round < 16; round++) {
+                BlockPos next = best;
+                for (int d = 0; d < 8; d++) {
+                    double angle = d * Math.PI / 4;
+                    BlockPos candidate = best.offset((int) (Math.cos(angle) * 24), 0, (int) (Math.sin(angle) * 24));
+                    int depth = depth(aether, id, candidate);
+                    if (depth > bestDepth) {
+                        bestDepth = depth;
+                        next = candidate;
+                    }
+                }
+                if (next == best) {
+                    break;
+                }
+                best = next;
+            }
+            return best;
+        }
+
+        /** How far the biome reaches from a point in its narrowest direction, up to 192 blocks; 0 outside it. */
+        private static int depth(ServerLevel aether, ResourceLocation id, BlockPos pos) {
+            var source = aether.getChunkSource().getGenerator().getBiomeSource();
+            var sampler = aether.getChunkSource().randomState().sampler();
+            int depth = Integer.MAX_VALUE;
+            for (int d = 0; d < 8; d++) {
+                double angle = d * Math.PI / 4;
+                int reach = 0;
+                for (int r = 0; r <= 192; r += 8) {
+                    int x = pos.getX() + (int) (Math.cos(angle) * r), z = pos.getZ() + (int) (Math.sin(angle) * r);
+                    if (!source.getNoiseBiome(net.minecraft.core.QuartPos.fromBlock(x), 16,
+                            net.minecraft.core.QuartPos.fromBlock(z), sampler).is(id)) {
+                        break;
+                    }
+                    reach = r;
+                }
+                depth = Math.min(depth, reach);
+            }
+            return depth;
+        }
+
         private Server() {
         }
     }
@@ -161,6 +235,8 @@ public final class Tour {
         private static Shot current;
         /** How far the camera has been raised to see over whatever stood in its way. */
         private static double lift;
+        /** Where a ground shot found its footing. */
+        private static BlockPos footing;
 
         @SubscribeEvent
         public static void onTick(ClientTickEvent.Post event) {
@@ -184,12 +260,27 @@ public final class Tour {
                 shot = shot.from(fire.getX() + 1.5, fire.getY() + 0.4, fire.getZ() - 2.2, fire.getX() + 1.5,
                         fire.getY() + 0.3, fire.getZ() + 0.5);
             }
+            if (shot.ground()) {
+                if (footing == null) {
+                    footing = footing(minecraft, shot);
+                    if (footing == null) {
+                        return;
+                    }
+                }
+                double fx = footing.getX() + 0.5, fy = footing.getY(), fz = footing.getZ() + 0.5;
+                if (shot.name().endsWith("_aerial")) {
+                    shot = shot.from(fx, fy + 55, fz + 95, fx, fy, fz);
+                } else {
+                    double angle = openest(minecraft, fx, fy + 1.62, fz);
+                    shot = shot.from(fx, fy, fz, fx + Math.cos(angle) * 120, fy - 4, fz + Math.sin(angle) * 120);
+                }
+            }
             shot = shot.from(shot.x(), shot.y() + lift, shot.z(), shot.fx(), shot.fy(), shot.fz());
             minecraft.player.moveTo(shot.x(), shot.y(), shot.z(), shot.yaw(), shot.pitch());
             minecraft.player.setDeltaMovement(0, 0, 0);
             waited++;
             // Climb until nothing stands between the camera and most of the way to what it frames.
-            if (!shot.campfire() && lift < 120 && minecraft.level.hasChunk(Mth.floor(shot.x()) >> 4, Mth.floor(shot.z()) >> 4)) {
+            if (!shot.campfire() && (!shot.ground() || shot.name().endsWith("_aerial")) && lift < 120 && minecraft.level.hasChunk(Mth.floor(shot.x()) >> 4, Mth.floor(shot.z()) >> 4)) {
                 net.minecraft.world.phys.Vec3 eye = minecraft.player.getEyePosition();
                 net.minecraft.world.phys.Vec3 target = eye.lerp(new net.minecraft.world.phys.Vec3(shot.fx(), shot.fy(), shot.fz()), 0.7);
                 var hit = minecraft.level.clip(new net.minecraft.world.level.ClipContext(eye, target,
@@ -223,6 +314,48 @@ public final class Tour {
 
         private static int readyTicks;
 
+        /** The bearing, of eight, along which the view from an eye runs furthest before meeting anything. */
+        private static double openest(Minecraft minecraft, double x, double y, double z) {
+            double best = 0, bestReach = -1;
+            for (int d = 0; d < 8; d++) {
+                double angle = d * Math.PI / 4;
+                var eye = new net.minecraft.world.phys.Vec3(x, y, z);
+                var far = eye.add(Math.cos(angle) * 160, -6, Math.sin(angle) * 160);
+                var hit = minecraft.level.clip(new net.minecraft.world.level.ClipContext(eye, far,
+                        net.minecraft.world.level.ClipContext.Block.VISUAL, net.minecraft.world.level.ClipContext.Fluid.NONE,
+                        minecraft.player));
+                double reach = hit.getLocation().distanceTo(eye);
+                if (reach > bestReach) {
+                    bestReach = reach;
+                    best = angle;
+                }
+            }
+            return best;
+        }
+
+        /**
+         * Open ground near the shot's spot, searching outward once the chunks there have arrived: a column with
+         * ground and open sky over it, so the camera stands on the island rather than over a gap.
+         */
+        private static BlockPos footing(Minecraft minecraft, Shot shot) {
+            var level = minecraft.level;
+            int x = Mth.floor(shot.x()), z = Mth.floor(shot.z());
+            for (int r = 0; r <= 48; r += 4) {
+                for (int i = 0; i < Math.max(1, r * 2); i++) {
+                    double angle = i * Mth.TWO_PI / Math.max(1, r * 2);
+                    int px = x + (int) (Math.cos(angle) * r), pz = z + (int) (Math.sin(angle) * r);
+                    if (!level.hasChunk(px >> 4, pz >> 4)) {
+                        return null;
+                    }
+                    int y = level.getHeight(Heightmap.Types.MOTION_BLOCKING, px, pz);
+                    if (y > level.getMinBuildHeight() + 2 && level.getBlockState(new BlockPos(px, y - 1, pz)).isSolid()) {
+                        return new BlockPos(px, y, pz);
+                    }
+                }
+            }
+            return new BlockPos(x, Mth.floor(shot.y()), z);
+        }
+
         /** How many ticks in a row everything has been drawn: the last chunks can still be arriving. */
         private static int settledFor(boolean ready) {
             readyTicks = ready ? readyTicks + 1 : 0;
@@ -232,6 +365,7 @@ public final class Tour {
         private static void next(Minecraft minecraft, MinecraftServer server, List<Shot> shots) {
             index++;
             waited = 0;
+            footing = null;
             readyTicks = 0;
             lift = 0;
             if (index >= shots.size()) {
