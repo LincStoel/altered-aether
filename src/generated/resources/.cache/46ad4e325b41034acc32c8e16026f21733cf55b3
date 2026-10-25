@@ -1,5 +1,9 @@
-// 1.21.1	2026-10-24T18:16:10.7382321	Altered Aether terrain (stock)
+// 1.21.1	2026-10-24T20:47:49.1246513	Altered Aether terrain (stock)
 6e1c6daa9ca35629945fa6a959f1d27e2d2f0797 data/aether/worldgen/noise_settings/skylands.json
+053b85fe60962463bbdb50fc2392adf0817db93b data/altered_aether/neoforge/biome_modifier/decoration/shelf_cascading.json
+8b0be10aaf6a3dfa2a2601e3dc0ccd5d81205889 data/altered_aether/neoforge/biome_modifier/decoration/shelf_vexing.json
+d81b4ab60770d9687aef73054bfd289aaa6894d7 data/altered_aether/worldgen/configured_feature/shelf/cascading.json
+c08199f783f587d50637cc8f0c30cd1a60877cdd data/altered_aether/worldgen/configured_feature/shelf/vexing.json
 61e0afce1f675a399c74c1d2351d35010c0080dd data/altered_aether/worldgen/density_function/terrain/continentalness.json
 6c374c43e2c82f6900903f53adaa73848dda3da8 data/altered_aether/worldgen/density_function/terrain/crags.json
 c7721994ea55d605399c1d6e2ee8ab4855ded239 data/altered_aether/worldgen/density_function/terrain/crag_3d_noise.json
@@ -49,3 +53,5 @@ a61ecdc653acffccb0909ac1955bb8fb2ff4ae2a data/altered_aether/worldgen/noise/plat
 12372528b608734569fdaea498b174acb4dcdb63 data/altered_aether/worldgen/noise/rift.json
 c23149b01b05d82adca6fe75ce3a8b45d6a175c2 data/altered_aether/worldgen/noise/rift_cells.json
 c23149b01b05d82adca6fe75ce3a8b45d6a175c2 data/altered_aether/worldgen/noise/tempest_spires.json
+d9b115560875c271d09ca01b13b07aeec1e8c149 data/altered_aether/worldgen/placed_feature/shelf/cascading.json
+345b8d2d187fbf6dd1bf323f7dc1bedb0dde53b8 data/altered_aether/worldgen/placed_feature/shelf/vexing.json

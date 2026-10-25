@@ -1,0 +1,33 @@
+{
+  "feature": "altered_aether:cloud/crag",
+  "placement": [
+    {
+      "type": "altered_aether:config_count",
+      "count": 0.16666666666666666,
+      "key": "aerclouds"
+    },
+    {
+      "type": "minecraft:in_square"
+    },
+    {
+      "type": "minecraft:heightmap",
+      "heightmap": "WORLD_SURFACE_WG"
+    },
+    {
+      "type": "minecraft:random_offset",
+      "xz_spread": {
+        "type": "minecraft:uniform",
+        "max_inclusive": 0,
+        "min_inclusive": 0
+      },
+      "y_spread": {
+        "type": "minecraft:uniform",
+        "max_inclusive": 6,
+        "min_inclusive": 2
+      }
+    },
+    {
+      "type": "minecraft:biome"
+    }
+  ]
+}

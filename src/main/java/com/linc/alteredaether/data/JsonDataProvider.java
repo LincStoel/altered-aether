@@ -83,7 +83,7 @@ public abstract class JsonDataProvider implements DataProvider {
         JsonArray conditions = new JsonArray();
         for (String mod : mods) {
             JsonObject condition = new JsonObject();
-            condition.addProperty("type", "neoforge:mod_loaded");
+            condition.addProperty("type", "altered_aether:mod_enabled");
             condition.addProperty("modid", mod);
             conditions.add(condition);
         }

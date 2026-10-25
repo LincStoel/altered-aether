@@ -1,11 +1,11 @@
 {
   "neoforge:conditions": [
     {
-      "type": "neoforge:mod_loaded",
+      "type": "altered_aether:mod_enabled",
       "modid": "ars_nouveau"
     },
     {
-      "type": "neoforge:mod_loaded",
+      "type": "altered_aether:mod_enabled",
       "modid": "ars_elemental"
     }
   ],
@@ -60,7 +60,9 @@
       "aether:crystal_island",
       "aether:cold_aercloud",
       "aether:blue_aercloud",
-      "aether:golden_aercloud"
+      "aether:golden_aercloud",
+      "altered_aether:cloud/plateau_golden",
+      "altered_aether:cloud/golden_high"
     ]
   ],
   "has_precipitation": false,

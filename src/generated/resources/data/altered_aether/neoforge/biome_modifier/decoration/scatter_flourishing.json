@@ -1,0 +1,17 @@
+{
+  "neoforge:conditions": [
+    {
+      "type": "altered_aether:mod_enabled",
+      "modid": "ars_nouveau"
+    }
+  ],
+  "type": "neoforge:add_features",
+  "biomes": [
+    "aether:skyroot_forest",
+    "aether:skyroot_grove",
+    "aether:skyroot_meadow",
+    "aether:skyroot_woodland"
+  ],
+  "features": "altered_aether:scatter/flourishing",
+  "step": "vegetal_decoration"
+}

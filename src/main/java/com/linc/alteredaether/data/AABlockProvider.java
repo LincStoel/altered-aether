@@ -114,6 +114,16 @@ public final class AABlockProvider extends JsonDataProvider {
         json.add("pattern", array(" S ", "SAS", "LLL"));
         json.add("result", result);
         data("recipe", AlteredAether.id(CAMPFIRE), json);
+
+        // Aether: Beyond Parity's campfire, which this one replaces, turns into ours (see BeyondParityCompat)
+        JsonObject theirs = new JsonObject();
+        theirs.addProperty("item", "aether_beyond_parity:ambrosium_campfire");
+        JsonObject swap = new JsonObject();
+        swap.addProperty("type", "minecraft:crafting_shapeless");
+        swap.addProperty("category", "misc");
+        swap.add("ingredients", array(theirs));
+        swap.add("result", result);
+        data("recipe", AlteredAether.id(CAMPFIRE + "_from_parity"), swap, "aether_beyond_parity");
     }
 
     private static JsonObject ingredientTag(String tag) {

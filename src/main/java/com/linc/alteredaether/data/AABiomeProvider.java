@@ -62,10 +62,14 @@ public final class AABiomeProvider extends JsonDataProvider {
         biome("sunken_atoll", sunkenAtoll());
 
         biome("blazing_archwood_grove", grove("blazing", ARIA)
+                .add(BiomeJson.LOCAL, AADecorationProvider.ASETERITE_BOULDER)
+                .add(BiomeJson.TOP, AADecorationProvider.GOLDEN_HIGH_CLOUD)
                 .climate(0.5f, 0.65f)
                 .effect("foliage_color", 12470327).effect("grass_color", 12873818).effect("sky_color", 16750472),
                 "ars_nouveau");
         biome("cascading_archwood_grove", grove("cascading", ARIA)
+                .add(BiomeJson.LOCAL, AADecorationProvider.CLORITE_BOULDER)
+                .add(BiomeJson.TOP, AADecorationProvider.GROVE_BLUE_CLOUD)
                 .climate(0.45f, 0.5f)
                 .effect("foliage_color", 3958452).effect("grass_color", 8166354).effect("sky_color", 8958719)
                 .particle(BiomeJson.particleType("aether:crystal_leaves"), 0.0025f)
@@ -74,6 +78,7 @@ public final class AABiomeProvider extends JsonDataProvider {
                 .add(BiomeJson.SPRINGS, AAFeatureProvider.WATERFALL_CASCADING)
                 .weight("aether:blue_swet", 20), "ars_nouveau");
         biome("flashing_archwood_grove", grove("flashing", ARIA)
+                .add(BiomeJson.TOP, AADecorationProvider.GOLDEN_HIGH_CLOUD)
                 .climate(1.95f, 0.0f)
                 .effect("foliage_color", 13084948).effect("grass_color", 13414701).effect("sky_color", 16769928)
                 .drop(VANILLA_GRASS)
@@ -159,7 +164,8 @@ public final class AABiomeProvider extends JsonDataProvider {
                 .effect("fog_color", 13214247).effect("foliage_color", 9211020).effect("grass_color", 9211020)
                 .effect("sky_color", 15915105)
                 .particle(BiomeJson.particleType("minecraft:electric_spark"), 0.006f)
-                .add(BiomeJson.LOCAL, AADecorationProvider.TEMPEST_SPIRES, AADecorationProvider.TEMPEST_LONE_SPIKE, AADecorationProvider.STRIKE_CRATER)
+                .add(BiomeJson.LOCAL, AADecorationProvider.TEMPEST_SPIRES, AADecorationProvider.TEMPEST_LONE_SPIKE, AADecorationProvider.STRIKE_CRATER,
+                        AADecorationProvider.AMBROSIUM_BOULDER)
                 .add(BiomeJson.ORES, AADecorationProvider.TEMPEST_COPPER_ORE)
                 .add(BiomeJson.TOP, AADecorationProvider.TEMPEST_CLOUD)
                 .spawners("aether:aether_surface_monster",
@@ -193,6 +199,8 @@ public final class AABiomeProvider extends JsonDataProvider {
                 .effect("sky_color", 15787686).effect("water_color", ARS_WATER)
                 .particle(dust(0.87f, 0.75f, 0.42f), 0.015f)
                 .add(BiomeJson.LOCAL, AADecorationProvider.DUNE_BOULDER, AADecorationProvider.DUNE_RUINS, AADecorationProvider.SKYJADE_PILLAR)
+                .add(BiomeJson.TOP, AADecorationProvider.PLATEAU_GOLDEN_CLOUD, AADecorationProvider.GROVE_BLUE_CLOUD)
+                .add(BiomeJson.TOP, AADecorationProvider.GOLDEN_HIGH_CLOUD)
                 .add(BiomeJson.VEG, AADecorationProvider.DEAD_BUSH)
                 .spawners("aether:aether_aerwhale")
                 .spawners("aether:aether_darkness_monster")
@@ -225,6 +233,7 @@ public final class AABiomeProvider extends JsonDataProvider {
 
     private BiomeJson grove(String colour, String music) {
         return base()
+                .add(BiomeJson.TOP, AADecorationProvider.PLATEAU_GOLDEN_CLOUD)
                 .replace(FOREST_TREES, groveTrees(colour))
                 .music(music)
                 .effect("fog_color", GROVE_FOG)

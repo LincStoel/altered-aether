@@ -1,0 +1,16 @@
+{
+  "neoforge:conditions": [
+    {
+      "type": "altered_aether:mod_enabled",
+      "modid": "aether_overworld_ores"
+    },
+    {
+      "type": "altered_aether:mod_enabled",
+      "modid": "ars_nouveau"
+    }
+  ],
+  "type": "neoforge:add_features",
+  "biomes": "altered_aether:blazing_archwood_grove",
+  "features": "altered_aether:compat/aoo_gold",
+  "step": "underground_ores"
+}

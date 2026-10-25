@@ -1,0 +1,20 @@
+{
+  "feature": "altered_aether:boulder/aseterite",
+  "placement": [
+    {
+      "type": "altered_aether:config_count",
+      "count": 0.038461538461538464,
+      "key": "boulders"
+    },
+    {
+      "type": "minecraft:in_square"
+    },
+    {
+      "type": "minecraft:heightmap",
+      "heightmap": "WORLD_SURFACE_WG"
+    },
+    {
+      "type": "minecraft:biome"
+    }
+  ]
+}

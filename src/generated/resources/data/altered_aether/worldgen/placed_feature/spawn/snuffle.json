@@ -1,0 +1,25 @@
+{
+  "neoforge:conditions": [
+    {
+      "type": "altered_aether:mod_enabled",
+      "modid": "snuffles"
+    }
+  ],
+  "feature": "altered_aether:spawn/snuffle",
+  "placement": [
+    {
+      "type": "minecraft:rarity_filter",
+      "chance": 22
+    },
+    {
+      "type": "minecraft:in_square"
+    },
+    {
+      "type": "minecraft:heightmap",
+      "heightmap": "WORLD_SURFACE_WG"
+    },
+    {
+      "type": "minecraft:biome"
+    }
+  ]
+}

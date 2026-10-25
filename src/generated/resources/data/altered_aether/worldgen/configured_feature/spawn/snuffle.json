@@ -1,0 +1,20 @@
+{
+  "neoforge:conditions": [
+    {
+      "type": "altered_aether:mod_enabled",
+      "modid": "snuffles"
+    }
+  ],
+  "type": "altered_aether:spawn_entity",
+  "config": {
+    "count": 2,
+    "entity": "snuffles:snuffle",
+    "ground": {
+      "type": "minecraft:matching_block_tag",
+      "tag": "snuffles:snuffles_spawnable_on"
+    },
+    "mob": "snuffle",
+    "persistent": true,
+    "spread": 4
+  }
+}

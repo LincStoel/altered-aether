@@ -1,0 +1,23 @@
+{
+  "neoforge:conditions": [
+    {
+      "type": "altered_aether:mod_enabled",
+      "modid": "aether_overworld_ores"
+    },
+    {
+      "type": "altered_aether:mod_enabled",
+      "modid": "oreganized"
+    }
+  ],
+  "type": "aether:enchanting",
+  "category": "enchanting_misc",
+  "cookingtime": 200,
+  "experience": 1.0,
+  "ingredient": {
+    "item": "oreganized:raw_silver"
+  },
+  "result": {
+    "id": "oreganized:silver_ingot",
+    "count": 1
+  }
+}

@@ -1,11 +1,11 @@
 {
   "neoforge:conditions": [
     {
-      "type": "neoforge:mod_loaded",
+      "type": "altered_aether:mod_enabled",
       "modid": "ars_nouveau"
     },
     {
-      "type": "neoforge:mod_loaded",
+      "type": "altered_aether:mod_enabled",
       "modid": "deep_aether"
     }
   ],

@@ -54,6 +54,11 @@ abstract class FeatureData extends JsonDataProvider {
         data(PLACED, AlteredAether.id(name), json, requiredMods);
     }
 
+    /** A placed feature whose JSON is already built, such as a copy of one read from another mod's jar. */
+    protected void placedJson(String name, JsonObject json, String... requiredMods) {
+        data(PLACED, AlteredAether.id(name), json, requiredMods);
+    }
+
     /** Adds the placed feature {@code altered_aether:<name>} to {@code biomes} at {@code step}. */
     protected void addFeature(String name, List<String> biomes, String step, String... requiredMods) {
         addFeature(name, name, biomes, step, requiredMods);
@@ -71,9 +76,24 @@ abstract class FeatureData extends JsonDataProvider {
             biomes.forEach(list::add);
             json.add("biomes", list);
         }
-        json.addProperty("features", NS + feature);
+        json.addProperty("features", feature.contains(":") ? feature : NS + feature);
         json.addProperty("step", step);
         data(MODIFIER, AlteredAether.id(modifier.replace('/', '_')), json, requiredMods);
+    }
+
+    /** Takes {@code features} out of {@code biomes}, in the remove phase after every other mod has added its own. */
+    protected void removeFeatures(String name, List<String> biomes, List<String> features, String step,
+                                  String... requiredMods) {
+        JsonObject json = new JsonObject();
+        json.addProperty("type", "neoforge:remove_features");
+        JsonArray biomeList = new JsonArray();
+        biomes.forEach(biomeList::add);
+        json.add("biomes", biomeList);
+        JsonArray featureList = new JsonArray();
+        features.forEach(featureList::add);
+        json.add("features", featureList);
+        json.addProperty("steps", step);
+        data(MODIFIER, AlteredAether.id(name.replace('/', '_')), json, requiredMods);
     }
 
     static List<String> biomes(String... names) {

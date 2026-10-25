@@ -1,0 +1,23 @@
+{
+  "neoforge:conditions": [
+    {
+      "type": "altered_aether:mod_enabled",
+      "modid": "aether_overworld_ores"
+    },
+    {
+      "type": "altered_aether:mod_enabled",
+      "modid": "immersiveengineering"
+    }
+  ],
+  "type": "aether:enchanting",
+  "category": "enchanting_blocks",
+  "cookingtime": 200,
+  "experience": 1.0,
+  "ingredient": {
+    "item": "aether_overworld_ores:holystone_nickel_ore"
+  },
+  "result": {
+    "id": "immersiveengineering:ingot_nickel",
+    "count": 1
+  }
+}

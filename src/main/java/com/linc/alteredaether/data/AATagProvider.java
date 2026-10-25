@@ -55,6 +55,8 @@ public final class AATagProvider extends JsonDataProvider {
                 "minecraft:blackstone", "aether:holystone");
         tag("block", ResourceLocation.withDefaultNamespace("campfires"), "altered_aether:ambrosium_campfire");
         tag("block", ResourceLocation.withDefaultNamespace("mineable/axe"), "altered_aether:ambrosium_campfire");
+        // dead bushes may stand on the dunes' quicksoil
+        tag("block", ResourceLocation.withDefaultNamespace("dead_bush_may_place_on"), "aether:quicksoil");
         aetherBiomes();
     }
 

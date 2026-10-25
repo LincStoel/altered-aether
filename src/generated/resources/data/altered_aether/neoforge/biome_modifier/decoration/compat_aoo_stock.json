@@ -1,0 +1,33 @@
+{
+  "neoforge:conditions": [
+    {
+      "type": "altered_aether:mod_enabled",
+      "modid": "aether_overworld_ores"
+    }
+  ],
+  "type": "neoforge:remove_features",
+  "biomes": [
+    "aether:skyroot_meadow",
+    "aether:skyroot_grove",
+    "aether:skyroot_woodland",
+    "aether:skyroot_forest"
+  ],
+  "features": [
+    "aether_overworld_ores:holystone_ore_coal",
+    "aether_overworld_ores:holystone_ore_copper",
+    "aether_overworld_ores:holystone_ore_diamond",
+    "aether_overworld_ores:holystone_ore_emerald",
+    "aether_overworld_ores:holystone_ore_gold",
+    "aether_overworld_ores:holystone_ore_iron",
+    "aether_overworld_ores:holystone_ore_lapis",
+    "aether_overworld_ores:holystone_ore_lead",
+    "aether_overworld_ores:holystone_ore_nickel",
+    "aether_overworld_ores:holystone_ore_redstone",
+    "aether_overworld_ores:holystone_ore_silver",
+    "aether_overworld_ores:holystone_ore_sulfur",
+    "aether_overworld_ores:holystone_ore_tin",
+    "aether_overworld_ores:holystone_ore_uranium",
+    "aether_overworld_ores:holystone_ore_zinc"
+  ],
+  "steps": "underground_ores"
+}

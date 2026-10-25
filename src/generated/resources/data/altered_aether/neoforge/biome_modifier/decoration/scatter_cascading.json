@@ -1,0 +1,16 @@
+{
+  "neoforge:conditions": [
+    {
+      "type": "altered_aether:mod_enabled",
+      "modid": "ars_nouveau"
+    },
+    {
+      "type": "altered_aether:mod_enabled",
+      "modid": "deep_aether"
+    }
+  ],
+  "type": "neoforge:add_features",
+  "biomes": "deep_aether:blue_aerglow_forest",
+  "features": "altered_aether:scatter/cascading",
+  "step": "vegetal_decoration"
+}

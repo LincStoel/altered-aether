@@ -97,7 +97,7 @@ public final class AACommonConfig {
                     "dried_ghast_fields", "snow_drifts", "hanging_chains", "vegetation");
     public static final List<String> COMPAT_MODS =
             List.of("ars_nouveau", "ars_elemental", "deep_aether", "aether_overworld_ores", "create", "oreganized",
-                    "dried_ghast", "snuffles", "mowziesmobs");
+                    "dried_ghast", "snuffles", "mowziesmobs", "integrated_villages", "immersiveengineering");
 
     /** Per-mob spawn settings. */
     public record MobSettings(BooleanValue enabled, BooleanValue aetherExclusive, DoubleValue weightMultiplier,

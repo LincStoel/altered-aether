@@ -1,0 +1,15 @@
+{
+  "neoforge:conditions": [
+    {
+      "type": "altered_aether:mod_enabled",
+      "modid": "aether_overworld_ores"
+    }
+  ],
+  "type": "neoforge:add_features",
+  "biomes": [
+    "altered_aether:frozen_crags",
+    "altered_aether:aether_plateau"
+  ],
+  "features": "altered_aether:compat/aoo_zinc",
+  "step": "underground_ores"
+}

@@ -193,7 +193,12 @@ public final class DebugCommands {
             "altered_aether:ambrosium_campfire", "deep_aether:skyjade_block", "dried_ghast:dried_ghast",
             "deep_aether:moa_totem", "deep_aether:zephyr_totem", "deep_aether:aerwhale_totem",
             "aether:cold_aercloud", "aether:blue_aercloud", "aether:golden_aercloud",
-            "deep_aether:sterling_aercloud", "oreganized:silver_ore");
+            "deep_aether:sterling_aercloud", "oreganized:silver_ore", "aether_overworld_ores:holystone_copper_ore",
+            "aether_overworld_ores:holystone_emerald_ore", "aether_overworld_ores:holystone_gold_ore",
+            "aether_overworld_ores:holystone_iron_ore", "aether_overworld_ores:holystone_lapis_ore",
+            "aether_overworld_ores:holystone_nickel_ore", "aether_overworld_ores:holystone_redstone_ore",
+            "aether_overworld_ores:holystone_zinc_ore", "aether_overworld_ores:holystone_coal_ore",
+            "aether_overworld_ores:holystone_diamond_ore");
 
     /**
      * Counts the marker blocks per biome over the given chunks, and every entity by type. Boulders and the like have

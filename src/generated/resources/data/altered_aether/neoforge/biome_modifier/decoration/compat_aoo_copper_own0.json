@@ -1,0 +1,12 @@
+{
+  "neoforge:conditions": [
+    {
+      "type": "altered_aether:mod_enabled",
+      "modid": "aether_overworld_ores"
+    }
+  ],
+  "type": "neoforge:add_features",
+  "biomes": "altered_aether:tempest_peaks",
+  "features": "altered_aether:compat/aoo_copper",
+  "step": "underground_ores"
+}

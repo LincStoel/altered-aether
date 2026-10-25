@@ -56,7 +56,10 @@
     ],
     [
       "aether:crystal_island",
-      "aether:golden_aercloud"
+      "aether:golden_aercloud",
+      "altered_aether:cloud/plateau_golden",
+      "altered_aether:cloud/grove_blue",
+      "altered_aether:cloud/golden_high"
     ]
   ],
   "has_precipitation": false,

@@ -34,6 +34,7 @@ public final class AADataGen {
         generator.addProvider(event.includeServer(), new AABiomeProvider(output));
         generator.addProvider(event.includeServer(), new AADecorationProvider(output));
         generator.addProvider(event.includeServer(), new AAOptionalDecorationProvider(output));
+        generator.addProvider(event.includeServer(), new AACompatProvider(output));
         generator.addProvider(event.includeServer(), new AAFeatureProvider(output));
         generator.addProvider(event.includeServer(), new AATagProvider(output));
         generator.addProvider(event.includeServer(), new AASurfaceRuleProvider(output));

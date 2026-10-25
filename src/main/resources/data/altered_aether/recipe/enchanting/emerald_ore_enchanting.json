@@ -1,0 +1,19 @@
+{
+  "neoforge:conditions": [
+    {
+      "type": "altered_aether:mod_enabled",
+      "modid": "aether_overworld_ores"
+    }
+  ],
+  "type": "aether:enchanting",
+  "category": "enchanting_blocks",
+  "cookingtime": 200,
+  "experience": 0.2,
+  "ingredient": {
+    "item": "minecraft:emerald_ore"
+  },
+  "result": {
+    "id": "minecraft:emerald",
+    "count": 1
+  }
+}

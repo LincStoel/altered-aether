@@ -1,0 +1,19 @@
+{
+  "neoforge:conditions": [
+    {
+      "type": "altered_aether:mod_enabled",
+      "modid": "aether_beyond_parity"
+    }
+  ],
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    {
+      "item": "aether_beyond_parity:ambrosium_campfire"
+    }
+  ],
+  "result": {
+    "count": 1,
+    "id": "altered_aether:ambrosium_campfire"
+  }
+}

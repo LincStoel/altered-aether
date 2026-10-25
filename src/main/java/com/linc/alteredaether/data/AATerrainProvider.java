@@ -92,6 +92,7 @@ public final class AATerrainProvider extends JsonDataProvider {
         }
         densityFunctions();
         skylands();
+        shelfPatches();
         if (mode == HeightMode.TALL) {
             dimensionType();
             quicksoilShelf();
@@ -397,6 +398,49 @@ public final class AATerrainProvider extends JsonDataProvider {
      * The Aether's quicksoil shelves read their {@code y_range} as absolute heights in Java, where the anchor remap
      * can't reach, so the tall pack carries the Aether's own file with that range stretched the same way.
      */
+    /**
+     * Patches of soft ground in two groves: quicksoil among the cascading grove's coarse dirt, and virulent quicksand
+     * in the vexing grove's mud. The Aether's shelf feature reads its height range as plain numbers, which is why these
+     * are written for both height modes. The range is the island band, 0 to 128 in the stock Aether, which is -64 to
+     * 128 in the tall one.
+     */
+    private void shelfPatches() {
+        shelf("cascading", "aether:quicksoil[double_drops=true]", "deep_aether:aether_coarse_dirt", 6);
+        shelf("vexing", "deep_aether:virulent_quicksand", "deep_aether:aether_mud", 10);
+    }
+
+    private void shelf(String grove, String block, String validOn, int rarity) {
+        JsonObject range = new JsonObject();
+        range.addProperty("min_inclusive", mode == HeightMode.TALL ? -64 : 0);
+        range.addProperty("max_inclusive", 128);
+        JsonObject config = new JsonObject();
+        config.add("block", Providers.simple(block));
+        config.addProperty("radius", 3.4641016);
+        config.addProperty("valid_blocks", validOn);
+        config.add("y_range", range);
+        JsonObject feature = new JsonObject();
+        feature.addProperty("type", "aether:shelf");
+        feature.add("config", config);
+        data("worldgen/configured_feature", AlteredAether.id("shelf/" + grove), feature, "deep_aether");
+
+        JsonObject placed = new JsonObject();
+        placed.addProperty("feature", AlteredAether.MOD_ID + ":shelf/" + grove);
+        placed.add("placement", Placement.list(Placement.rarity(rarity), Placement.heightmap("WORLD_SURFACE_WG"),
+                Placement.biome()));
+        data("worldgen/placed_feature", AlteredAether.id("shelf/" + grove), placed, "deep_aether");
+
+        // added to the grove by a modifier, as the soil it needs comes from Deep Aether
+        if (mode == HeightMode.STOCK) {
+            JsonObject modifier = new JsonObject();
+            modifier.addProperty("type", "neoforge:add_features");
+            modifier.addProperty("biomes", AlteredAether.MOD_ID + ":" + grove + "_archwood_grove");
+            modifier.addProperty("features", AlteredAether.MOD_ID + ":shelf/" + grove);
+            modifier.addProperty("step", "top_layer_modification");
+            data("neoforge/biome_modifier/decoration", AlteredAether.id("shelf_" + grove), modifier, "deep_aether",
+                    "ars_nouveau");
+        }
+    }
+
     private void quicksoilShelf() {
         JsonObject feature = ModResources.json("aether", "data", "aether", "worldgen", "configured_feature",
                 "quicksoil_shelf.json");

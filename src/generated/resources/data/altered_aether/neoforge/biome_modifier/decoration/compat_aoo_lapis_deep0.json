@@ -1,0 +1,16 @@
+{
+  "neoforge:conditions": [
+    {
+      "type": "altered_aether:mod_enabled",
+      "modid": "aether_overworld_ores"
+    },
+    {
+      "type": "altered_aether:mod_enabled",
+      "modid": "deep_aether"
+    }
+  ],
+  "type": "neoforge:add_features",
+  "biomes": "deep_aether:blue_aerglow_forest",
+  "features": "altered_aether:compat/aoo_lapis",
+  "step": "underground_ores"
+}

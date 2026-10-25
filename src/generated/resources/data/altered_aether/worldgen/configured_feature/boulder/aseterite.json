@@ -1,0 +1,27 @@
+{
+  "type": "altered_aether:boulder",
+  "config": {
+    "burial": 0.3,
+    "floating": false,
+    "radius": {
+      "type": "minecraft:uniform",
+      "max_inclusive": 4,
+      "min_inclusive": 2
+    },
+    "squash": 0.7,
+    "state": {
+      "type": "altered_aether:substitute",
+      "candidates": [
+        {
+          "Name": "deep_aether:aseterite"
+        },
+        {
+          "Name": "aether:holystone",
+          "Properties": {
+            "double_drops": "true"
+          }
+        }
+      ]
+    }
+  }
+}

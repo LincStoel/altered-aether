@@ -1,0 +1,19 @@
+{
+  "neoforge:conditions": [
+    {
+      "type": "altered_aether:mod_enabled",
+      "modid": "aether_overworld_ores"
+    },
+    {
+      "type": "altered_aether:mod_enabled",
+      "modid": "deep_aether"
+    }
+  ],
+  "type": "neoforge:add_features",
+  "biomes": [
+    "deep_aether:golden_grove",
+    "deep_aether:golden_heights"
+  ],
+  "features": "altered_aether:compat/aoo_redstone",
+  "step": "underground_ores"
+}

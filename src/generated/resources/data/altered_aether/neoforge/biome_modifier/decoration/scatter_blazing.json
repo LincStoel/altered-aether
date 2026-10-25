@@ -1,0 +1,19 @@
+{
+  "neoforge:conditions": [
+    {
+      "type": "altered_aether:mod_enabled",
+      "modid": "ars_nouveau"
+    },
+    {
+      "type": "altered_aether:mod_enabled",
+      "modid": "deep_aether"
+    }
+  ],
+  "type": "neoforge:add_features",
+  "biomes": [
+    "deep_aether:golden_heights",
+    "deep_aether:golden_grove"
+  ],
+  "features": "altered_aether:scatter/blazing",
+  "step": "vegetal_decoration"
+}

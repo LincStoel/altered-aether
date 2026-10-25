@@ -1,0 +1,27 @@
+{
+  "neoforge:conditions": [
+    {
+      "type": "altered_aether:mod_enabled",
+      "modid": "aether_overworld_ores"
+    },
+    {
+      "type": "altered_aether:mod_enabled",
+      "modid": "create"
+    },
+    {
+      "type": "altered_aether:mod_enabled",
+      "modid": "oreganized"
+    }
+  ],
+  "type": "aether:enchanting",
+  "category": "enchanting_misc",
+  "cookingtime": 200,
+  "experience": 0.1,
+  "ingredient": {
+    "item": "create:crushed_raw_lead"
+  },
+  "result": {
+    "id": "oreganized:lead_ingot",
+    "count": 1
+  }
+}

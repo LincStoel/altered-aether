@@ -1,0 +1,21 @@
+{
+  "neoforge:conditions": [
+    {
+      "type": "altered_aether:mod_enabled",
+      "modid": "integrated_villages"
+    }
+  ],
+  "placement": {
+    "type": "minecraft:random_spread",
+    "salt": 1982700830,
+    "separation": 90,
+    "spacing": 120,
+    "spread_type": "triangular"
+  },
+  "structures": [
+    {
+      "structure": "altered_aether:airship_village",
+      "weight": 1
+    }
+  ]
+}

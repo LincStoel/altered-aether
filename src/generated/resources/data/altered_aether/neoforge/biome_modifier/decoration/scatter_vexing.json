@@ -1,0 +1,16 @@
+{
+  "neoforge:conditions": [
+    {
+      "type": "altered_aether:mod_enabled",
+      "modid": "ars_nouveau"
+    },
+    {
+      "type": "altered_aether:mod_enabled",
+      "modid": "deep_aether"
+    }
+  ],
+  "type": "neoforge:add_features",
+  "biomes": "deep_aether:yagroot_swamp",
+  "features": "altered_aether:scatter/vexing",
+  "step": "vegetal_decoration"
+}

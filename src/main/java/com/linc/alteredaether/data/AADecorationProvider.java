@@ -56,6 +56,11 @@ public final class AADecorationProvider extends FeatureData {
     static final String RIFT_BRIDGE = NS + "cloud/rift_bridge";
     static final String CRAG_ORES = NS + "ore/crag_";
     static final String TEMPEST_COPPER_ORE = NS + "ore/tempest_copper";
+    static final String ASETERITE_BOULDER = NS + "boulder/aseterite";
+    static final String CLORITE_BOULDER = NS + "boulder/clorite";
+    static final String GROVE_BLUE_CLOUD = NS + "cloud/grove_blue";
+    static final String CLOUD_MASS = NS + "cloud/mass";
+    static final String GOLDEN_HIGH_CLOUD = NS + "cloud/golden_high";
     static final String CRAG_CAMPFIRE = NS + "camp/crag_campfire";
     static final String LUSH_GRASS = NS + "vegetation/lush_grass";
 
@@ -100,6 +105,12 @@ public final class AADecorationProvider extends FeatureData {
         placed("boulder/crag", "boulder/crag", surface(1 / 5.0, "boulders"));
         placed("boulder/ambrosium", "boulder/ambrosium", surface(1 / 16.0, "boulders"));
         placed("boulder/dune", "boulder/dune", surface(1 / 12.0, "boulders"));
+
+        // Deep Aether's rocks for the groves that had them; plain holystone and icestone stand in without it
+        boulder("aseterite", Substitutes.provider("deep_aether:aseterite"), 2, 4, 0.7, 0.3, null, false);
+        boulder("clorite", Substitutes.provider("deep_aether:clorite"), 2, 4, 0.7, 0.3, null, false);
+        placed("boulder/aseterite", "boulder/aseterite", surface(1 / 26.0, "boulders"));
+        placed("boulder/clorite", "boulder/clorite", surface(1 / 26.0, "boulders"));
     }
 
     /**
@@ -251,6 +262,22 @@ public final class AADecorationProvider extends FeatureData {
         placed("cloud/crag", "cloud/crag", skyPlacement(0.6, 2, 8));
         placed("cloud/tempest", "cloud/tempest", skyPlacement(1 / 8.0, 4, 14));
         placed("cloud/rift_strand", "cloud/rift_strand", skyPlacement(0.5, 2, 8));
+        // The golden light's high clouds, as Deep Aether places them (the stock golden aercloud, between heights 96 and
+        // 128, one in four chunks); ours so that the order of features in our biomes never clashes with Deep Aether's.
+        placed("cloud/golden_high", "aether:golden_aercloud", Placement.list(
+                Placement.heightRange("uniform", Placement.absolute(96), Placement.absolute(128)),
+                Placement.rarity(4), Placement.inSquare(), Placement.biome(), dungeonBlacklist()));
+
+        // low blue wisps over the cascading grove and the dunes, a sixth as common as on the crags
+        placed("cloud/grove_blue", "cloud/crag", skyPlacement(1 / 6.0, 2, 6));
+
+        // Great drifting banks of cold cloud through the whole Aether, between the heights of 32 and 96 (the stock
+        // Aether's: the tall Aether stretches them). They stand in for the stock large aercloud where it is off.
+        configured("cloud/mass", "aercloud", cloud(cold, "streak", 22, 26, 4));
+        placed("cloud/mass", "cloud/mass", Placement.list(
+                Placement.heightRange("uniform", Placement.absolute(32), Placement.absolute(96)),
+                Placement.rarity(9), Placement.inSquare(), Placement.configCount(2, "aerclouds"), Placement.biome()));
+        addFeature("cloud/mass", List.of(IS_AETHER), "top_layer_modification");
 
         JsonObject bridge = new JsonObject();
         bridge.add("block", cold);
@@ -260,6 +287,10 @@ public final class AADecorationProvider extends FeatureData {
     }
 
     /** Clouds anchor over the surface, so they sit near the terrain they decorate rather than in empty sky. */
+    private static JsonObject dungeonBlacklist() {
+        return Placement.type("aether:dungeon_blacklist_filter");
+    }
+
     private static JsonArray skyPlacement(double perChunk, int minAbove, int maxAbove) {
         return Placement.list(Placement.configCount(perChunk, "aerclouds"), Placement.inSquare(),
                 Placement.heightmap(SURFACE), Placement.randomOffset(0, minAbove, maxAbove), Placement.biome());
