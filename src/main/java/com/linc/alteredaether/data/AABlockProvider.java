@@ -40,10 +40,12 @@ public final class AABlockProvider extends JsonDataProvider {
     @Override
     protected void generate() {
         blockstate();
-        asset("models/block", AlteredAether.id(CAMPFIRE + "_off"), model("minecraft:block/campfire_off",
-                Map.of("particle", LOG, "log", LOG)));
-        asset("models/block", AlteredAether.id(CAMPFIRE), model("minecraft:block/template_campfire",
-                Map.of("particle", LOG, "log", LOG, "lit_log", LIT_LOG, "fire", FIRE)));
+        // Vanilla sets its campfire's cutout layer in code, which ours doesn't share; without it the flame's clear
+        // pixels draw as a dark box.
+        asset("models/block", AlteredAether.id(CAMPFIRE + "_off"), cutout(model("minecraft:block/campfire_off",
+                Map.of("particle", LOG, "log", LOG))));
+        asset("models/block", AlteredAether.id(CAMPFIRE), cutout(model("minecraft:block/template_campfire",
+                Map.of("particle", LOG, "log", LOG, "lit_log", LIT_LOG, "fire", FIRE))));
         asset("models/item", AlteredAether.id(CAMPFIRE), model(AlteredAether.MOD_ID + ":block/" + CAMPFIRE, Map.of()));
         loot();
         recipe();
@@ -67,6 +69,11 @@ public final class AABlockProvider extends JsonDataProvider {
         JsonObject json = new JsonObject();
         json.add("variants", variants);
         asset("blockstates", AlteredAether.id(CAMPFIRE), json);
+    }
+
+    private static JsonObject cutout(JsonObject model) {
+        model.addProperty("render_type", "minecraft:cutout");
+        return model;
     }
 
     private static JsonObject model(String parent, Map<String, String> textures) {

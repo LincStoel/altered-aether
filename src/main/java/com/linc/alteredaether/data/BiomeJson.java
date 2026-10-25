@@ -42,6 +42,11 @@ final class BiomeJson {
         return this;
     }
 
+    BiomeJson precipitation(boolean precipitation) {
+        json.addProperty("has_precipitation", precipitation);
+        return this;
+    }
+
     BiomeJson creatureProbability(float probability) {
         json.addProperty("creature_spawn_probability", probability);
         return this;

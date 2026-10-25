@@ -57,6 +57,11 @@ public final class AATagProvider extends JsonDataProvider {
         tag("block", ResourceLocation.withDefaultNamespace("mineable/axe"), "altered_aether:ambrosium_campfire");
         // dead bushes may stand on the dunes' quicksoil
         tag("block", ResourceLocation.withDefaultNamespace("dead_bush_may_place_on"), "aether:quicksoil");
+        // Tempest storms (see TempestStorms) and the natural rock their strikes scorch.
+        tag("worldgen/biome", AlteredAether.id("has_storms"), "altered_aether:tempest_peaks");
+        tag("block", AlteredAether.id("scorchable"), "aether:holystone", "aether:mossy_holystone", "aether:icestone",
+                "minecraft:cobbled_deepslate", "minecraft:deepslate", "minecraft:stone", "minecraft:snow_block",
+                "deep_aether:aseterite", "deep_aether:clorite");
         aetherBiomes();
     }
 

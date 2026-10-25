@@ -1,9 +1,11 @@
-// 1.21.1	2026-10-24T20:13:05.4231276	Altered Aether tags
+// 1.21.1	2026-10-24T22:18:41.5488106	Altered Aether tags
 ea2a6626ea7b2084acf76d089dc36db233345881 data/aether/tags/worldgen/biome/is_aether.json
 7ec09b2e18ab43d296e2d76cad7fe25c11cda07f data/altered_aether/tags/block/breeze_spawnable_on.json
 dc18018d6883948531de73415dfcbb7e51ca20b8 data/altered_aether/tags/block/familiar_spawnable_on.json
 da43ab2bbe8355c871257730474643815250588c data/altered_aether/tags/block/frozen_crag_ore_replaceables.json
+f76decdcce75cd4e962a371b9b30e0f57f123884 data/altered_aether/tags/block/scorchable.json
 103ae3d710b0ba3d9238ab8230adc473830e6b2b data/altered_aether/tags/block/tempest_peak_ore_replaceables.json
+8cf8a4cb0dc6acc9f95a83ab65901cc331d98695 data/altered_aether/tags/worldgen/biome/has_storms.json
 3f019e822d3a547bba0a274a48dacbd9e8bfdbc9 data/minecraft/tags/block/campfires.json
 c6381fa8eec6c45ea083b0125723f175d95dfe99 data/minecraft/tags/block/dead_bush_may_place_on.json
 3f019e822d3a547bba0a274a48dacbd9e8bfdbc9 data/minecraft/tags/block/mineable/axe.json

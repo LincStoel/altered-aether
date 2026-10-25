@@ -1,5 +1,6 @@
 {
   "parent": "minecraft:block/campfire_off",
+  "render_type": "minecraft:cutout",
   "textures": {
     "log": "aether:block/natural/skyroot_log",
     "particle": "aether:block/natural/skyroot_log"

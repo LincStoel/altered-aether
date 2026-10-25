@@ -1,0 +1,20 @@
+{
+  "replace": false,
+  "values": [
+    "aether:holystone",
+    "aether:mossy_holystone",
+    "aether:icestone",
+    "minecraft:cobbled_deepslate",
+    "minecraft:deepslate",
+    "minecraft:stone",
+    "minecraft:snow_block",
+    {
+      "id": "deep_aether:aseterite",
+      "required": false
+    },
+    {
+      "id": "deep_aether:clorite",
+      "required": false
+    }
+  ]
+}

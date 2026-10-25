@@ -16,6 +16,7 @@ package com.linc.alteredaether;
 
 import net.minecraft.core.registries.Registries;
 import net.minecraft.tags.TagKey;
+import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.block.Block;
 
 /** Tags this mod reads. */
@@ -26,6 +27,11 @@ public final class AATags {
     /** Ground Ars familiars may spawn on naturally in the Aether. */
     public static final TagKey<Block> FAMILIAR_SPAWNABLE_ON =
             TagKey.create(Registries.BLOCK, AlteredAether.id("familiar_spawnable_on"));
+
+    /** Biomes where Tempest storms gather and strike. */
+    public static final TagKey<Biome> HAS_STORMS = TagKey.create(Registries.BIOME, AlteredAether.id("has_storms"));
+    /** Ground a storm strike may scorch, besides dirt and sand. */
+    public static final TagKey<Block> SCORCHABLE = TagKey.create(Registries.BLOCK, AlteredAether.id("scorchable"));
 
     private AATags() {
     }

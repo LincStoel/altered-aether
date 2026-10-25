@@ -1,5 +1,6 @@
 {
   "parent": "minecraft:block/template_campfire",
+  "render_type": "minecraft:cutout",
   "textures": {
     "fire": "altered_aether:block/ambrosium_campfire_fire",
     "lit_log": "aether:block/natural/stripped_skyroot_log",

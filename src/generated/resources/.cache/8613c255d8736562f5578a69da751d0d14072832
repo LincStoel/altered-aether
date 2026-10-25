@@ -1,7 +1,9 @@
-// 1.21.1	2026-10-24T20:13:05.4196253	Altered Aether biome modifiers
+// 1.21.1	2026-10-24T22:10:26.5453263	Altered Aether biome modifiers
 a6b67b4c1c313dc7fdb12bbc3331f85be76ab355 data/altered_aether/neoforge/biome_modifier/aether_exclusive.json
 5aa795e9611228495aa045b613bafcf69423632e data/altered_aether/neoforge/biome_modifier/basin_fill.json
 6ca9e05f237f6b533016c74c7864efe4640ef189 data/altered_aether/neoforge/biome_modifier/climate.json
+0101f84b2647b243f490cfa87d69271b8b7cd472 data/altered_aether/neoforge/biome_modifier/landmarks.json
+b1928d7c8f93dc0119888606843a7f0e447ca675 data/altered_aether/neoforge/biome_modifier/landmark_decoration.json
 fed4da42a322c63d441a9bd3c3348b8c1b7c7b43 data/altered_aether/neoforge/biome_modifier/spawns/breeze.json
 1f3a346fa99e95cc28af6526ab95d2be47a61ea4 data/altered_aether/neoforge/biome_modifier/spawns/familiars/alakarkinos.json
 b5e43b0429d7cbe336973ac7a2c4a150199f3496 data/altered_aether/neoforge/biome_modifier/spawns/familiars/blazing_weald_walker.json

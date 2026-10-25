@@ -1,4 +1,4 @@
-// 1.21.1	2026-10-24T20:40:24.0067768	Altered Aether biomes
+// 1.21.1	2026-10-24T22:18:41.5513094	Altered Aether biomes
 a5563318a7abfbaf9c48812a45215cbc49806ad8 data/altered_aether/worldgen/biome/aether_plateau.json
 340e5963ae12026c52936fd99be54059961a55ef data/altered_aether/worldgen/biome/blazing_archwood_grove.json
 d7c459604e57415b751641165bb6dce4b4cc4602 data/altered_aether/worldgen/biome/cascading_archwood_grove.json
@@ -7,6 +7,6 @@ d7c459604e57415b751641165bb6dce4b4cc4602 data/altered_aether/worldgen/biome/casc
 85ce5a1fb507b4aae73d101d55cb5e81136f128d data/altered_aether/worldgen/biome/frozen_crags.json
 64fd52753fd60ba419a84f0ddebc7328af9796db data/altered_aether/worldgen/biome/shattered_rift.json
 0238882cbb9c208e18a12a15f9ac453673b7dd66 data/altered_aether/worldgen/biome/sunken_atoll.json
-00a5f37676693ac09a8ce09bef11d56ae4d8dc0b data/altered_aether/worldgen/biome/tempest_peaks.json
+040df4a172561eef018130f1b67d54de71602384 data/altered_aether/worldgen/biome/tempest_peaks.json
 7f4f49f1edbb4403d614a0ae63cc6d6d00288730 data/altered_aether/worldgen/biome/vexing_archwood_grove.json
 02b7a9b7267e7d7f142b1dcfa92f8f2f9d95e18e data/altered_aether/worldgen/biome/windswept_dunes.json

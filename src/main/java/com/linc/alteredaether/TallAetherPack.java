@@ -18,6 +18,13 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.packs.PackType;
 import net.minecraft.server.packs.repository.Pack;
 import net.minecraft.server.packs.repository.PackSource;
+import net.minecraft.server.packs.PackLocationInfo;
+import net.minecraft.server.packs.PackSelectionConfig;
+import net.minecraft.server.packs.PathPackResources;
+import net.minecraft.server.packs.repository.BuiltInPackSource;
+import net.neoforged.fml.ModList;
+
+import java.util.Optional;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.AddPackFindersEvent;
@@ -38,9 +45,22 @@ public final class TallAetherPack {
         if (event.getPackType() != PackType.SERVER_DATA) {
             return;
         }
-        event.addPackFinders(AlteredAether.id(PATH), PackType.SERVER_DATA,
-                Component.translatableWithFallback("pack.altered_aether.tall_aether", "Altered Aether: Tall Aether"),
-                PackSource.BUILT_IN, false, Pack.Position.TOP);
+        // Built by hand rather than with event.addPackFinders, which marks the pack as one the client also has. A
+        // client then takes registry entries from such a pack out of its own copy of the data instead of the
+        // server's, and its own copy puts the Aether's stock dimension type on top: it would think the Aether ends
+        // at 256 and draw nothing above. With no known-pack identity, the server sends these entries in full.
+        var file = ModList.get().getModContainerById(AlteredAether.MOD_ID).orElseThrow().getModInfo().getOwningFile()
+                .getFile();
+        var root = file.findResource(PATH);
+        Pack pack = Pack.readMetaAndCreate(
+                new PackLocationInfo("mod/" + AlteredAether.id(PATH),
+                        Component.translatableWithFallback("pack.altered_aether.tall_aether", "Altered Aether: Tall Aether"),
+                        PackSource.BUILT_IN, Optional.empty()),
+                BuiltInPackSource.fromName(path -> new PathPackResources(path, root)),
+                PackType.SERVER_DATA, new PackSelectionConfig(false, Pack.Position.TOP, false));
+        if (pack != null) {
+            event.addRepositorySource(consumer -> consumer.accept(pack));
+        }
     }
 
     private TallAetherPack() {

@@ -160,6 +160,8 @@ public final class AABiomeProvider extends JsonDataProvider {
     private BiomeJson tempestPeaks() {
         return base()
                 .climate(1.95f, 0.0f)
+                // Rain, so the storms can bring it (see StormAtmosphere); the Aether itself never rains.
+                .precipitation(true)
                 .drop(BARREN).drop(FOREST_TREES)
                 .effect("fog_color", 13214247).effect("foliage_color", 9211020).effect("grass_color", 9211020)
                 .effect("sky_color", 15915105)

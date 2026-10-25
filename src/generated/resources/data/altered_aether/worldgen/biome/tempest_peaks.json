@@ -48,7 +48,7 @@
       "altered_aether:cloud/tempest"
     ]
   ],
-  "has_precipitation": false,
+  "has_precipitation": true,
   "spawn_costs": {
     "aether:aerwhale": {
       "charge": 0.5,
