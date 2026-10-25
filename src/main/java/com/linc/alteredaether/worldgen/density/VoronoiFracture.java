@@ -15,6 +15,8 @@
 package com.linc.alteredaether.worldgen.density;
 
 import com.linc.alteredaether.config.AACommonConfig;
+import com.linc.alteredaether.worldgen.landmark.GreatFracture;
+import com.linc.alteredaether.worldgen.landmark.LandmarkField;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
@@ -32,10 +34,23 @@ import net.minecraft.world.level.levelgen.DensityFunction;
  *
  * <p>The cells come from {@code seed}, a noise wired to the world seed, so every world fractures differently.
  * Slab size and drift scale with the config's {@code rift_fracture_size} and {@code rift_drift}.
+ *
+ * <p>Where a {@link GreatFracture} lies, cells whose points fall inside it merge into its giant slabs: they share the
+ * giant's lift and tilt, and the cracks between cells of one giant close up, leaving only the faults between giants.
+ * The world's landmark field is bound per world by {@link RegionBinding}.
  */
 public record VoronoiFracture(DensityFunction argument, NoiseHolder seed, double cellSize, double crackWidth,
-                              double maxOffset, double maxTilt, DensityFunction roughness)
+                              double maxOffset, double maxTilt, DensityFunction roughness, Binding binding)
         implements DensityFunction {
+    /** Shared by every copy made from one world's router; see {@link RegionMask#mapAll}. */
+    public static final class Binding {
+        private volatile LandmarkField field;
+
+        public void bind(LandmarkField field) {
+            this.field = field;
+        }
+    }
+
     public static final MapCodec<VoronoiFracture> MAP_CODEC = RecordCodecBuilder.mapCodec(i -> i.group(
             DensityFunction.HOLDER_HELPER_CODEC.fieldOf("argument").forGetter(VoronoiFracture::argument),
             NoiseHolder.CODEC.fieldOf("seed").forGetter(VoronoiFracture::seed),
@@ -44,7 +59,8 @@ public record VoronoiFracture(DensityFunction argument, NoiseHolder seed, double
             Codec.doubleRange(0, 128).fieldOf("max_offset").forGetter(VoronoiFracture::maxOffset),
             Codec.doubleRange(0, 2).fieldOf("max_tilt").forGetter(VoronoiFracture::maxTilt),
             DensityFunction.HOLDER_HELPER_CODEC.fieldOf("roughness").forGetter(VoronoiFracture::roughness)
-    ).apply(i, VoronoiFracture::new));
+    ).apply(i, (argument, seed, cell, crack, offset, tilt, roughness) ->
+            new VoronoiFracture(argument, seed, cell, crack, offset, tilt, roughness, null)));
     public static final KeyDispatchDataCodec<VoronoiFracture> CODEC = KeyDispatchDataCodec.of(MAP_CODEC);
 
     /** Density subtracted at the centre of a crack: far below anything the terrain reaches, so cracks are open air. */
@@ -56,6 +72,13 @@ public record VoronoiFracture(DensityFunction argument, NoiseHolder seed, double
         double drift = AACommonConfig.RIFT_DRIFT.get();
         double x = context.blockX() / size, z = context.blockZ() / size;
         int gx = Mth.floor(x), gz = Mth.floor(z);
+        LandmarkField field = binding == null ? null : binding.field;
+        if (field != null) {
+            GreatFracture fracture = field.fractureNear(context.blockX(), context.blockZ()).orElse(null);
+            if (fracture != null) {
+                return great(context, fracture, field.vertical(), size, drift, x, z, gx, gz);
+            }
+        }
 
         // Nearest and second-nearest cell points, searching the 3x3 neighbourhood of grid cells.
         double best = Double.MAX_VALUE, second = Double.MAX_VALUE;
@@ -98,6 +121,69 @@ public record VoronoiFracture(DensityFunction argument, NoiseHolder seed, double
         return slab - CRACK_DEPTH * (1 - t * t * (3 - 2 * t));
     }
 
+    /**
+     * The terrain in and around a great fracture. The nearest cell point picks the slab as usual; a slab whose cell
+     * belongs to a giant takes the giant's displacement instead of its own. The crack is measured to the nearest
+     * neighbour whose cell belongs to a different slab, so the boundaries inside a giant vanish.
+     */
+    private double great(FunctionContext context, GreatFracture fracture, double vertical, double size, double drift,
+                         double x, double z, int gx, int gz) {
+        double[] distance = new double[9];
+        int[] group = new int[9];
+        int[] cellX = new int[9], cellZ = new int[9];
+        double[] pointX = new double[9], pointZ = new double[9];
+        int best = 0;
+        for (int i = 0; i < 9; i++) {
+            int cx = gx + i % 3 - 1, cz = gz + i / 3 - 1;
+            double px = cx + 0.5 + 0.45 * hash(cx, cz, 0);
+            double pz = cz + 0.5 + 0.45 * hash(cx, cz, 1);
+            cellX[i] = cx;
+            cellZ[i] = cz;
+            pointX[i] = px;
+            pointZ[i] = pz;
+            distance[i] = Math.hypot(x - px, z - pz);
+            // Cells outside the zone each stand alone: give each a group of its own.
+            int g = fracture.group(px * size, pz * size);
+            group[i] = g >= 0 ? g : -1 - i;
+            if (distance[i] < distance[best]) {
+                best = i;
+            }
+        }
+        double rise;
+        if (group[best] >= 0) {
+            rise = fracture.rise(group[best], context.blockX(), context.blockZ()) * vertical * drift;
+        } else {
+            int bx = cellX[best], bz = cellZ[best];
+            rise = maxOffset * drift * hash(bx, bz, 2)
+                    + maxTilt * drift * hash(bx, bz, 3) * (x - pointX[best]) * size
+                    + maxTilt * drift * hash(bx, bz, 4) * (z - pointZ[best]) * size;
+        }
+        double slab = argument.compute(new SinglePointContext(context.blockX(),
+                context.blockY() - (int) Math.round(rise), context.blockZ()));
+        if (group[best] >= 0) {
+            double wave = 4 * vertical * seed.getValue(context.blockX() / 37.0, 0, context.blockZ() / 37.0);
+            slab = Math.max(slab, fracture.plate(context.blockX(), context.blockY(), context.blockZ(), rise, wave));
+        }
+
+        double edge = Double.MAX_VALUE, width = crackWidth;
+        for (int i = 0; i < 9; i++) {
+            if (i == best || group[i] == group[best]) {
+                continue;
+            }
+            double e = (distance[i] - distance[best]) * size * 0.5;
+            if (e < edge) {
+                edge = e;
+                width = fracture.width(group[best], group[i], crackWidth);
+            }
+        }
+        width *= 1 + 0.5 * roughness.compute(context);
+        if (edge >= width) {
+            return slab;
+        }
+        double t = edge / Math.max(width, 1e-3);
+        return slab - CRACK_DEPTH * (1 - t * t * (3 - 2 * t));
+    }
+
     /** A per-cell value in [-1, 1], from the world-seeded noise sampled at far-apart integer points. */
     private double hash(int cx, int cz, int channel) {
         double v = seed.getValue(cx * 31.17 + channel * 113.71, channel * 7.3, cz * 31.17 - channel * 57.13);
@@ -112,7 +198,7 @@ public record VoronoiFracture(DensityFunction argument, NoiseHolder seed, double
     @Override
     public DensityFunction mapAll(Visitor visitor) {
         return visitor.apply(new VoronoiFracture(argument.mapAll(visitor), visitor.visitNoise(seed), cellSize,
-                crackWidth, maxOffset, maxTilt, roughness.mapAll(visitor)));
+                crackWidth, maxOffset, maxTilt, roughness.mapAll(visitor), binding != null ? binding : new Binding()));
     }
 
     @Override

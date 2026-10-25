@@ -15,6 +15,7 @@
 package com.linc.alteredaether.worldgen.basin;
 
 import net.minecraft.util.Mth;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * A ring island around a lagoon, standing on its own in a moat of open sky. Seen in profile: a bowl-shaped lagoon
@@ -25,13 +26,31 @@ import net.minecraft.util.Mth;
  * @param lagoon radius of the lagoon floor where it meets the beach
  * @param outer  radius where the outer shore ends
  * @param top    height of the crest's base; the lagoon's water stands two blocks below it
+ * @param inner  the second ring and islet of a double atoll, or null for a single ring
  */
 public record AtollSite(int x, int z, double lagoon, double outer, int top, double depth, double vertical,
-                        double phase1, double phase2) {
+                        double phase1, double phase2, @Nullable Inner inner) {
     /** The open-sky gap kept between the atoll's shore and whatever island surrounds it. */
     static final double MOAT = 6;
     /** Beyond the shore plus this, the atoll leaves the terrain alone. */
     static final double INFLUENCE = 26;
+
+    /**
+     * A double atoll's inner ring island, standing in the lagoon with two channels cut through it, and the islet at
+     * the very centre.
+     *
+     * @param ring     the ring's centre line, as a fraction of the lagoon radius
+     * @param width    the ring's half width at the water line, in blocks
+     * @param islet    the islet's radius at the water line, in blocks
+     * @param channel  bearing of the first channel through the ring
+     * @param apart    angle from the first channel to the second
+     */
+    public record Inner(double ring, double width, double islet, double channel, double apart) {
+    }
+
+    public boolean isDouble() {
+        return inner != null;
+    }
 
     public double extent() {
         return outer * BasinSite.MAX_WOBBLE + INFLUENCE;
@@ -62,6 +81,9 @@ public record AtollSite(int x, int z, double lagoon, double outer, int top, doub
         double surface;
         if (distance <= in) {
             surface = top - 1 - depth * Math.pow(1 - (distance / in) * (distance / in), 0.6);
+            if (inner != null) {
+                surface = Math.max(surface, innerSurface(distance, in, Math.atan2(dz, dx)));
+            }
         } else if (distance <= crest) {
             surface = top - 1 + 2 * vertical * smooth((distance - in) / (crest - in));
         } else {
@@ -71,6 +93,36 @@ public record AtollSite(int x, int z, double lagoon, double outer, int top, doub
         double underside = top - vertical * (10 + 42 * (1 - t * t));
         double ring = Mth.clamp(0.1 * Math.min(surface - py, py - underside), -1, 1);
         return Math.max(ring, surrounding);
+    }
+
+    /**
+     * The inner ring and the islet, as a ground height to set against the lagoon floor. The water stands at
+     * {@code top - 2}: the ring's crest is three blocks over it, falling away in a rounded bank to the floor, except
+     * where a channel cuts it down below the water; the islet is a mound five blocks high.
+     */
+    private double innerSurface(double distance, double in, double angle) {
+        Inner ring = inner;
+        double water = top - 2;
+        double centre = in * ring.ring();
+        double across = Math.abs(distance - centre) / ring.width();
+        double bank = water + 3 * vertical - across * across * 3 * vertical;
+        double gate = Math.max(channel(angle, ring.channel()), channel(angle, ring.channel() + ring.apart()));
+        bank -= gate * 6 * vertical;
+        double t = distance / ring.islet();
+        double islet = water + 5 * vertical - t * t * 5 * vertical;
+        return Math.max(bank, islet);
+    }
+
+    /** 1 in the middle of a channel at {@code bearing}, falling smoothly to 0 at its banks. */
+    private static double channel(double angle, double bearing) {
+        double off = Math.abs(Mth.wrapDegrees(Math.toDegrees(angle - bearing)));
+        return smooth(1 - off / 9);
+    }
+
+    /** The islet's centre, for the tree that crowns it, or null on a single atoll. */
+    @Nullable
+    public net.minecraft.core.BlockPos isletCentre() {
+        return inner == null ? null : new net.minecraft.core.BlockPos(x, top, z);
     }
 
     private static double smooth(double t) {

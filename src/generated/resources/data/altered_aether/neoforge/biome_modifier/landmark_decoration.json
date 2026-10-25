@@ -1,0 +1,14 @@
+{
+  "type": "neoforge:add_features",
+  "biomes": "#aether:is_aether",
+  "features": [
+    "altered_aether:landmark/tempest_ring",
+    "altered_aether:landmark/spire_drifts",
+    "altered_aether:landmark/fracture_debris",
+    "altered_aether:landmark/fracture_slabs",
+    "altered_aether:landmark/fracture_bridges",
+    "altered_aether:landmark/islet_meadow",
+    "altered_aether:landmark/islet_oak"
+  ],
+  "step": "surface_structures"
+}

@@ -1,0 +1,15 @@
+{
+  "feature": "altered_aether:debris/rift_large",
+  "placement": [
+    {
+      "type": "altered_aether:landmark_points",
+      "chance": 0.25,
+      "hang": [
+        10,
+        40
+      ],
+      "kind": "chasm",
+      "landmark": "great_fracture"
+    }
+  ]
+}

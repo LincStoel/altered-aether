@@ -28,6 +28,11 @@ public final class AAFeatureProvider extends JsonDataProvider {
     private static final String NS = AlteredAether.MOD_ID + ":";
     /** The basin fill, in every biome that holds basins. */
     static final String BASIN_FILL = NS + "basin_fill";
+    /** The landmark builder, and the decoration placed at landmarks' points, in the order they run. */
+    static final String LANDMARK = NS + "landmark/build";
+    static final String[] LANDMARK_DECORATION = {NS + "landmark/tempest_ring", NS + "landmark/spire_drifts",
+            NS + "landmark/fracture_debris", NS + "landmark/fracture_slabs", NS + "landmark/fracture_bridges",
+            NS + "landmark/islet_meadow", NS + "landmark/islet_oak"};
 
     public AAFeatureProvider(PackOutput output) {
         super(output, "features");
@@ -38,6 +43,48 @@ public final class AAFeatureProvider extends JsonDataProvider {
         groveTrees();
         basinFill();
         waterfalls();
+        landmarks();
+    }
+
+    /**
+     * The rare landmarks: the builder, which puts each landmark together a chunk at a time, and the decoration at
+     * their points. Copper spires ring the Tempest crown, drifts bank against the frozen spire's foot, debris hangs in
+     * the great fracture's canyon with cloud bridges over its lesser fault, and a golden oak grows on the double
+     * atoll's islet, in a meadow.
+     */
+    private void landmarks() {
+        configured("landmark/build", NS + "landmark", new JsonObject());
+        placed("landmark/build", LANDMARK, new JsonArray());
+
+        placed("landmark/tempest_ring", NS + "copper_spike/cluster", Placement.list(
+                Placement.landmarkPoints("tempest_spires", "ring", 1), Placement.heightmap("WORLD_SURFACE_WG")));
+        placed("landmark/spire_drifts", NS + "drift/snow", Placement.list(
+                Placement.landmarkPoints("frozen_spire", "foot", 0.8), Placement.heightmap("WORLD_SURFACE_WG")));
+        placed("landmark/fracture_debris", NS + "debris/rift", Placement.list(
+                Placement.landmarkPoints("great_fracture", "chasm", 0.9, 4, 34)));
+        placed("landmark/fracture_slabs", NS + "debris/rift_large", Placement.list(
+                Placement.landmarkPoints("great_fracture", "chasm", 0.25, 10, 40)));
+        placed("landmark/fracture_bridges", NS + "cloud/rift_bridge", Placement.list(
+                Placement.landmarkPoints("great_fracture", "rim", 0.6), Placement.heightmap("WORLD_SURFACE_WG")));
+
+        JsonObject meadow = new JsonObject();
+        JsonObject provider = new JsonObject();
+        provider.add("fallback", Providers.simple("aether:aether_grass_block"));
+        provider.add("rules", new JsonArray());
+        meadow.add("state_provider", provider);
+        JsonObject target = new JsonObject();
+        target.addProperty("type", "minecraft:matching_blocks");
+        JsonArray sand = new JsonArray();
+        sand.add("minecraft:sand");
+        target.add("blocks", sand);
+        meadow.add("target", target);
+        meadow.addProperty("radius", 4);
+        meadow.addProperty("half_height", 2);
+        configured("landmark/islet_meadow", "minecraft:disk", meadow);
+        placed("landmark/islet_meadow", NS + "landmark/islet_meadow", Placement.list(
+                Placement.landmarkPoints("double_atoll", "islet", 1), Placement.heightmap("WORLD_SURFACE_WG")));
+        placed("landmark/islet_oak", "aether:golden_oak_tree", Placement.list(
+                Placement.landmarkPoints("double_atoll", "islet", 1), Placement.heightmap("WORLD_SURFACE_WG")));
     }
 
     static final String WATERFALL_WATER = NS + "waterfall/water", WATERFALL_POISON = NS + "waterfall/poison";

@@ -20,6 +20,8 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.biome.BiomeSource;
 import net.minecraft.world.level.biome.MultiNoiseBiomeSource;
 import com.linc.alteredaether.worldgen.basin.BasinField;
+import com.linc.alteredaether.worldgen.TerrainProbe;
+import com.linc.alteredaether.worldgen.landmark.LandmarkField;
 import net.minecraft.world.level.levelgen.DensityFunction;
 import net.minecraft.world.level.levelgen.NoiseBasedChunkGenerator;
 import net.minecraft.world.level.levelgen.NoiseSettings;
@@ -63,6 +65,7 @@ public final class RegionBinding {
         Set<RegionMask.Binding> bindings = Collections.newSetFromMap(new IdentityHashMap<>());
         List<BasinCarve> carves = new ArrayList<>();
         List<Atoll> atolls = new ArrayList<>();
+        Set<VoronoiFracture.Binding> fractures = Collections.newSetFromMap(new IdentityHashMap<>());
         RandomState randomState = level.getChunkSource().randomState();
         randomState.router().mapAll(new DensityFunction.Visitor() {
             @Override
@@ -73,6 +76,8 @@ public final class RegionBinding {
                     carves.add(carve);
                 } else if (function instanceof Atoll atoll && atoll.binding() != null) {
                     atolls.add(atoll);
+                } else if (function instanceof VoronoiFracture fracture && fracture.binding() != null) {
+                    fractures.add(fracture.binding());
                 }
                 return function;
             }
@@ -87,7 +92,7 @@ public final class RegionBinding {
             bindings.forEach(binding -> binding.bind(solver));
             SOLVERS.put(level.dimension(), solver);
             AlteredAether.LOGGER.info("Bound Altered Aether's region mask for {}", level.dimension().location());
-            bindBasins(level, randomState, source, carves, atolls);
+            bindFields(level, randomState, source, carves, atolls, fractures);
         } else {
             AlteredAether.LOGGER.warn("{} uses Altered Aether's region mask but its biome source has no TerraBlender "
                     + "regions; our landforms are disabled there.", level.dimension().location());
@@ -95,25 +100,34 @@ public final class RegionBinding {
     }
 
     /**
-     * Builds the world's basin field from the carve and atoll functions in its router. The carve's argument, as wired
-     * here, is the exact uninterpolated terrain, which is what sites are validated against.
+     * Builds the world's basin and landmark fields from the carve, atoll and fracture functions in its router. The
+     * carve's argument, as wired here, is the exact uninterpolated terrain before any basin is cut, which is what
+     * sites are checked against.
      */
-    private static void bindBasins(ServerLevel level, RandomState randomState, BiomeSource source,
-                                   List<BasinCarve> carves, List<Atoll> atolls) {
-        if (carves.isEmpty() && atolls.isEmpty()
+    private static void bindFields(ServerLevel level, RandomState randomState, BiomeSource source,
+                                   List<BasinCarve> carves, List<Atoll> atolls, Set<VoronoiFracture.Binding> fractures) {
+        if (carves.isEmpty() && atolls.isEmpty() && fractures.isEmpty()
                 || !(level.getChunkSource().getGenerator() instanceof NoiseBasedChunkGenerator generator)) {
             return;
         }
         NoiseSettings noise = generator.generatorSettings().value().noiseSettings();
         BasinCarve carve = carves.isEmpty() ? null : carves.getFirst();
         Atoll atoll = atolls.isEmpty() ? null : atolls.getFirst();
-        BasinField field = new BasinField(level.getSeed(), source, randomState.sampler(),
-                carve == null ? null : carve.argument(), carve == null ? 1 : carve.verticalScale(),
-                atoll == null ? null : new BasinField.AtollSettings(atoll.weight(), atoll.surface(), atoll.verticalScale()),
-                noise.minY(), noise.minY() + noise.height());
-        carves.forEach(c -> c.binding().bind(field));
-        atolls.forEach(a -> a.binding().bind(field));
-        BasinField.put(level.dimension(), field);
+        TerrainProbe probe = new TerrainProbe(source, randomState.sampler(), carve == null ? null : carve.argument(),
+                atoll == null ? null : atoll.weight(), noise.minY(), noise.minY() + noise.height());
+        double vertical = carve != null ? carve.verticalScale() : atoll != null ? atoll.verticalScale() : 1;
+        BasinField basins = null;
+        if (carve != null || atoll != null) {
+            BasinField field = new BasinField(level.getSeed(), probe, vertical,
+                    atoll == null ? null : new BasinField.AtollSettings(atoll.surface(), atoll.verticalScale()));
+            carves.forEach(c -> c.binding().bind(field));
+            atolls.forEach(a -> a.binding().bind(field));
+            BasinField.put(level.dimension(), field);
+            basins = field;
+        }
+        LandmarkField landmarks = new LandmarkField(level.getSeed(), probe, basins, vertical, level.getMaxBuildHeight());
+        fractures.forEach(f -> f.bind(landmarks));
+        LandmarkField.put(level.dimension(), landmarks);
     }
 
     @SubscribeEvent
@@ -121,6 +135,7 @@ public final class RegionBinding {
         if (event.getLevel() instanceof ServerLevel level) {
             SOLVERS.remove(level.dimension());
             BasinField.put(level.dimension(), null);
+            LandmarkField.put(level.dimension(), null);
         }
     }
 

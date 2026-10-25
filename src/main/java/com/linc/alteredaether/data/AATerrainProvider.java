@@ -395,10 +395,6 @@ public final class AATerrainProvider extends JsonDataProvider {
     }
 
     /**
-     * The Aether's quicksoil shelves read their {@code y_range} as absolute heights in Java, where the anchor remap
-     * can't reach, so the tall pack carries the Aether's own file with that range stretched the same way.
-     */
-    /**
      * Patches of soft ground in two groves: quicksoil among the cascading grove's coarse dirt, and virulent quicksand
      * in the vexing grove's mud. The Aether's shelf feature reads its height range as plain numbers, which is why these
      * are written for both height modes. The range is the island band, 0 to 128 in the stock Aether, which is -64 to
@@ -441,6 +437,10 @@ public final class AATerrainProvider extends JsonDataProvider {
         }
     }
 
+    /**
+     * The Aether's quicksoil shelves read their {@code y_range} as absolute heights in Java, where the anchor remap
+     * can't reach, so the tall pack carries the Aether's own file with that range stretched the same way.
+     */
     private void quicksoilShelf() {
         JsonObject feature = ModResources.json("aether", "data", "aether", "worldgen", "configured_feature",
                 "quicksoil_shelf.json");

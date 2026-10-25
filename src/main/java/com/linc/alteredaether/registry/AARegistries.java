@@ -28,6 +28,7 @@ import com.linc.alteredaether.worldgen.feature.SnowDriftFeature;
 import com.linc.alteredaether.worldgen.feature.StrikeCraterFeature;
 import com.linc.alteredaether.worldgen.feature.TotemFeature;
 import com.linc.alteredaether.worldgen.feature.SpawnEntityFeature;
+import com.linc.alteredaether.worldgen.feature.LandmarkFeature;
 import com.linc.alteredaether.worldgen.feature.BoulderFeature;
 import com.linc.alteredaether.worldgen.feature.CopperSpikeFeature;
 import com.linc.alteredaether.worldgen.feature.EdgeSpringFeature;
@@ -36,6 +37,7 @@ import com.linc.alteredaether.worldgen.placement.BiomeEdgeFalloff;
 import com.linc.alteredaether.worldgen.placement.IslandEdge;
 import com.linc.alteredaether.worldgen.placement.JitteredGrid;
 import com.linc.alteredaether.worldgen.placement.Overhang;
+import com.linc.alteredaether.worldgen.placement.LandmarkPoints;
 import com.linc.alteredaether.worldgen.density.RegionMask;
 import com.linc.alteredaether.worldgen.density.ShiftY;
 import com.linc.alteredaether.worldgen.density.Terrace;
@@ -138,6 +140,8 @@ public final class AARegistries {
             FEATURES.register("totem", TotemFeature::new);
     public static final DeferredHolder<Feature<?>, SpawnEntityFeature> SPAWN_ENTITY =
             FEATURES.register("spawn_entity", SpawnEntityFeature::new);
+    public static final DeferredHolder<Feature<?>, LandmarkFeature> LANDMARK =
+            FEATURES.register("landmark", LandmarkFeature::new);
 
     public static final DeferredRegister<PlacementModifierType<?>> PLACEMENT_MODIFIERS =
             DeferredRegister.create(Registries.PLACEMENT_MODIFIER_TYPE, AlteredAether.MOD_ID);
@@ -152,6 +156,8 @@ public final class AARegistries {
             PLACEMENT_MODIFIERS.register("biome_edge_falloff", () -> () -> BiomeEdgeFalloff.CODEC);
     public static final DeferredHolder<PlacementModifierType<?>, PlacementModifierType<Overhang>> OVERHANG =
             PLACEMENT_MODIFIERS.register("overhang", () -> () -> Overhang.CODEC);
+    public static final DeferredHolder<PlacementModifierType<?>, PlacementModifierType<LandmarkPoints>> LANDMARK_POINTS =
+            PLACEMENT_MODIFIERS.register("landmark_points", () -> () -> LandmarkPoints.CODEC);
 
     public static final DeferredRegister<MapCodec<? extends SurfaceRules.ConditionSource>> SURFACE_CONDITIONS =
             DeferredRegister.create(Registries.MATERIAL_CONDITION, AlteredAether.MOD_ID);

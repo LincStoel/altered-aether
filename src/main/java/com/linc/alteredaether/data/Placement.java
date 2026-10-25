@@ -74,6 +74,25 @@ final class Placement {
         return json;
     }
 
+    /** The decoration points of one kind on a type of landmark, in this chunk (see LandmarkPoints). */
+    static JsonObject landmarkPoints(String landmark, String kind, double chance) {
+        JsonObject json = type("altered_aether:landmark_points");
+        json.addProperty("landmark", landmark);
+        json.addProperty("kind", kind);
+        json.addProperty("chance", chance);
+        return json;
+    }
+
+    /** As {@link #landmarkPoints}, each hung between {@code min} and {@code max} blocks below the ground around it. */
+    static JsonObject landmarkPoints(String landmark, String kind, double chance, int min, int max) {
+        JsonObject json = landmarkPoints(landmark, kind, chance);
+        JsonArray hang = new JsonArray();
+        hang.add(min);
+        hang.add(max);
+        json.add("hang", hang);
+        return json;
+    }
+
     /** Moves to the air block under a ledge above (see Overhang). */
     static JsonObject overhang(int search, int clearance) {
         JsonObject json = type("altered_aether:overhang");

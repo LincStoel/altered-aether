@@ -35,6 +35,12 @@ neoForge {
         register("client") {
             client()
             gameDirectory = layout.projectDirectory.dir("run")
+            // -PaaTour=stop,stop,... quick-plays the world run/saves/tour and takes the camera tour in debug/Tour.
+            val tour = findProperty("aaTour") as String?
+            systemProperty("altered_aether.tour", tour ?: "")
+            if (tour != null) {
+                programArguments.addAll("--quickPlaySingleplayer", "tour")
+            }
         }
         register("server") {
             server()
@@ -47,6 +53,9 @@ neoForge {
             systemProperty("altered_aether.bench", (findProperty("aaBench") as String?) ?: "")
             // -PaaStructures=true adds each Aether structure's height against its ground to the report.
             systemProperty("altered_aether.report.structures", (findProperty("aaStructures") as String?) ?: "false")
+            // -PaaRender=true writes top and side views of the benchmark's area to run-server/renders/. A benchmark
+            // centred on "landmark:<type>" goes to the nearest landmark of that type.
+            systemProperty("altered_aether.render", (findProperty("aaRender") as String?) ?: "false")
         }
         // Writes the mod's generated data (worldgen JSON, tags, lang, models) into src/generated/resources.
         register("data") {

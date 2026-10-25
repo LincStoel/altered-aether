@@ -18,14 +18,11 @@ import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.linc.alteredaether.config.AACommonConfig;
 import com.linc.alteredaether.worldgen.AABiomes;
-import net.minecraft.core.QuartPos;
+import com.linc.alteredaether.worldgen.TerrainProbe;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.biome.BiomeSource;
-import net.minecraft.world.level.biome.Climate;
-import net.minecraft.world.level.levelgen.DensityFunction;
 import net.minecraft.world.level.levelgen.XoroshiroRandomSource;
 import org.jetbrains.annotations.Nullable;
 
@@ -55,8 +52,6 @@ public final class BasinField {
     static final int ATOLL_CELL = 256;
     /** Spots tried per cell before it is left dry. */
     private static final int ATTEMPTS = 10;
-    /** Coarse step of the column surface search. */
-    private static final int SCAN_STEP = 6;
     /** Rim directions, in sixteenths of a turn, in the order they're checked. */
     private static final int[] RIM_ORDER = {0, 4, 8, 12, 2, 6, 10, 14, 1, 3, 5, 7, 9, 11, 13, 15};
     private static final String FROZEN_CRAGS = AABiomes.FROZEN_CRAGS.location().toString();
@@ -64,6 +59,8 @@ public final class BasinField {
     private static final BasinType[] SMALL = {BasinType.DEEP_LAKE, BasinType.POOL, BasinType.CASCADING_LAKE,
             BasinType.FROZEN_POOL, BasinType.POISON_POOL};
     private static final long BASIN_SALT = 0x5DEECE66DL, ATOLL_SALT = 0x2545F4914F6CDD1DL;
+    /** The share of atolls that are double, before the landmark rarity multiplier. */
+    private static final double DOUBLE_ATOLL_CHANCE = 0.25;
 
     private static final Map<ResourceKey<Level>, BasinField> FIELDS = new ConcurrentHashMap<>();
 
@@ -81,14 +78,12 @@ public final class BasinField {
     }
 
     /** The parameters of the atoll density function, when the terrain has one. */
-    public record AtollSettings(DensityFunction regionWeight, int surface, double vertical) {
+    public record AtollSettings(int surface, double vertical) {
     }
 
     private final long seed;
-    private final BiomeSource biomes;
-    private final Climate.Sampler sampler;
-    @Nullable
-    private final DensityFunction terrain;
+    private final TerrainProbe probe;
+    private final boolean carves;
     private final double vertical;
     @Nullable
     private final AtollSettings atoll;
@@ -104,20 +99,18 @@ public final class BasinField {
     private final Cache<Long, Optional<AtollSite>> atolls = CacheBuilder.newBuilder().maximumSize(1 << 12).build();
 
     /**
-     * @param terrain  the terrain before basins are cut, or null when the world has no basin carve (then only atoll
-     *                 lagoons, which shape themselves, are filled)
+     * @param probe    the terrain before basins are cut; when it has none, the world has no basin carve and only atoll
+     *                 lagoons, which shape themselves, are filled
      * @param vertical vertical scale for the height mode: 1 in the tall Aether
      */
-    public BasinField(long seed, BiomeSource biomes, Climate.Sampler sampler, @Nullable DensityFunction terrain,
-                      double vertical, @Nullable AtollSettings atoll, int minY, int maxY) {
+    public BasinField(long seed, TerrainProbe probe, double vertical, @Nullable AtollSettings atoll) {
         this.seed = seed;
-        this.biomes = biomes;
-        this.sampler = sampler;
-        this.terrain = terrain;
+        this.probe = probe;
+        this.carves = probe.terrain() != null;
         this.vertical = vertical;
         this.atoll = atoll;
-        this.minY = minY;
-        this.maxY = maxY;
+        this.minY = probe.minY();
+        this.maxY = probe.maxY();
         for (BasinType type : BasinType.values()) {
             chances[type.ordinal()] = type.chance();
         }
@@ -130,7 +123,7 @@ public final class BasinField {
     /** Every basin whose extent reaches into the given block rectangle, atoll lagoons included. */
     public List<BasinSite> sitesTouching(int minX, int minZ, int maxX, int maxZ) {
         List<BasinSite> found = new ArrayList<>(2);
-        if (terrain != null) {
+        if (carves) {
             int reach = CELL / 2;
             for (int cx = Math.floorDiv(minX - reach, CELL); cx <= Math.floorDiv(maxX + reach, CELL); cx++) {
                 for (int cz = Math.floorDiv(minZ - reach, CELL); cz <= Math.floorDiv(maxZ + reach, CELL); cz++) {
@@ -150,6 +143,15 @@ public final class BasinField {
             }
         }
         return found;
+    }
+
+    /** The atoll in a grid cell, if it has one. */
+    public Optional<AtollSite> atollInCell(int cx, int cz) {
+        return atoll == null ? Optional.empty() : atoll(cx, cz);
+    }
+
+    public int atollCell() {
+        return atollCell;
     }
 
     /** The atoll whose influence covers this column, if any. Each atoll stays inside its own cell. */
@@ -308,29 +310,44 @@ public final class BasinField {
         int top = settings.surface() + (int) Math.round((random.nextDouble() * 12 - 6) * v);
         double depth = Mth.lerp(random.nextDouble(), type.minDepth, type.maxDepth) * v;
         double phase1 = random.nextDouble() * Mth.TWO_PI, phase2 = random.nextDouble() * Mth.TWO_PI;
+        // A rare landmark: a wider lagoon holding a second ring island, with a hill of an islet at its heart.
+        AtollSite.Inner inner = null;
+        double rarity = AACommonConfig.LANDMARK_RARITY.get();
+        if (rarity > 0 && random.nextDouble() < DOUBLE_ATOLL_CHANCE / rarity) {
+            double wide = Mth.lerp(random.nextDouble(), 52, 62) * atollSize;
+            double wideOuter = wide + Mth.lerp(random.nextDouble(), 14, 18) * atollSize;
+            if (wideOuter * BasinSite.MAX_WOBBLE + AtollSite.INFLUENCE <= atollCell / 2.0 - 2) {
+                lagoon = wide;
+                outer = wideOuter;
+                depth = Mth.lerp(random.nextDouble(), 11, 15) * v;
+                inner = new AtollSite.Inner(Mth.lerp(random.nextDouble(), 0.42, 0.52),
+                        Mth.lerp(random.nextDouble(), 5, 7) * atollSize, Mth.lerp(random.nextDouble(), 6, 8) * atollSize,
+                        random.nextDouble() * Mth.TWO_PI, Mth.lerp(random.nextDouble(), 0.5, 1.5) * Mth.PI);
+            }
+        }
         double extent = outer * BasinSite.MAX_WOBBLE + AtollSite.INFLUENCE;
         int jitter = Math.max(0, (int) (atollCell / 2.0 - extent));
         for (int attempt = 0; attempt < ATTEMPTS; attempt++) {
             int x = cx * atollCell + atollCell / 2 + random.nextInt(2 * jitter + 1) - jitter;
             int z = cz * atollCell + atollCell / 2 + random.nextInt(2 * jitter + 1) - jitter;
-            if (atollFits(settings, x, z, lagoon, extent)) {
-                return new AtollSite(x, z, lagoon, outer, top, depth, v, phase1, phase2);
+            if (atollFits(x, z, lagoon, extent)) {
+                return new AtollSite(x, z, lagoon, outer, top, depth, v, phase1, phase2, inner);
             }
         }
         return null;
     }
 
     /** In the atoll biome at the centre and half way to the beach, and wholly inside our region. */
-    private boolean atollFits(AtollSettings settings, int x, int z, double lagoon, double extent) {
+    private boolean atollFits(int x, int z, double lagoon, double extent) {
         BasinType type = BasinType.ATOLL_LAGOON;
-        if (!type.suits(biomeAt(x, z)) || regionWeight(settings, x, z) < 0.99) {
+        if (!type.suits(biomeAt(x, z)) || probe.regionWeight(x, z) < 0.99) {
             return false;
         }
         for (int d = 0; d < 8; d++) {
             double angle = d * Math.PI / 4;
             double cos = Math.cos(angle), sin = Math.sin(angle);
             if (d % 2 == 0 && !type.suits(biomeAt(x + (int) (cos * lagoon * 0.5), z + (int) (sin * lagoon * 0.5)))
-                    || regionWeight(settings, x + (int) (cos * extent), z + (int) (sin * extent)) < 0.99) {
+                    || probe.regionWeight(x + (int) (cos * extent), z + (int) (sin * extent)) < 0.99) {
                 reject("atoll_edge");
                 return false;
             }
@@ -338,68 +355,22 @@ public final class BasinField {
         return true;
     }
 
-    private static double regionWeight(AtollSettings settings, int x, int z) {
-        return settings.regionWeight().compute(new DensityFunction.SinglePointContext(x, 0, z));
-    }
-
     // -------------------------------------------------------------------------------------------- sampling --
 
     private String biomeAt(int x, int z) {
-        return biomes.getNoiseBiome(QuartPos.fromBlock(x), QuartPos.fromBlock((minY + maxY) / 2), QuartPos.fromBlock(z),
-                        sampler)
-                .unwrapKey().map(key -> key.location().toString()).orElse("");
+        return probe.biomeAt(x, z);
     }
 
     private boolean solid(int x, int y, int z) {
-        return terrain != null && terrain.compute(new DensityFunction.SinglePointContext(x, y, z)) > 0;
+        return probe.solid(x, y, z);
     }
 
-    /**
-     * The highest solid block in a column between {@code from} and {@code to}, or MIN_VALUE if there is none. Steps
-     * down coarsely, then bisects back up to the exact top; a ledge thinner than a step can be missed, which only
-     * costs a candidate.
-     */
     private int surface(int x, int z, int from, int to) {
-        if (solid(x, from, z)) {
-            return from;
-        }
-        for (int y = from - SCAN_STEP; y >= to - SCAN_STEP + 1; y -= SCAN_STEP) {
-            int probe = Math.max(y, to);
-            if (solid(x, probe, z)) {
-                // Solid at probe, open at probe + step (or above): bisect for the boundary.
-                int solidY = probe, openY = Math.min(from, probe + SCAN_STEP);
-                while (openY - solidY > 1) {
-                    int mid = (solidY + openY) >>> 1;
-                    if (solid(x, mid, z)) {
-                        solidY = mid;
-                    } else {
-                        openY = mid;
-                    }
-                }
-                return solidY;
-            }
-        }
-        return Integer.MIN_VALUE;
+        return probe.surface(x, z, from, to);
     }
 
-    /**
-     * The top of the ground in a column, searched outward from {@code guess}: up while solid, or down until solid.
-     * Returns {@code high} if the ground reaches it and MIN_VALUE if there is none down to {@code low}.
-     */
     private int surfaceNear(int x, int z, int guess, int low, int high) {
-        if (solid(x, guess, z)) {
-            int y = guess;
-            while (y < high && solid(x, y + 1, z)) {
-                y++;
-            }
-            return y;
-        }
-        for (int y = guess - 1; y >= low; y--) {
-            if (solid(x, y, z)) {
-                return y;
-            }
-        }
-        return Integer.MIN_VALUE;
+        return probe.surfaceNear(x, z, guess, low, high);
     }
 
     private RandomSource random(int cx, int cz, long salt) {
@@ -417,7 +388,7 @@ public final class BasinField {
 
     // --------------------------------------------------------------------------------------------- helpers --
 
-    static long mix(long z) {
+    public static long mix(long z) {
         z = (z ^ (z >>> 30)) * 0xBF58476D1CE4E5B9L;
         z = (z ^ (z >>> 27)) * 0x94D049BB133111EBL;
         return z ^ (z >>> 31);

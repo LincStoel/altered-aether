@@ -48,6 +48,25 @@ public final class AABiomeModifierProvider extends JsonDataProvider {
         fill.addProperty("step", "lakes");
         data(FOLDER, AlteredAether.id("basin_fill"), fill);
 
+        // Landmarks, like basins, are built in every Aether chunk they reach, whatever its biome. The builder runs
+        // before all other decoration; what dresses them runs with the surface structures.
+        JsonObject landmarks = new JsonObject();
+        landmarks.addProperty("type", "neoforge:add_features");
+        landmarks.addProperty("biomes", IS_AETHER);
+        landmarks.addProperty("features", AAFeatureProvider.LANDMARK);
+        landmarks.addProperty("step", "raw_generation");
+        data(FOLDER, AlteredAether.id("landmarks"), landmarks);
+        JsonObject dressing = new JsonObject();
+        dressing.addProperty("type", "neoforge:add_features");
+        dressing.addProperty("biomes", IS_AETHER);
+        JsonArray features = new JsonArray();
+        for (String feature : AAFeatureProvider.LANDMARK_DECORATION) {
+            features.add(feature);
+        }
+        dressing.add("features", features);
+        dressing.addProperty("step", "surface_structures");
+        data(FOLDER, AlteredAether.id("landmark_decoration"), dressing);
+
         // Breezes only spawn standing on cold aerclouds (see SpawnPlacementEvents); the spawn cost keeps them rare.
         // Most Aether biomes have nothing else in the monster category, so weight barely matters there.
         spawns("breeze", "breeze", List.of(IS_AETHER), "monster", 2, 2, 3);
