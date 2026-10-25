@@ -81,7 +81,7 @@ public final class AACompatProvider extends FeatureData {
 
         JsonObject zero = Placement.aboveBottom(0);
         Map<String, Ore> ores = Map.of(
-                "copper", ore("copper", "", 12, "uniform", zero, Placement.aboveBottom(80), 30, 0.0),
+                "copper", ore("copper", "", 6, "uniform", zero, Placement.aboveBottom(80), 18, 0.0),
                 "emerald", ore("emerald", "", 4, "trapezoid", Placement.absolute(-16), Placement.absolute(190), 3, 0.0),
                 "gold", ore("gold", "", 6, "uniform", zero, Placement.absolute(64), 18, 0.0),
                 "lapis", ore("lapis", "", 6, "uniform", zero, Placement.absolute(52), 14, 0.0),

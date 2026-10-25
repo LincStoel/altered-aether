@@ -150,13 +150,13 @@ public final class WorldgenReport {
         lines.add(String.format("%-44s %-22s %-14s %s", "structure", "at", "box y", "ground under centre"));
         registry.holders().filter(h -> {
             String ns = h.key().location().getNamespace();
-            return ns.equals("aether") || ns.equals("deep_aether");
+            return ns.equals("aether") || ns.equals("deep_aether") || ns.equals("altered_aether");
         }).sorted(java.util.Comparator.comparing(h -> h.key().location().toString())).forEach(holder -> {
             var found = generator.findNearestMapStructure(level, net.minecraft.core.HolderSet.direct(holder),
-                    new net.minecraft.core.BlockPos(originX, 64, originZ), 64, false);
+                    new net.minecraft.core.BlockPos(originX, 64, originZ), 160, false);
             String id = holder.key().location().toString();
             if (found == null) {
-                lines.add(String.format("%-44s none within 64 chunks", id));
+                lines.add(String.format("%-44s none within 160 chunks", id));
                 return;
             }
             var pos = found.getFirst();
