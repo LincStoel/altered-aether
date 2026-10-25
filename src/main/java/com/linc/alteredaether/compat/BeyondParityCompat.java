@@ -63,6 +63,7 @@ public final class BeyondParityCompat {
                         .filter(holder -> !holder.id().equals(CAMPFIRE)).collect(java.util.stream.Collectors.toList());
                 if (kept.size() != recipes.getRecipes().size()) {
                     recipes.replaceRecipes(kept);
+                    AlteredAether.LOGGER.info("Removed Aether: Beyond Parity's ambrosium campfire recipe");
                 }
             });
         }
