@@ -1,0 +1,24 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "A": {
+      "item": "aether:ambrosium_shard"
+    },
+    "L": {
+      "tag": "aether:skyroot_logs"
+    },
+    "S": {
+      "tag": "aether:skyroot_stick"
+    }
+  },
+  "pattern": [
+    " S ",
+    "SAS",
+    "LLL"
+  ],
+  "result": {
+    "count": 1,
+    "id": "altered_aether:ambrosium_campfire"
+  }
+}

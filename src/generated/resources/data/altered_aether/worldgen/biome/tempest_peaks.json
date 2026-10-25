@@ -27,12 +27,15 @@
     [],
     [
       "altered_aether:copper_spike/cluster",
-      "altered_aether:copper_spike/lone"
+      "altered_aether:copper_spike/lone",
+      "altered_aether:crater/strike"
     ],
     [],
     [],
     [],
-    [],
+    [
+      "altered_aether:ore/tempest_copper"
+    ],
     [],
     [],
     [],
@@ -40,7 +43,8 @@
       "aether:crystal_island",
       "aether:cold_aercloud",
       "aether:blue_aercloud",
-      "aether:golden_aercloud"
+      "aether:golden_aercloud",
+      "altered_aether:cloud/tempest"
     ]
   ],
   "has_precipitation": false,

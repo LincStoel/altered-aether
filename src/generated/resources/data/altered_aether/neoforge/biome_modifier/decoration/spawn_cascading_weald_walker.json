@@ -1,0 +1,12 @@
+{
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:mod_loaded",
+      "modid": "ars_nouveau"
+    }
+  ],
+  "type": "neoforge:add_features",
+  "biomes": "altered_aether:cascading_archwood_grove",
+  "features": "altered_aether:spawn/cascading_weald_walker",
+  "step": "vegetal_decoration"
+}

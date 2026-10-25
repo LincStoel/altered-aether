@@ -1,0 +1,48 @@
+{
+  "type": "altered_aether:strike_crater",
+  "config": {
+    "depth": {
+      "type": "minecraft:uniform",
+      "max_inclusive": 3,
+      "min_inclusive": 1
+    },
+    "glass": {
+      "type": "minecraft:simple_state_provider",
+      "state": {
+        "Name": "aether:aerogel"
+      }
+    },
+    "glass_chance": 0.2,
+    "liner": {
+      "type": "minecraft:weighted_state_provider",
+      "entries": [
+        {
+          "data": {
+            "Name": "aether:quicksoil",
+            "Properties": {
+              "double_drops": "true"
+            }
+          },
+          "weight": 4
+        },
+        {
+          "data": {
+            "Name": "minecraft:blackstone"
+          },
+          "weight": 3
+        },
+        {
+          "data": {
+            "Name": "minecraft:gravel"
+          },
+          "weight": 1
+        }
+      ]
+    },
+    "radius": {
+      "type": "minecraft:uniform",
+      "max_inclusive": 6,
+      "min_inclusive": 3
+    }
+  }
+}

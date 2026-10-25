@@ -1,0 +1,20 @@
+{
+  "feature": "minecraft:ice_spike",
+  "placement": [
+    {
+      "type": "altered_aether:config_count",
+      "count": 0.2,
+      "key": "snow_drifts"
+    },
+    {
+      "type": "minecraft:in_square"
+    },
+    {
+      "type": "minecraft:heightmap",
+      "heightmap": "MOTION_BLOCKING"
+    },
+    {
+      "type": "minecraft:biome"
+    }
+  ]
+}

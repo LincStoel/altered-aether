@@ -15,10 +15,18 @@
 package com.linc.alteredaether.registry;
 
 import com.linc.alteredaether.AlteredAether;
+import com.linc.alteredaether.block.AmbrosiumCampfireBlock;
 import com.linc.alteredaether.worldgen.density.Atoll;
 import com.linc.alteredaether.worldgen.density.BasinCarve;
 import com.linc.alteredaether.worldgen.density.ConfigValue;
 import com.linc.alteredaether.worldgen.feature.BasinFillFeature;
+import com.linc.alteredaether.worldgen.feature.AercloudFeature;
+import com.linc.alteredaether.worldgen.feature.AercloudBridgeFeature;
+import com.linc.alteredaether.worldgen.feature.RuinedPillarFeature;
+import com.linc.alteredaether.worldgen.feature.SnowDriftFeature;
+import com.linc.alteredaether.worldgen.feature.StrikeCraterFeature;
+import com.linc.alteredaether.worldgen.feature.TotemFeature;
+import com.linc.alteredaether.worldgen.feature.SpawnEntityFeature;
 import com.linc.alteredaether.worldgen.feature.BoulderFeature;
 import com.linc.alteredaether.worldgen.feature.CopperSpikeFeature;
 import com.linc.alteredaether.worldgen.feature.EdgeSpringFeature;
@@ -42,6 +50,9 @@ import com.linc.alteredaether.worldgen.surface.Strata;
 import com.linc.alteredaether.worldgen.surface.SubstituteBlock;
 import com.mojang.serialization.MapCodec;
 import net.minecraft.core.registries.Registries;
+import net.minecraft.world.item.BlockItem;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.levelgen.DensityFunction;
 import net.minecraft.world.level.levelgen.SurfaceRules;
 import net.minecraft.world.level.levelgen.feature.Feature;
@@ -49,12 +60,21 @@ import net.minecraft.world.level.levelgen.placement.PlacementModifierType;
 import net.minecraft.world.level.levelgen.feature.stateproviders.BlockStateProviderType;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.common.world.BiomeModifier;
+import net.neoforged.neoforge.registries.DeferredBlock;
 import net.neoforged.neoforge.registries.DeferredHolder;
+import net.neoforged.neoforge.registries.DeferredItem;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import net.neoforged.neoforge.registries.NeoForgeRegistries;
 
 /** Every deferred register the mod owns. */
 public final class AARegistries {
+    public static final DeferredRegister.Blocks BLOCKS = DeferredRegister.createBlocks(AlteredAether.MOD_ID);
+    public static final DeferredRegister.Items ITEMS = DeferredRegister.createItems(AlteredAether.MOD_ID);
+
+    public static final DeferredBlock<AmbrosiumCampfireBlock> AMBROSIUM_CAMPFIRE = BLOCKS.registerBlock(
+            "ambrosium_campfire", AmbrosiumCampfireBlock::new, BlockBehaviour.Properties.ofFullCopy(Blocks.CAMPFIRE));
+    public static final DeferredItem<BlockItem> AMBROSIUM_CAMPFIRE_ITEM = ITEMS.registerSimpleBlockItem(AMBROSIUM_CAMPFIRE);
+
     public static final DeferredRegister<MapCodec<? extends BiomeModifier>> BIOME_MODIFIER_SERIALIZERS =
             DeferredRegister.create(NeoForgeRegistries.Keys.BIOME_MODIFIER_SERIALIZERS, AlteredAether.MOD_ID);
 
@@ -97,6 +117,20 @@ public final class AARegistries {
             FEATURES.register("boulder", BoulderFeature::new);
     public static final DeferredHolder<Feature<?>, CopperSpikeFeature> COPPER_SPIKE =
             FEATURES.register("copper_spike", CopperSpikeFeature::new);
+    public static final DeferredHolder<Feature<?>, AercloudFeature> AERCLOUD =
+            FEATURES.register("aercloud", AercloudFeature::new);
+    public static final DeferredHolder<Feature<?>, AercloudBridgeFeature> AERCLOUD_BRIDGE =
+            FEATURES.register("aercloud_bridge", AercloudBridgeFeature::new);
+    public static final DeferredHolder<Feature<?>, RuinedPillarFeature> RUINED_PILLAR =
+            FEATURES.register("ruined_pillar", RuinedPillarFeature::new);
+    public static final DeferredHolder<Feature<?>, SnowDriftFeature> SNOW_DRIFT =
+            FEATURES.register("snow_drift", SnowDriftFeature::new);
+    public static final DeferredHolder<Feature<?>, StrikeCraterFeature> STRIKE_CRATER =
+            FEATURES.register("strike_crater", StrikeCraterFeature::new);
+    public static final DeferredHolder<Feature<?>, TotemFeature> TOTEM =
+            FEATURES.register("totem", TotemFeature::new);
+    public static final DeferredHolder<Feature<?>, SpawnEntityFeature> SPAWN_ENTITY =
+            FEATURES.register("spawn_entity", SpawnEntityFeature::new);
 
     public static final DeferredRegister<PlacementModifierType<?>> PLACEMENT_MODIFIERS =
             DeferredRegister.create(Registries.PLACEMENT_MODIFIER_TYPE, AlteredAether.MOD_ID);
@@ -125,6 +159,8 @@ public final class AARegistries {
     }
 
     public static void register(IEventBus modBus) {
+        BLOCKS.register(modBus);
+        ITEMS.register(modBus);
         SURFACE_CONDITIONS.register(modBus);
         SURFACE_RULES.register(modBus);
         DENSITY_FUNCTIONS.register(modBus);

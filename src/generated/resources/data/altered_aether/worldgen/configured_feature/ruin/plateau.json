@@ -1,0 +1,73 @@
+{
+  "type": "altered_aether:ruined_pillar",
+  "config": {
+    "blocks": {
+      "type": "minecraft:weighted_state_provider",
+      "entries": [
+        {
+          "data": {
+            "Name": "aether:pillar",
+            "Properties": {
+              "axis": "y"
+            }
+          },
+          "weight": 6
+        },
+        {
+          "data": {
+            "Name": "aether:holystone_bricks"
+          },
+          "weight": 3
+        },
+        {
+          "data": {
+            "Name": "aether:mossy_holystone",
+            "Properties": {
+              "double_drops": "true"
+            }
+          },
+          "weight": 2
+        },
+        {
+          "data": {
+            "Name": "aether:carved_stone"
+          },
+          "weight": 1
+        }
+      ]
+    },
+    "fallen": 2,
+    "height": {
+      "type": "minecraft:uniform",
+      "max_inclusive": 8,
+      "min_inclusive": 3
+    },
+    "plinth": {
+      "type": "minecraft:weighted_state_provider",
+      "entries": [
+        {
+          "data": {
+            "Name": "aether:holystone_bricks"
+          },
+          "weight": 2
+        },
+        {
+          "data": {
+            "Name": "aether:holystone_brick_slab"
+          },
+          "weight": 2
+        },
+        {
+          "data": {
+            "Name": "aether:mossy_holystone",
+            "Properties": {
+              "double_drops": "true"
+            }
+          },
+          "weight": 1
+        }
+      ]
+    },
+    "wide_chance": 0.35
+  }
+}

@@ -23,6 +23,11 @@
       "heightmap": "OCEAN_FLOOR"
     },
     {
+      "type": "altered_aether:biome_edge_falloff",
+      "distance": 10,
+      "min_keep": 0.25
+    },
+    {
       "type": "minecraft:biome"
     },
     {

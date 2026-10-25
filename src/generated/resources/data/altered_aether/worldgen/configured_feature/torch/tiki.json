@@ -1,0 +1,51 @@
+{
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:mod_loaded",
+      "modid": "deep_aether"
+    }
+  ],
+  "type": "minecraft:block_column",
+  "config": {
+    "allowed_placement": {
+      "type": "minecraft:matching_blocks",
+      "blocks": "minecraft:air"
+    },
+    "direction": "up",
+    "layers": [
+      {
+        "height": {
+          "type": "minecraft:uniform",
+          "max_inclusive": 1,
+          "min_inclusive": 1
+        },
+        "provider": {
+          "type": "minecraft:simple_state_provider",
+          "state": {
+            "Name": "deep_aether:ambrosium_tiki_torch",
+            "Properties": {
+              "half": "lower"
+            }
+          }
+        }
+      },
+      {
+        "height": {
+          "type": "minecraft:uniform",
+          "max_inclusive": 1,
+          "min_inclusive": 1
+        },
+        "provider": {
+          "type": "minecraft:simple_state_provider",
+          "state": {
+            "Name": "deep_aether:ambrosium_tiki_torch",
+            "Properties": {
+              "half": "upper"
+            }
+          }
+        }
+      }
+    ],
+    "prioritize_tip": false
+  }
+}

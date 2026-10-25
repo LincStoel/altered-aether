@@ -1,0 +1,21 @@
+{
+  "type": "altered_aether:aercloud",
+  "config": {
+    "block": {
+      "type": "minecraft:simple_state_provider",
+      "state": {
+        "Name": "aether:golden_aercloud",
+        "Properties": {
+          "double_drops": "true"
+        }
+      }
+    },
+    "shape": "puff",
+    "size": {
+      "type": "minecraft:uniform",
+      "max_inclusive": 5,
+      "min_inclusive": 3
+    },
+    "thickness": 1
+  }
+}

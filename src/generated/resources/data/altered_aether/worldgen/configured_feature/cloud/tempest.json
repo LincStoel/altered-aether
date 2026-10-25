@@ -1,0 +1,26 @@
+{
+  "type": "altered_aether:aercloud",
+  "config": {
+    "block": {
+      "type": "altered_aether:substitute",
+      "candidates": [
+        {
+          "Name": "deep_aether:sterling_aercloud"
+        },
+        {
+          "Name": "aether:cold_aercloud",
+          "Properties": {
+            "double_drops": "true"
+          }
+        }
+      ]
+    },
+    "shape": "streak",
+    "size": {
+      "type": "minecraft:uniform",
+      "max_inclusive": 18,
+      "min_inclusive": 10
+    },
+    "thickness": 2
+  }
+}

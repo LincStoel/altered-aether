@@ -1,0 +1,12 @@
+{
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:mod_loaded",
+      "modid": "aether_overworld_ores"
+    }
+  ],
+  "type": "neoforge:add_features",
+  "biomes": "altered_aether:windswept_dunes",
+  "features": "altered_aether:ore/dune_iron",
+  "step": "underground_ores"
+}

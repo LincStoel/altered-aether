@@ -1,0 +1,21 @@
+{
+  "type": "altered_aether:aercloud",
+  "config": {
+    "block": {
+      "type": "minecraft:simple_state_provider",
+      "state": {
+        "Name": "aether:blue_aercloud",
+        "Properties": {
+          "double_drops": "true"
+        }
+      }
+    },
+    "shape": "streak",
+    "size": {
+      "type": "minecraft:uniform",
+      "max_inclusive": 14,
+      "min_inclusive": 8
+    },
+    "thickness": 2
+  }
+}

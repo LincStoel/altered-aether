@@ -1,0 +1,9 @@
+{
+  "parent": "minecraft:block/template_campfire",
+  "textures": {
+    "fire": "altered_aether:block/ambrosium_campfire_fire",
+    "lit_log": "aether:block/natural/stripped_skyroot_log",
+    "log": "aether:block/natural/skyroot_log",
+    "particle": "aether:block/natural/skyroot_log"
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "type": "minecraft:block_column",
+  "config": {
+    "allowed_placement": {
+      "type": "minecraft:matching_blocks",
+      "blocks": "minecraft:air"
+    },
+    "direction": "up",
+    "layers": [
+      {
+        "height": {
+          "type": "minecraft:uniform",
+          "max_inclusive": 5,
+          "min_inclusive": 3
+        },
+        "provider": {
+          "type": "altered_aether:substitute",
+          "candidates": [
+            {
+              "Name": "deep_aether:skyjade_block"
+            },
+            {
+              "Name": "aether:zanite_block"
+            }
+          ]
+        }
+      }
+    ],
+    "prioritize_tip": false
+  }
+}

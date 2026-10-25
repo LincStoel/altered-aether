@@ -1,0 +1,14 @@
+{
+  "type": "altered_aether:aercloud_bridge",
+  "config": {
+    "block": {
+      "type": "minecraft:simple_state_provider",
+      "state": {
+        "Name": "aether:cold_aercloud",
+        "Properties": {
+          "double_drops": "true"
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "feature": "altered_aether:ruin/plateau",
+  "placement": [
+    {
+      "type": "altered_aether:config_count",
+      "count": 0.04,
+      "key": "ruins"
+    },
+    {
+      "type": "minecraft:in_square"
+    },
+    {
+      "type": "minecraft:heightmap",
+      "heightmap": "WORLD_SURFACE_WG"
+    },
+    {
+      "type": "minecraft:biome"
+    }
+  ]
+}

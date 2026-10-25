@@ -1,0 +1,39 @@
+{
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:mod_loaded",
+      "modid": "deep_aether"
+    }
+  ],
+  "feature": "altered_aether:torch/tiki",
+  "placement": [
+    {
+      "type": "altered_aether:config_count",
+      "count": 0.2,
+      "key": "totems"
+    },
+    {
+      "type": "minecraft:in_square"
+    },
+    {
+      "type": "minecraft:random_offset",
+      "xz_spread": {
+        "type": "minecraft:uniform",
+        "max_inclusive": 5,
+        "min_inclusive": -5
+      },
+      "y_spread": {
+        "type": "minecraft:uniform",
+        "max_inclusive": 0,
+        "min_inclusive": 0
+      }
+    },
+    {
+      "type": "minecraft:heightmap",
+      "heightmap": "MOTION_BLOCKING"
+    },
+    {
+      "type": "minecraft:biome"
+    }
+  ]
+}

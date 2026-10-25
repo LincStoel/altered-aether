@@ -228,6 +228,9 @@ public final class DebugCommands {
         level.getAllEntities().forEach(entity -> entities.merge(
                 BuiltInRegistries.ENTITY_TYPE.getKey(entity.getType()).toString(), 1, Integer::sum));
         AlteredAether.LOGGER.info("Entities: {}", entities);
+        AlteredAether.LOGGER.info("Ambrosium campfire shares the campfire block entity: {}",
+                net.minecraft.world.level.block.entity.BlockEntityType.CAMPFIRE.isValid(
+                        com.linc.alteredaether.registry.AARegistries.AMBROSIUM_CAMPFIRE.get().defaultBlockState()));
         AlteredAether.LOGGER.info("Features placed: {}", com.linc.alteredaether.worldgen.feature.FeatureStats.snapshot());
     }
 

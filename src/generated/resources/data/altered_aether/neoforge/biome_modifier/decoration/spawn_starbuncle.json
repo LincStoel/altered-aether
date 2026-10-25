@@ -1,0 +1,17 @@
+{
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:mod_loaded",
+      "modid": "ars_nouveau"
+    }
+  ],
+  "type": "neoforge:add_features",
+  "biomes": [
+    "altered_aether:blazing_archwood_grove",
+    "altered_aether:cascading_archwood_grove",
+    "altered_aether:flourishing_archwood_grove",
+    "altered_aether:vexing_archwood_grove"
+  ],
+  "features": "altered_aether:spawn/starbuncle",
+  "step": "vegetal_decoration"
+}

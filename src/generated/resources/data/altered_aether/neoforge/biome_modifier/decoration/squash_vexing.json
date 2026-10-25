@@ -1,0 +1,16 @@
+{
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:mod_loaded",
+      "modid": "deep_aether"
+    },
+    {
+      "type": "neoforge:mod_loaded",
+      "modid": "ars_nouveau"
+    }
+  ],
+  "type": "neoforge:add_features",
+  "biomes": "altered_aether:vexing_archwood_grove",
+  "features": "altered_aether:squash/vexing",
+  "step": "vegetal_decoration"
+}

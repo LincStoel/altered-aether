@@ -48,6 +48,13 @@ public final class AATagProvider extends JsonDataProvider {
                 "deep_aether:aether_coarse_dirt");
         tag("worldgen/biome", ResourceLocation.withDefaultNamespace("allows_tropical_fish_spawns_at_any_height"),
                 "altered_aether:sunken_atoll");
+        // The ores that are holystone-only in the Aether have to be retargeted at the rock of the biomes that replace it.
+        tag("block", AlteredAether.id("frozen_crag_ore_replaceables"), "aether:icestone", "deep_aether:clorite",
+                "aether:holystone");
+        tag("block", AlteredAether.id("tempest_peak_ore_replaceables"), "minecraft:cobbled_deepslate",
+                "minecraft:blackstone", "aether:holystone");
+        tag("block", ResourceLocation.withDefaultNamespace("campfires"), "altered_aether:ambrosium_campfire");
+        tag("block", ResourceLocation.withDefaultNamespace("mineable/axe"), "altered_aether:ambrosium_campfire");
         aetherBiomes();
     }
 

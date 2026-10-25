@@ -1,0 +1,85 @@
+{
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:mod_loaded",
+      "modid": "deep_aether"
+    }
+  ],
+  "type": "minecraft:random_patch",
+  "config": {
+    "feature": {
+      "feature": {
+        "type": "minecraft:simple_block",
+        "config": {
+          "to_place": {
+            "type": "minecraft:weighted_state_provider",
+            "entries": [
+              {
+                "data": {
+                  "Name": "deep_aether:carved_green_squash",
+                  "Properties": {
+                    "facing": "north"
+                  }
+                },
+                "weight": 1
+              },
+              {
+                "data": {
+                  "Name": "deep_aether:carved_green_squash",
+                  "Properties": {
+                    "facing": "south"
+                  }
+                },
+                "weight": 1
+              },
+              {
+                "data": {
+                  "Name": "deep_aether:carved_green_squash",
+                  "Properties": {
+                    "facing": "east"
+                  }
+                },
+                "weight": 1
+              },
+              {
+                "data": {
+                  "Name": "deep_aether:carved_green_squash",
+                  "Properties": {
+                    "facing": "west"
+                  }
+                },
+                "weight": 1
+              }
+            ]
+          }
+        }
+      },
+      "placement": [
+        {
+          "type": "minecraft:block_predicate_filter",
+          "predicate": {
+            "type": "minecraft:all_of",
+            "predicates": [
+              {
+                "type": "minecraft:matching_blocks",
+                "blocks": "minecraft:air"
+              },
+              {
+                "type": "minecraft:matching_block_tag",
+                "offset": [
+                  0,
+                  -1,
+                  0
+                ],
+                "tag": "minecraft:dirt"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "tries": 12,
+    "xz_spread": 5,
+    "y_spread": 2
+  }
+}

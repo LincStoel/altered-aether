@@ -1,0 +1,69 @@
+{
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:mod_loaded",
+      "modid": "deep_aether"
+    }
+  ],
+  "type": "altered_aether:totem",
+  "config": {
+    "blocks": {
+      "type": "minecraft:weighted_state_provider",
+      "entries": [
+        {
+          "data": {
+            "Name": "deep_aether:moa_totem"
+          },
+          "weight": 1
+        },
+        {
+          "data": {
+            "Name": "deep_aether:zephyr_totem"
+          },
+          "weight": 1
+        },
+        {
+          "data": {
+            "Name": "deep_aether:aerwhale_totem"
+          },
+          "weight": 1
+        }
+      ]
+    },
+    "height": {
+      "type": "minecraft:uniform",
+      "max_inclusive": 4,
+      "min_inclusive": 2
+    },
+    "plinth": {
+      "type": "minecraft:weighted_state_provider",
+      "entries": [
+        {
+          "data": {
+            "Name": "aether:holystone_bricks"
+          },
+          "weight": 2
+        },
+        {
+          "data": {
+            "Name": "aether:mossy_holystone",
+            "Properties": {
+              "double_drops": "true"
+            }
+          },
+          "weight": 2
+        },
+        {
+          "data": {
+            "Name": "aether:holystone",
+            "Properties": {
+              "double_drops": "true"
+            }
+          },
+          "weight": 1
+        }
+      ]
+    },
+    "ring_chance": 0.5
+  }
+}

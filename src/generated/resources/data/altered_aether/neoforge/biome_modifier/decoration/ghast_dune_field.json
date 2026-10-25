@@ -1,0 +1,12 @@
+{
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:mod_loaded",
+      "modid": "dried_ghast"
+    }
+  ],
+  "type": "neoforge:add_features",
+  "biomes": "altered_aether:windswept_dunes",
+  "features": "altered_aether:ghast/dune_field",
+  "step": "vegetal_decoration"
+}

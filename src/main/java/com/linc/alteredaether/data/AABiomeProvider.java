@@ -79,6 +79,7 @@ public final class AABiomeProvider extends JsonDataProvider {
                 .drop(VANILLA_GRASS)
                 .weight("aether:golden_swet", 20), "ars_nouveau", "ars_elemental");
         biome("flourishing_archwood_grove", grove("flourishing", ARIA)
+                .add(BiomeJson.VEG, AADecorationProvider.LUSH_GRASS)
                 .climate(0.65f, 0.8f)
                 .effect("foliage_color", 5290563).effect("grass_color", 7654499).effect("sky_color", 9830280),
                 "ars_nouveau");
@@ -110,7 +111,8 @@ public final class AABiomeProvider extends JsonDataProvider {
                 // Pools and deep lakes replace the stock lake, a fixed blob that hangs off island edges.
                 .drop("aether:water_lake")
                 .add(BiomeJson.SPRINGS, AAFeatureProvider.WATERFALL_PLATEAU)
-                .add(BiomeJson.LOCAL, AADecorationProvider.PLATEAU_BOULDER)
+                .add(BiomeJson.LOCAL, AADecorationProvider.PLATEAU_BOULDER, AADecorationProvider.PLATEAU_RUINS)
+                .add(BiomeJson.TOP, AADecorationProvider.PLATEAU_CLOUD, AADecorationProvider.PLATEAU_GOLDEN_CLOUD)
                 .creatureProbability(0.07f)
                 .packScale(0.5)
                 .budgetScale(0.6);
@@ -125,7 +127,12 @@ public final class AABiomeProvider extends JsonDataProvider {
                 .effect("fog_color", 12575730).effect("foliage_color", 9418436).effect("grass_color", 10470345)
                 .effect("sky_color", 11984111).effect("water_color", 4025996).effect("water_fog_color", 1981520)
                 .particle(BiomeJson.particleType("minecraft:snowflake"), 0.0035f)
-                .add(BiomeJson.LOCAL, AADecorationProvider.CRAG_BOULDER, AADecorationProvider.AMBROSIUM_BOULDER)
+                .add(BiomeJson.LOCAL, AADecorationProvider.CRAG_BOULDER, AADecorationProvider.AMBROSIUM_BOULDER, AADecorationProvider.SNOW_DRIFT, AADecorationProvider.ICE_SPIKE, AADecorationProvider.ICESTONE_SHARD,
+                        AADecorationProvider.HANGING_CHAIN)
+                .add(BiomeJson.ORES, AADecorationProvider.CRAG_ORES + "aether_dirt", AADecorationProvider.CRAG_ORES + "ambrosium", AADecorationProvider.CRAG_ORES + "zanite",
+                        AADecorationProvider.CRAG_ORES + "gravitite", AADecorationProvider.CRAG_ORES + "gravitite_buried")
+                .add(BiomeJson.TOP, AADecorationProvider.CRAG_CLOUD)
+                .add(BiomeJson.VEG, AADecorationProvider.CRAG_CAMPFIRE)
                 .spawners("creature",
                         spawner("aether:aerbunny", 12, 2, 3),
                         spawner("aether:sheepuff", 10, 2, 3))
@@ -152,7 +159,9 @@ public final class AABiomeProvider extends JsonDataProvider {
                 .effect("fog_color", 13214247).effect("foliage_color", 9211020).effect("grass_color", 9211020)
                 .effect("sky_color", 15915105)
                 .particle(BiomeJson.particleType("minecraft:electric_spark"), 0.006f)
-                .add(BiomeJson.LOCAL, AADecorationProvider.TEMPEST_SPIRES, AADecorationProvider.TEMPEST_LONE_SPIKE)
+                .add(BiomeJson.LOCAL, AADecorationProvider.TEMPEST_SPIRES, AADecorationProvider.TEMPEST_LONE_SPIKE, AADecorationProvider.STRIKE_CRATER)
+                .add(BiomeJson.ORES, AADecorationProvider.TEMPEST_COPPER_ORE)
+                .add(BiomeJson.TOP, AADecorationProvider.TEMPEST_CLOUD)
                 .spawners("aether:aether_surface_monster",
                         spawner("aether:blue_swet", 20, 1, 1),
                         spawner("aether:whirlwind", 3, 1, 1),
@@ -169,6 +178,7 @@ public final class AABiomeProvider extends JsonDataProvider {
                 .effect("fog_color", 9412787).effect("foliage_color", 7240558).effect("grass_color", 7240558)
                 .effect("sky_color", 11583177).effect("water_color", 4875634).effect("water_fog_color", 2965066)
                 .add(BiomeJson.LOCAL, AADecorationProvider.RIFT_DEBRIS, AADecorationProvider.RIFT_SLAB_FRAGMENTS)
+                .add(BiomeJson.TOP, AADecorationProvider.RIFT_STRAND, AADecorationProvider.RIFT_BRIDGE)
                 .spawners("aether:aether_aerwhale", spawner("aether:aerwhale", 10, 1, 3))
                 .cost("aether:aerwhale", 0.3, 0.4);
     }
@@ -182,7 +192,8 @@ public final class AABiomeProvider extends JsonDataProvider {
                 .effect("fog_color", 14263434).effect("foliage_color", 12105576).effect("grass_color", 12766328)
                 .effect("sky_color", 15787686).effect("water_color", ARS_WATER)
                 .particle(dust(0.87f, 0.75f, 0.42f), 0.015f)
-                .add(BiomeJson.LOCAL, AADecorationProvider.DUNE_BOULDER)
+                .add(BiomeJson.LOCAL, AADecorationProvider.DUNE_BOULDER, AADecorationProvider.DUNE_RUINS, AADecorationProvider.SKYJADE_PILLAR)
+                .add(BiomeJson.VEG, AADecorationProvider.DEAD_BUSH)
                 .spawners("aether:aether_aerwhale")
                 .spawners("aether:aether_darkness_monster")
                 .spawners("aether:aether_sky_monster", spawner("aether:zephyr", 20, 1, 1))

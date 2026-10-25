@@ -1,0 +1,33 @@
+{
+  "feature": "altered_aether:shard/icestone",
+  "placement": [
+    {
+      "type": "altered_aether:config_count",
+      "count": 0.14285714285714285,
+      "key": "snow_drifts"
+    },
+    {
+      "type": "minecraft:in_square"
+    },
+    {
+      "type": "minecraft:random_offset",
+      "xz_spread": {
+        "type": "minecraft:uniform",
+        "max_inclusive": 3,
+        "min_inclusive": -3
+      },
+      "y_spread": {
+        "type": "minecraft:uniform",
+        "max_inclusive": 0,
+        "min_inclusive": 0
+      }
+    },
+    {
+      "type": "minecraft:heightmap",
+      "heightmap": "MOTION_BLOCKING"
+    },
+    {
+      "type": "minecraft:biome"
+    }
+  ]
+}

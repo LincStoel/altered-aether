@@ -22,7 +22,8 @@
     ],
     [],
     [
-      "altered_aether:boulder/plateau"
+      "altered_aether:boulder/plateau",
+      "altered_aether:ruin/plateau"
     ],
     [],
     [],
@@ -53,7 +54,9 @@
       "aether:crystal_island",
       "aether:cold_aercloud",
       "aether:blue_aercloud",
-      "aether:golden_aercloud"
+      "aether:golden_aercloud",
+      "altered_aether:cloud/plateau",
+      "altered_aether:cloud/plateau_golden"
     ]
   ],
   "has_precipitation": false,

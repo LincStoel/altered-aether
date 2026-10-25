@@ -1,0 +1,11 @@
+{
+  "replace": false,
+  "values": [
+    "aether:icestone",
+    {
+      "id": "deep_aether:clorite",
+      "required": false
+    },
+    "aether:holystone"
+  ]
+}

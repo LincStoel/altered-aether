@@ -104,6 +104,29 @@ final class Placement {
         return json;
     }
 
+    static JsonObject aboveBottom(int offset) {
+        JsonObject json = new JsonObject();
+        json.addProperty("above_bottom", offset);
+        return json;
+    }
+
+    /** An absolute height, in stock-Aether terms; the tall Aether stretches it (see TallRemap). */
+    static JsonObject absolute(int y) {
+        JsonObject json = new JsonObject();
+        json.addProperty("absolute", y);
+        return json;
+    }
+
+    /** A height between two anchors, drawn {@code shape} ("uniform" or "trapezoid"). */
+    static JsonObject heightRange(String shape, JsonObject min, JsonObject max) {
+        JsonObject range = type("minecraft:" + shape);
+        range.add("min_inclusive", min);
+        range.add("max_inclusive", max);
+        JsonObject json = type("minecraft:height_range");
+        json.add("height", range);
+        return json;
+    }
+
     static JsonObject uniform(int min, int max) {
         JsonObject json = type("minecraft:uniform");
         json.addProperty("min_inclusive", min);

@@ -1,0 +1,8 @@
+// 1.21.1	2026-10-24T20:01:30.0109171	Altered Aether blocks and language
+cc4a268c9d003718a9458f1257ad3d879abd35d6 assets/altered_aether/blockstates/ambrosium_campfire.json
+98987aab96a41bcdcf78570f92b6ce55eb8f0ef1 assets/altered_aether/lang/en_us.json
+bf4a5d3ac3e85e36b35511795d966ec064efcace assets/altered_aether/models/block/ambrosium_campfire.json
+664522c197dc544ccb0cc5d7a51d41e816aac3e6 assets/altered_aether/models/block/ambrosium_campfire_off.json
+0188ed25dc9149716f6936197c95d314e92ded44 assets/altered_aether/models/item/ambrosium_campfire.json
+511cd1f9a809a31402fd40da695600518d042263 data/altered_aether/loot_table/blocks/ambrosium_campfire.json
+9bbf530d954fc9bc4278e0233387b79c2084970c data/altered_aether/recipe/ambrosium_campfire.json

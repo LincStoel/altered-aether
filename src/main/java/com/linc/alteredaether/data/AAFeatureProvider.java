@@ -99,6 +99,7 @@ public final class AAFeatureProvider extends JsonDataProvider {
                         Placement.inSquare(),
                         Placement.surfaceWaterDepth(0),
                         Placement.heightmap("OCEAN_FLOOR"),
+                        Placement.biomeEdgeFalloff(10, 0.25),
                         Placement.biome(),
                         Placement.wouldSurvive(sapling, Map.of("stage", "0"))),
                 "ars_nouveau"));

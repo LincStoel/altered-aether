@@ -1,0 +1,21 @@
+{
+  "feature": "altered_aether:cloud/rift_bridge",
+  "placement": [
+    {
+      "type": "altered_aether:config_count",
+      "count": 0.35,
+      "key": "aerclouds"
+    },
+    {
+      "type": "minecraft:in_square"
+    },
+    {
+      "type": "altered_aether:island_edge",
+      "drop": 16,
+      "reach": 12
+    },
+    {
+      "type": "minecraft:biome"
+    }
+  ]
+}

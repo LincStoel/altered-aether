@@ -1,0 +1,58 @@
+{
+  "type": "minecraft:simple_block",
+  "config": {
+    "to_place": {
+      "type": "minecraft:weighted_state_provider",
+      "entries": [
+        {
+          "data": {
+            "Name": "altered_aether:ambrosium_campfire",
+            "Properties": {
+              "facing": "north",
+              "lit": "true",
+              "signal_fire": "false",
+              "waterlogged": "false"
+            }
+          },
+          "weight": 1
+        },
+        {
+          "data": {
+            "Name": "altered_aether:ambrosium_campfire",
+            "Properties": {
+              "facing": "south",
+              "lit": "true",
+              "signal_fire": "false",
+              "waterlogged": "false"
+            }
+          },
+          "weight": 1
+        },
+        {
+          "data": {
+            "Name": "altered_aether:ambrosium_campfire",
+            "Properties": {
+              "facing": "east",
+              "lit": "true",
+              "signal_fire": "false",
+              "waterlogged": "false"
+            }
+          },
+          "weight": 1
+        },
+        {
+          "data": {
+            "Name": "altered_aether:ambrosium_campfire",
+            "Properties": {
+              "facing": "west",
+              "lit": "true",
+              "signal_fire": "false",
+              "waterlogged": "false"
+            }
+          },
+          "weight": 1
+        }
+      ]
+    }
+  }
+}

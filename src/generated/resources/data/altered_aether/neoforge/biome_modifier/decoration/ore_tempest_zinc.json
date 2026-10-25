@@ -1,0 +1,12 @@
+{
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:mod_loaded",
+      "modid": "create"
+    }
+  ],
+  "type": "neoforge:add_features",
+  "biomes": "altered_aether:tempest_peaks",
+  "features": "altered_aether:ore/tempest_zinc",
+  "step": "underground_ores"
+}

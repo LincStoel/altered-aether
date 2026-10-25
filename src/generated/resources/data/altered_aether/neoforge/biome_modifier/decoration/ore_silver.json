@@ -1,0 +1,15 @@
+{
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:mod_loaded",
+      "modid": "oreganized"
+    }
+  ],
+  "type": "neoforge:add_features",
+  "biomes": [
+    "altered_aether:frozen_crags",
+    "altered_aether:shattered_rift"
+  ],
+  "features": "altered_aether:ore/silver",
+  "step": "underground_ores"
+}

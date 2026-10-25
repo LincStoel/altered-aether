@@ -1,0 +1,13 @@
+{
+  "type": "altered_aether:spawn_entity",
+  "config": {
+    "count": 1,
+    "entity": "aether:sentry",
+    "ground": {
+      "type": "minecraft:matching_block_tag",
+      "tag": "minecraft:dirt"
+    },
+    "persistent": true,
+    "spread": 0
+  }
+}

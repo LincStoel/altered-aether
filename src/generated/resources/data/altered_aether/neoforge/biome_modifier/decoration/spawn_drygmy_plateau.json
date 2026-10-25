@@ -1,0 +1,12 @@
+{
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:mod_loaded",
+      "modid": "ars_nouveau"
+    }
+  ],
+  "type": "neoforge:add_features",
+  "biomes": "altered_aether:aether_plateau",
+  "features": "altered_aether:spawn/drygmy_plateau",
+  "step": "vegetal_decoration"
+}

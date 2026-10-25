@@ -41,7 +41,9 @@
       "aether:crystal_island",
       "aether:cold_aercloud",
       "aether:blue_aercloud",
-      "aether:golden_aercloud"
+      "aether:golden_aercloud",
+      "altered_aether:cloud/rift_strand",
+      "altered_aether:cloud/rift_bridge"
     ]
   ],
   "has_precipitation": false,

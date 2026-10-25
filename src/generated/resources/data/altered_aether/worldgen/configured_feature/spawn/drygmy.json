@@ -1,0 +1,21 @@
+{
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:mod_loaded",
+      "modid": "ars_nouveau"
+    }
+  ],
+  "type": "altered_aether:spawn_entity",
+  "config": {
+    "count": 2,
+    "entity": "ars_nouveau:drygmy",
+    "ground": {
+      "type": "minecraft:matching_block_tag",
+      "tag": "minecraft:dirt"
+    },
+    "medium": "ground",
+    "mob": "drygmy",
+    "persistent": true,
+    "spread": 4
+  }
+}

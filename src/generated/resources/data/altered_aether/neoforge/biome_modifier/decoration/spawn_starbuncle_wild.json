@@ -1,0 +1,12 @@
+{
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:mod_loaded",
+      "modid": "ars_nouveau"
+    }
+  ],
+  "type": "neoforge:add_features",
+  "biomes": "#aether:is_aether",
+  "features": "altered_aether:spawn/starbuncle_wild",
+  "step": "vegetal_decoration"
+}

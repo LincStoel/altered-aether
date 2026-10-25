@@ -1,6 +1,10 @@
-// 1.21.1	2026-10-24T18:24:45.6737473	Altered Aether tags
+// 1.21.1	2026-10-24T20:01:30.0064117	Altered Aether tags
 ea2a6626ea7b2084acf76d089dc36db233345881 data/aether/tags/worldgen/biome/is_aether.json
 7ec09b2e18ab43d296e2d76cad7fe25c11cda07f data/altered_aether/tags/block/breeze_spawnable_on.json
 dc18018d6883948531de73415dfcbb7e51ca20b8 data/altered_aether/tags/block/familiar_spawnable_on.json
+da43ab2bbe8355c871257730474643815250588c data/altered_aether/tags/block/frozen_crag_ore_replaceables.json
+103ae3d710b0ba3d9238ab8230adc473830e6b2b data/altered_aether/tags/block/tempest_peak_ore_replaceables.json
+3f019e822d3a547bba0a274a48dacbd9e8bfdbc9 data/minecraft/tags/block/campfires.json
+3f019e822d3a547bba0a274a48dacbd9e8bfdbc9 data/minecraft/tags/block/mineable/axe.json
 cdf4e428bd5f2ff0400a79dcac9e31720dc94321 data/minecraft/tags/worldgen/biome/allows_tropical_fish_spawns_at_any_height.json
 92ece5ddf91e5c42de2cd425d54af7a0510c067f data/snuffles/tags/block/snuffles_spawnable_on.json

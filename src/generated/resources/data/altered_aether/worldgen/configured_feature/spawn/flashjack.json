@@ -1,0 +1,25 @@
+{
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:mod_loaded",
+      "modid": "ars_nouveau"
+    },
+    {
+      "type": "neoforge:mod_loaded",
+      "modid": "ars_elemental"
+    }
+  ],
+  "type": "altered_aether:spawn_entity",
+  "config": {
+    "count": 3,
+    "entity": "ars_elemental:flashjack_entity",
+    "ground": {
+      "type": "minecraft:matching_block_tag",
+      "tag": "minecraft:dirt"
+    },
+    "medium": "ground",
+    "mob": "flashjack",
+    "persistent": true,
+    "spread": 4
+  }
+}

@@ -27,20 +27,33 @@
     [],
     [
       "altered_aether:boulder/crag",
-      "altered_aether:boulder/ambrosium"
+      "altered_aether:boulder/ambrosium",
+      "altered_aether:drift/snow",
+      "altered_aether:drift/ice_spike",
+      "altered_aether:shard/icestone",
+      "altered_aether:hanging/chain"
     ],
     [],
     [],
     [],
+    [
+      "altered_aether:ore/crag_aether_dirt",
+      "altered_aether:ore/crag_ambrosium",
+      "altered_aether:ore/crag_zanite",
+      "altered_aether:ore/crag_gravitite",
+      "altered_aether:ore/crag_gravitite_buried"
+    ],
     [],
     [],
-    [],
-    [],
+    [
+      "altered_aether:camp/crag_campfire"
+    ],
     [
       "aether:crystal_island",
       "aether:cold_aercloud",
       "aether:blue_aercloud",
-      "aether:golden_aercloud"
+      "aether:golden_aercloud",
+      "altered_aether:cloud/crag"
     ]
   ],
   "has_precipitation": false,

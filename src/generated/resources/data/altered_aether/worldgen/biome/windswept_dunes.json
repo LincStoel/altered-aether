@@ -32,7 +32,9 @@
     [],
     [],
     [
-      "altered_aether:boulder/dune"
+      "altered_aether:boulder/dune",
+      "altered_aether:ruin/dune",
+      "altered_aether:ruin/skyjade_pillar"
     ],
     [],
     [],
@@ -49,7 +51,9 @@
     [
       "aether:water_spring"
     ],
-    [],
+    [
+      "altered_aether:vegetation/dead_bush"
+    ],
     [
       "aether:crystal_island",
       "aether:golden_aercloud"
