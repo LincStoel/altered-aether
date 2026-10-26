@@ -32,6 +32,9 @@ import com.linc.alteredaether.worldgen.basin.BasinField;
 import com.linc.alteredaether.worldgen.basin.AtollSite;
 import com.linc.alteredaether.worldgen.basin.BasinSite;
 import com.linc.alteredaether.worldgen.basin.BasinType;
+import com.linc.alteredaether.worldgen.grove.Giant;
+import com.linc.alteredaether.worldgen.grove.GiantType;
+import com.linc.alteredaether.worldgen.grove.GroveField;
 import com.linc.alteredaether.worldgen.landmark.Landmark;
 import com.linc.alteredaether.worldgen.landmark.LandmarkField;
 import com.linc.alteredaether.worldgen.landmark.LandmarkType;
@@ -235,6 +238,17 @@ public final class DebugCommands {
                 origin = new BlockPos(site.x(), 64, site.z());
                 AlteredAether.LOGGER.info("Worldgen benchmark: centred on {} at {} (extent {})", type.id(),
                         origin.toShortString(), String.format("%.0f", site.extent()));
+            } else if (biome != null && biome.startsWith("giant:")) {
+                GiantType type = GiantType.valueOf(biome.substring(6).toUpperCase(java.util.Locale.ROOT));
+                GroveField field = GroveField.get(THE_AETHER);
+                Giant site = field == null ? null : field.nearest(type, origin.getX(), origin.getZ(), 60000).orElse(null);
+                if (site == null) {
+                    AlteredAether.LOGGER.error("Worldgen benchmark: no {} within 60000 blocks", type.id());
+                    return;
+                }
+                origin = new BlockPos(site.x(), 64, site.z());
+                AlteredAether.LOGGER.info("Worldgen benchmark: centred on {} at {} (extent {})", type.id(),
+                        origin.toShortString(), String.format("%.0f", site.extent()));
             } else if (biome != null && biome.startsWith("atoll:")) {
                 // The nearest atoll-grid site of a type (atoll_lagoon or frozen_lake), optionally "ring" or "double"
                 // (atolls only).
@@ -353,6 +367,23 @@ public final class DebugCommands {
                             at.getX() + 14, at.getZ() + 14, at.getY() - 40, at.getY() + 4, 8,
                             state -> BuiltInRegistries.BLOCK.getKey(state.getBlock()).getPath().contains("copper")
                                     || BuiltInRegistries.BLOCK.getKey(state.getBlock()).getPath().contains(family))).join();
+                }
+            }
+            if (Boolean.getBoolean("altered_aether.render") && biome != null && biome.startsWith("giant:")) {
+                // Sections through the giant: a slice north to south and one east to west through its centre, and a
+                // plan cut just above its ground, so hollows and tunnels show.
+                GroveField field = GroveField.get(THE_AETHER);
+                GiantType type = GiantType.valueOf(biome.substring(6).toUpperCase(java.util.Locale.ROOT));
+                Giant site = field == null ? null : field.nearest(type, origin.getX(), origin.getZ(), 64).orElse(null);
+                if (site != null) {
+                    String name = "giant_" + type.id();
+                    int r = (int) Math.ceil(site.extent());
+                    server.submit(() -> WorldRender.render(aether, name + "_slice_x", site.x() - r, site.z(),
+                            site.x() + r, site.z(), site.base() - 24, site.base() + 120, 4)).join();
+                    server.submit(() -> WorldRender.render(aether, name + "_slice_z", site.x(), site.z() - r,
+                            site.x(), site.z() + r, site.base() - 24, site.base() + 120, 4)).join();
+                    server.submit(() -> WorldRender.render(aether, name + "_plan", site.x() - r, site.z() - r,
+                            site.x() + r, site.z() + r, site.base() - 2, site.base() + 3, 4)).join();
                 }
             }
             if (Boolean.getBoolean("altered_aether.render")) {

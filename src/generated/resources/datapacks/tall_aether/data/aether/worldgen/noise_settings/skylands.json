@@ -50,7 +50,7 @@
                     "input": "altered_aether:terrain/rift_weight",
                     "max_exclusive": 1.0E-4,
                     "min_inclusive": -1.0,
-                    "when_in_range": "altered_aether:terrain/island_dunes",
+                    "when_in_range": "altered_aether:terrain/island_groves",
                     "when_out_of_range": {
                       "type": "minecraft:range_choice",
                       "input": "altered_aether:terrain/rift_weight",
@@ -70,7 +70,7 @@
                               "argument2": "altered_aether:terrain/rift_weight"
                             }
                           },
-                          "argument2": "altered_aether:terrain/island_dunes"
+                          "argument2": "altered_aether:terrain/island_groves"
                         },
                         "argument2": {
                           "type": "minecraft:mul",
@@ -104,7 +104,7 @@
                           "input": "altered_aether:terrain/rift_weight",
                           "max_exclusive": 1.0E-4,
                           "min_inclusive": -1.0,
-                          "when_in_range": "altered_aether:terrain/island_dunes",
+                          "when_in_range": "altered_aether:terrain/island_groves",
                           "when_out_of_range": {
                             "type": "minecraft:range_choice",
                             "input": "altered_aether:terrain/rift_weight",
@@ -124,7 +124,7 @@
                                     "argument2": "altered_aether:terrain/rift_weight"
                                   }
                                 },
-                                "argument2": "altered_aether:terrain/island_dunes"
+                                "argument2": "altered_aether:terrain/island_groves"
                               },
                               "argument2": {
                                 "type": "minecraft:mul",
@@ -172,7 +172,7 @@
                           "input": "altered_aether:terrain/rift_weight",
                           "max_exclusive": 1.0E-4,
                           "min_inclusive": -1.0,
-                          "when_in_range": "altered_aether:terrain/island_dunes",
+                          "when_in_range": "altered_aether:terrain/island_groves",
                           "when_out_of_range": {
                             "type": "minecraft:range_choice",
                             "input": "altered_aether:terrain/rift_weight",
@@ -192,7 +192,7 @@
                                     "argument2": "altered_aether:terrain/rift_weight"
                                   }
                                 },
-                                "argument2": "altered_aether:terrain/island_dunes"
+                                "argument2": "altered_aether:terrain/island_groves"
                               },
                               "argument2": {
                                 "type": "minecraft:mul",
@@ -226,7 +226,7 @@
                                 "input": "altered_aether:terrain/rift_weight",
                                 "max_exclusive": 1.0E-4,
                                 "min_inclusive": -1.0,
-                                "when_in_range": "altered_aether:terrain/island_dunes",
+                                "when_in_range": "altered_aether:terrain/island_groves",
                                 "when_out_of_range": {
                                   "type": "minecraft:range_choice",
                                   "input": "altered_aether:terrain/rift_weight",
@@ -246,7 +246,7 @@
                                           "argument2": "altered_aether:terrain/rift_weight"
                                         }
                                       },
-                                      "argument2": "altered_aether:terrain/island_dunes"
+                                      "argument2": "altered_aether:terrain/island_groves"
                                     },
                                     "argument2": {
                                       "type": "minecraft:mul",

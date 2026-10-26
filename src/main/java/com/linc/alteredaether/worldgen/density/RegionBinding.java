@@ -21,6 +21,7 @@ import net.minecraft.world.level.biome.BiomeSource;
 import net.minecraft.world.level.biome.MultiNoiseBiomeSource;
 import com.linc.alteredaether.worldgen.basin.BasinField;
 import com.linc.alteredaether.worldgen.TerrainProbe;
+import com.linc.alteredaether.worldgen.grove.GroveField;
 import com.linc.alteredaether.worldgen.landmark.LandmarkField;
 import net.minecraft.world.level.levelgen.DensityFunction;
 import net.minecraft.world.level.levelgen.NoiseBasedChunkGenerator;
@@ -129,6 +130,7 @@ public final class RegionBinding {
         LandmarkField landmarks = new LandmarkField(level.getSeed(), probe, basins, vertical, level.getMaxBuildHeight());
         fractures.forEach(f -> f.bind(landmarks));
         LandmarkField.put(level.dimension(), landmarks);
+        GroveField.put(level.dimension(), new GroveField(level.getSeed(), probe, vertical, level.getMaxBuildHeight()));
     }
 
     @SubscribeEvent
@@ -137,6 +139,7 @@ public final class RegionBinding {
             SOLVERS.remove(level.dimension());
             BasinField.put(level.dimension(), null);
             LandmarkField.put(level.dimension(), null);
+            GroveField.put(level.dimension(), null);
         }
     }
 

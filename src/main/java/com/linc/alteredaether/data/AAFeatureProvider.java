@@ -30,6 +30,8 @@ public final class AAFeatureProvider extends JsonDataProvider {
     static final String BASIN_FILL = NS + "basin_fill";
     /** The landmark builder, and the decoration placed at landmarks' points, in the order they run. */
     static final String LANDMARK = NS + "landmark/build";
+    /** The giant-tree builder of the Skyroot Cathedral and Nurselog Hollow. */
+    static final String GROVE = NS + "grove/build";
     static final String[] LANDMARK_DECORATION = {NS + "landmark/tempest_ring", NS + "landmark/spire_drifts",
             NS + "landmark/fracture_debris", NS + "landmark/fracture_slabs", NS + "landmark/fracture_bridges",
             NS + "landmark/islet_meadow", NS + "landmark/islet_oak"};
@@ -44,6 +46,8 @@ public final class AAFeatureProvider extends JsonDataProvider {
         basinFill();
         waterfalls();
         landmarks();
+        configured("grove/build", NS + "grove", new JsonObject());
+        placed("grove/build", GROVE, new JsonArray());
     }
 
     /**

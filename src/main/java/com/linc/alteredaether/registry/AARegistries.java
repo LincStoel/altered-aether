@@ -23,6 +23,7 @@ import com.linc.alteredaether.worldgen.density.Atoll;
 import com.linc.alteredaether.worldgen.density.BasinCarve;
 import com.linc.alteredaether.worldgen.density.ConfigValue;
 import com.linc.alteredaether.worldgen.feature.BasinFillFeature;
+import com.linc.alteredaether.worldgen.feature.GroveFeature;
 import com.linc.alteredaether.worldgen.feature.AercloudFeature;
 import com.linc.alteredaether.worldgen.feature.AercloudBridgeFeature;
 import com.linc.alteredaether.worldgen.feature.RuinedPillarFeature;
@@ -147,6 +148,8 @@ public final class AARegistries {
 
     public static final DeferredHolder<Feature<?>, BasinFillFeature> BASIN_FILL =
             FEATURES.register("basin_fill", BasinFillFeature::new);
+    public static final DeferredHolder<Feature<?>, GroveFeature> GROVE =
+            FEATURES.register("grove", GroveFeature::new);
     public static final DeferredHolder<Feature<?>, EdgeSpringFeature> EDGE_SPRING =
             FEATURES.register("edge_spring", EdgeSpringFeature::new);
     public static final DeferredHolder<Feature<?>, BoulderFeature> BOULDER =

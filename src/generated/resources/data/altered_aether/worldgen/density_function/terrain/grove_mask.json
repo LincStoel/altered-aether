@@ -1,0 +1,133 @@
+{
+  "type": "minecraft:max",
+  "argument1": {
+    "type": "minecraft:mul",
+    "argument1": {
+      "type": "minecraft:min",
+      "argument1": {
+        "type": "minecraft:clamp",
+        "input": {
+          "type": "minecraft:add",
+          "argument1": 5.4,
+          "argument2": {
+            "type": "minecraft:mul",
+            "argument1": 10.0,
+            "argument2": "altered_aether:terrain/dune_temperature"
+          }
+        },
+        "max": 1.0,
+        "min": 0.0
+      },
+      "argument2": {
+        "type": "minecraft:clamp",
+        "input": {
+          "type": "minecraft:add",
+          "argument1": 0.6000000000000001,
+          "argument2": {
+            "type": "minecraft:mul",
+            "argument1": -10.0,
+            "argument2": "altered_aether:terrain/dune_temperature"
+          }
+        },
+        "max": 1.0,
+        "min": 0.0
+      }
+    },
+    "argument2": {
+      "type": "minecraft:min",
+      "argument1": {
+        "type": "minecraft:clamp",
+        "input": {
+          "type": "minecraft:add",
+          "argument1": -1.4000000000000001,
+          "argument2": {
+            "type": "minecraft:mul",
+            "argument1": 10.0,
+            "argument2": "altered_aether:terrain/dune_humidity"
+          }
+        },
+        "max": 1.0,
+        "min": 0.0
+      },
+      "argument2": {
+        "type": "minecraft:clamp",
+        "input": {
+          "type": "minecraft:add",
+          "argument1": 6.6000000000000005,
+          "argument2": {
+            "type": "minecraft:mul",
+            "argument1": -10.0,
+            "argument2": "altered_aether:terrain/dune_humidity"
+          }
+        },
+        "max": 1.0,
+        "min": 0.0
+      }
+    }
+  },
+  "argument2": {
+    "type": "minecraft:mul",
+    "argument1": {
+      "type": "minecraft:min",
+      "argument1": {
+        "type": "minecraft:clamp",
+        "input": {
+          "type": "minecraft:add",
+          "argument1": 6.3,
+          "argument2": {
+            "type": "minecraft:mul",
+            "argument1": 10.0,
+            "argument2": "altered_aether:terrain/dune_temperature"
+          }
+        },
+        "max": 1.0,
+        "min": 0.0
+      },
+      "argument2": {
+        "type": "minecraft:clamp",
+        "input": {
+          "type": "minecraft:add",
+          "argument1": -4.1000000000000005,
+          "argument2": {
+            "type": "minecraft:mul",
+            "argument1": -10.0,
+            "argument2": "altered_aether:terrain/dune_temperature"
+          }
+        },
+        "max": 1.0,
+        "min": 0.0
+      }
+    },
+    "argument2": {
+      "type": "minecraft:min",
+      "argument1": {
+        "type": "minecraft:clamp",
+        "input": {
+          "type": "minecraft:add",
+          "argument1": 4.699999999999999,
+          "argument2": {
+            "type": "minecraft:mul",
+            "argument1": 10.0,
+            "argument2": "altered_aether:terrain/dune_humidity"
+          }
+        },
+        "max": 1.0,
+        "min": 0.0
+      },
+      "argument2": {
+        "type": "minecraft:clamp",
+        "input": {
+          "type": "minecraft:add",
+          "argument1": -1.6999999999999997,
+          "argument2": {
+            "type": "minecraft:mul",
+            "argument1": -10.0,
+            "argument2": "altered_aether:terrain/dune_humidity"
+          }
+        },
+        "max": 1.0,
+        "min": 0.0
+      }
+    }
+  }
+}

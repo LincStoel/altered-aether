@@ -56,6 +56,13 @@ public final class AABiomeModifierProvider extends JsonDataProvider {
         landmarks.addProperty("features", AAFeatureProvider.LANDMARK);
         landmarks.addProperty("step", "raw_generation");
         data(FOLDER, AlteredAether.id("landmarks"), landmarks);
+        // The giant trees too: their crowns, bows and roots spill over biome borders.
+        JsonObject groves = new JsonObject();
+        groves.addProperty("type", "neoforge:add_features");
+        groves.addProperty("biomes", IS_AETHER);
+        groves.addProperty("features", AAFeatureProvider.GROVE);
+        groves.addProperty("step", "raw_generation");
+        data(FOLDER, AlteredAether.id("groves"), groves);
         JsonObject dressing = new JsonObject();
         dressing.addProperty("type", "neoforge:add_features");
         dressing.addProperty("biomes", IS_AETHER);

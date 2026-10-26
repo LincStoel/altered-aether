@@ -28,6 +28,7 @@ import java.util.Set;
 import static com.linc.alteredaether.data.Df.add;
 import static com.linc.alteredaether.data.Df.clamp;
 import static com.linc.alteredaether.data.Df.flatCache;
+import static com.linc.alteredaether.data.Df.max;
 import static com.linc.alteredaether.data.Df.min;
 import static com.linc.alteredaether.data.Df.mul;
 import static com.linc.alteredaether.data.Df.oldBlendedNoise;
@@ -76,7 +77,8 @@ public final class AATerrainProvider extends JsonDataProvider {
     /** Density functions whose shape depends on height, and so are overridden by the tall pack. */
     private static final Set<String> HEIGHT_DEPENDENT =
             Set.of("crag_3d_noise", "jag", "crags", "tempest", "tempest_spires", "dune_ridges", "dune_centre", "dune_sheet",
-                    "plateau", "plateau_terraced", "island", "island_shift", "tall_base_3d_noise", "rift");
+                    "plateau", "plateau_terraced", "island", "island_shift", "tall_base_3d_noise", "rift",
+                    "grove_land");
 
     private final HeightMode mode;
 
@@ -132,6 +134,10 @@ public final class AATerrainProvider extends JsonDataProvider {
         noise("dune_path", -8, 1.0, 0.35);
         noise("dune_drift", -8, 1.0);
         noise("mesa", -5, 1.0, 0.5, 0.25);
+        // The grove islands: broad 256-block forest islands, gently rolling, with lobes hanging beneath.
+        noise("grove_footprint", -8, 1.0, 0.5);
+        noise("grove_roll", -7, 1.0, 0.5);
+        noise("grove_root", -6, 1.0, 0.5);
         noise("mesa_height", -6, 1.0);
         noise("plateau_relief", -6, 1.0, 0.5);
         noise("path_region", -6, 1.0);
@@ -240,11 +246,23 @@ public final class AATerrainProvider extends JsonDataProvider {
         df("island_shift", flatCache(mul(terrain("region_mask"), add(mul(-mode.height(20), terrain("atoll_mask")),
                 mul(mode.height(24), terrain("frozen_lakes_mask"))))));
 
+        // Skyroot Cathedral and Nurselog Hollow: broad, gentle forest islands for the giants to stand on, in place of
+        // the Aether's scattered ones. The mask covers the nurselog frame (and so the cathedral inside it) and the
+        // nurselog's own solo window.
+        df("grove_mask", max(climateBox(-0.49, 0.01, 0.19, 0.61), climateBox(-0.58, -0.46, -0.42, -0.22)));
+        JsonObject groveSummit = add(mode.y(44), mul(mode.height(7), shiftedNoise(NS + "grove_roll", 1.0, 0.0)));
+        JsonObject groveUnderside = add(mode.y(22), mul(-mode.height(26),
+                clamp(add(shiftedNoise(NS + "grove_root", 1.0, 0.0), 0.2), 0.0, 1.0)));
+        df("grove_land", min(min(mul(0.125, add(groveSummit, mul(-1.0, Df.y()))),
+                        mul(1.0 / 6, add(Df.y(), mul(-1.0, groveUnderside)))),
+                mul(6.0, add(flatCache(shiftedNoise(NS + "grove_footprint", 1.0, 0.0)), 0.3))));
+
         // Each landform's weight, confined to our region.
         df("plateau_weight", mul(terrain("region_mask"), terrain("plateau_mask")));
         df("crag_weight", mul(terrain("region_mask"), terrain("crag_mask")));
         df("rift_weight", mul(terrain("region_mask"), terrain("rift_mask")));
         df("dune_weight", mul(terrain("region_mask"), terrain("dune_mask")));
+        df("grove_weight", mul(terrain("region_mask"), terrain("grove_mask")));
 
         if (mode == HeightMode.TALL) {
             // The Aether's own island noise, stretched to the taller band (y_factor 160 -> 240).
@@ -354,9 +372,10 @@ public final class AATerrainProvider extends JsonDataProvider {
         shifted.add("offset", terrain("island_shift"));
         df("island_shifted", shifted);
         df("island_dunes", Df.choose(terrain("dune_weight"), terrain("island_shifted"), terrain("dune_sheet")));
-        // The rift: the same island broken into drifting slabs, so the slabs carry the dunes too.
-        rift(terrain("island_dunes"));
-        JsonObject islandTier = Df.choose(terrain("rift_weight"), terrain("island_dunes"), terrain("rift"));
+        df("island_groves", Df.choose(terrain("grove_weight"), terrain("island_dunes"), terrain("grove_land")));
+        // The rift: the same island broken into drifting slabs, so the slabs carry the dunes and groves too.
+        rift(terrain("island_groves"));
+        JsonObject islandTier = Df.choose(terrain("rift_weight"), terrain("island_groves"), terrain("rift"));
         JsonObject withCrags = Df.choose(terrain("crag_weight"), islandTier, terrain("crag_tier"));
         // Atolls stand over whatever tier is beneath them, each kept wholly inside our region by its site check.
         JsonObject atoll = Df.type(NS + "atoll");

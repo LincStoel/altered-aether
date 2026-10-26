@@ -48,6 +48,7 @@ public final class AACommonConfig {
     public static final DoubleValue DUNE_WIND_DIRECTION;
     public static final DoubleValue ATOLL_SIZE;
     public static final DoubleValue LANDMARK_RARITY;
+    public static final DoubleValue GIANT_SPACING;
 
     // [basins]
     public static final Map<String, BooleanValue> BASIN_ENABLED = new LinkedHashMap<>();
@@ -147,6 +148,12 @@ public final class AACommonConfig {
         ATOLL_SIZE = b.comment("Sunken Atoll and Frozen Lakes lake size multiplier.").defineInRange("atoll_size", 1.0, 0.5, 2.0);
         LANDMARK_RARITY = b.comment("Multiplier on how rare landmarks are. Higher is rarer, 0 disables them.")
                 .defineInRange("landmark_rarity", 1.0, 0.0, 10.0);
+        b.pop();
+
+        b.comment("The giant trees of the Skyroot Cathedral and Nurselog Hollow. Only affects newly generated chunks.")
+                .push("groves");
+        GIANT_SPACING = b.comment("Spacing between giant trees, as a multiplier. Lower packs them closer.")
+                .defineInRange("giant_spacing", 1.0, 0.6, 3.0);
         b.pop();
 
         b.comment("Lakes, pools, lagoons and waterfalls.").push("basins");
