@@ -1,4 +1,4 @@
-// 1.21.1	2026-10-26T09:27:27.6491823	Altered Aether tags
+// 1.21.1	2026-10-26T10:21:54.6280858	Altered Aether tags
 ab85daae8676f78f1769f9789d58dc49b8a8e7de data/aether/tags/worldgen/biome/is_aether.json
 7ec09b2e18ab43d296e2d76cad7fe25c11cda07f data/altered_aether/tags/block/breeze_spawnable_on.json
 dc18018d6883948531de73415dfcbb7e51ca20b8 data/altered_aether/tags/block/familiar_spawnable_on.json
@@ -9,8 +9,16 @@ b1fe34d2a9ffbf95392b5399248e0d0ce4eed170 data/altered_aether/tags/item/aerwhale_
 bbf0d0c17212568adf6c02381fe81bf1670bf7ff data/altered_aether/tags/item/aerwhale_taming_food.json
 e9730a41c42191b70c0fd4cbcfc86cc4e1f32d48 data/altered_aether/tags/worldgen/biome/has_fireflies.json
 8cf8a4cb0dc6acc9f95a83ab65901cc331d98695 data/altered_aether/tags/worldgen/biome/has_storms.json
+56ec7456c37fbf5edbd08d84896d3455ded5c0cd data/ars_nouveau/tags/block/harvest/foliage.json
+a0bf1fc0c566444ccfdba18f668aa2501187ba7d data/c/tags/item/foods/berry.json
+480983c81f5804ad1eae130e6c1491ba46ac6f17 data/minecraft/tags/block/bee_growables.json
 3f019e822d3a547bba0a274a48dacbd9e8bfdbc9 data/minecraft/tags/block/campfires.json
+480983c81f5804ad1eae130e6c1491ba46ac6f17 data/minecraft/tags/block/cave_vines.json
+480983c81f5804ad1eae130e6c1491ba46ac6f17 data/minecraft/tags/block/climbable.json
 c6381fa8eec6c45ea083b0125723f175d95dfe99 data/minecraft/tags/block/dead_bush_may_place_on.json
-3f019e822d3a547bba0a274a48dacbd9e8bfdbc9 data/minecraft/tags/block/mineable/axe.json
+321ecb60c5b87a7ca940124f0881814faa6dca7d data/minecraft/tags/block/mineable/axe.json
+480983c81f5804ad1eae130e6c1491ba46ac6f17 data/minecraft/tags/block/sword_efficient.json
+a0bf1fc0c566444ccfdba18f668aa2501187ba7d data/minecraft/tags/item/fox_food.json
 cdf4e428bd5f2ff0400a79dcac9e31720dc94321 data/minecraft/tags/worldgen/biome/allows_tropical_fish_spawns_at_any_height.json
 92ece5ddf91e5c42de2cd425d54af7a0510c067f data/snuffles/tags/block/snuffles_spawnable_on.json
+a0bf1fc0c566444ccfdba18f668aa2501187ba7d data/supplementaries/tags/item/flower_box_tall_plantable.json

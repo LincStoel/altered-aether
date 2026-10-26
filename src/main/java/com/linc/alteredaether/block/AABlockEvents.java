@@ -24,7 +24,7 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.BuildCreativeModeTabContentsEvent;
 import net.neoforged.neoforge.event.BlockEntityTypeAddBlocksEvent;
 
-/** Mod-bus events for the ambrosium campfire. */
+/** Mod-bus events for our blocks. */
 @EventBusSubscriber(modid = AlteredAether.MOD_ID, bus = EventBusSubscriber.Bus.MOD)
 public final class AABlockEvents {
     /** The campfire block entity cooks and smokes, so ours simply shares it. */
@@ -33,12 +33,16 @@ public final class AABlockEvents {
         event.modify(BlockEntityType.CAMPFIRE, AARegistries.AMBROSIUM_CAMPFIRE.get());
     }
 
-    /** Right after the soul campfire in the creative menu. */
+    /** The campfire right after the soul campfire, and gleamberries after glow berries wherever those are listed. */
     @SubscribeEvent
     public static void onCreativeTab(BuildCreativeModeTabContentsEvent event) {
         if (event.getTabKey().equals(CreativeModeTabs.FUNCTIONAL_BLOCKS)) {
             event.insertAfter(Items.SOUL_CAMPFIRE.getDefaultInstance(),
                     AARegistries.AMBROSIUM_CAMPFIRE_ITEM.get().getDefaultInstance(),
+                    net.minecraft.world.item.CreativeModeTab.TabVisibility.PARENT_AND_SEARCH_TABS);
+        }
+        if (event.getTabKey().equals(CreativeModeTabs.NATURAL_BLOCKS) || event.getTabKey().equals(CreativeModeTabs.FOOD_AND_DRINKS)) {
+            event.insertAfter(Items.GLOW_BERRIES.getDefaultInstance(), AARegistries.GLEAMBERRIES.get().getDefaultInstance(),
                     net.minecraft.world.item.CreativeModeTab.TabVisibility.PARENT_AND_SEARCH_TABS);
         }
     }

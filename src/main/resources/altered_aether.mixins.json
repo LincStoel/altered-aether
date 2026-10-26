@@ -10,6 +10,8 @@
     "AerwhaleDeckFloatingMixin",
     "DeepAetherHeightChecksMixin",
     "DeepAetherWhaleCargoMixin",
+    "GleamVinesMixins$BeeGrow",
+    "GleamVinesMixins$FoxPick",
     "LargeAercloudStructureMixin",
     "TallRemapExclusionMixins$Features",
     "TallRemapExclusionMixins$Jigsaw",

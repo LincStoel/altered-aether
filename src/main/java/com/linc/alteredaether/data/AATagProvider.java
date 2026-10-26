@@ -54,7 +54,8 @@ public final class AATagProvider extends JsonDataProvider {
         tag("block", AlteredAether.id("tempest_peak_ore_replaceables"), "minecraft:cobbled_deepslate",
                 "minecraft:blackstone", "aether:holystone");
         tag("block", ResourceLocation.withDefaultNamespace("campfires"), "altered_aether:ambrosium_campfire");
-        tag("block", ResourceLocation.withDefaultNamespace("mineable/axe"), "altered_aether:ambrosium_campfire");
+        tag("block", ResourceLocation.withDefaultNamespace("mineable/axe"), "altered_aether:ambrosium_campfire",
+                "altered_aether:gleam_vines", "altered_aether:gleam_vines_plant");
         // dead bushes may stand on the dunes' quicksoil
         tag("block", ResourceLocation.withDefaultNamespace("dead_bush_may_place_on"), "aether:quicksoil");
         // Tempest storms (see TempestStorms) and the natural rock their strikes scorch.
@@ -67,7 +68,27 @@ public final class AATagProvider extends JsonDataProvider {
         // Tamed aerwhales (see TamedAerwhale).
         tag("item", AlteredAether.id("aerwhale_taming_food"), "aether:blue_berry");
         tag("item", AlteredAether.id("aerwhale_breeding_food"), "aether:enchanted_berry");
+        gleamVines();
         aetherBiomes();
+    }
+
+    /**
+     * Gleam vines and gleamberries join every tag that names cave vines or glow berries outright, in vanilla, NeoForge
+     * and the optional mods we know of (mineable/axe is shared with the campfire, above); tags that hold {@code #minecraft:cave_vines} (moss_replaceable, Create's) take
+     * them in through it.
+     */
+    private void gleamVines() {
+        String vines = "altered_aether:gleam_vines";
+        String plant = "altered_aether:gleam_vines_plant";
+        for (String tag : new String[]{"cave_vines", "climbable", "bee_growables", "sword_efficient"}) {
+            tag("block", ResourceLocation.withDefaultNamespace(tag), vines, plant);
+        }
+        // Ars Nouveau lists only the head
+        tag("block", ResourceLocation.fromNamespaceAndPath("ars_nouveau", "harvest/foliage"), vines);
+        String berries = "altered_aether:gleamberries";
+        tag("item", ResourceLocation.withDefaultNamespace("fox_food"), berries);
+        tag("item", ResourceLocation.fromNamespaceAndPath("c", "foods/berry"), berries);
+        tag("item", ResourceLocation.fromNamespaceAndPath("supplementaries", "flower_box_tall_plantable"), berries);
     }
 
     /**

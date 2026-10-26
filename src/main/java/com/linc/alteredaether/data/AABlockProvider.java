@@ -19,19 +19,24 @@ import com.google.gson.JsonObject;
 import com.linc.alteredaether.AlteredAether;
 import com.linc.alteredaether.worldgen.AABiomes;
 import net.minecraft.data.PackOutput;
+import net.minecraft.resources.ResourceLocation;
 
 import java.util.Map;
 import java.util.TreeMap;
 
 /**
- * The ambrosium campfire's models, loot and recipe, and the language file. The logs are the Aether's skyroot log
- * textures, by reference; the flame is our own strip (tools/textures/ambrosium_campfire_fire.py).
+ * The ambrosium campfire's and gleam vines' models, loot and recipe, and the language file. The campfire's logs are the
+ * Aether's skyroot log textures, by reference; the flame is our own strip (tools/textures/ambrosium_campfire_fire.py).
+ * The gleam vines are vanilla's cave vines recolored (tools/textures/gleam_vines.py).
  */
 public final class AABlockProvider extends JsonDataProvider {
     private static final String CAMPFIRE = "ambrosium_campfire";
     private static final String LOG = "aether:block/natural/skyroot_log";
     private static final String LIT_LOG = "aether:block/natural/stripped_skyroot_log";
     private static final String FIRE = AlteredAether.MOD_ID + ":block/ambrosium_campfire_fire";
+    private static final String GLEAM_VINES = "gleam_vines";
+    private static final String GLEAM_VINES_PLANT = "gleam_vines_plant";
+    private static final String GLEAMBERRIES = "gleamberries";
 
     public AABlockProvider(PackOutput output) {
         super(output, "blocks and language");
@@ -49,7 +54,59 @@ public final class AABlockProvider extends JsonDataProvider {
         asset("models/item", AlteredAether.id(CAMPFIRE), model(AlteredAether.MOD_ID + ":block/" + CAMPFIRE, Map.of()));
         loot();
         recipe();
+        gleamVines();
         language();
+    }
+
+    /** Vanilla's cave vines, block for block: a crossed sprite with and without berries, dropping a berry if it has one. */
+    private void gleamVines() {
+        for (String vine : new String[]{GLEAM_VINES, GLEAM_VINES_PLANT}) {
+            JsonObject variants = new JsonObject();
+            for (boolean berries : new boolean[]{false, true}) {
+                String model = vine + (berries ? "_lit" : "");
+                // vanilla sets cave vines' cutout layer in code, as it does the campfire's
+                asset("models/block", AlteredAether.id(model), cutout(model("minecraft:block/cross",
+                        Map.of("cross", AlteredAether.MOD_ID + ":block/" + model))));
+                JsonObject variant = new JsonObject();
+                variant.addProperty("model", AlteredAether.MOD_ID + ":block/" + model);
+                variants.add("berries=" + berries, variant);
+            }
+            JsonObject blockstate = new JsonObject();
+            blockstate.add("variants", variants);
+            asset("blockstates", AlteredAether.id(vine), blockstate);
+
+            JsonObject properties = new JsonObject();
+            properties.addProperty("berries", "true");
+            JsonObject condition = new JsonObject();
+            condition.addProperty("condition", "minecraft:block_state_property");
+            condition.addProperty("block", AlteredAether.MOD_ID + ":" + vine);
+            condition.add("properties", properties);
+            JsonObject entry = new JsonObject();
+            entry.addProperty("type", "minecraft:item");
+            entry.addProperty("name", AlteredAether.MOD_ID + ":" + GLEAMBERRIES);
+            JsonObject pool = new JsonObject();
+            pool.addProperty("rolls", 1);
+            pool.addProperty("bonus_rolls", 0);
+            pool.add("conditions", array(condition));
+            pool.add("entries", array(entry));
+            JsonObject loot = new JsonObject();
+            loot.addProperty("type", "minecraft:block");
+            loot.add("pools", array(pool));
+            loot.addProperty("random_sequence", AlteredAether.MOD_ID + ":blocks/" + vine);
+            data("loot_table/blocks", AlteredAether.id(vine), loot);
+        }
+        asset("models/item", AlteredAether.id(GLEAMBERRIES), model("minecraft:item/generated",
+                Map.of("layer0", AlteredAether.MOD_ID + ":item/" + GLEAMBERRIES)));
+
+        // composts like glow berries
+        JsonObject chance = new JsonObject();
+        chance.addProperty("chance", 0.3F);
+        JsonObject values = new JsonObject();
+        values.add(AlteredAether.MOD_ID + ":" + GLEAMBERRIES, chance);
+        JsonObject compostables = new JsonObject();
+        compostables.addProperty("replace", false);
+        compostables.add("values", values);
+        data("data_maps/item", ResourceLocation.fromNamespaceAndPath("neoforge", "compostables"), compostables);
     }
 
     /** Vanilla's own: four facings, lit and unlit, turned about the vertical axis. */
@@ -154,6 +211,9 @@ public final class AABlockProvider extends JsonDataProvider {
     private void language() {
         Map<String, String> lang = new TreeMap<>();
         lang.put("block." + AlteredAether.MOD_ID + "." + CAMPFIRE, "Ambrosium Campfire");
+        lang.put("block." + AlteredAether.MOD_ID + "." + GLEAM_VINES, "Gleam Vines");
+        lang.put("block." + AlteredAether.MOD_ID + "." + GLEAM_VINES_PLANT, "Gleam Vines Plant");
+        lang.put("item." + AlteredAether.MOD_ID + "." + GLEAMBERRIES, "Gleamberries");
         for (AABiomes.Entry biome : AABiomes.ALL) {
             lang.put("biome." + AlteredAether.MOD_ID + "." + biome.name(), title(biome.name()));
         }

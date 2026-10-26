@@ -14,14 +14,17 @@
  */
 package com.linc.alteredaether.worldgen.grove;
 
+import com.linc.alteredaether.worldgen.grove.shape.Carve;
 import com.linc.alteredaether.worldgen.grove.shape.Part;
 import com.linc.alteredaether.worldgen.grove.shape.Trunk;
 import com.linc.alteredaether.worldgen.grove.shape.Tube;
+import net.minecraft.core.Direction;
 import net.minecraft.util.Mth;
 
 /**
  * A colossal stump, all that is left of a giant felled or snapped off long ago: low, broad and flat-topped, its top
- * a platform ringed with growth rings, its roots spread wide over the ground. Now and then its heart is gold.
+ * a platform ringed with growth rings, its roots spread wide over the ground. Now and then its heart is gold, and
+ * always a treasure lies buried in it.
  */
 final class ColossalStump {
     static void sketch(Sketch s, double heartChance) {
@@ -52,11 +55,11 @@ final class ColossalStump {
             double a = s.random.nextDouble() * Mth.TWO_PI, d = radius * s.range(0.1, 0.7);
             Furnish.growth(s, s.x + Math.cos(a) * d, top, s.z + Math.sin(a) * d);
         }
-        if (s.random.nextDouble() < s.secretChance * 1.5) {
-            s.carve(com.linc.alteredaether.worldgen.grove.shape.Carve.chamber(s.x, top - 3, s.z, 1.6, 1.4, 1.6,
-                    top - 4));
-            Furnish.chest(s, s.x, top - 4, s.z, net.minecraft.core.Direction.NORTH, Furnish.SECRET, Prop.Anchor.AT);
-        }
+        // Every stump keeps a treasure sealed in its heart, two blocks under the centre of the top: a cell just big
+        // enough for the chest, found only by digging down.
+        int cx = Mth.floor(s.x), cz = Mth.floor(s.z), cache = top - 2;
+        s.carve(Carve.chamber(cx, cache, cz, 0.6, 0.6, 0.6, cache));
+        Furnish.chest(s, cx, cache, cz, Direction.NORTH, Furnish.STUMP, Prop.Anchor.AT);
     }
 
     private ColossalStump() {

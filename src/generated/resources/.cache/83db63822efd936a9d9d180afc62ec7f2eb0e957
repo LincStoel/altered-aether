@@ -1,4 +1,5 @@
-// 1.21.1	2026-10-26T09:02:52.2084773	Altered Aether loot tables
+// 1.21.1	2026-10-26T10:00:09.040099	Altered Aether loot tables
 425a31ac890fa646df8c80f7ea8f6e8d345a3747 data/altered_aether/loot_table/chests/grove/camp.json
 ffbfdb9b4ede2eb449966acf0f2499536232f060 data/altered_aether/loot_table/chests/grove/heartwood.json
 637f44f6a4f63b20ebb471e428fd33df1b3d3cb6 data/altered_aether/loot_table/chests/grove/secret.json
+c93a27972a97d32e0fc7afb4c64ed3494873b928 data/altered_aether/loot_table/chests/grove/stump.json

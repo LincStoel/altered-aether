@@ -133,6 +133,19 @@ val selectedOptionalJars: FileCollection = when (optionalSelection) {
 }
 val optionalJarNames = optionalJars.files.map { it.name }
 
+// Iris and Sodium (libs/shaders/, not committed) go into client runs, with BSL selected through run/config/iris.properties
+// (seeded from iris.properties.staged when Iris hasn't written one yet) so effects can be checked under a shaderpack.
+// -Pshaders=false runs the client without them.
+val shaderJars = fileTree("libs/shaders") { include("*.jar") }
+val shadersEnabled = ((findProperty("shaders") as String?) ?: "true").toBoolean()
+val shaderJarNames = shaderJars.files.map { it.name }
+
+// Client-side conveniences for play-testing (JEI, Jade, Immersive Overlays, Xaero's Minimap and World Map), in
+// libs/client/ (not committed), go into client runs only. -PclientMods=false runs the client without them.
+val clientJars = fileTree("libs/client") { include("*.jar") }
+val clientModsEnabled = ((findProperty("clientMods") as String?) ?: "true").toBoolean()
+val clientJarNames = clientJars.files.map { it.name }
+
 // Adds libs/ to the run's mods folder before each run. A copy rather than a sync, so other mods dropped into
 // run/mods by hand for play-testing are left alone; only optional jars that weren't selected are removed first.
 for ((run, dir) in listOf("Client" to "run", "Server" to "run-server", "Data" to "run-data",
@@ -147,9 +160,24 @@ for ((run, dir) in listOf("Client" to "run", "Server" to "run-server", "Data" to
         if (withOptional) {
             from(selectedOptionalJars)
         }
+        val shaders = run == "Client" && shadersEnabled
+        if (shaders) {
+            from(shaderJars)
+        }
+        if (run == "Client" && clientModsEnabled) {
+            from(clientJars)
+        }
         into(modsDir)
+        val shaderNames = shaderJarNames.toList() + clientJarNames
+        val configDir = layout.projectDirectory.dir("$dir/config").asFile
         doFirst {
             optionalNames.forEach { modsDir.resolve(it).delete() }
+            shaderNames.forEach { modsDir.resolve(it).delete() }
+            val irisConfig = configDir.resolve("iris.properties")
+            val staged = configDir.resolve("iris.properties.staged")
+            if (shaders && !irisConfig.exists() && staged.exists()) {
+                staged.copyTo(irisConfig)
+            }
         }
     }
     tasks.configureEach {

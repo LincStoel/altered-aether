@@ -222,6 +222,11 @@ public final class GroveField {
                 case GRANDFATHER, LINK -> {
                 }
             }
+            // Roots under the island draw on a stream of their own, so turning them off changes nothing else.
+            RandomSource roots = random(key(cx, cz) * 4 + attempt, 3);
+            if (roots.nextDouble() < AACommonConfig.UNDER_ROOT_CHANCE.get()) {
+                UnderRoots.sketch(sketch, roots, roots.nextDouble() < 0.3 ? 2 : 1, REACH);
+            }
             Giant giant = sketch.done(type, random.nextLong());
             if (giant.extent() <= REACH) {
                 return giant;

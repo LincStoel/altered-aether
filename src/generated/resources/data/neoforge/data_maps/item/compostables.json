@@ -1,0 +1,8 @@
+{
+  "replace": false,
+  "values": {
+    "altered_aether:gleamberries": {
+      "chance": 0.3
+    }
+  }
+}

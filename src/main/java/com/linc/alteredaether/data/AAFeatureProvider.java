@@ -32,6 +32,8 @@ public final class AAFeatureProvider extends JsonDataProvider {
     static final String LANDMARK = NS + "landmark/build";
     /** The giant-tree builder of the Skyroot Cathedral and Nurselog Hollow. */
     static final String GROVE = NS + "grove/build";
+    /** The roots hanging under the grove islands. */
+    static final String HANGING_ROOTS = NS + "grove/hanging_roots";
     static final String[] LANDMARK_DECORATION = {NS + "landmark/tempest_ring", NS + "landmark/spire_drifts",
             NS + "landmark/fracture_debris", NS + "landmark/fracture_slabs", NS + "landmark/fracture_bridges",
             NS + "landmark/islet_meadow", NS + "landmark/islet_oak"};
@@ -48,6 +50,8 @@ public final class AAFeatureProvider extends JsonDataProvider {
         landmarks();
         configured("grove/build", NS + "grove", new JsonObject());
         placed("grove/build", GROVE, new JsonArray());
+        configured("grove/hanging_roots", NS + "hanging_roots", new JsonObject());
+        placed("grove/hanging_roots", HANGING_ROOTS, new JsonArray());
     }
 
     /**

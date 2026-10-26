@@ -160,6 +160,10 @@ Optional mods to test with go in `libs/optional/` and are copied into the runs; 
 comma-separated list of jar name prefixes) picks which.
 
 - `.\gradlew runClient`, `.\gradlew runServer`, `.\gradlew build`.
+- Client runs load Iris and Sodium from `libs/shaders/` (not committed) with the BSL shaderpack from `run/shaderpacks/`,
+  selected through `run/config/iris.properties`. `-Pshaders=false` runs the client without them.
+- Client runs also load the play-testing mods in `libs/client/` (not committed): JEI, Jade, Immersive Overlays and Xaero's Minimap and World Map, all
+  from the World Traveler 2 instance. `-PclientMods=false` runs the client without them.
 - `.\gradlew runData` regenerates `src/generated/resources` (worldgen, tags, models, lang).
 - `.\gradlew test` runs the unit tests, including the biome table's partition across every combination of mods.
 

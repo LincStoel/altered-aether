@@ -428,6 +428,15 @@ public final class DebugCommands {
                             site.x(), site.z() + r, site.base() - 24, site.base() + 120, 4)).join();
                     server.submit(() -> WorldRender.render(aether, name + "_plan", site.x() - r, site.z() - r,
                             site.x() + r, site.z() + r, site.base() - 2, site.base() + 3, 4)).join();
+                    // The underside of its island, down to the tips of its great roots, and the same with only the
+                    // wood and hanging roots drawn, so the rock hides nothing.
+                    int under = Math.min(site.bounds().minY(), site.base() - 60) - 4;
+                    server.submit(() -> WorldRender.render(aether, name + "_under", site.x() - r, site.z() - r,
+                            site.x() + r, site.z() + r, under, site.base(), 4)).join();
+                    server.submit(() -> WorldRender.render(aether, name + "_under_roots", site.x() - r, site.z() - r,
+                            site.x() + r, site.z() + r, under, site.base(), 4,
+                            state -> state.is(net.minecraft.tags.BlockTags.LOGS)
+                                    || state.is(net.minecraft.world.level.block.Blocks.HANGING_ROOTS))).join();
                 }
             }
             if (Boolean.getBoolean("altered_aether.render")) {

@@ -1,0 +1,10 @@
+{
+  "variants": {
+    "berries=false": {
+      "model": "altered_aether:block/gleam_vines"
+    },
+    "berries=true": {
+      "model": "altered_aether:block/gleam_vines_lit"
+    }
+  }
+}

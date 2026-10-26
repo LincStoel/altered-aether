@@ -1,8 +1,9 @@
-// 1.21.1	2026-10-26T08:18:49.7882834	Altered Aether biome modifiers
+// 1.21.1	2026-10-26T10:12:39.10033	Altered Aether biome modifiers
 a6b67b4c1c313dc7fdb12bbc3331f85be76ab355 data/altered_aether/neoforge/biome_modifier/aether_exclusive.json
 5aa795e9611228495aa045b613bafcf69423632e data/altered_aether/neoforge/biome_modifier/basin_fill.json
 2bedda06d001e39089bdac441eef0518f7a75ddc data/altered_aether/neoforge/biome_modifier/climate.json
 a9345f6216c4fb0178a1c9b7792da91d3db86f61 data/altered_aether/neoforge/biome_modifier/groves.json
+32cd1b217f275f0c69414c959cc319c5613a1c6a data/altered_aether/neoforge/biome_modifier/grove_hanging_roots.json
 0101f84b2647b243f490cfa87d69271b8b7cd472 data/altered_aether/neoforge/biome_modifier/landmarks.json
 b1928d7c8f93dc0119888606843a7f0e447ca675 data/altered_aether/neoforge/biome_modifier/landmark_decoration.json
 abf079c5cf13392766b0ddea34ab7a6b5ef1db5e data/altered_aether/neoforge/biome_modifier/overworld_archwood.json

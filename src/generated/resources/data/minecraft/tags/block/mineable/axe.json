@@ -1,6 +1,8 @@
 {
   "replace": false,
   "values": [
-    "altered_aether:ambrosium_campfire"
+    "altered_aether:ambrosium_campfire",
+    "altered_aether:gleam_vines",
+    "altered_aether:gleam_vines_plant"
   ]
 }

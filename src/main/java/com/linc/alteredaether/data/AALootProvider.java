@@ -21,8 +21,8 @@ import net.minecraft.data.PackOutput;
 
 /**
  * Chest loot for the groves. A pilgrims' camp holds supplies for the road; a secret spot holds what someone thought
- * worth hiding; the Grandfather's heartwood room holds the best of it. All of it stays below the Bronze Dungeon's
- * treasure: the groves reward exploring, not replace the dungeons.
+ * worth hiding; the Grandfather's heartwood room and the caches buried in colossal stumps hold the best of it. Even
+ * those hold no dungeon treasure: the groves reward exploring, not replace the dungeons.
  */
 public final class AALootProvider extends JsonDataProvider {
     public AALootProvider(PackOutput output) {
@@ -35,6 +35,8 @@ public final class AALootProvider extends JsonDataProvider {
         table("secret", pool(3, 5, camp()), pool(1, 2, secret()));
         table("heartwood", pool(2, 4, camp()), pool(2, 3, secret()), pool(1, 1, heartwood()),
                 pool(1, 1, entry("aether:golden_amber", 1, 8, 16)));
+        table("stump", pool(2, 3, camp()), pool(2, 4, secret()), pool(2, 3, heartwood()), pool(1, 1, stump()),
+                pool(1, 1, entry("aether:golden_amber", 1, 12, 24)));
     }
 
     private static JsonArray camp() {
@@ -79,6 +81,18 @@ public final class AALootProvider extends JsonDataProvider {
                 entry("aether:agility_cape", 1, 1, 1),
                 enchanted("aether:zanite_chestplate", 2, 15, 25),
                 enchanted("aether:zanite_helmet", 2, 15, 25));
+    }
+
+    /** The prize of a colossal stump's buried cache: the one thing worth the dig. */
+    private static JsonArray stump() {
+        return entries(
+                entry("aether:enchanted_gravitite", 4, 2, 5),
+                entry("aether:zanite_gloves", 3, 1, 1),
+                entry("aether:golden_gloves", 3, 1, 1),
+                entry("aether:agility_cape", 2, 1, 1),
+                enchanted("aether:zanite_sword", 2, 25, 30),
+                enchanted("aether:zanite_pickaxe", 2, 25, 30),
+                enchanted("minecraft:book", 3, 25, 30));
     }
 
     private void table(String name, JsonObject... pools) {

@@ -43,11 +43,12 @@ import java.util.Optional;
 /**
  * What the pilgrims who tended the groves left behind, and what grows on the dead: camps round an ambrosium campfire,
  * chests, lamp posts along the trails, lanterns hung from the bows, glowing growth and young life on fallen wood. No
- * flame lights any of it; fire goes out in the Aether. Deep Aether's lanterns and glowing plants appear only when it is
- * present; without it the lamps are ambrosium torches.
+ * ordinary flame lights any of it; fire goes out in the Aether. Lanterns are Deep Aether's skyjade when it is present
+ * and soul lanterns without it; its tiki torches and glowing plants appear only with it.
  */
 final class Furnish {
-    static final ResourceKey<LootTable> CAMP = loot("camp"), SECRET = loot("secret"), HEARTWOOD = loot("heartwood");
+    static final ResourceKey<LootTable> CAMP = loot("camp"), SECRET = loot("secret"), HEARTWOOD = loot("heartwood"),
+            STUMP = loot("stump");
 
     private static ResourceKey<LootTable> loot(String name) {
         return ResourceKey.create(Registries.LOOT_TABLE, AlteredAether.id("chests/grove/" + name));
@@ -131,7 +132,7 @@ final class Furnish {
             double back = facing + Math.PI;
             chest(s, cx + Math.cos(back) * d, floor, cz + Math.sin(back) * d, horizontal(facing), CAMP, anchor);
         }
-        // Light: a hanging lantern with Deep Aether, an ambrosium torch on the floor without.
+        // Light: a lantern hung over the fire, or an ambrosium torch on the floor if none can be hung.
         if (tended) {
             double a = facing + Mth.HALF_PI * 0.5;
             int lx = Mth.floor(cx + Math.cos(a) * 1.6), lz = Mth.floor(cz + Math.sin(a) * 1.6);
@@ -153,15 +154,24 @@ final class Furnish {
 
     // ------------------------------------------------------------------------------------------------ light --
 
+    /** Deep Aether's skyjade lantern, or a soul lantern without it. */
+    private static BlockState lantern() {
+        BlockState skyjade = deep("skyjade_lantern");
+        return skyjade != null ? skyjade : Blocks.SOUL_LANTERN.defaultBlockState();
+    }
+
+    /** Deep Aether's skyjade chain, or an iron chain without it. */
+    private static BlockState chainLink() {
+        BlockState skyjade = deep("skyjade_chain");
+        return skyjade != null ? skyjade : Blocks.CHAIN.defaultBlockState();
+    }
+
     /**
-     * A Deep Aether skyjade lantern hung on a chain of {@code chain} links from the first underside above (x, y, z).
-     * False without Deep Aether, when there is nothing to hang.
+     * A lantern hung on a chain of {@code chain} links from the first underside above (x, y, z): skyjade with Deep
+     * Aether, soul lantern and iron chain without. Always true now that a lantern is always at hand.
      */
     static boolean hanging(Sketch s, int x, int y, int z, int chain) {
-        BlockState lantern = deep("skyjade_lantern"), link = deep("skyjade_chain");
-        if (lantern == null || link == null) {
-            return false;
-        }
+        BlockState lantern = lantern(), link = chainLink();
         List<BlockState> blocks = new ArrayList<>();
         for (int i = 0; i < chain; i++) {
             blocks.add(link.trySetValue(RotatedPillarBlock.AXIS, Direction.Axis.Y));
@@ -172,8 +182,8 @@ final class Furnish {
     }
 
     /**
-     * A lamp beside a trail, standing on the ground: an ambrosium torch on a skyroot fence post, or with Deep Aether
-     * sometimes a tiki torch, a skyjade lantern on the post or one set on the ground. Unlit, the post stands bare.
+     * A lamp beside a trail, standing on the ground: an ambrosium torch on a skyroot fence post, sometimes a lantern
+     * on the post or one set on the ground, and with Deep Aether a tiki torch. Unlit, the post stands bare.
      */
     static void lamp(Sketch s, double x, int guess, double z, boolean lit) {
         BlockState post = block("aether:skyroot_fence");
@@ -189,8 +199,12 @@ final class Furnish {
             }
             return;
         }
-        BlockState tiki = deep("ambrosium_tiki_torch"), lantern = deep("skyjade_lantern");
-        int kind = tiki == null ? 0 : s.random.nextInt(4);
+        BlockState tiki = deep("ambrosium_tiki_torch"), lantern = lantern();
+        // Without Deep Aether there is no tiki torch: the post's torch takes its share.
+        int kind = s.random.nextInt(4);
+        if (kind == 1 && tiki == null) {
+            kind = 0;
+        }
         List<BlockState> blocks = switch (kind) {
             case 1 -> List.of(with(tiki, "half", "lower"), with(tiki, "half", "upper"));
             case 2 -> List.of(post, with(lantern, "hanging", "false"));

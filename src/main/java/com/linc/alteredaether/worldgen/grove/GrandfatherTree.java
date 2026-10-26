@@ -22,6 +22,7 @@ import com.linc.alteredaether.worldgen.grove.shape.Tube;
 import net.minecraft.core.Direction;
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
+import net.minecraft.world.level.levelgen.XoroshiroRandomSource;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -143,6 +144,9 @@ public final class GrandfatherTree {
             s.buttresses(x + Math.cos(angle) * spread * 0.6, z + Math.sin(angle) * spread * 0.6, 8, 1,
                     s.range(10, 16));
         }
+        // The ancestor's roots always break through, several of them; from a stream of their own, like the giants'.
+        RandomSource roots = new XoroshiroRandomSource(x, z);
+        UnderRoots.sketch(s, roots, 3 + roots.nextInt(3), Double.MAX_VALUE);
         return s.done(GiantType.GRANDFATHER, random.nextLong());
     }
 

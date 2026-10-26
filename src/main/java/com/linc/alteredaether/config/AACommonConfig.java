@@ -54,6 +54,8 @@ public final class AACommonConfig {
     public static final DoubleValue CAMP_CHANCE;
     public static final DoubleValue SECRET_CHANCE;
     public static final DoubleValue TENDED_FRACTION;
+    public static final DoubleValue UNDER_ROOT_CHANCE;
+    public static final DoubleValue HANGING_ROOTS;
 
     // [basins]
     public static final Map<String, BooleanValue> BASIN_ENABLED = new LinkedHashMap<>();
@@ -173,6 +175,10 @@ public final class AACommonConfig {
         TENDED_FRACTION = b.comment("Share of trails and camps still tended: lamps lit and campfires burning. The rest",
                         "are forgotten, their posts bare and their trails grown over.")
                 .defineInRange("tended_fraction", 0.55, 0.0, 1.0);
+        UNDER_ROOT_CHANCE = b.comment("Chance a giant sends a great root out through the underside of its island.")
+                .defineInRange("under_root_chance", 0.5, 0.0, 1.0);
+        HANGING_ROOTS = b.comment("Density of the roots hanging under the grove islands, as a multiplier. 0 disables them.")
+                .defineInRange("hanging_roots", 1.0, 0.0, 4.0);
         b.pop();
 
         b.comment("Lakes, pools, lagoons and waterfalls.").push("basins");

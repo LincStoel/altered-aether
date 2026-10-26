@@ -16,6 +16,8 @@ package com.linc.alteredaether.registry;
 
 import com.linc.alteredaether.AlteredAether;
 import com.linc.alteredaether.block.AmbrosiumCampfireBlock;
+import com.linc.alteredaether.block.GleamVinesBlock;
+import com.linc.alteredaether.block.GleamVinesPlantBlock;
 import com.linc.alteredaether.compat.ModEnabled;
 import com.linc.alteredaether.entity.TamedAerwhale;
 import com.linc.alteredaether.menu.AerwhaleInventoryMenu;
@@ -24,6 +26,7 @@ import com.linc.alteredaether.worldgen.density.BasinCarve;
 import com.linc.alteredaether.worldgen.density.ConfigValue;
 import com.linc.alteredaether.worldgen.feature.BasinFillFeature;
 import com.linc.alteredaether.worldgen.feature.GroveFeature;
+import com.linc.alteredaether.worldgen.feature.HangingRootsFeature;
 import com.linc.alteredaether.worldgen.feature.AercloudFeature;
 import com.linc.alteredaether.worldgen.feature.AercloudBridgeFeature;
 import com.linc.alteredaether.worldgen.feature.RuinedPillarFeature;
@@ -64,7 +67,10 @@ import net.minecraft.core.registries.Registries;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.MobCategory;
 import net.minecraft.world.inventory.MenuType;
+import net.minecraft.world.food.Foods;
 import net.minecraft.world.item.BlockItem;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemNameBlockItem;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.levelgen.DensityFunction;
@@ -90,6 +96,15 @@ public final class AARegistries {
     public static final DeferredBlock<AmbrosiumCampfireBlock> AMBROSIUM_CAMPFIRE = BLOCKS.registerBlock(
             "ambrosium_campfire", AmbrosiumCampfireBlock::new, BlockBehaviour.Properties.ofFullCopy(Blocks.CAMPFIRE));
     public static final DeferredItem<BlockItem> AMBROSIUM_CAMPFIRE_ITEM = ITEMS.registerSimpleBlockItem(AMBROSIUM_CAMPFIRE);
+
+    /** Cave vines and glow berries in Aether colours; see block/GleamVines. */
+    public static final DeferredBlock<GleamVinesBlock> GLEAM_VINES = BLOCKS.registerBlock(
+            "gleam_vines", GleamVinesBlock::new, BlockBehaviour.Properties.ofFullCopy(Blocks.CAVE_VINES));
+    public static final DeferredBlock<GleamVinesPlantBlock> GLEAM_VINES_PLANT = BLOCKS.registerBlock(
+            "gleam_vines_plant", GleamVinesPlantBlock::new, BlockBehaviour.Properties.ofFullCopy(Blocks.CAVE_VINES_PLANT));
+    /** Like the glow berry, the berry is the vine's item: it is eaten, and planted under a ceiling. */
+    public static final DeferredItem<ItemNameBlockItem> GLEAMBERRIES = ITEMS.register("gleamberries",
+            () -> new ItemNameBlockItem(GLEAM_VINES.get(), new Item.Properties().food(Foods.GLOW_BERRIES)));
 
     public static final DeferredRegister<EntityType<?>> ENTITY_TYPES =
             DeferredRegister.create(Registries.ENTITY_TYPE, AlteredAether.MOD_ID);
@@ -158,6 +173,8 @@ public final class AARegistries {
             FEATURES.register("basin_fill", BasinFillFeature::new);
     public static final DeferredHolder<Feature<?>, GroveFeature> GROVE =
             FEATURES.register("grove", GroveFeature::new);
+    public static final DeferredHolder<Feature<?>, HangingRootsFeature> HANGING_ROOTS =
+            FEATURES.register("hanging_roots", HangingRootsFeature::new);
     public static final DeferredHolder<Feature<?>, EdgeSpringFeature> EDGE_SPRING =
             FEATURES.register("edge_spring", EdgeSpringFeature::new);
     public static final DeferredHolder<Feature<?>, BoulderFeature> BOULDER =

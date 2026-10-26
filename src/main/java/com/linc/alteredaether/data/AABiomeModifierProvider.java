@@ -63,6 +63,13 @@ public final class AABiomeModifierProvider extends JsonDataProvider {
         groves.addProperty("features", AAFeatureProvider.GROVE);
         groves.addProperty("step", "raw_generation");
         data(FOLDER, AlteredAether.id("groves"), groves);
+        // The roots hanging under the grove islands, once the giants' own roots are in.
+        JsonObject hanging = new JsonObject();
+        hanging.addProperty("type", "neoforge:add_features");
+        hanging.addProperty("biomes", IS_AETHER);
+        hanging.addProperty("features", AAFeatureProvider.HANGING_ROOTS);
+        hanging.addProperty("step", "underground_decoration");
+        data(FOLDER, AlteredAether.id("grove_hanging_roots"), hanging);
         JsonObject dressing = new JsonObject();
         dressing.addProperty("type", "neoforge:add_features");
         dressing.addProperty("biomes", IS_AETHER);
