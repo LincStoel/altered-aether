@@ -15,6 +15,9 @@ Shaderpacks draw their own sky, fog and lighting, so nothing important depends o
    - The storm sets the client's rain and thunder levels, which shaderpacks read for wetness and darkening.
    - Spark particles, and biome particles defined in the biome data: sparks in Tempest Peaks, snowflakes in the
      Frozen Crags, dust in the Windswept Dunes.
+   - Fireflies in the Skyroot Cathedral and Nurselog Hollow: our own particle, drawn full-bright and translucent, so
+     it glows whatever the light round it. The groves' lamps are blocks with their own light (ambrosium torches, and
+     with Deep Aether skyjade lanterns and tiki torches), which shaderpacks light as usual.
 2. **Without a shaderpack only.** Storm fog draws the fog closer and greys it. When Iris reports an active
    shaderpack (`client.shader_mode = AUTO`), the fog is skipped and flashes and sparks are turned up 40%.
 
@@ -27,6 +30,7 @@ Shaderpacks draw their own sky, fog and lighting, so nothing important depends o
 | Storm rain | Works without shaders (dense rain in Tempest Peaks). Under BSL, rain is subtle in a still image |
 | Distant flashes | **Not confirmed visually**: a flash lasts a few frames and no still caught one. Thunder and sky flash use vanilla's own code path |
 | Spark particles, crag snowflakes, dune dust | Not singled out in these stills |
+| Fireflies, grove lamps | **Not checked yet** |
 | Atoll water colour and clarity, coral | Good: the reef shows through BSL water |
 | Waterfalls | Rendered; no artifacts seen, but not framed closely |
 | Ambrosium campfire | Good: golden flame, smoke, and it lights its surroundings under BSL. The flame needed a cutout render type, which is fixed |
@@ -38,3 +42,6 @@ Shaderpacks draw their own sky, fog and lighting, so nothing important depends o
 - Watch a storm in Tempest Peaks for a minute with BSL on. Check that flashes light the clouds and the thunder
   follows.
 - Stand in the Frozen Crags and the Windswept Dunes to see their particles under BSL.
+- Stand in the Skyroot Cathedral at night (`-PaaTour=fireflies`) with BSL on: fireflies should glow gold against the
+  dark, and the lamps along the trails should light the ground round them. Check that BSL's bloom doesn't wash the
+  fireflies out, and that they still read by day in the shade.

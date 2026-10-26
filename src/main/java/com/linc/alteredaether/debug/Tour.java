@@ -18,6 +18,9 @@ import com.linc.alteredaether.AlteredAether;
 import com.linc.alteredaether.entity.TamedAerwhale;
 import com.linc.alteredaether.registry.AARegistries;
 import com.linc.alteredaether.storm.TempestStorms;
+import com.linc.alteredaether.worldgen.grove.Giant;
+import com.linc.alteredaether.worldgen.grove.GiantType;
+import com.linc.alteredaether.worldgen.grove.GroveField;
 import com.linc.alteredaether.worldgen.landmark.Landmark;
 import com.linc.alteredaether.worldgen.landmark.LandmarkField;
 import com.linc.alteredaether.worldgen.landmark.LandmarkType;
@@ -136,6 +139,19 @@ public final class Tour {
                     biomeShots(aether, stop.substring(6), spawn, shots);
                     continue;
                 }
+                if (stop.equals("fireflies")) {
+                    // The cathedral at midnight, from the ground, for the fireflies and the lamps.
+                    List<Shot> night = new ArrayList<>();
+                    biomeShots(aether, "skyroot_cathedral", spawn, night);
+                    night.stream().filter(shot -> shot.name().endsWith("_ground")).forEach(shot -> shots.add(
+                            new Shot("fireflies", shot.x(), shot.y(), shot.z(), shot.fx(), shot.fy(), shot.fz(), 18000,
+                                    false, false, true)));
+                    continue;
+                }
+                if (stop.startsWith("giant:")) {
+                    giantShots(stop.substring(6), spawn, shots);
+                    continue;
+                }
                 if (stop.equals("whale")) {
                     whaleShots(spawn, shots);
                     continue;
@@ -164,6 +180,36 @@ public final class Tour {
                 }
             }
             return shots;
+        }
+
+        /**
+         * A grove giant from outside, and from inside its hollow or tunnel when it has one, looking out the way in.
+         */
+        private static void giantShots(String name, BlockPos spawn, List<Shot> shots) {
+            GroveField field = GroveField.get(THE_AETHER);
+            GiantType type = GiantType.valueOf(name.toUpperCase(Locale.ROOT));
+            Giant site = field == null ? null : field.nearest(type, spawn.getX(), spawn.getZ(), 30000).orElse(null);
+            if (site == null) {
+                AlteredAether.LOGGER.error("Tour: no {} found", type.id());
+                return;
+            }
+            AlteredAether.LOGGER.info("Tour: {} at {} {}", type.id(), site.x(), site.z());
+            double distance = Math.max(36, site.extent() * 1.1);
+            double ex = site.x() + distance * 0.7, ez = site.z() + distance * 0.7;
+            shots.add(new Shot("giant_" + type.id(), ex, site.base() + distance * 0.5, ez, site.x(), site.base() + 12,
+                    site.z(), 6000, false, false));
+            List<BlockPos> inside = site.points("hollow_floor");
+            List<BlockPos> ways = site.points("entrance");
+            if (inside.isEmpty() && site.points("tunnel").size() == 2) {
+                inside = List.of(site.points("tunnel").get(0));
+                ways = List.of(site.points("tunnel").get(1));
+            }
+            if (!inside.isEmpty()) {
+                BlockPos in = inside.getFirst();
+                BlockPos out = ways.isEmpty() ? in.offset(8, 0, 0) : ways.getFirst();
+                shots.add(new Shot("giant_" + type.id() + "_inside", in.getX() + 0.5, in.getY() + 1.6, in.getZ() + 0.5,
+                        out.getX() + 0.5, in.getY() + 1.6, out.getZ() + 0.5, 6000, false, false));
+            }
         }
 
         /**

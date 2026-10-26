@@ -85,7 +85,48 @@ public final class DebugCommands {
                         .then(Commands.argument("type", StringArgumentType.word())
                                 .suggests((ctx, builder) -> SharedSuggestionProvider.suggest(
                                         java.util.Arrays.stream(LandmarkType.values()).map(LandmarkType::id), builder))
-                                .executes(DebugCommands::landmark))));
+                                .executes(DebugCommands::landmark)))
+                .then(Commands.literal("giant")
+                        .then(Commands.argument("type", StringArgumentType.word())
+                                .suggests((ctx, builder) -> SharedSuggestionProvider.suggest(
+                                        java.util.Arrays.stream(GiantType.values())
+                                                .filter(t -> t != GiantType.LINK && t != GiantType.GRANDFATHER)
+                                                .map(GiantType::id), builder))
+                                .executes(DebugCommands::giant))));
+    }
+
+    /** {@code /altered_aether giant <type>}: the nearest grove giant of a type, with a link to go and see it. */
+    private static int giant(CommandContext<CommandSourceStack> ctx) {
+        CommandSourceStack source = ctx.getSource();
+        GroveField field = GroveField.get(THE_AETHER);
+        GiantType type;
+        try {
+            type = GiantType.valueOf(StringArgumentType.getString(ctx, "type").toUpperCase(java.util.Locale.ROOT));
+        } catch (IllegalArgumentException e) {
+            source.sendFailure(Component.literal("No such giant."));
+            return 0;
+        }
+        if (field == null) {
+            source.sendFailure(Component.literal("The Aether has no groves."));
+            return 0;
+        }
+        int x = (int) source.getPosition().x, z = (int) source.getPosition().z;
+        source.sendSuccess(() -> Component.literal("Searching for a " + type.id() + "..."), false);
+        CompletableFuture.supplyAsync(() -> field.nearest(type, x, z, 20000), Util.backgroundExecutor())
+                .thenAcceptAsync(found -> {
+                    if (found.isEmpty()) {
+                        source.sendFailure(Component.literal("No " + type.id() + " within 20000 blocks."));
+                        return;
+                    }
+                    Giant site = found.get();
+                    String tp = "/execute in aether:the_aether run tp @s " + site.x() + " " + (site.base() + 2) + " "
+                            + site.z();
+                    source.sendSuccess(() -> Component.literal(type.id() + " at " + site.x() + ", " + site.z() + " ("
+                            + (int) Math.hypot(site.x() - x, site.z() - z) + " blocks) ").append(
+                            Component.literal("[go]").withStyle(style -> style.withColor(ChatFormatting.GREEN)
+                                    .withClickEvent(new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, tp)))), false);
+                }, source.getServer());
+        return 1;
     }
 
     /**

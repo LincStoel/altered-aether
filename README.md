@@ -31,12 +31,24 @@ switch in the config's `[compat]` section is on).
 | Windswept Dunes | thin sheets of quicksoil winding high through the sky, rippled by long wind ridges; ruins, dead bushes |
 | Sunken Atoll | a sky full of low-lying atolls, big and small: thin rings of quicksoil shore round lagoons with branching coral reefs, glowstone thickets, kelp, tropical fish, turtles and glow squid; some are half-bagel rings, oval or twisting, with a river round the crown and open sky in the middle |
 | Frozen Lakes | high icestone islands under aether dirt holding lakes frozen over at the surface, with snow on the banks |
+| Skyroot Cathedral | broad forest islands of giant skyroots standing shoulder to shoulder, joined by roots, layering bows and canopy bridges: hollow elders you can build in, tunnel giants, Tule masses, bow colonies and cathedral rings; trails, lamps, camps and fireflies |
+| Nurselog Hollow | the cathedral's fallen elders, round its edges and now and then alone: colossal fallen logs with root plates and walkable hollows, snags, giant stumps, lattice skeletons and rings of regrowth |
 | Blazing, Cascading, Flourishing and Vexing Archwood Groves | Ars Nouveau's archwood forests (need Ars Nouveau) |
 | Flashing Archwood Grove | needs Ars Nouveau and Ars Elemental |
 
 Without Ars Nouveau the grove windows fall back to the Aether's own skyroot biomes. Landforms appear only inside
 the region, and blend out at its edges. The holystone under every lake, pool and lagoon bed is richer in zanite and
 a little scattered gravitite.
+
+**Giant trees.** Every giant in the two groves is grown from existing Aether wood, never a new block, and each
+colony is one clone: its trees share a wood and are tied together by surface roots. With Deep Aether, some colonies
+are roseroot, sunroot, cruderoot, yagroot or conberry. Pilgrims once tended the groves: some trails are still trodden
+and lit, some camps round an ambrosium campfire still burn, and others are long forgotten. Chests are hidden in
+hollows and secret places: sealed in burls, fallen logs and stumps, or in a nest at the top of a trunk. Nothing is
+lit by fire, which goes out in the Aether: the lamps are ambrosium torches, and with Deep Aether skyjade lanterns and
+tiki torches. Fireflies drift in the shade by day and swarm at night.
+
+`/altered_aether giant <type>` finds the nearest giant of a kind (operators only).
 
 **Rare landmarks**, each one-in-many:
 
@@ -47,6 +59,9 @@ a little scattered gravitite.
   pouring off into the sky.
 - **Great fracture**: a canyon across the rift, its slabs grown into giant plates, one side heaved up over the other.
 - **Double atoll**: an atoll with a second ring in its lagoon and a golden oak on an islet at its heart.
+- **The Grandfather**: the Skyroot Cathedral's ancestor tree, some 140 blocks tall, every kind of giant in one: a
+  tunnel through its foot, a ring of children risen from its bows, and over the tunnel, up one of the bows, a room
+  lined with golden oak heartwood.
 
 `/altered_aether landmark <type>` finds the nearest one (operators only).
 
@@ -71,7 +86,7 @@ With the tall pack, other mods' Aether structures and ores are moved to the matc
 |---|---|
 | Ars Nouveau | the archwood groves, scattered archwood, familiars and wilden in the groves; archwood is taken out of the overworld (Ars Elemental's too) unless `disable_overworld_archwood` is off |
 | Ars Elemental | the Flashing Archwood Grove, flashjacks, sirens, sourcestone boulders |
-| Deep Aether | its stones, blocks and ground cover in our biomes (closest Aether or vanilla blocks stand in without it); totems, carved squash, tiki torches; poison pools |
+| Deep Aether | its stones, blocks and ground cover in our biomes (closest Aether or vanilla blocks stand in without it); totems, carved squash, tiki torches; poison pools; giant-tree colonies of its woods, skyjade lanterns, glowing vines and moss in the groves |
 | Aether Overworld Ores | its ores placed by biome; 42 enchanting recipes |
 | Create | zinc in Tempest Peaks |
 | Oreganized | silver in the crags and the rift |
@@ -93,6 +108,8 @@ on cold aerclouds.
 - `[terrain]`: landform strengths, rift fracture size and drift, dune height and wind, atoll size, and
   `landmark_rarity` (higher is rarer, 0 turns landmarks off).
 - `[basins]`: each kind of lake on or off and its rarity, waterfall frequency, coral density.
+- `[groves]`: giant spacing, golden heartwood chance, the share of Deep Aether wood colonies, camp and secret-chest
+  chances, and the share of trails and camps still tended.
 - `[features]`: a density multiplier per decoration family.
 - `[spawns]`: per added mob: on or off, `aether_exclusive`, weight, group size and spawn cost.
 - `[climate]`: the biome temperature fix.
@@ -100,8 +117,8 @@ on cold aerclouds.
 - `[tall_mode]`: structures the tall Aether should leave at their own heights.
 - `[compat]`: one switch per optional mod, the Beyond Parity campfire swap, and `disable_overworld_archwood`.
 
-`config/altered_aether-client.toml`: storm fog, sky flashes, local rain, particle density, and how the effects adapt
-to shaderpacks.
+`config/altered_aether-client.toml`: storm fog, sky flashes, local rain, fireflies, particle density, and how the
+effects adapt to shaderpacks.
 
 ## Shaders
 
@@ -124,6 +141,10 @@ landmarks, no basins), so the terrain is the stock Aether's.
 Most of the extra time over the plateau goes on the extra terrain its mesas put where stock islands leave sky:
 more blocks to surface, light and decorate. Overall the difference is about 17%.
 
+The Skyroot Cathedral's forest islands cost about the same as the plateau, for the same reason. The giants
+themselves are cheap: planning and building every giant in a 289-chunk benchmark takes 2 to 3 seconds of worker
+time in all (the benchmark reports it as `ms/grove_plan` and `ms/grove_build`).
+
 ## Development
 
 The Aether and the mods it needs are not committed. Copy these from the CurseForge instance's `mods` folder into
@@ -144,13 +165,14 @@ comma-separated list of jar name prefixes) picks which.
 
 Worldgen tools, all on the dev server:
 
-- `-PaaBench=radius[,biome|x:z|landmark:<type>]` generates that many chunks around a point, logs the time per chunk,
-  surface, decoration, basin and landmark tallies, then stops. `-PaaRender=true` also writes top and side views of
-  the area to `run-server/renders/`.
+- `-PaaBench=radius[,biome|x:z|landmark:<type>|giant:<type>|core:<biome>]` generates that many chunks around a
+  point, logs the time per chunk, surface, decoration, basin and landmark tallies, then stops. `-PaaRender=true` also
+  writes top and side views of the area to `run-server/renders/`, and for `giant:` slices through the giant.
 - `-PaaReport=radius,step` prints a report of biomes, masks and columns.
 - `/altered_aether debug` reports the biome, climate point, region mask, basin, landmark and storm at your position.
 - `-PaaTour=stop,stop,...` on the client quick-plays `run/saves/tour` and screenshots each landmark (and `storm`,
-  `campfire`) into `run/screenshots/tour/`.
+  `campfire`, `fireflies`, `biome:<name>`, `giant:<type>`) into `run/screenshots/tour/`.
+- `python tools/textures/firefly.py` redraws the firefly sprite.
 - `python tools/parity/parity.py` compares the biomes with the World Traveler 2 datapack they replace.
 
 ## License
