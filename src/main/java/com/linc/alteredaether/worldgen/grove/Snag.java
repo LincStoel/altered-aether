@@ -63,6 +63,7 @@ final class Snag {
                 s.range(3.2, 4.2)));
         s.buttresses(s.x, s.z, radius, s.range(3, 5), s.range(4, 7));
         s.point("hollow_floor", s.x, floor, s.z);
+        Furnish.glowVine(s, Mth.floor(s.x), floor + 4, Mth.floor(s.z));
         s.point("snag_top", trunk.centreX(top), top + 1, trunk.centreZ(top));
     }
 

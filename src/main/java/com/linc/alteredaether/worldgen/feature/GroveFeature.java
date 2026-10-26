@@ -22,6 +22,8 @@ import net.minecraft.world.level.levelgen.feature.Feature;
 import net.minecraft.world.level.levelgen.feature.FeaturePlaceContext;
 import net.minecraft.world.level.levelgen.feature.configurations.NoneFeatureConfiguration;
 
+import java.util.List;
+
 /**
  * Builds the giant trees, and the roots and bridges joining them, that reach into this chunk, in this chunk's own
  * columns only, like the landmarks. Runs with the raw generation, before all other decoration, so everything after
@@ -39,14 +41,23 @@ public final class GroveFeature extends Feature<NoneFeatureConfiguration> {
             return false;
         }
         ChunkPos chunk = new ChunkPos(context.origin());
-        boolean placed = false;
-        for (Giant giant : field.touching(chunk.getMinBlockX(), chunk.getMinBlockZ(), chunk.getMaxBlockX(),
-                chunk.getMaxBlockZ())) {
-            GroveBuilder.build(context.level(), chunk.getMinBlockX(), chunk.getMinBlockZ(), chunk.getMaxBlockX(),
-                    chunk.getMaxBlockZ(), giant);
-            FeatureStats.placed("grove/" + giant.type().id());
-            placed = true;
+        int x0 = chunk.getMinBlockX(), z0 = chunk.getMinBlockZ(), x1 = chunk.getMaxBlockX(), z1 = chunk.getMaxBlockZ();
+        long start = System.nanoTime();
+        List<Giant> giants = field.touching(x0, z0, x1, z1);
+        long planned = System.nanoTime();
+        // Trails first, on the bare ground; then the wood; then what stands on it and hangs from it.
+        for (Giant giant : giants) {
+            GroveBuilder.paint(context.level(), x0, z0, x1, z1, giant);
         }
-        return placed;
+        for (Giant giant : giants) {
+            GroveBuilder.build(context.level(), x0, z0, x1, z1, giant);
+            FeatureStats.placed("grove/" + giant.type().id());
+        }
+        for (Giant giant : giants) {
+            GroveBuilder.furnish(context.level(), x0, z0, x1, z1, giant);
+        }
+        FeatureStats.timed("grove_plan", planned - start);
+        FeatureStats.timed("grove_build", System.nanoTime() - planned);
+        return !giants.isEmpty();
     }
 }

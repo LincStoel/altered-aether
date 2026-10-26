@@ -70,6 +70,19 @@ final class HollowElder {
                 s.range(4.2, 5.4)));
 
         s.point("hollow_floor", s.x, floor, s.z);
+        // The fire sits under the shaft, so its smoke rises out through the roof; the bed lies across from the door.
+        if (s.random.nextDouble() < s.campChance) {
+            Furnish.camp(s, s.x + 0.5, floor, s.z + 0.5, door + Math.PI, chamberRadius - 1.2, s.tended, Prop.Anchor.AT);
+        } else if (s.tended) {
+            double a = door + Math.PI;
+            Furnish.hanging(s, Mth.floor(s.x + Math.cos(a) * chamberRadius * 0.5), floor + 3,
+                    Mth.floor(s.z + Math.sin(a) * chamberRadius * 0.5), s.range(1, 3));
+        }
+        int vines = s.range(2, 5);
+        for (int i = 0; i < vines; i++) {
+            double a = s.random.nextDouble() * Mth.TWO_PI, d = chamberRadius * s.range(0.4, 0.8);
+            Furnish.glowVine(s, Mth.floor(s.x + Math.cos(a) * d), floor + 3, Mth.floor(s.z + Math.sin(a) * d));
+        }
         s.point("entrance", s.x + Math.cos(door) * out, floor, s.z + Math.sin(door) * out);
     }
 

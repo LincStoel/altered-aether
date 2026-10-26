@@ -56,6 +56,16 @@ final class CathedralRing {
             s.carve(Carve.chamber(s.x, top, s.z, radius - 1.6, top - s.ground, radius - 1.6, s.ground + 1));
         }
         s.point("clearing", s.x, s.ground + 1, s.z);
+        if (s.random.nextDouble() < s.campChance * 1.5) {
+            double a = s.random.nextDouble() * Mth.TWO_PI;
+            Furnish.camp(s, s.x + Math.cos(a) * 7, s.ground + 1, s.z + Math.sin(a) * 7, a, 3, s.tended,
+                    Prop.Anchor.GROUND);
+        }
+        int flowers = s.range(6, 12);
+        for (int i = 0; i < flowers; i++) {
+            double a = s.random.nextDouble() * Mth.TWO_PI, d = s.range(4, ring - 3);
+            Furnish.growth(s, s.x + Math.cos(a) * d, s.ground, s.z + Math.sin(a) * d);
+        }
     }
 
     private CathedralRing() {

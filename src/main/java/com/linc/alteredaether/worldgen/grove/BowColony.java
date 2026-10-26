@@ -72,6 +72,12 @@ final class BowColony {
                 new double[]{ex, landing - 0.5, ez}, thickness, thickness * 0.75, 10, Part.Role.LOG));
         double[] apex = limb.at(0.45);
         s.point("bow_hang", apex[0], apex[1] - apex[3] - 1, apex[2]);
+        int under = (int) Math.floor(apex[1] - apex[3] - 1);
+        if (s.tended && s.random.nextDouble() < 0.6) {
+            Furnish.hanging(s, Mth.floor(apex[0]), under, Mth.floor(apex[2]), s.range(2, 5));
+        } else {
+            Furnish.glowVine(s, Mth.floor(apex[0]), under, Mth.floor(apex[2]));
+        }
 
         double childRadius = depth == 1 ? s.range(2.6, 3.4) : s.range(1.8, 2.4);
         int childBase = landing;

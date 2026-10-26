@@ -51,6 +51,16 @@ final class TunnelGiant {
         }
         s.buttresses(s.x, s.z, radius, s.range(7, 10), s.range(7, 12), heading, 0.45);
 
+        for (int side = -1; side <= 1; side += 2) {
+            Furnish.hanging(s, Mth.floor(s.x + side * hx * (half - 4)), floor + 3, Mth.floor(s.z + side * hz * (half - 4)),
+                    1);
+        }
+        // A nest in the top of the trunk, among the crown's limbs, with something left in it.
+        if (s.random.nextDouble() < s.secretChance * 1.5) {
+            double cx = trunk.centreX(top), cz = trunk.centreZ(top);
+            s.carve(Carve.chamber(cx, top, cz, 2.6, 3.0, 2.6, top - 2));
+            Furnish.chest(s, cx, top - 2, cz, net.minecraft.core.Direction.NORTH, Furnish.SECRET, Prop.Anchor.AT);
+        }
         s.point("tunnel", s.x - hx * half, floor, s.z - hz * half);
         s.point("tunnel", s.x + hx * half, floor, s.z + hz * half);
     }

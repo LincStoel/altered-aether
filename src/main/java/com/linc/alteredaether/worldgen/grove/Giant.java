@@ -35,8 +35,8 @@ import java.util.Map;
  * @param points      spots for decoration and finding things, by kind
  */
 public record Giant(GiantType type, int x, int z, int base, double footRadius, int crown, List<Part> wood,
-                    List<Carve> carves, List<LeafCluster> leaves, Map<String, List<BlockPos>> points,
-                    GrovePalette palette, Bounds bounds, long salt) {
+                    List<Carve> carves, List<LeafCluster> leaves, List<Prop> props, List<PathStroke> paths,
+                    Map<String, List<BlockPos>> points, GrovePalette palette, Bounds bounds, long salt) {
     /** How far the plan reaches from its centre, horizontally. */
     public double extent() {
         return Math.max(Math.max(x - bounds.minX(), bounds.maxX() - x), Math.max(z - bounds.minZ(), bounds.maxZ() - z));

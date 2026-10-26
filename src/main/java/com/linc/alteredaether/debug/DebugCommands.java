@@ -325,7 +325,10 @@ public final class DebugCommands {
             }
             long start = System.nanoTime();
             // Forced tickets keep each chunk loaded until it finishes; a plain request's ticket can expire first.
-            server.submit(() -> positions.forEach(p -> aether.setChunkForced(p.x, p.z, true))).join();
+            // Added as tickets rather than with setChunkForced, which loads each chunk there and then, on the server
+            // thread: a large area on a busy machine would hold one tick past the watchdog's limit.
+            server.submit(() -> positions.forEach(p -> aether.getChunkSource()
+                    .addRegionTicket(net.minecraft.server.level.TicketType.FORCED, p, 2, p))).join();
             List<CompletableFuture<ChunkResult<ChunkAccess>>> chunks = new ArrayList<>();
             for (ChunkPos p : positions) {
                 chunks.add(aether.getChunkSource().getChunkFuture(p.x, p.z, ChunkStatus.FULL, true));
@@ -392,7 +395,8 @@ public final class DebugCommands {
                 server.submit(() -> WorldRender.render(aether, name, first.getMinBlockX(), first.getMinBlockZ(),
                         last.getMaxBlockX(), last.getMaxBlockZ())).join();
             }
-            server.submit(() -> positions.forEach(p -> aether.setChunkForced(p.x, p.z, false))).join();
+            server.submit(() -> positions.forEach(p -> aether.getChunkSource()
+                    .removeRegionTicket(net.minecraft.server.level.TicketType.FORCED, p, 2, p))).join();
         }, Util.backgroundExecutor()).whenCompleteAsync((done, error) -> {
             if (error != null) {
                 AlteredAether.LOGGER.error("Worldgen benchmark failed", error);
@@ -433,7 +437,10 @@ public final class DebugCommands {
             "minecraft:oxidized_copper", "minecraft:lightning_rod", "aether:ambrosium_block", "minecraft:blue_ice",
             "minecraft:packed_ice", "minecraft:snow", "aether:aerogel", "minecraft:chain", "aether:ambrosium_ore",
             "aether:zanite_ore", "aether:gravitite_ore", "minecraft:iron_ore", "create:deepslate_zinc_ore",
-            "altered_aether:ambrosium_campfire", "deep_aether:skyjade_block", "dried_ghast:dried_ghast",
+            "altered_aether:ambrosium_campfire", "aether:ambrosium_torch", "minecraft:chest", "aether:skyroot_bed",
+            "aether:skyroot_fence", "aether:aether_dirt_path", "deep_aether:skyjade_lantern", "deep_aether:ambrosium_tiki_torch",
+            "deep_aether:glowing_vine", "deep_aether:aether_moss_carpet", "aether:golden_oak_log", "minecraft:lantern",
+            "minecraft:torch", "minecraft:candle", "minecraft:soul_lantern", "deep_aether:skyjade_block", "dried_ghast:dried_ghast",
             "deep_aether:moa_totem", "deep_aether:zephyr_totem", "deep_aether:aerwhale_totem",
             "aether:cold_aercloud", "aether:blue_aercloud", "aether:golden_aercloud",
             "deep_aether:sterling_aercloud", "oreganized:silver_ore", "aether_overworld_ores:holystone_copper_ore",

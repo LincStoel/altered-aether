@@ -47,6 +47,16 @@ final class ColossalStump {
         s.buttresses(s.x, s.z, radius, s.range(6, 9), s.range(8, 14));
         s.footRadius = radius * 1.3;
         s.point("stump_top", s.x, top + 1, s.z);
+        int growth = s.range(3, 6);
+        for (int i = 0; i < growth; i++) {
+            double a = s.random.nextDouble() * Mth.TWO_PI, d = radius * s.range(0.1, 0.7);
+            Furnish.growth(s, s.x + Math.cos(a) * d, top, s.z + Math.sin(a) * d);
+        }
+        if (s.random.nextDouble() < s.secretChance * 1.5) {
+            s.carve(com.linc.alteredaether.worldgen.grove.shape.Carve.chamber(s.x, top - 3, s.z, 1.6, 1.4, 1.6,
+                    top - 4));
+            Furnish.chest(s, s.x, top - 4, s.z, net.minecraft.core.Direction.NORTH, Furnish.SECRET, Prop.Anchor.AT);
+        }
     }
 
     private ColossalStump() {

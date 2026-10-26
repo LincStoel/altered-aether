@@ -51,6 +51,9 @@ public final class AACommonConfig {
     public static final DoubleValue GIANT_SPACING;
     public static final DoubleValue GOLDEN_HEART_CHANCE;
     public static final DoubleValue DEEP_AETHER_WOOD_CHANCE;
+    public static final DoubleValue CAMP_CHANCE;
+    public static final DoubleValue SECRET_CHANCE;
+    public static final DoubleValue TENDED_FRACTION;
 
     // [basins]
     public static final Map<String, BooleanValue> BASIN_ENABLED = new LinkedHashMap<>();
@@ -162,6 +165,14 @@ public final class AACommonConfig {
                         "(roseroot and sunroot in the cathedral; cruderoot, yagroot, conberry and roseroot among the",
                         "fallen) instead of skyroot.")
                 .defineInRange("deep_aether_wood_chance", 0.35, 0.0, 1.0);
+        CAMP_CHANCE = b.comment("Chance a hollow, alcove or clearing holds a pilgrims' camp round an ambrosium campfire.")
+                .defineInRange("camp_chance", 0.15, 0.0, 1.0);
+        SECRET_CHANCE = b.comment("Chance a giant hides a chest in a secret spot: a sealed log section, a burl, a stump,",
+                        "a nest at the top of a trunk.")
+                .defineInRange("secret_chance", 0.10, 0.0, 1.0);
+        TENDED_FRACTION = b.comment("Share of trails and camps still tended: lamps lit and campfires burning. The rest",
+                        "are forgotten, their posts bare and their trails grown over.")
+                .defineInRange("tended_fraction", 0.55, 0.0, 1.0);
         b.pop();
 
         b.comment("Lakes, pools, lagoons and waterfalls.").push("basins");

@@ -65,7 +65,8 @@ final class TuleMass {
             s.crown(ex, ey, ez, s.range(8, 12), 1.1, cos * 0.4, sin * 0.4);
         }
 
-        // Burls, on the lobes' outer faces.
+        // Burls, on the lobes' outer faces. The biggest may hide a chest, sealed inside.
+        boolean hidden = s.random.nextDouble() >= s.secretChance;
         int burls = s.range(8, 14);
         for (int i = 0; i < burls; i++) {
             Trunk lobe = trunks.get(s.random.nextInt(trunks.size()));
@@ -73,8 +74,15 @@ final class TuleMass {
             double angle = Math.atan2(lobe.z() - s.z, lobe.x() - s.x) + s.range(-1.2, 1.2);
             double r = lobe.radiusAt(y) * 0.92;
             double size = s.range(1.8, 3.2);
-            s.part(new Blob(lobe.centreX(y) + Math.cos(angle) * r, y, lobe.centreZ(y) + Math.sin(angle) * r, size,
-                    size * s.range(0.8, 1.3), size, 0.18, s.random.nextDouble() * Mth.TWO_PI, Part.Role.BARK));
+            double bx = lobe.centreX(y) + Math.cos(angle) * r, bz = lobe.centreZ(y) + Math.sin(angle) * r;
+            s.part(new Blob(bx, y, bz, size, size * s.range(0.8, 1.3), size, 0.18, s.random.nextDouble() * Mth.TWO_PI,
+                    Part.Role.BARK));
+            if (!hidden && size > 2.6) {
+                int floor = (int) Math.floor(y);
+                s.carve(Carve.chamber(bx, floor + 0.8, bz, 1.2, 1.2, 1.2, floor));
+                Furnish.chest(s, bx, floor, bz, net.minecraft.core.Direction.NORTH, Furnish.SECRET, Prop.Anchor.AT);
+                hidden = true;
+            }
         }
 
         // Alcoves in the folds between neighbouring lobes.
@@ -90,6 +98,9 @@ final class TuleMass {
             double width = s.range(2.2, 3.0);
             s.carve(Carve.chamber(ax, base + 1 + height * 0.4, az, width, height * 0.75, width, base + 1));
             s.point("alcove", ax, base + 1, az);
+            if (i == 0 && s.random.nextDouble() < s.campChance) {
+                Furnish.camp(s, ax, base + 1, az, angle + Math.PI, width - 0.5, s.tended, Prop.Anchor.AT);
+            }
         }
         for (Trunk lobe : trunks) {
             s.buttresses(lobe.x(), lobe.z(), lobe.radius(), 1, s.range(6, 10));

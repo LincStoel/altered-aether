@@ -22,7 +22,7 @@ public final class GroveSamples {
     public static Giant crown(RandomSource random, int x, int y, int z, double size) {
         Sketch sketch = new Sketch(null, random, 1, Integer.MAX_VALUE, x, z, y);
         sketch.crown(x, y, z, size, 1.2, 0, 0);
-        return sketch.done(GiantType.LINK, GrovePalette.SKYROOT, random.nextLong());
+        return sketch.done(GiantType.LINK, random.nextLong());
     }
 
     private GroveSamples() {

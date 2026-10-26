@@ -31,6 +31,7 @@ public final class AADataGen {
         PackOutput output = generator.getPackOutput();
         generator.addProvider(event.includeServer(), new AABiomeModifierProvider(output));
         generator.addProvider(event.includeServer(), new AABlockProvider(output));
+        generator.addProvider(event.includeServer(), new AALootProvider(output));
         generator.addProvider(event.includeServer(), new AABiomeProvider(output));
         generator.addProvider(event.includeServer(), new AADecorationProvider(output));
         generator.addProvider(event.includeServer(), new AAOptionalDecorationProvider(output));

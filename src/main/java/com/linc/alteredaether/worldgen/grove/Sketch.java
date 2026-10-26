@@ -45,6 +45,12 @@ final class Sketch {
     final List<Carve> carves = new ArrayList<>();
     final List<LeafCluster> leaves = new ArrayList<>();
     private final Map<String, List<BlockPos>> points = new HashMap<>();
+    final List<Prop> props = new ArrayList<>();
+    final List<PathStroke> paths = new ArrayList<>();
+    GrovePalette palette = GrovePalette.SKYROOT;
+    /** Whether this giant's camp and lamps are still tended, and the odds of its furnishings. */
+    boolean tended;
+    double campChance, secretChance;
     double footRadius;
     int crown = Integer.MIN_VALUE;
 
@@ -92,6 +98,14 @@ final class Sketch {
 
     void carve(Carve carve) {
         carves.add(carve);
+    }
+
+    void prop(Prop prop) {
+        props.add(prop);
+    }
+
+    void path(PathStroke path) {
+        paths.add(path);
     }
 
     void point(String kind, double px, double py, double pz) {
@@ -194,7 +208,7 @@ final class Sketch {
         }
     }
 
-    Giant done(GiantType type, GrovePalette palette, long salt) {
+    Giant done(GiantType type, long salt) {
         Bounds bounds = Bounds.EMPTY;
         for (Part part : wood) {
             bounds = bounds.union(part.bounds());
@@ -205,9 +219,17 @@ final class Sketch {
         for (LeafCluster cluster : leaves) {
             bounds = bounds.union(cluster.bounds());
         }
+        for (Prop prop : props) {
+            bounds = bounds.union(new Bounds(prop.x(), prop.y() - Prop.REACH, prop.z(), prop.x(),
+                    prop.y() + Prop.REACH, prop.z()));
+        }
+        for (PathStroke path : paths) {
+            bounds = bounds.union(path.bounds());
+        }
         Map<String, List<BlockPos>> sealed = new HashMap<>();
         points.forEach((kind, list) -> sealed.put(kind, List.copyOf(list)));
         return new Giant(type, x, z, ground, footRadius, crown, List.copyOf(wood), List.copyOf(carves),
-                List.copyOf(leaves), Map.copyOf(sealed), palette, bounds, salt);
+                List.copyOf(leaves), List.copyOf(props), List.copyOf(paths), Map.copyOf(sealed), palette, bounds,
+                salt);
     }
 }

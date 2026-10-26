@@ -17,11 +17,21 @@ package com.linc.alteredaether.worldgen.grove;
 import com.linc.alteredaether.worldgen.grove.shape.Carve;
 import com.linc.alteredaether.worldgen.grove.shape.LeafCluster;
 import com.linc.alteredaether.worldgen.grove.shape.Part;
+import com.linc.alteredaether.worldgen.basin.BasinField;
+import com.linc.alteredaether.worldgen.grove.shape.Bounds;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.tags.BlockTags;
+import net.minecraft.util.RandomSource;
+import net.minecraft.world.RandomizableContainer;
 import net.minecraft.world.level.WorldGenLevel;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.LeavesBlock;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.levelgen.Heightmap;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -36,6 +46,104 @@ public final class GroveBuilder {
     private static final double LEAF_REACH = 5.6;
     /** Wood within this far of a carve's surface is stripped: the heartwood inside a hollow. */
     private static final double STRIP_DEPTH = 1.5;
+    private static final Block DIRT_PATH = BuiltInRegistries.BLOCK
+            .getOptional(ResourceLocation.parse("aether:aether_dirt_path")).orElse(Blocks.DIRT_PATH);
+
+    /**
+     * Treads a giant's trails into the ground. Runs before any giant in the chunk is built, so the surface it reads is
+     * still the bare ground.
+     */
+    public static void paint(WorldGenLevel level, int minX, int minZ, int maxX, int maxZ, Giant giant) {
+        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
+        for (PathStroke path : giant.paths()) {
+            Bounds b = path.bounds();
+            for (int x = Math.max(minX, b.minX()); x <= Math.min(maxX, b.maxX()); x++) {
+                for (int z = Math.max(minZ, b.minZ()); z <= Math.min(maxZ, b.maxZ()); z++) {
+                    // A ragged edge, and on a forgotten trail, gaps where the grass has come back.
+                    double edge = path.halfWidth() * (0.75 + 0.5 * hash(path.salt(), x, 0, z));
+                    if (path.distance(x, z) > edge || hash(path.salt(), x, 1, z) >= path.coverage()) {
+                        continue;
+                    }
+                    pos.set(x, level.getHeight(Heightmap.Types.WORLD_SURFACE_WG, x, z) - 1, z);
+                    BlockState top = level.getBlockState(pos);
+                    if (!top.is(BlockTags.DIRT) && !top.isAir() && top.canBeReplaced()) {
+                        // A plant on the surface: the ground is the block beneath it.
+                        level.setBlock(pos, Blocks.AIR.defaultBlockState(), 2);
+                        pos.move(0, -1, 0);
+                        top = level.getBlockState(pos);
+                    }
+                    if (top.is(BlockTags.DIRT)) {
+                        level.setBlock(pos, DIRT_PATH.defaultBlockState(), 2);
+                    }
+                }
+            }
+        }
+    }
+
+    /** Places a giant's props: lamps, lanterns, camps, chests, growth. Runs after every giant in the chunk is built. */
+    public static void furnish(WorldGenLevel level, int minX, int minZ, int maxX, int maxZ, Giant giant) {
+        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
+        for (Prop prop : giant.props()) {
+            if (prop.x() < minX || prop.x() > maxX || prop.z() < minZ || prop.z() > maxZ) {
+                continue;
+            }
+            int y = switch (prop.anchor()) {
+                case AT -> prop.y();
+                case GROUND, TOPSOIL -> top(level, pos, prop);
+                case HANG -> underside(level, pos, prop);
+            };
+            if (y == Integer.MIN_VALUE) {
+                continue;
+            }
+            for (int i = 0; i < prop.blocks().size(); i++) {
+                int at = prop.anchor() == Prop.Anchor.HANG ? y - i : y + i;
+                pos.set(prop.x(), at, prop.z());
+                BlockState here = level.getBlockState(pos);
+                boolean soil = prop.anchor() == Prop.Anchor.TOPSOIL && i == 0;
+                if (!soil && !here.isAir() && !here.canBeReplaced()) {
+                    break;
+                }
+                level.setBlock(pos, prop.blocks().get(i), 2);
+                if (i == 0 && prop.loot() != null) {
+                    RandomizableContainer.setBlockEntityLootTable(level,
+                            RandomSource.create(giant.salt() ^ pos.asLong()), pos, prop.loot());
+                }
+            }
+        }
+    }
+
+    /** Where a standing prop goes: just above the first solid top below, or for topsoil, the top itself. */
+    private static int top(WorldGenLevel level, BlockPos.MutableBlockPos pos, Prop prop) {
+        for (int y = prop.y() + Prop.REACH; y >= prop.y() - Prop.REACH; y--) {
+            BlockState state = level.getBlockState(pos.set(prop.x(), y, prop.z()));
+            if (state.isAir() || state.canBeReplaced() || state.getBlock() instanceof LeavesBlock) {
+                continue;
+            }
+            BlockState above = level.getBlockState(pos.set(prop.x(), y + 1, prop.z()));
+            if (!above.isAir() && !above.canBeReplaced()) {
+                return Integer.MIN_VALUE;
+            }
+            return prop.anchor() == Prop.Anchor.TOPSOIL ? y : y + 1;
+        }
+        return Integer.MIN_VALUE;
+    }
+
+    /** Where a hanging prop's first block goes: just below the first solid underside above. */
+    private static int underside(WorldGenLevel level, BlockPos.MutableBlockPos pos, Prop prop) {
+        for (int y = prop.y(); y <= prop.y() + Prop.REACH; y++) {
+            BlockState state = level.getBlockState(pos.set(prop.x(), y, prop.z()));
+            if (!state.isAir() && !state.canBeReplaced() && !(state.getBlock() instanceof LeavesBlock)) {
+                return y == prop.y() ? Integer.MIN_VALUE : y - 1;
+            }
+        }
+        return Integer.MIN_VALUE;
+    }
+
+    /** A fixed value in [0, 1) for a block. */
+    static double hash(long salt, int x, int y, int z) {
+        long h = BasinField.mix(salt ^ BasinField.mix(x * 0x9E3779B97F4A7C15L ^ y * 0xC2B2AE3D27D4EB4FL ^ z));
+        return (h >>> 11) * 0x1.0p-53;
+    }
 
     public static void build(WorldGenLevel level, int minX, int minZ, int maxX, int maxZ, Giant giant) {
         int x0 = Math.max(minX, giant.bounds().minX()), x1 = Math.min(maxX, giant.bounds().maxX());

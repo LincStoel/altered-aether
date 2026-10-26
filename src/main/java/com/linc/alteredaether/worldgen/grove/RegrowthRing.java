@@ -51,6 +51,11 @@ final class RegrowthRing {
         }
         s.footRadius = stump + 4;
         s.point("stump_top", s.x, base + 1, s.z);
+        int growth = s.range(2, 4);
+        for (int i = 0; i < growth; i++) {
+            double a = s.random.nextDouble() * Mth.TWO_PI, d = (stump - 1.5) * s.range(0.0, 0.7);
+            Furnish.growth(s, s.x + Math.cos(a) * d, base, s.z + Math.sin(a) * d);
+        }
     }
 
     private RegrowthRing() {

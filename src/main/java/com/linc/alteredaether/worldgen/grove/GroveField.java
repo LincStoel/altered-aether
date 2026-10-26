@@ -192,6 +192,10 @@ public final class GroveField {
                 return null;
             }
             Sketch sketch = new Sketch(probe, random, vertical, buildTop, x, z, ground);
+            sketch.palette = palette(cx, cz, type.biome);
+            sketch.tended = random.nextDouble() < AACommonConfig.TENDED_FRACTION.get();
+            sketch.campChance = AACommonConfig.CAMP_CHANCE.get();
+            sketch.secretChance = AACommonConfig.SECRET_CHANCE.get();
             double heart = AACommonConfig.GOLDEN_HEART_CHANCE.get();
             switch (type) {
                 case HOLLOW_ELDER -> HollowElder.sketch(sketch);
@@ -207,7 +211,7 @@ public final class GroveField {
                 case LINK -> {
                 }
             }
-            Giant giant = sketch.done(type, palette(cx, cz, type.biome), random.nextLong());
+            Giant giant = sketch.done(type, random.nextLong());
             if (giant.extent() <= REACH) {
                 return giant;
             }
@@ -329,7 +333,8 @@ public final class GroveField {
                 Giant b = site(cellX(other), cellZ(other)).orElseThrow();
                 boolean cathedral = a.get().type().crowned() && b.type().crowned();
                 Giant link = Link.sketch(probe, vertical, buildTop, a.get(), b,
-                        random(Math.min(self, other) * 31 + Math.max(self, other), 1), cathedral ? BRIDGE_CHANCE : 0);
+                        random(Math.min(self, other) * 31 + Math.max(self, other), 1), cathedral ? BRIDGE_CHANCE : 0,
+                        AACommonConfig.TENDED_FRACTION.get());
                 if (link != null) {
                     owned.add(link);
                 }

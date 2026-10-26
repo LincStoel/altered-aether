@@ -18,18 +18,29 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
-/** How many times each feature has placed something since the server started, for the debug tools. */
+/**
+ * How many times each feature has placed something since the server started, and how long the costly ones took, for
+ * the debug tools.
+ */
 public final class FeatureStats {
     private static final Map<String, AtomicInteger> COUNTS = new ConcurrentHashMap<>();
+    private static final Map<String, AtomicLong> NANOS = new ConcurrentHashMap<>();
 
     public static void placed(String feature) {
         COUNTS.computeIfAbsent(feature, k -> new AtomicInteger()).incrementAndGet();
     }
 
+    /** Adds time spent in a feature, summed over all worker threads; reported in milliseconds as "ms/" + key. */
+    public static void timed(String key, long nanos) {
+        NANOS.computeIfAbsent(key, k -> new AtomicLong()).addAndGet(nanos);
+    }
+
     public static Map<String, Integer> snapshot() {
         Map<String, Integer> copy = new TreeMap<>();
         COUNTS.forEach((k, v) -> copy.put(k, v.get()));
+        NANOS.forEach((k, v) -> copy.put("ms/" + k, (int) (v.get() / 1_000_000)));
         return copy;
     }
 

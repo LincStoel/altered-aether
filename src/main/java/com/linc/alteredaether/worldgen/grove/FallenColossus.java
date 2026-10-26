@@ -113,8 +113,29 @@ final class FallenColossus {
 
         // Its back: where young growth takes hold.
         for (double t = 0.1; t < 0.95; t += 0.08) {
-            s.point("nurse_top", Mth.lerp(t, rootX, tipX), Mth.lerp(t, rootY, tipY) + radius * 0.8 + 1,
-                    Mth.lerp(t, rootZ, tipZ));
+            double nx = Mth.lerp(t, rootX, tipX) + s.range(-1.5, 1.5), nz = Mth.lerp(t, rootZ, tipZ) + s.range(-1.5, 1.5);
+            int ny = (int) Math.round(Mth.lerp(t, rootY, tipY) + radius * 0.8);
+            s.point("nurse_top", nx, ny + 1, nz);
+            if (s.random.nextDouble() < 0.7) {
+                Furnish.growth(s, nx, ny, nz);
+            }
+        }
+        double mid = (from + to) / 2;
+        double mx = Mth.lerp(mid, rootX, tipX), mz = Mth.lerp(mid, rootZ, tipZ);
+        if (s.random.nextDouble() < s.campChance * 1.3 && inner >= 2.6) {
+            Furnish.camp(s, mx, floor, mz, heading, Math.min(inner, 3), s.tended, Prop.Anchor.AT);
+        }
+        for (int i = 0; i < 3; i++) {
+            double t = Mth.lerp(s.random.nextDouble(), from + 0.05, 0.95);
+            Furnish.glowVine(s, Mth.floor(Mth.lerp(t, rootX, tipX)), floor + 2, Mth.floor(Mth.lerp(t, rootZ, tipZ)));
+        }
+        // A sealed section toward the roots: break into it to find what was hidden there.
+        if (s.random.nextDouble() < s.secretChance) {
+            double t = from * 0.5;
+            double sx = Mth.lerp(t, rootX, tipX), sy = Mth.lerp(t, rootY, tipY), sz = Mth.lerp(t, rootZ, tipZ);
+            int sf = (int) Math.floor(sy - 1);
+            s.carve(Carve.chamber(sx, sf + 1, sz, 1.6, 1.6, 1.6, sf));
+            Furnish.chest(s, sx, sf, sz, net.minecraft.core.Direction.NORTH, Furnish.SECRET, Prop.Anchor.AT);
         }
     }
 

@@ -61,6 +61,9 @@ final class LatticeSkeleton {
         s.footRadius = radius * 1.5;
         s.point("lattice_core", s.x, base + 1, s.z);
         s.point("lattice_arch", s.x, top - 3, s.z);
+        if (s.tended) {
+            Furnish.hanging(s, Mth.floor(s.x), top - 8, Mth.floor(s.z), s.range(2, 6));
+        }
     }
 
     private LatticeSkeleton() {
