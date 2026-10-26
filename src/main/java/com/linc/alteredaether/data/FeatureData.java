@@ -86,9 +86,13 @@ abstract class FeatureData extends JsonDataProvider {
                                   String... requiredMods) {
         JsonObject json = new JsonObject();
         json.addProperty("type", "neoforge:remove_features");
-        JsonArray biomeList = new JsonArray();
-        biomes.forEach(biomeList::add);
-        json.add("biomes", biomeList);
+        if (biomes.size() == 1) {
+            json.addProperty("biomes", biomes.getFirst());
+        } else {
+            JsonArray biomeList = new JsonArray();
+            biomes.forEach(biomeList::add);
+            json.add("biomes", biomeList);
+        }
         JsonArray featureList = new JsonArray();
         features.forEach(featureList::add);
         json.add("features", featureList);

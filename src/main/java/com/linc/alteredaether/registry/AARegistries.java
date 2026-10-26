@@ -17,6 +17,8 @@ package com.linc.alteredaether.registry;
 import com.linc.alteredaether.AlteredAether;
 import com.linc.alteredaether.block.AmbrosiumCampfireBlock;
 import com.linc.alteredaether.compat.ModEnabled;
+import com.linc.alteredaether.entity.TamedAerwhale;
+import com.linc.alteredaether.menu.AerwhaleInventoryMenu;
 import com.linc.alteredaether.worldgen.density.Atoll;
 import com.linc.alteredaether.worldgen.density.BasinCarve;
 import com.linc.alteredaether.worldgen.density.ConfigValue;
@@ -31,6 +33,7 @@ import com.linc.alteredaether.worldgen.feature.SpawnEntityFeature;
 import com.linc.alteredaether.worldgen.feature.LandmarkFeature;
 import com.linc.alteredaether.worldgen.feature.BoulderFeature;
 import com.linc.alteredaether.worldgen.feature.CopperSpikeFeature;
+import com.linc.alteredaether.worldgen.feature.CopperVeinFeature;
 import com.linc.alteredaether.worldgen.feature.EdgeSpringFeature;
 import com.linc.alteredaether.worldgen.placement.ConfigCount;
 import com.linc.alteredaether.worldgen.placement.BiomeEdgeFalloff;
@@ -38,6 +41,7 @@ import com.linc.alteredaether.worldgen.placement.IslandEdge;
 import com.linc.alteredaether.worldgen.placement.JitteredGrid;
 import com.linc.alteredaether.worldgen.placement.Overhang;
 import com.linc.alteredaether.worldgen.placement.LandmarkPoints;
+import com.linc.alteredaether.worldgen.placement.RiftGap;
 import com.linc.alteredaether.worldgen.density.RegionMask;
 import com.linc.alteredaether.worldgen.density.ShiftY;
 import com.linc.alteredaether.worldgen.density.Terrace;
@@ -46,6 +50,7 @@ import com.linc.alteredaether.worldgen.density.WindRidges;
 import com.linc.alteredaether.worldgen.modifier.AetherExclusiveModifier;
 import com.linc.alteredaether.worldgen.modifier.ClimateModifier;
 import com.linc.alteredaether.worldgen.modifier.ConfiguredSpawnsModifier;
+import com.linc.alteredaether.worldgen.modifier.OverworldArchwoodModifier;
 import com.linc.alteredaether.worldgen.provider.SubstituteStateProvider;
 import com.linc.alteredaether.worldgen.surface.IslandPosition;
 import com.linc.alteredaether.worldgen.surface.Steep;
@@ -53,6 +58,9 @@ import com.linc.alteredaether.worldgen.surface.Strata;
 import com.linc.alteredaether.worldgen.surface.SubstituteBlock;
 import com.mojang.serialization.MapCodec;
 import net.minecraft.core.registries.Registries;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.MobCategory;
+import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockBehaviour;
@@ -63,6 +71,7 @@ import net.minecraft.world.level.levelgen.placement.PlacementModifierType;
 import net.minecraft.world.level.levelgen.feature.stateproviders.BlockStateProviderType;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.common.conditions.ICondition;
+import net.neoforged.neoforge.common.extensions.IMenuTypeExtension;
 import net.neoforged.neoforge.common.world.BiomeModifier;
 import net.neoforged.neoforge.registries.DeferredBlock;
 import net.neoforged.neoforge.registries.DeferredHolder;
@@ -79,6 +88,22 @@ public final class AARegistries {
             "ambrosium_campfire", AmbrosiumCampfireBlock::new, BlockBehaviour.Properties.ofFullCopy(Blocks.CAMPFIRE));
     public static final DeferredItem<BlockItem> AMBROSIUM_CAMPFIRE_ITEM = ITEMS.registerSimpleBlockItem(AMBROSIUM_CAMPFIRE);
 
+    public static final DeferredRegister<EntityType<?>> ENTITY_TYPES =
+            DeferredRegister.create(Registries.ENTITY_TYPE, AlteredAether.MOD_ID);
+
+    /** Sized and tracked like the Aether's own aerwhale. */
+    public static final DeferredHolder<EntityType<?>, EntityType<TamedAerwhale>> TAMED_AERWHALE = ENTITY_TYPES.register(
+            "tamed_aerwhale", () -> EntityType.Builder.<TamedAerwhale>of(TamedAerwhale::new, MobCategory.CREATURE)
+                    .fireImmune().sized(3.0F, 3.0F).clientTrackingRange(10)
+                    // every tick, so a whale players stand on turns smoothly for them
+                    .updateInterval(1).build("tamed_aerwhale"));
+
+    public static final DeferredRegister<MenuType<?>> MENUS = DeferredRegister.create(Registries.MENU, AlteredAether.MOD_ID);
+
+    /** A tamed aerwhale's saddle and saddlebag; the client is sent which whale. */
+    public static final DeferredHolder<MenuType<?>, MenuType<AerwhaleInventoryMenu>> AERWHALE_MENU =
+            MENUS.register("aerwhale", () -> IMenuTypeExtension.create(AerwhaleInventoryMenu::fromNetwork));
+
     public static final DeferredRegister<MapCodec<? extends ICondition>> CONDITIONS =
             DeferredRegister.create(NeoForgeRegistries.Keys.CONDITION_CODECS, AlteredAether.MOD_ID);
     public static final DeferredHolder<MapCodec<? extends ICondition>, MapCodec<ModEnabled>> MOD_ENABLED =
@@ -93,6 +118,8 @@ public final class AARegistries {
             BIOME_MODIFIER_SERIALIZERS.register("aether_exclusive", () -> AetherExclusiveModifier.CODEC);
     public static final DeferredHolder<MapCodec<? extends BiomeModifier>, MapCodec<ClimateModifier>> CLIMATE =
             BIOME_MODIFIER_SERIALIZERS.register("climate", () -> ClimateModifier.CODEC);
+    public static final DeferredHolder<MapCodec<? extends BiomeModifier>, MapCodec<OverworldArchwoodModifier>> OVERWORLD_ARCHWOOD =
+            BIOME_MODIFIER_SERIALIZERS.register("overworld_archwood", () -> OverworldArchwoodModifier.CODEC);
 
     public static final DeferredRegister<BlockStateProviderType<?>> BLOCK_STATE_PROVIDERS =
             DeferredRegister.create(Registries.BLOCK_STATE_PROVIDER_TYPE, AlteredAether.MOD_ID);
@@ -126,6 +153,8 @@ public final class AARegistries {
             FEATURES.register("boulder", BoulderFeature::new);
     public static final DeferredHolder<Feature<?>, CopperSpikeFeature> COPPER_SPIKE =
             FEATURES.register("copper_spike", CopperSpikeFeature::new);
+    public static final DeferredHolder<Feature<?>, CopperVeinFeature> COPPER_VEIN =
+            FEATURES.register("copper_vein", CopperVeinFeature::new);
     public static final DeferredHolder<Feature<?>, AercloudFeature> AERCLOUD =
             FEATURES.register("aercloud", AercloudFeature::new);
     public static final DeferredHolder<Feature<?>, AercloudBridgeFeature> AERCLOUD_BRIDGE =
@@ -158,6 +187,8 @@ public final class AARegistries {
             PLACEMENT_MODIFIERS.register("overhang", () -> () -> Overhang.CODEC);
     public static final DeferredHolder<PlacementModifierType<?>, PlacementModifierType<LandmarkPoints>> LANDMARK_POINTS =
             PLACEMENT_MODIFIERS.register("landmark_points", () -> () -> LandmarkPoints.CODEC);
+    public static final DeferredHolder<PlacementModifierType<?>, PlacementModifierType<RiftGap>> RIFT_GAP =
+            PLACEMENT_MODIFIERS.register("rift_gap", () -> () -> RiftGap.CODEC);
 
     public static final DeferredRegister<MapCodec<? extends SurfaceRules.ConditionSource>> SURFACE_CONDITIONS =
             DeferredRegister.create(Registries.MATERIAL_CONDITION, AlteredAether.MOD_ID);
@@ -175,6 +206,8 @@ public final class AARegistries {
         CONDITIONS.register(modBus);
         BLOCKS.register(modBus);
         ITEMS.register(modBus);
+        ENTITY_TYPES.register(modBus);
+        MENUS.register(modBus);
         SURFACE_CONDITIONS.register(modBus);
         SURFACE_RULES.register(modBus);
         DENSITY_FUNCTIONS.register(modBus);

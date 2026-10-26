@@ -31,11 +31,11 @@ import java.util.List;
 
 /**
  * Tempest Peaks' landmark: a crown of storm-black needles, the tallest at the centre and the rest leaning out from it,
- * rising far above the highest peaks, and ringed by copper spires. Copper veins wind up each needle, scoured bright
+ * rising far above the highest peaks, and ringed by copper crystals. Copper veins wind up each needle, scoured bright
  * toward the tips where the lightning finds them, and rods crown the tallest, so the storms strike here first.
  */
 record SpireCluster(int x, int z, List<Needle> needles, long salt) implements Landmark {
-    /** How far out the ring of copper spires stands. */
+    /** How far out the ring of copper crystals stands. */
     private static final double RING = 44;
 
     /**
@@ -235,7 +235,7 @@ record SpireCluster(int x, int z, List<Needle> needles, long salt) implements La
         return (band & 1) == 0 ? Blocks.BLACKSTONE.defaultBlockState() : Blocks.COBBLED_DEEPSLATE.defaultBlockState();
     }
 
-    /** "ring": the copper spires around the cluster, at the ground beneath each point. */
+    /** "ring": the copper crystals around the cluster, at the ground beneath each point. */
     @Override
     public List<BlockPos> points(String kind) {
         if (!kind.equals("ring")) {

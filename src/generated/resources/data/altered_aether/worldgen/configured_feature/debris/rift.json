@@ -8,6 +8,7 @@
       "max_inclusive": 2,
       "min_inclusive": 1
     },
+    "scatter": 5,
     "squash": 0.8,
     "state": {
       "type": "minecraft:weighted_state_provider",

@@ -1,0 +1,5 @@
+{
+  "type": "altered_aether:shift_y",
+  "argument": "altered_aether:terrain/island",
+  "offset": "altered_aether:terrain/island_shift"
+}

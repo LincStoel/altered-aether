@@ -23,17 +23,31 @@ import org.jetbrains.annotations.Nullable;
  * deepest beneath the lagoon. Horizontal sizes are in blocks; vertical ones are scaled by {@code vertical} for the
  * height mode.
  *
- * @param lagoon radius of the lagoon floor where it meets the beach
- * @param outer  radius where the outer shore ends
+ * <p>A ring site is the other shape: a horizontal torus cut in half, flat face up, like half a bagel. Its middle is
+ * open sky; the land is a ring with a walkable shore along both edges and a river running round its crown, and the
+ * underside is the torus's rounded half. The ring follows a {@link RingPath}, so it may be oval and twist as it goes,
+ * and keeps one width all the way round.
+ *
+ * @param type   the lagoon's basin type: the Sunken Atoll's, or the Frozen Lakes' frozen one
+ * @param lagoon radius of the lagoon floor where it meets the beach; on a ring, the ring's half width
+ * @param outer  radius where the outer shore ends; on a ring, the furthest its outer edge strays from the centre
  * @param top    height of the crest's base; the lagoon's water stands two blocks below it
  * @param inner  the second ring and islet of a double atoll, or null for a single ring
+ * @param ring      the centre line of a ring with a river round it, or null for a ring around a lagoon
+ * @param influence beyond the shore plus this, the atoll leaves the terrain alone
  */
-public record AtollSite(int x, int z, double lagoon, double outer, int top, double depth, double vertical,
-                        double phase1, double phase2, @Nullable Inner inner) {
+public record AtollSite(BasinType type, int x, int z, double lagoon, double outer, int top, double depth,
+                        double vertical, double phase1, double phase2, @Nullable Inner inner, @Nullable RingPath ring,
+                        double influence) {
     /** The open-sky gap kept between the atoll's shore and whatever island surrounds it. */
     static final double MOAT = 6;
-    /** Beyond the shore plus this, the atoll leaves the terrain alone. */
+    /** The usual influence: room for the surrounding islands to fall away gently into the moat. */
     static final double INFLUENCE = 26;
+
+    public AtollSite(BasinType type, int x, int z, double lagoon, double outer, int top, double depth, double vertical,
+                     double phase1, double phase2, @Nullable Inner inner, @Nullable RingPath ring) {
+        this(type, x, z, lagoon, outer, top, depth, vertical, phase1, phase2, inner, ring, INFLUENCE);
+    }
 
     /**
      * A double atoll's inner ring island, standing in the lagoon with two channels cut through it, and the islet at
@@ -52,13 +66,26 @@ public record AtollSite(int x, int z, double lagoon, double outer, int top, doub
         return inner != null;
     }
 
-    public double extent() {
-        return outer * BasinSite.MAX_WOBBLE + INFLUENCE;
+    public boolean isRing() {
+        return ring != null;
     }
 
-    /** The lagoon's water, for the basin fill. */
+    public double extent() {
+        return ring != null ? outer + influence : outer * BasinSite.MAX_WOBBLE + influence;
+    }
+
+    /**
+     * A ring's river, as a fraction of the ring's half width either side of its centre line. Wide enough that the
+     * terrain's eight-block interpolation still leaves it a proper channel.
+     */
+    static final double RIVER = 0.4;
+
+    /** The lagoon's water, or the ring's river, for the basin fill. */
     public BasinSite lagoonBasin() {
-        return new BasinSite(BasinType.ATOLL_LAGOON, x, z, lagoon + 1, depth, top - 2, phase1, phase2);
+        if (ring != null) {
+            return new BasinSite(type, x, z, RIVER * lagoon + 1, depth, top - 2, phase1, phase2, ring);
+        }
+        return new BasinSite(type, x, z, lagoon + 1, depth, top - 2, phase1, phase2);
     }
 
     /**
@@ -68,9 +95,12 @@ public record AtollSite(int x, int z, double lagoon, double outer, int top, doub
     public double density(int px, int py, int pz, double terrain) {
         double dx = px - x, dz = pz - z;
         double distance = Math.sqrt(dx * dx + dz * dz);
+        if (ring != null) {
+            return ringDensity(dx, dz, distance, py, terrain);
+        }
         double scale = BasinSite.wobble(Math.atan2(dz, dx), phase1, phase2);
         double in = lagoon * scale, out = outer * scale;
-        if (distance > out + INFLUENCE) {
+        if (distance > out + influence) {
             return terrain;
         }
         double surrounding = Math.min(terrain, 0.1 * (distance - out - MOAT));
@@ -93,6 +123,40 @@ public record AtollSite(int x, int z, double lagoon, double outer, int top, doub
         double underside = top - vertical * (10 + 42 * (1 - t * t));
         double ring = Mth.clamp(0.1 * Math.min(surface - py, py - underside), -1, 1);
         return Math.max(ring, surrounding);
+    }
+
+    /**
+     * The half bagel: across the ring, a shore at each edge rounding off over the lip, a river down the middle, and
+     * beneath, the torus's round underside, deepest under the river. Nothing stands in the ring's middle, and the
+     * terrain outside is pushed back to leave a moat.
+     */
+    private double ringDensity(double dx, double dz, double distance, int py, double terrain) {
+        double width = lagoon;
+        if (distance > ring.furthest() + width + influence) {
+            return terrain;
+        }
+        if (distance < ring.nearest() - width) {
+            return -1;
+        }
+        double off = ring.distance(dx, dz);
+        if (off > width) {
+            return ring.inside(dx, dz) ? -1 : Math.min(terrain, 0.1 * (off - width - MOAT));
+        }
+        double surrounding = Math.min(terrain, 0.1 * (off - width - MOAT));
+        // 0 on the ring's centre line, 1 at either edge
+        double across = off / width;
+        double water = top - 2;
+        double surface;
+        if (across < RIVER) {
+            double t = across / RIVER;
+            surface = water + 1 - depth * Math.pow(1 - t * t, 0.6);
+        } else {
+            surface = water + 1 + 2 * vertical * smooth((across - RIVER) / 0.12)
+                    - 3 * vertical * smooth((across - 0.85) / 0.15);
+        }
+        double minor = width * vertical;
+        double underside = top - minor * Math.sqrt(Math.max(0, 1 - across * across));
+        return Math.max(Mth.clamp(0.1 * Math.min(surface - py, py - underside), -1, 1), surrounding);
     }
 
     /**

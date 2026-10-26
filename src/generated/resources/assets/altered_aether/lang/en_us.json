@@ -5,11 +5,18 @@
   "biome.altered_aether.flashing_archwood_grove": "Flashing Archwood Grove",
   "biome.altered_aether.flourishing_archwood_grove": "Flourishing Archwood Grove",
   "biome.altered_aether.frozen_crags": "Frozen Crags",
+  "biome.altered_aether.frozen_lakes": "Frozen Lakes",
   "biome.altered_aether.shattered_rift": "Shattered Rift",
   "biome.altered_aether.sunken_atoll": "Sunken Atoll",
   "biome.altered_aether.tempest_peaks": "Tempest Peaks",
   "biome.altered_aether.vexing_archwood_grove": "Vexing Archwood Grove",
   "biome.altered_aether.windswept_dunes": "Windswept Dunes",
-  "biome.deep_aether.sacred_lands": "Sacred Lands",
-  "block.altered_aether.ambrosium_campfire": "Ambrosium Campfire"
+  "block.altered_aether.ambrosium_campfire": "Ambrosium Campfire",
+  "entity.altered_aether.tamed_aerwhale": "Aerwhale",
+  "key.altered_aether.aerwhale_eject": "Leap off Aerwhale",
+  "key.categories.altered_aether": "Altered Aether",
+  "message.altered_aether.aerwhale.follow": "%s will follow you",
+  "message.altered_aether.aerwhale.not_owner": "This aerwhale answers to someone else",
+  "message.altered_aether.aerwhale.stay": "%s will circle here",
+  "message.altered_aether.aerwhale.wander": "%s will roam freely"
 }

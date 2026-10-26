@@ -1,10 +1,12 @@
-// 1.21.1	2026-10-24T22:18:41.5488106	Altered Aether tags
-ea2a6626ea7b2084acf76d089dc36db233345881 data/aether/tags/worldgen/biome/is_aether.json
+// 1.21.1	2026-10-25T14:48:51.379171	Altered Aether tags
+b376355857264848eab7a3636e5f2274b42b9c26 data/aether/tags/worldgen/biome/is_aether.json
 7ec09b2e18ab43d296e2d76cad7fe25c11cda07f data/altered_aether/tags/block/breeze_spawnable_on.json
 dc18018d6883948531de73415dfcbb7e51ca20b8 data/altered_aether/tags/block/familiar_spawnable_on.json
 da43ab2bbe8355c871257730474643815250588c data/altered_aether/tags/block/frozen_crag_ore_replaceables.json
 f76decdcce75cd4e962a371b9b30e0f57f123884 data/altered_aether/tags/block/scorchable.json
 103ae3d710b0ba3d9238ab8230adc473830e6b2b data/altered_aether/tags/block/tempest_peak_ore_replaceables.json
+b1fe34d2a9ffbf95392b5399248e0d0ce4eed170 data/altered_aether/tags/item/aerwhale_breeding_food.json
+bbf0d0c17212568adf6c02381fe81bf1670bf7ff data/altered_aether/tags/item/aerwhale_taming_food.json
 8cf8a4cb0dc6acc9f95a83ab65901cc331d98695 data/altered_aether/tags/worldgen/biome/has_storms.json
 3f019e822d3a547bba0a274a48dacbd9e8bfdbc9 data/minecraft/tags/block/campfires.json
 c6381fa8eec6c45ea083b0125723f175d95dfe99 data/minecraft/tags/block/dead_bush_may_place_on.json

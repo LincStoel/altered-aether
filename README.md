@@ -26,20 +26,22 @@ switch in the config's `[compat]` section is on).
 |---|---|
 | Aether Plateau | stepped mesas with lakes, pools and the odd waterfall off a cliff |
 | Frozen Crags | floating mountain massifs along ridgelines, tarns, snow drifts, ice spikes |
-| Tempest Peaks | the crags' sharpest summits: needle spires, copper spires, strike craters, storms |
-| Shattered Rift | islands broken into drifting, tilted slabs with cracks between them |
-| Windswept Dunes | wind ridges with steep lee faces, ruins, dead bushes |
-| Sunken Atoll | ring islands round lagoons with coral, kelp, tropical fish, turtles and glow squid |
+| Tempest Peaks | the crags' sharpest summits: needle spires, branching native copper crystals with spidery roots of greening copper spreading through the rock, strike craters, storms |
+| Shattered Rift | an island torn apart: a sparse field of tall, blocky columns standing apart, with clouds of rubble hanging in the gaps between them |
+| Windswept Dunes | thin sheets of quicksoil winding high through the sky, rippled by long wind ridges; ruins, dead bushes |
+| Sunken Atoll | a sky full of low-lying atolls, big and small: thin rings of quicksoil shore round lagoons with branching coral reefs, glowstone thickets, kelp, tropical fish, turtles and glow squid; some are half-bagel rings, oval or twisting, with a river round the crown and open sky in the middle |
+| Frozen Lakes | high icestone islands under aether dirt holding lakes frozen over at the surface, with snow on the banks |
 | Blazing, Cascading, Flourishing and Vexing Archwood Groves | Ars Nouveau's archwood forests (need Ars Nouveau) |
 | Flashing Archwood Grove | needs Ars Nouveau and Ars Elemental |
 
 Without Ars Nouveau the grove windows fall back to the Aether's own skyroot biomes. Landforms appear only inside
-the region, and blend out at its edges.
+the region, and blend out at its edges. The holystone under every lake, pool and lagoon bed is richer in zanite and
+a little scattered gravitite.
 
 **Rare landmarks**, each one-in-many:
 
 - **Tempest crown**: a cluster of storm-black needles rising far above Tempest Peaks, crowned with lightning rods
-  and ringed with copper spires. The storms strike it first.
+  and ringed with copper crystals. The storms strike it first.
 - **Frozen spire**: one colossal twisted spire of ice in the crags, ringed with snowy ledges.
 - **Grand cascade**: a staircase of pools stepping down to an island's edge, each spilling into the next, the last
   pouring off into the sky.
@@ -67,9 +69,9 @@ With the tall pack, other mods' Aether structures and ores are moved to the matc
 
 | Mod | What it brings |
 |---|---|
-| Ars Nouveau | the archwood groves, scattered archwood, familiars and wilden in the groves |
+| Ars Nouveau | the archwood groves, scattered archwood, familiars and wilden in the groves; archwood is taken out of the overworld (Ars Elemental's too) unless `disable_overworld_archwood` is off |
 | Ars Elemental | the Flashing Archwood Grove, flashjacks, sirens, sourcestone boulders |
-| Deep Aether | its stones, blocks and ground cover in our biomes (closest Aether or vanilla blocks stand in without it); totems, carved squash, tiki torches; the Sacred Lands biome is placed (Deep Aether never places it itself); poison pools |
+| Deep Aether | its stones, blocks and ground cover in our biomes (closest Aether or vanilla blocks stand in without it); totems, carved squash, tiki torches; poison pools |
 | Aether Overworld Ores | its ores placed by biome; 42 enchanting recipes |
 | Create | zinc in Tempest Peaks |
 | Oreganized | silver in the crags and the rift |
@@ -87,7 +89,7 @@ on cold aerclouds.
 
 `config/altered_aether-common.toml`. Every value is commented with its default and range.
 
-- `[region]`: the region's weight, each biome on or off, and the Sacred Lands fix.
+- `[region]`: the region's weight and each biome on or off.
 - `[terrain]`: landform strengths, rift fracture size and drift, dune height and wind, atoll size, and
   `landmark_rarity` (higher is rarer, 0 turns landmarks off).
 - `[basins]`: each kind of lake on or off and its rarity, waterfall frequency, coral density.
@@ -96,7 +98,7 @@ on cold aerclouds.
 - `[climate]`: the biome temperature fix.
 - `[storms]`: everything about the Tempest storms.
 - `[tall_mode]`: structures the tall Aether should leave at their own heights.
-- `[compat]`: one switch per optional mod, and the Beyond Parity campfire swap.
+- `[compat]`: one switch per optional mod, the Beyond Parity campfire swap, and `disable_overworld_archwood`.
 
 `config/altered_aether-client.toml`: storm fog, sky flashes, local rain, particle density, and how the effects adapt
 to shaderpacks.

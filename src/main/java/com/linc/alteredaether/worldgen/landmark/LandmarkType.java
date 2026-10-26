@@ -28,12 +28,12 @@ import java.util.stream.Collectors;
  * multiplier. The double atoll is a kind of Sunken Atoll and comes from the atoll grid instead.
  */
 public enum LandmarkType {
-    /** A crown of storm-black needles far taller than the peaks, ringed by copper spires. */
+    /** A crown of storm-black needles far taller than the peaks, ringed by copper crystals. */
     TEMPEST_SPIRES(1024, 1.0, 72, "tempest_peaks"),
     /** One colossal twisted spire of ice in the crags, with its shards around it. */
     FROZEN_SPIRE(1024, 0.85, 64, "frozen_crags"),
     /** A staircase of pools stepping down to an island's edge, each spilling into the next, the last into the sky. */
-    GRAND_CASCADE(768, 0.6, 128, "cascading_archwood_grove", "aether_plateau"),
+    GRAND_CASCADE(1024, 0.5, 128, "cascading_archwood_grove", "aether_plateau"),
     /** A canyon across the rift: its slabs grown to giants, one side heaved up over the other. */
     GREAT_FRACTURE(1536, 1.0, 0, "shattered_rift"),
     /** A Sunken Atoll with a second ring in its lagoon and an islet at its heart. */

@@ -56,6 +56,8 @@ neoForge {
             // -PaaRender=true writes top and side views of the benchmark's area to run-server/renders/. A benchmark
             // centred on "landmark:<type>" goes to the nearest landmark of that type.
             systemProperty("altered_aether.render", (findProperty("aaRender") as String?) ?: "false")
+            // -PaaFocus=<block id> adds close-ups around the first few of that block in a rendered benchmark.
+            systemProperty("altered_aether.focus", (findProperty("aaFocus") as String?) ?: "")
         }
         // Runs this mod's GameTests (see the gametest package) on a headless server and exits with their result.
         register("gameTestServer") {
@@ -88,8 +90,17 @@ neoForge {
 // dependencies (Cumulus and Nitrogen inside the Aether's jar) resolve exactly as they do in a real instance.
 val devMods = fileTree("libs") { include("*.jar") }
 
+repositories {
+    maven("https://maven.bawnorton.com/releases") {
+        content { includeGroup("com.github.bawnorton.mixinsquared") }
+    }
+}
+
 dependencies {
     compileOnly(devMods)
+    // MixinSquared cancels Deep Aether's aerwhale mixins when our own aerwhales are in use (see AAMixinPlugin).
+    compileOnly("com.github.bawnorton.mixinsquared:mixinsquared-common:0.3.7")
+    jarJar(implementation("com.github.bawnorton.mixinsquared:mixinsquared-neoforge:0.3.7")!!)
 
     testImplementation(platform("org.junit:junit-bom:5.11.4"))
     testImplementation("org.junit.jupiter:junit-jupiter")

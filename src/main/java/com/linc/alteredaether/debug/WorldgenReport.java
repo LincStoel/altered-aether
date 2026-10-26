@@ -18,6 +18,7 @@ import com.linc.alteredaether.AlteredAether;
 import com.linc.alteredaether.worldgen.basin.BasinField;
 import com.linc.alteredaether.worldgen.basin.BasinSite;
 import com.linc.alteredaether.worldgen.density.RegionBinding;
+import com.linc.alteredaether.worldgen.landmark.LandmarkField;
 import net.minecraft.core.Holder;
 import net.minecraft.core.QuartPos;
 import net.minecraft.resources.ResourceKey;
@@ -131,6 +132,7 @@ public final class WorldgenReport {
                 100.0 * s.probeLand / s.samples, s.probeLand == 0 ? 0 : (double) s.probeSolid / s.probeLand,
                 s.probeLand == 0 ? 0 : (double) s.probeTopSum / s.probeLand)));
         basinSurvey(level, originX, originZ, radius, lines);
+        landmarkSurvey(level, originX, originZ, radius, lines);
         if (Boolean.getBoolean("altered_aether.report.structures")) {
             structureHeights(level, originX, originZ, lines);
         }
@@ -194,12 +196,30 @@ public final class WorldgenReport {
         List<BasinSite> sites = field.sitesTouching(originX - radius, originZ - radius, originX + radius,
                 originZ + radius);
         Map<String, List<BasinSite>> byType = new TreeMap<>();
-        sites.forEach(site -> byType.computeIfAbsent(site.type().name().toLowerCase(), k -> new ArrayList<>()).add(site));
+        // Ring sites (a river round an open middle) are listed apart from the lagoons of their type.
+        sites.forEach(site -> byType.computeIfAbsent(site.type().name().toLowerCase() + (site.isRiver() ? "_ring" : ""),
+                k -> new ArrayList<>()).add(site));
         lines.add(String.format("Basins: %d sites; rejected %s", sites.size(), field.rejections()));
         byType.forEach((type, list) -> lines.add(String.format("  %-16s %4d  radius avg %.1f  water level avg %.0f  e.g. %s",
                 type, list.size(), list.stream().mapToDouble(BasinSite::radius).average().orElse(0),
                 list.stream().mapToInt(BasinSite::waterLevel).average().orElse(0),
                 list.stream().limit(3).map(site -> site.x() + "," + site.z()).toList())));
+    }
+
+    /** Every landmark over the area by type, with how each turned out where that varies. */
+    private static void landmarkSurvey(ServerLevel level, int originX, int originZ, int radius, List<String> lines) {
+        LandmarkField field = LandmarkField.get(level.dimension());
+        if (field == null) {
+            lines.add("Landmarks: no landmark field in this world");
+            return;
+        }
+        Map<String, Map<String, Integer>> byType = new TreeMap<>();
+        field.touching(originX - radius, originZ - radius, originX + radius, originZ + radius).forEach(site ->
+                byType.computeIfAbsent(site.type().id(), k -> new TreeMap<>()).merge(site.detail(), 1, Integer::sum));
+        lines.add("Landmarks:");
+        byType.forEach((type, details) -> lines.add(String.format("  %-16s %4d  %s", type,
+                details.values().stream().mapToInt(Integer::intValue).sum(), details.keySet().equals(java.util.Set.of(""))
+                        ? "" : details)));
     }
 
     /**

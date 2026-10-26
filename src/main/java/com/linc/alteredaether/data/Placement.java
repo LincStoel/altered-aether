@@ -101,6 +101,15 @@ final class Placement {
         return json;
     }
 
+    /** Keeps positions hanging in the open between land masses (see RiftGap). */
+    static JsonObject riftGap(int reach, int clearance, int sides) {
+        JsonObject json = type("altered_aether:rift_gap");
+        json.addProperty("reach", reach);
+        json.addProperty("clearance", clearance);
+        json.addProperty("sides", sides);
+        return json;
+    }
+
     /** A random offset of up to {@code xz} blocks sideways and between {@code yMin} and {@code yMax} vertically. */
     static JsonObject randomOffset(int xz, int yMin, int yMax) {
         JsonObject json = type("minecraft:random_offset");

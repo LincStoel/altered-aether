@@ -24,6 +24,8 @@ import net.minecraft.util.KeyDispatchDataCodec;
 import net.minecraft.util.Mth;
 import net.minecraft.world.level.levelgen.DensityFunction;
 
+import java.util.Optional;
+
 /**
  * Breaks {@code argument} into drifting slabs. The plane is divided into Voronoi cells about {@code cell_size}
  * blocks across; each cell becomes a slab of the original terrain, lifted or dropped by up to {@code max_offset}
@@ -35,13 +37,41 @@ import net.minecraft.world.level.levelgen.DensityFunction;
  * <p>The cells come from {@code seed}, a noise wired to the world seed, so every world fractures differently.
  * Slab size and drift scale with the config's {@code rift_fracture_size} and {@code rift_drift}.
  *
+ * <p>With {@code pillars}, the cells stand apart instead: each is a tall, blocky column of rock of its own, taller than
+ * it is wide, flat-topped, each side a sheer cliff, a staircase or a slope, and hanging underneath in a ragged
+ * root as Aether islands do, with wide gaps of open sky
+ * between neighbours and some cells left empty altogether. The column's top follows the slab's lift and tilt; the
+ * terrain in {@code argument} is not used.
+ *
  * <p>Where a {@link GreatFracture} lies, cells whose points fall inside it merge into its giant slabs: they share the
  * giant's lift and tilt, and the cracks between cells of one giant close up, leaving only the faults between giants.
  * The world's landmark field is bound per world by {@link RegionBinding}.
  */
 public record VoronoiFracture(DensityFunction argument, NoiseHolder seed, double cellSize, double crackWidth,
-                              double maxOffset, double maxTilt, DensityFunction roughness, Binding binding)
+                              double maxOffset, double maxTilt, DensityFunction roughness, Optional<Pillars> pillars,
+                              Binding binding)
         implements DensityFunction {
+    /**
+     * Free-standing columns in place of slabs.
+     *
+     * @param top         height of an average column's top, before its lift
+     * @param minHeight   the shortest column, top to tip
+     * @param maxHeight   the tallest
+     * @param emptyChance the share of cells left as open sky
+     * @param step        height of the ledges stepping down a column's sides
+     * @param gap         open sky kept either side of each boundary between cells, in blocks
+     */
+    public record Pillars(int top, double minHeight, double maxHeight, double emptyChance, int step, double gap) {
+        public static final Codec<Pillars> CODEC = RecordCodecBuilder.create(i -> i.group(
+                Codec.INT.fieldOf("top").forGetter(Pillars::top),
+                Codec.doubleRange(4, 256).fieldOf("min_height").forGetter(Pillars::minHeight),
+                Codec.doubleRange(4, 256).fieldOf("max_height").forGetter(Pillars::maxHeight),
+                Codec.doubleRange(0, 1).optionalFieldOf("empty_chance", 0.3).forGetter(Pillars::emptyChance),
+                Codec.intRange(2, 32).optionalFieldOf("step", 7).forGetter(Pillars::step),
+                Codec.doubleRange(0, 64).optionalFieldOf("gap", 8.0).forGetter(Pillars::gap)
+        ).apply(i, Pillars::new));
+    }
+
     /** Shared by every copy made from one world's router; see {@link RegionMask#mapAll}. */
     public static final class Binding {
         private volatile LandmarkField field;
@@ -58,9 +88,10 @@ public record VoronoiFracture(DensityFunction argument, NoiseHolder seed, double
             Codec.doubleRange(0, 64).fieldOf("crack_width").forGetter(VoronoiFracture::crackWidth),
             Codec.doubleRange(0, 128).fieldOf("max_offset").forGetter(VoronoiFracture::maxOffset),
             Codec.doubleRange(0, 2).fieldOf("max_tilt").forGetter(VoronoiFracture::maxTilt),
-            DensityFunction.HOLDER_HELPER_CODEC.fieldOf("roughness").forGetter(VoronoiFracture::roughness)
-    ).apply(i, (argument, seed, cell, crack, offset, tilt, roughness) ->
-            new VoronoiFracture(argument, seed, cell, crack, offset, tilt, roughness, null)));
+            DensityFunction.HOLDER_HELPER_CODEC.fieldOf("roughness").forGetter(VoronoiFracture::roughness),
+            Pillars.CODEC.optionalFieldOf("pillars").forGetter(VoronoiFracture::pillars)
+    ).apply(i, (argument, seed, cell, crack, offset, tilt, roughness, pillars) ->
+            new VoronoiFracture(argument, seed, cell, crack, offset, tilt, roughness, pillars, null)));
     public static final KeyDispatchDataCodec<VoronoiFracture> CODEC = KeyDispatchDataCodec.of(MAP_CODEC);
 
     /** Density subtracted at the centre of a crack: far below anything the terrain reaches, so cracks are open air. */
@@ -82,7 +113,7 @@ public record VoronoiFracture(DensityFunction argument, NoiseHolder seed, double
 
         // Nearest and second-nearest cell points, searching the 3x3 neighbourhood of grid cells.
         double best = Double.MAX_VALUE, second = Double.MAX_VALUE;
-        int bestX = 0, bestZ = 0;
+        int bestX = 0, bestZ = 0, secondX = 0, secondZ = 0;
         double bestPx = 0, bestPz = 0;
         for (int dx = -1; dx <= 1; dx++) {
             for (int dz = -1; dz <= 1; dz++) {
@@ -92,6 +123,8 @@ public record VoronoiFracture(DensityFunction argument, NoiseHolder seed, double
                 double d = Math.hypot(x - px, z - pz);
                 if (d < best) {
                     second = best;
+                    secondX = bestX;
+                    secondZ = bestZ;
                     best = d;
                     bestX = cx;
                     bestZ = cz;
@@ -99,6 +132,8 @@ public record VoronoiFracture(DensityFunction argument, NoiseHolder seed, double
                     bestPz = pz;
                 } else if (d < second) {
                     second = d;
+                    secondX = cx;
+                    secondZ = cz;
                 }
             }
         }
@@ -108,6 +143,10 @@ public record VoronoiFracture(DensityFunction argument, NoiseHolder seed, double
         double tiltX = maxTilt * drift * hash(bestX, bestZ, 3);
         double tiltZ = maxTilt * drift * hash(bestX, bestZ, 4);
         double rise = lift + tiltX * (x - bestPx) * size + tiltZ * (z - bestPz) * size;
+        if (pillars.isPresent()) {
+            return pillar(context, pillars.get(), size, (second - best) * size * 0.5, rise, bestX, bestZ, secondX,
+                    secondZ);
+        }
         double slab = argument.compute(new SinglePointContext(context.blockX(),
                 context.blockY() - (int) Math.round(rise), context.blockZ()));
 
@@ -184,6 +223,59 @@ public record VoronoiFracture(DensityFunction argument, NoiseHolder seed, double
         return slab - CRACK_DEPTH * (1 - t * t * (3 - 2 * t));
     }
 
+    /**
+     * One cell's column, measured inward from the gap's edge. Each side, the face toward one neighbouring cell, takes
+     * one of three forms: a sheer cliff, broken only by ledges every {@code step} blocks set back by their own small
+     * amounts; a staircase of broad terraces climbing in toward the top; or a slope rounding off from the rim. Below
+     * the top half the column hangs in a ragged root, narrowing faster and faster to a point off its middle, its
+     * surface roughened, as Aether islands do.
+     *
+     * @param edge distance to the cell's boundary, in blocks; the boundary is shared with cell (nx, nz)
+     */
+    private double pillar(FunctionContext context, Pillars shape, double size, double edge, double rise, int cx,
+                          int cz, int nx, int nz) {
+        if (unit(cx, cz, 5) < shape.emptyChance()) {
+            return -1;
+        }
+        double top = shape.top() + rise;
+        double height = Mth.lerp(unit(cx, cz, 6), shape.minHeight(), shape.maxHeight());
+        int y = context.blockY();
+        if (y > top + 4 || y < top - height - 4) {
+            return -1;
+        }
+        double rough = roughness.compute(context);
+        double width = shape.gap() * (1 + 0.4 * rough);
+        double below = top - y;
+        int band = Math.floorDiv((int) Math.floor(top) - y, shape.step());
+        // The side's form, the same from both cells that share it.
+        double form = unit(Math.min(cx * 7919 + cz, nx * 7919 + nz), Math.max(cx * 7919 + cz, nx * 7919 + nz), 8);
+        double setBack;
+        if (form < 0.45) {
+            // A cliff: each band of the wall sits back by up to four blocks; the top band least, for a sharp rim.
+            setBack = band <= 0 ? 0 : 4 * unit(cx * 31 + band, cz * 17 - band, 7);
+        } else if (form < 0.75) {
+            // A staircase: terraces a few blocks deep, each band stepping out from the one above.
+            setBack = Math.max(0, 8 - 2.5 * Math.max(0, band));
+        } else {
+            // A slope: the rim rounds off and the face leans out as it falls.
+            setBack = Math.max(0, 8 - below * 0.5);
+        }
+        double inside = edge - width - setBack;
+        // The root: from half way down, the walls draw in ever faster toward a point, roughened and off-centre.
+        double waist = top - height * 0.5;
+        if (y < waist) {
+            double t = (waist - y) / (height * 0.5);
+            inside -= t * Math.sqrt(t) * size * 0.5 + t * 10 * rough;
+        }
+        double density = Math.min(inside, below) * 0.25;
+        return Mth.clamp(density, -1, 1);
+    }
+
+    /** A per-cell value in [0, 1). */
+    private double unit(int cx, int cz, int channel) {
+        return (hash(cx, cz, channel) + 1) * 0.4999;
+    }
+
     /** A per-cell value in [-1, 1], from the world-seeded noise sampled at far-apart integer points. */
     private double hash(int cx, int cz, int channel) {
         double v = seed.getValue(cx * 31.17 + channel * 113.71, channel * 7.3, cz * 31.17 - channel * 57.13);
@@ -198,17 +290,18 @@ public record VoronoiFracture(DensityFunction argument, NoiseHolder seed, double
     @Override
     public DensityFunction mapAll(Visitor visitor) {
         return visitor.apply(new VoronoiFracture(argument.mapAll(visitor), visitor.visitNoise(seed), cellSize,
-                crackWidth, maxOffset, maxTilt, roughness.mapAll(visitor), binding != null ? binding : new Binding()));
+                crackWidth, maxOffset, maxTilt, roughness.mapAll(visitor), pillars,
+                binding != null ? binding : new Binding()));
     }
 
     @Override
     public double minValue() {
-        return argument.minValue() - CRACK_DEPTH;
+        return Math.min(-1, argument.minValue() - CRACK_DEPTH);
     }
 
     @Override
     public double maxValue() {
-        return argument.maxValue();
+        return Math.max(1, argument.maxValue());
     }
 
     @Override

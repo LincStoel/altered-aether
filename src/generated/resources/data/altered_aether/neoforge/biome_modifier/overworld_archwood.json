@@ -1,0 +1,15 @@
+{
+  "neoforge:conditions": [
+    {
+      "type": "altered_aether:mod_enabled",
+      "modid": "ars_nouveau"
+    }
+  ],
+  "type": "altered_aether:overworld_archwood",
+  "biomes": "#minecraft:is_overworld",
+  "features": [
+    "ars_nouveau:placed_mixed_archwoods",
+    "ars_elemental:flashing_archwood",
+    "ars_elemental:common_flashing_archwood"
+  ]
+}

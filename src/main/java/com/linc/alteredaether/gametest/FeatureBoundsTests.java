@@ -19,6 +19,7 @@ import com.linc.alteredaether.worldgen.feature.AercloudBridgeFeature;
 import com.linc.alteredaether.worldgen.feature.AercloudFeature;
 import com.linc.alteredaether.worldgen.feature.BoulderFeature;
 import com.linc.alteredaether.worldgen.feature.CopperSpikeFeature;
+import com.linc.alteredaether.worldgen.feature.CopperVeinFeature;
 import com.linc.alteredaether.worldgen.feature.RuinedPillarFeature;
 import com.linc.alteredaether.worldgen.feature.SnowDriftFeature;
 import com.linc.alteredaether.worldgen.feature.StrikeCraterFeature;
@@ -52,6 +53,7 @@ import java.util.Set;
 public final class FeatureBoundsTests {
     /** The feature types to check: our decoration, but not the chunk-wide basin fill and landmark builder. */
     private static final Set<Class<?>> CHECKED = Set.of(BoulderFeature.class, CopperSpikeFeature.class,
+            CopperVeinFeature.class,
             SnowDriftFeature.class, RuinedPillarFeature.class, StrikeCraterFeature.class, AercloudFeature.class,
             AercloudBridgeFeature.class, TotemFeature.class);
     private static final int REACH = 16, SCAN = 22, PLACEMENTS = 8;

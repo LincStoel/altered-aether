@@ -62,6 +62,9 @@ public final class AATagProvider extends JsonDataProvider {
         tag("block", AlteredAether.id("scorchable"), "aether:holystone", "aether:mossy_holystone", "aether:icestone",
                 "minecraft:cobbled_deepslate", "minecraft:deepslate", "minecraft:stone", "minecraft:snow_block",
                 "deep_aether:aseterite", "deep_aether:clorite");
+        // Tamed aerwhales (see TamedAerwhale).
+        tag("item", AlteredAether.id("aerwhale_taming_food"), "aether:blue_berry");
+        tag("item", AlteredAether.id("aerwhale_breeding_food"), "aether:enchanted_berry");
         aetherBiomes();
     }
 

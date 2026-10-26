@@ -21,36 +21,48 @@ import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.util.KeyDispatchDataCodec;
 import net.minecraft.world.level.levelgen.DensityFunction;
+import net.minecraft.world.level.levelgen.DensityFunctions;
 
-import java.util.Optional;
 
 /**
  * Sunken Atolls laid over {@code argument}: at each atoll site the terrain is replaced by a ring island around a
  * lagoon (see {@link AtollSite}). Sites come from the world's {@link BasinField}; {@code weight} is the region mask,
  * which the field uses to keep every atoll wholly inside Altered Aether's region, and {@code surface} is the height of
- * an average atoll's crest.
+ * an average atoll's crest. The Frozen Lakes' lakes are built the same way, around {@code frozen_surface}.
+ *
+ * <p>Where {@code clear} is 1 the ordinary islands are taken away first, so the atolls stand alone in open sky and a
+ * biome made of them is mostly lagoon; between 0 and 1 the islands thin out toward it.
  */
 public final class Atoll implements DensityFunction {
     public static final MapCodec<Atoll> MAP_CODEC = RecordCodecBuilder.mapCodec(i -> i.group(
             DensityFunction.HOLDER_HELPER_CODEC.fieldOf("argument").forGetter(Atoll::argument),
             DensityFunction.HOLDER_HELPER_CODEC.fieldOf("weight").forGetter(Atoll::weight),
             Codec.INT.fieldOf("surface").forGetter(Atoll::surface),
-            Codec.doubleRange(0.1, 4).optionalFieldOf("vertical_scale", 1.0).forGetter(Atoll::verticalScale)
-    ).apply(i, (argument, weight, surface, vertical) -> new Atoll(argument, weight, surface, vertical, null)));
+            Codec.INT.fieldOf("frozen_surface").forGetter(Atoll::frozenSurface),
+            Codec.doubleRange(0.1, 4).optionalFieldOf("vertical_scale", 1.0).forGetter(Atoll::verticalScale),
+            DensityFunction.HOLDER_HELPER_CODEC.optionalFieldOf("clear", DensityFunctions.zero()).forGetter(Atoll::clear)
+    ).apply(i, (argument, weight, surface, frozen, vertical, clear) -> new Atoll(argument, weight, surface, frozen,
+            vertical, clear, null)));
     public static final KeyDispatchDataCodec<Atoll> CODEC = KeyDispatchDataCodec.of(MAP_CODEC);
 
     private final DensityFunction argument;
     private final DensityFunction weight;
     private final int surface;
+    private final int frozenSurface;
     private final double verticalScale;
+    private final DensityFunction clear;
     private final BasinCarve.Binding binding;
+    /** Density taken from the islands where {@code clear} is 1: more than any island holds. */
+    private static final double CLEAR_DEPTH = 3;
 
-    private Atoll(DensityFunction argument, DensityFunction weight, int surface, double verticalScale,
-                  BasinCarve.Binding binding) {
+    private Atoll(DensityFunction argument, DensityFunction weight, int surface, int frozenSurface,
+                  double verticalScale, DensityFunction clear, BasinCarve.Binding binding) {
         this.argument = argument;
         this.weight = weight;
         this.surface = surface;
+        this.frozenSurface = frozenSurface;
         this.verticalScale = verticalScale;
+        this.clear = clear;
         this.binding = binding;
     }
 
@@ -66,8 +78,16 @@ public final class Atoll implements DensityFunction {
         return surface;
     }
 
+    public int frozenSurface() {
+        return frozenSurface;
+    }
+
     public double verticalScale() {
         return verticalScale;
+    }
+
+    public DensityFunction clear() {
+        return clear;
     }
 
     public BasinCarve.Binding binding() {
@@ -77,13 +97,15 @@ public final class Atoll implements DensityFunction {
     @Override
     public double compute(FunctionContext context) {
         double density = argument.compute(context);
+        double cleared = clear.compute(context);
+        if (cleared > 0) {
+            density -= CLEAR_DEPTH * cleared;
+        }
         BasinField field = binding == null ? null : binding.field();
         if (field == null) {
             return density;
         }
-        Optional<AtollSite> site = field.atollAt(context.blockX(), context.blockZ());
-        return site.isEmpty() ? density : site.get().density(context.blockX(), context.blockY(), context.blockZ(),
-                density);
+        return field.atollDensity(context.blockX(), context.blockY(), context.blockZ(), density);
     }
 
     @Override
@@ -93,13 +115,14 @@ public final class Atoll implements DensityFunction {
 
     @Override
     public DensityFunction mapAll(Visitor visitor) {
-        return visitor.apply(new Atoll(argument.mapAll(visitor), weight.mapAll(visitor), surface, verticalScale,
+        return visitor.apply(new Atoll(argument.mapAll(visitor), weight.mapAll(visitor), surface, frozenSurface,
+                verticalScale, clear.mapAll(visitor),
                 binding != null ? binding : new BasinCarve.Binding()));
     }
 
     @Override
     public double minValue() {
-        return Math.min(-1, argument.minValue());
+        return Math.min(-1, argument.minValue() - CLEAR_DEPTH);
     }
 
     @Override

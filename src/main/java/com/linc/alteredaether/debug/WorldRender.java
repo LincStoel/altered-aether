@@ -32,13 +32,27 @@ import java.nio.file.Path;
  * PNGs to {@code renders/} in the server directory.
  */
 final class WorldRender {
-    private static final int SCALE = 2;
+    /** Pixels per block: 2 for area renders, more for a close look at one feature. */
+    private static int SCALE = 2;
     private static final int SKY = 0xB8D4F0;
 
     /** Renders the square of blocks from (minX, minZ) to (maxX, maxZ) inclusive, which must be generated. */
     static void render(ServerLevel level, String name, int minX, int minZ, int maxX, int maxZ) {
+        render(level, name, minX, minZ, maxX, maxZ, level.getMinBuildHeight(), level.getMaxBuildHeight() - 1, 2);
+    }
+
+    /** As above, between two heights, at {@code scale} pixels per block. */
+    static void render(ServerLevel level, String name, int minX, int minZ, int maxX, int maxZ, int minY, int maxY,
+                       int scale) {
+        render(level, name, minX, minZ, maxX, maxZ, minY, maxY, scale, null);
+    }
+
+    /** As above, drawing only the blocks {@code only} accepts, when it isn't null. */
+    static void render(ServerLevel level, String name, int minX, int minZ, int maxX, int maxZ, int minY, int maxY,
+                       int scale, @org.jetbrains.annotations.Nullable java.util.function.Predicate<BlockState> only) {
+        SCALE = scale;
         int width = maxX - minX + 1, depth = maxZ - minZ + 1;
-        int bottom = level.getMinBuildHeight(), height = level.getHeight();
+        int bottom = minY, height = maxY - minY + 1;
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
         // Every column's blocks, top first, read once.
         int[][] tops = new int[width][depth], columnColour = new int[width][depth];
@@ -58,7 +72,7 @@ final class WorldRender {
                 tops[i][k] = Integer.MIN_VALUE;
                 for (int y = bottom + height - 1; y >= bottom; y--) {
                     BlockState state = level.getBlockState(pos.set(minX + i, y, minZ + k));
-                    if (state.isAir()) {
+                    if (state.isAir() || only != null && !only.test(state)) {
                         continue;
                     }
                     int colour = colour(level, state, pos);

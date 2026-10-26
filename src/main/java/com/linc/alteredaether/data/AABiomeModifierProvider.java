@@ -23,7 +23,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-/** Spawn, exclusivity and climate biome modifiers. Optional-mod content carries a mod_loaded condition. */
+/** Spawn, exclusivity, climate and overworld-archwood biome modifiers. Optional-mod content carries a mod_loaded condition. */
 public final class AABiomeModifierProvider extends JsonDataProvider {
     private static final String FOLDER = "neoforge/biome_modifier";
     private static final String IS_AETHER = "#aether:is_aether";
@@ -89,6 +89,18 @@ public final class AABiomeModifierProvider extends JsonDataProvider {
         familiars();
 
         data(FOLDER, AlteredAether.id("climate"), climate());
+
+        // Ars Nouveau's archwood mix and Ars Elemental's flashing archwood, both added to #minecraft:is_overworld.
+        // Our own Aether archwood placements live under our namespace and are untouched.
+        JsonObject archwood = new JsonObject();
+        archwood.addProperty("type", "altered_aether:overworld_archwood");
+        archwood.addProperty("biomes", "#minecraft:is_overworld");
+        JsonArray archwoods = new JsonArray();
+        archwoods.add("ars_nouveau:placed_mixed_archwoods");
+        archwoods.add("ars_elemental:flashing_archwood");
+        archwoods.add("ars_elemental:common_flashing_archwood");
+        archwood.add("features", archwoods);
+        data(FOLDER, AlteredAether.id("overworld_archwood"), archwood, "ars_nouveau");
     }
 
     /**
@@ -163,7 +175,6 @@ public final class AABiomeModifierProvider extends JsonDataProvider {
         values.put("deep_aether:luminescent_forest", new float[]{0.9f, 0.9f});
         values.put("deep_aether:mystic_aerglow_forest", new float[]{0.2f, 0.8f});
         values.put("deep_aether:overgrown_cloud", new float[]{0.95f, 0.3f});
-        values.put("deep_aether:sacred_lands", new float[]{0.65f, 0.8f});
         values.put("deep_aether:yagroot_swamp", new float[]{0.75f, 0.9f});
 
         JsonObject climates = new JsonObject();

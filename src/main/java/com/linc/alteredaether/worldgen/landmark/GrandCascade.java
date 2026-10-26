@@ -49,6 +49,8 @@ record GrandCascade(int x, int z, List<Tier> tiers, double vertical, long salt) 
     private static final Block MOSSY = block("aether:mossy_holystone", Blocks.MOSSY_COBBLESTONE);
     private static final Block GRASS = block("aether:aether_grass_block", Blocks.GRASS_BLOCK);
     private static final Block DIRT = block("aether:aether_dirt", Blocks.DIRT);
+    /** How often a cascade aims for 2, 3, ... 7 pools. The start is moved back from the edge to make room. */
+    private static final double[] POOL_WEIGHTS = {0.15, 0.25, 0.24, 0.17, 0.12, 0.07};
 
     /**
      * One pool: a bowl of {@code radius} (with a wobbling shore) holding water to {@code water}, {@code depth} deep at
@@ -73,8 +75,9 @@ record GrandCascade(int x, int z, List<Tier> tiers, double vertical, long salt) 
         if (ground == Integer.MIN_VALUE) {
             return null;
         }
-        // Look for an island edge 40 to 100 blocks off, with no hill in the way.
-        List<Double> bearings = new ArrayList<>();
+        int pools = pools(random);
+        // Look for an island edge 24 to 100 blocks off, with no hill in the way.
+        List<double[]> bearings = new ArrayList<>();
         double offset = random.nextDouble() * Mth.TWO_PI;
         for (int b = 0; b < 16; b++) {
             double angle = offset + b * Math.PI / 8;
@@ -91,35 +94,57 @@ record GrandCascade(int x, int z, List<Tier> tiers, double vertical, long salt) 
                 }
                 previous = h;
             }
-            if (edge >= 40) {
-                bearings.add(angle);
+            if (edge >= 24) {
+                bearings.add(new double[]{angle, edge});
             }
         }
         if (bearings.isEmpty()) {
             return null;
         }
-        double bearing = bearings.get(random.nextInt(bearings.size()));
+        // Long cascades step down in smaller pools, so they fit between the start and the edge.
+        double minRadius = pools <= 4 ? 8 : 6, maxRadius = pools <= 4 ? 12 : 9.5;
+        // Roughly how far apart the pools' centres fall: one shore, the rim, and half the next pool.
+        double spacing = 1.5 * (minRadius + maxRadius) / 2 + RIM + 0.5;
+        double reach = spacing * (pools - 1) - 6;
+        // The first pool goes far enough back from the edge for the pools wanted; an edge too close for them all
+        // gives a shorter cascade, so prefer one with the room.
+        List<double[]> roomy = bearings.stream().filter(b -> b[1] >= reach).toList();
+        double[] chosen = roomy.isEmpty()
+                ? bearings.stream().max(java.util.Comparator.comparingDouble(b -> b[1])).orElseThrow()
+                : roomy.get(random.nextInt(roomy.size()));
+        double bearing = chosen[0];
+        double start = Math.max(0, chosen[1] - reach);
+        double sx = x + Math.cos(bearing) * start, sz = z + Math.sin(bearing) * start;
+        ground = probe.surface((int) Math.floor(sx), (int) Math.floor(sz));
+        if (ground == Integer.MIN_VALUE) {
+            return null;
+        }
 
         List<Tier> tiers = new ArrayList<>();
-        tiers.add(new Tier(x, z, Mth.lerp(random.nextDouble(), 9, 12), ground + (int) Math.round(Mth.lerp(
+        tiers.add(new Tier(sx, sz, Mth.lerp(random.nextDouble(), minRadius + 1, maxRadius), ground + (int) Math.round(Mth.lerp(
                 random.nextDouble(), 3, 5) * v), Mth.lerp(random.nextDouble(), 2.5, 4) * v,
                 random.nextDouble() * Mth.TWO_PI, random.nextDouble() * Mth.TWO_PI, Double.NaN));
         boolean overEdge = false;
         while (tiers.size() < 7) {
             Tier previous = tiers.getLast();
             bearing += (random.nextDouble() - 0.5) * 0.5;
-            Tier next = new Tier(0, 0, Mth.lerp(random.nextDouble(), 8, 12), 0, 0, random.nextDouble() * Mth.TWO_PI,
+            Tier next = new Tier(0, 0, Mth.lerp(random.nextDouble(), minRadius, maxRadius), 0, 0, random.nextDouble() * Mth.TWO_PI,
                     random.nextDouble() * Mth.TWO_PI, Double.NaN);
             // Close enough that the fall from the notch lands half way into the next pool.
             double step = previous.shore(bearing) + RIM + 0.5 + 0.5 * next.shore(bearing + Math.PI);
             double cx = previous.x() + Math.cos(bearing) * step, cz = previous.z() + Math.sin(bearing) * step;
-            int drop = Math.max(3, (int) Math.round(Mth.lerp(random.nextDouble(), 5, 8) * v));
+            int below = probe.surface((int) Math.floor(cx), (int) Math.floor(cz), Math.min(probe.maxY() - 1,
+                    previous.water() + 10), previous.water() - 63);
+            // A pool sits a little above its own ground, so the steps follow the slope and a long cascade can run
+            // down a gentle one; each still falls at least 3 into the next, and 5 to 8 over the edge.
+            int drop = below == Integer.MIN_VALUE
+                    ? (int) Math.round(Mth.lerp(random.nextDouble(), 5, 8) * v)
+                    : previous.water() - below - (int) Math.round(Mth.lerp(random.nextDouble(), 1, 4) * v);
+            drop = Mth.clamp(drop, 3, Math.max(3, (int) Math.round(8 * v)));
             int water = previous.water() - drop;
             double depth = Math.min(drop - 1, Mth.lerp(random.nextDouble(), 2.5, 4) * v);
             tiers.set(tiers.size() - 1, previous.withNotch(bearing));
             next = new Tier(cx, cz, next.radius(), water, depth, next.phase1(), next.phase2(), Double.NaN);
-            int below = probe.surface((int) Math.floor(cx), (int) Math.floor(cz), Math.min(probe.maxY() - 1,
-                    previous.water() + 10), water - 60);
             if (below != Integer.MIN_VALUE && below > water + 6) {
                 return null;
             }
@@ -131,7 +156,7 @@ record GrandCascade(int x, int z, List<Tier> tiers, double vertical, long salt) 
             }
             tiers.add(next);
         }
-        if (!overEdge || tiers.size() < 3) {
+        if (!overEdge || tiers.size() < 2) {
             return null;
         }
         // Nothing just under the last lip, or the water would spread over the ground instead of falling.
@@ -143,6 +168,17 @@ record GrandCascade(int x, int z, List<Tier> tiers, double vertical, long salt) 
             return null;
         }
         return new GrandCascade(x, z, List.copyOf(tiers), v, random.nextLong());
+    }
+
+    private static int pools(RandomSource random) {
+        double roll = random.nextDouble();
+        for (int i = 0; i < POOL_WEIGHTS.length; i++) {
+            roll -= POOL_WEIGHTS[i];
+            if (roll < 0) {
+                return i + 2;
+            }
+        }
+        return POOL_WEIGHTS.length + 1;
     }
 
     @Override
@@ -157,6 +193,11 @@ record GrandCascade(int x, int z, List<Tier> tiers, double vertical, long salt) 
             extent = Math.max(extent, Math.hypot(tier.x() - x, tier.z() - z) + tier.radius() * 1.22 + RIM + 1);
         }
         return extent;
+    }
+
+    @Override
+    public String detail() {
+        return tiers.size() + " pools";
     }
 
     @Override

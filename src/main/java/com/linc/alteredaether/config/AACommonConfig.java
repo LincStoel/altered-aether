@@ -15,6 +15,7 @@
 package com.linc.alteredaether.config;
 
 import com.linc.alteredaether.compat.AddedMob;
+import com.linc.alteredaether.entity.AerwhaleMode;
 import com.linc.alteredaether.worldgen.AABiomes;
 import net.neoforged.neoforge.common.ModConfigSpec;
 import net.neoforged.neoforge.common.ModConfigSpec.BooleanValue;
@@ -35,7 +36,6 @@ public final class AACommonConfig {
     // [region]
     public static final IntValue REGION_WEIGHT;
     public static final Map<String, BooleanValue> BIOME_ENABLED = new LinkedHashMap<>();
-    public static final BooleanValue PLACE_SACRED_LANDS;
 
     // [terrain]
     public static final DoubleValue REGION_FALLOFF;
@@ -82,6 +82,13 @@ public final class AACommonConfig {
     public static final BooleanValue STORM_SCORCH;
     public static final BooleanValue STORM_LIGHTNING_RODS;
 
+    // [aerwhales]
+    public static final BooleanValue AERWHALE_USE_DEEP_AETHER;
+    public static final DoubleValue AERWHALE_TAME_CHANCE;
+    public static final IntValue AERWHALE_BREEDING_COOLDOWN;
+    public static final IntValue AERWHALE_GROWTH_TIME;
+    public static final IntValue AERWHALE_FOLLOW_TELEPORT;
+
     // [tall_mode]
     public static final ModConfigSpec.ConfigValue<List<? extends String>> TALL_MODE_EXCLUSIONS;
 
@@ -89,9 +96,11 @@ public final class AACommonConfig {
     public static final Map<String, BooleanValue> COMPAT_ENABLED = new LinkedHashMap<>();
     public static final BooleanValue DISABLE_BEYOND_PARITY_CAMPFIRE;
     public static final BooleanValue DEEP_AETHER_FALLBACKS;
+    public static final BooleanValue DISABLE_OVERWORLD_ARCHWOOD;
 
     public static final List<String> BASIN_TYPES =
-            List.of("pool", "deep_lake", "cascading_lake", "frozen_pool", "poison_pool", "atoll_lagoon");
+            List.of("pool", "deep_lake", "cascading_lake", "frozen_pool", "poison_pool", "atoll_lagoon",
+                    "frozen_lake");
     public static final List<String> FEATURE_FAMILIES =
             List.of("boulders", "copper_spikes", "aerclouds", "rift_debris", "totems", "ruins", "craters",
                     "dried_ghast_fields", "snow_drifts", "hanging_chains", "vegetation");
@@ -117,10 +126,6 @@ public final class AACommonConfig {
             BIOME_ENABLED.put(biome.name(), b.define(biome.name(), true));
         }
         b.pop();
-        PLACE_SACRED_LANDS = b.comment("Place deep_aether:sacred_lands in this region. Deep Aether 1.1.5.1 never places it",
-                        "itself (both config branches return skyroot_woodland), which also stops its altar camp, campfire",
-                        "and combiner corridor structures from ever generating.")
-                .define("place_sacred_lands", true);
         b.pop();
 
         b.comment("Landform shaping. Only affects newly generated chunks.").push("terrain");
@@ -139,7 +144,7 @@ public final class AACommonConfig {
         DUNE_HEIGHT = b.comment("Windswept Dunes ridge height multiplier.").defineInRange("dune_height", 1.0, 0.0, 3.0);
         DUNE_WIND_DIRECTION = b.comment("Prevailing wind over the dunes, in degrees clockwise from north.")
                 .defineInRange("dune_wind_direction", 60.0, 0.0, 360.0);
-        ATOLL_SIZE = b.comment("Sunken Atoll size multiplier.").defineInRange("atoll_size", 1.0, 0.5, 2.0);
+        ATOLL_SIZE = b.comment("Sunken Atoll and Frozen Lakes lake size multiplier.").defineInRange("atoll_size", 1.0, 0.5, 2.0);
         LANDMARK_RARITY = b.comment("Multiplier on how rare landmarks are. Higher is rarer, 0 disables them.")
                 .defineInRange("landmark_rarity", 1.0, 0.0, 10.0);
         b.pop();
@@ -221,6 +226,28 @@ public final class AACommonConfig {
                 .define("lightning_rods", true);
         b.pop();
 
+        b.comment("Tamed aerwhales: tame a wild one with blue berries, saddle it and fly it. Sneak and use your own",
+                        "aerwhale to tell it to stay, wander or follow; open its saddle and saddlebag with the inventory key",
+                        "while riding it.")
+                .push("aerwhales");
+        AERWHALE_USE_DEEP_AETHER = b.comment("With Deep Aether loaded, use its aerwhales (saddle, chest, two seats) instead of",
+                        "ours: taming is off and tamed aerwhales turn back into wild ones, keeping any saddle. When false,",
+                        "Deep Aether's aerwhale changes are switched off entirely and any saddles and chest contents its",
+                        "aerwhales carried drop where they are. Takes effect after a restart; a server and its clients must",
+                        "use the same setting, or clients can't join.")
+                .gameRestart()
+                .define(AerwhaleMode.CONFIG_KEY, false);
+        AERWHALE_TAME_CHANCE = b.comment("Chance that each blue berry tames a wild aerwhale. 0 disables taming.")
+                .defineInRange("tame_chance", 1.0 / 3.0, 0.0, 1.0);
+        AERWHALE_BREEDING_COOLDOWN = b.comment("Ticks before a parent can breed again.")
+                .defineInRange("breeding_cooldown", 6000, 0, 240000);
+        AERWHALE_GROWTH_TIME = b.comment("Ticks a calf takes to grow up. Each enchanted berry fed to it takes a tenth off.")
+                .defineInRange("growth_time", 24000, 1, 480000);
+        AERWHALE_FOLLOW_TELEPORT = b.comment("A following aerwhale this far from its owner, in blocks, catches up by",
+                        "teleporting to them, as wolves and cats do. 0 never teleports.")
+                .defineInRange("follow_teleport_distance", 24, 0, 512);
+        b.pop();
+
         b.comment("The taller Aether (-64..319) comes from the built-in 'altered_aether:tall_aether' datapack, chosen when",
                         "creating a world. These settings only apply when it is enabled.")
                 .push("tall_mode");
@@ -238,6 +265,11 @@ public final class AACommonConfig {
         DEEP_AETHER_FALLBACKS = b.comment("Without Deep Aether, swap its blocks for the closest Aether or vanilla block. When",
                         "false, decorations that need Deep Aether blocks are left out instead.")
                 .define("deep_aether_fallbacks", true);
+        DISABLE_OVERWORLD_ARCHWOOD = b.comment("With Ars Nouveau loaded, keep archwood in the Aether: no archwood trees in the",
+                        "overworld, and none of Ars Nouveau's or Ars Elemental's archwood forests. Trees take effect on the",
+                        "next world load, forests after a restart; only newly generated chunks change.")
+                .gameRestart()
+                .define("disable_overworld_archwood", true);
         b.pop();
 
         SPEC = b.build();

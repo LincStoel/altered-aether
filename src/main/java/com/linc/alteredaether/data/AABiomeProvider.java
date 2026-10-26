@@ -60,6 +60,7 @@ public final class AABiomeProvider extends JsonDataProvider {
         biome("shattered_rift", shatteredRift());
         biome("windswept_dunes", windsweptDunes());
         biome("sunken_atoll", sunkenAtoll());
+        biome("frozen_lakes", frozenLakes());
 
         biome("blazing_archwood_grove", grove("blazing", ARIA)
                 .add(BiomeJson.LOCAL, AADecorationProvider.ASETERITE_BOULDER)
@@ -166,9 +167,10 @@ public final class AABiomeProvider extends JsonDataProvider {
                 .effect("fog_color", 13214247).effect("foliage_color", 9211020).effect("grass_color", 9211020)
                 .effect("sky_color", 15915105)
                 .particle(BiomeJson.particleType("minecraft:electric_spark"), 0.006f)
-                .add(BiomeJson.LOCAL, AADecorationProvider.TEMPEST_SPIRES, AADecorationProvider.TEMPEST_LONE_SPIKE, AADecorationProvider.STRIKE_CRATER,
-                        AADecorationProvider.AMBROSIUM_BOULDER)
-                .add(BiomeJson.ORES, AADecorationProvider.TEMPEST_COPPER_ORE)
+                .add(BiomeJson.LOCAL, AADecorationProvider.TEMPEST_SPIRES, AADecorationProvider.TEMPEST_LONE_SPIKE,
+                        AADecorationProvider.STRIKE_CRATER)
+                .add(BiomeJson.ORES, AADecorationProvider.TEMPEST_COPPER_ORE, AADecorationProvider.TEMPEST_COPPER_ORE_UPPER,
+                        AADecorationProvider.TEMPEST_COPPER_VEIN)
                 .add(BiomeJson.TOP, AADecorationProvider.TEMPEST_CLOUD)
                 .spawners("aether:aether_surface_monster",
                         spawner("aether:blue_swet", 20, 1, 1),
@@ -185,7 +187,8 @@ public final class AABiomeProvider extends JsonDataProvider {
                 .drop(STOCK_VEGETATION)
                 .effect("fog_color", 9412787).effect("foliage_color", 7240558).effect("grass_color", 7240558)
                 .effect("sky_color", 11583177).effect("water_color", 4875634).effect("water_fog_color", 2965066)
-                .add(BiomeJson.LOCAL, AADecorationProvider.RIFT_DEBRIS, AADecorationProvider.RIFT_SLAB_FRAGMENTS)
+                .add(BiomeJson.LOCAL, AADecorationProvider.RIFT_DEBRIS_CLOUD, AADecorationProvider.RIFT_DEBRIS,
+                        AADecorationProvider.RIFT_SLAB_FRAGMENTS)
                 .add(BiomeJson.TOP, AADecorationProvider.RIFT_STRAND, AADecorationProvider.RIFT_BRIDGE)
                 .spawners("aether:aether_aerwhale", spawner("aether:aerwhale", 10, 1, 3))
                 .cost("aether:aerwhale", 0.3, 0.4);
@@ -231,6 +234,32 @@ public final class AABiomeProvider extends JsonDataProvider {
                 .spawners("water_ambient", spawner("minecraft:tropical_fish", 25, 8, 8))
                 .spawners("underground_water_creature", spawner("minecraft:glow_squid", 10, 2, 4))
                 .addSpawner("creature", spawner("minecraft:turtle", 5, 2, 5));
+    }
+
+    /**
+     * High, cold islands of icestone under aether dirt, holding frozen lakes built like the atolls' lagoons, with
+     * snow along their banks. The ground is bare dirt, so it keeps the crags' cold-hardy
+     * wildlife and their ores, which also replace icestone.
+     */
+    private BiomeJson frozenLakes() {
+        return base()
+                .climate(-0.3f, 0.6f)
+                .drop(BARREN).drop(FOREST_TREES)
+                .drop("aether:water_lake")
+                .effect("fog_color", 13363950).effect("foliage_color", 9418436).effect("grass_color", 10470345)
+                .effect("sky_color", 12376047).effect("water_color", 4025996).effect("water_fog_color", 1981520)
+                .particle(BiomeJson.particleType("minecraft:snowflake"), 0.0015f)
+                .add(BiomeJson.LOCAL, AADecorationProvider.CRAG_BOULDER, AADecorationProvider.ICESTONE_SHARD)
+                .add(BiomeJson.ORES, AADecorationProvider.CRAG_ORES + "aether_dirt", AADecorationProvider.CRAG_ORES + "ambrosium", AADecorationProvider.CRAG_ORES + "zanite",
+                        AADecorationProvider.CRAG_ORES + "gravitite", AADecorationProvider.CRAG_ORES + "gravitite_buried")
+                .add(BiomeJson.TOP, AADecorationProvider.CRAG_CLOUD)
+                .spawners("creature",
+                        spawner("aether:aerbunny", 12, 2, 3),
+                        spawner("aether:sheepuff", 10, 2, 3))
+                .spawners("aether:aether_surface_monster",
+                        spawner("aether:blue_swet", 20, 1, 1),
+                        spawner("aether:whirlwind", 3, 1, 1))
+                .dropCost("aether:aechor_plant", "aether:golden_swet");
     }
 
     private BiomeJson grove(String colour, String music) {

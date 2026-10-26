@@ -5,6 +5,14 @@
   "crack_width": 4.0,
   "max_offset": 10.666666666666666,
   "max_tilt": 0.15,
+  "pillars": {
+    "empty_chance": 0.3,
+    "gap": 10.0,
+    "max_height": 74.66666666666667,
+    "min_height": 42.666666666666664,
+    "step": 5,
+    "top": 99
+  },
   "roughness": "altered_aether:terrain/jag",
   "seed": "altered_aether:rift_cells"
 }

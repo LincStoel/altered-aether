@@ -37,8 +37,9 @@ import java.util.Optional;
  * A lumpy boulder: two or three overlapping ellipsoids with a noisy surface, so no two look alike. Sits on the ground
  * at the origin, sunk into it by {@code burial}, squashed vertically by {@code squash}; when it hangs over a slope or
  * an edge, the open underside is filled down to the ground so it never floats. With {@code floating} it is debris
- * instead: nothing is filled below it and nothing needs to be under it. Its blocks only replace air and replaceable
- * blocks, so it can't carve into the ground it rests on.
+ * instead: nothing is filled below it and nothing needs to be under it, and {@code scatter} lone blocks hang in a
+ * loose shell around it, the grit of the break. Its blocks only replace air and replaceable blocks, so it can't carve
+ * into the ground it rests on.
  *
  * <p>The radius is capped at 10 so a boulder stays within the area a feature may write to.
  */
@@ -47,14 +48,16 @@ public final class BoulderFeature extends Feature<BoulderFeature.Config> {
     private static final int MAX_FILL = 6;
 
     public record Config(BlockStateProvider state, IntProvider radius, float squash, float burial,
-                         Optional<BlockStateProvider> topCover, boolean floating) implements FeatureConfiguration {
+                         Optional<BlockStateProvider> topCover, boolean floating, int scatter)
+            implements FeatureConfiguration {
         public static final Codec<Config> CODEC = RecordCodecBuilder.create(i -> i.group(
                 BlockStateProvider.CODEC.fieldOf("state").forGetter(Config::state),
                 IntProvider.codec(1, MAX_RADIUS).fieldOf("radius").forGetter(Config::radius),
                 Codec.floatRange(0.2f, 1.5f).optionalFieldOf("squash", 0.75f).forGetter(Config::squash),
                 Codec.floatRange(0, 0.8f).optionalFieldOf("burial", 0.25f).forGetter(Config::burial),
                 BlockStateProvider.CODEC.optionalFieldOf("top_cover").forGetter(Config::topCover),
-                Codec.BOOL.optionalFieldOf("floating", false).forGetter(Config::floating)
+                Codec.BOOL.optionalFieldOf("floating", false).forGetter(Config::floating),
+                Codec.intRange(0, 64).optionalFieldOf("scatter", 0).forGetter(Config::scatter)
         ).apply(i, Config::new));
     }
 
@@ -121,6 +124,8 @@ public final class BoulderFeature extends Feature<BoulderFeature.Config> {
 
         if (!config.floating()) {
             fillUnderside(level, random, config, shape);
+        } else {
+            scatter(level, random, config, center, radius, height, origin, reach, shape);
         }
         boolean cover = config.topCover().isPresent();
         for (Map.Entry<BlockPos, BlockState> entry : shape.entrySet()) {
@@ -132,6 +137,25 @@ public final class BoulderFeature extends Feature<BoulderFeature.Config> {
         }
         FeatureStats.placed(config.floating() ? "debris" : "boulder");
         return true;
+    }
+
+    /**
+     * Lone blocks around floating debris: each a random bearing out from the centre, between just clear of the
+     * boulder and two and a half times its radius, thinning with distance.
+     */
+    private static void scatter(WorldGenLevel level, RandomSource random, Config config, BlockPos center, int radius,
+                                double height, BlockPos origin, double reach, Map<BlockPos, BlockState> shape) {
+        for (int i = 0; i < config.scatter(); i++) {
+            double yaw = random.nextDouble() * Math.PI * 2, pitch = (random.nextDouble() - 0.5) * Math.PI;
+            double distance = radius * (1.2 + 1.3 * random.nextDouble() * random.nextDouble()) + 1;
+            BlockPos at = center.offset((int) Math.round(Math.cos(yaw) * Math.cos(pitch) * distance),
+                    (int) Math.round(Math.sin(pitch) * distance * Math.max(0.6, height / radius)),
+                    (int) Math.round(Math.sin(yaw) * Math.cos(pitch) * distance));
+            if (Math.abs(at.getX() - origin.getX()) <= reach && Math.abs(at.getZ() - origin.getZ()) <= reach
+                    && level.getBlockState(at).isAir()) {
+                shape.putIfAbsent(at, config.state().getState(random, at));
+            }
+        }
     }
 
     /** Extends every column that ends over open air down to solid ground, so a boulder on a slope has no gap under it. */

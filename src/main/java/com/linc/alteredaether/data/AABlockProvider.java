@@ -157,8 +157,13 @@ public final class AABlockProvider extends JsonDataProvider {
         for (AABiomes.Entry biome : AABiomes.ALL) {
             lang.put("biome." + AlteredAether.MOD_ID + "." + biome.name(), title(biome.name()));
         }
-        // Deep Aether names no such biome, so without this the Sacred Lands show their translation key
-        lang.put("biome.deep_aether.sacred_lands", "Sacred Lands");
+        lang.put("entity." + AlteredAether.MOD_ID + ".tamed_aerwhale", "Aerwhale");
+        lang.put("message." + AlteredAether.MOD_ID + ".aerwhale.stay", "%s will circle here");
+        lang.put("message." + AlteredAether.MOD_ID + ".aerwhale.wander", "%s will roam freely");
+        lang.put("message." + AlteredAether.MOD_ID + ".aerwhale.follow", "%s will follow you");
+        lang.put("message." + AlteredAether.MOD_ID + ".aerwhale.not_owner", "This aerwhale answers to someone else");
+        lang.put("key." + AlteredAether.MOD_ID + ".aerwhale_eject", "Leap off Aerwhale");
+        lang.put("key.categories." + AlteredAether.MOD_ID, "Altered Aether");
         JsonObject json = new JsonObject();
         lang.forEach(json::addProperty);
         asset("lang", AlteredAether.id("en_us"), json);

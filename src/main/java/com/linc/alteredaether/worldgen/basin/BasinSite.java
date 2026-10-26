@@ -16,13 +16,15 @@ package com.linc.alteredaether.worldgen.basin;
 
 /**
  * One body of water: a bowl of {@code radius} around (x, z), {@code depth} blocks deep at the centre, holding water up
- * to {@code waterLevel}. The shoreline wobbles with the bearing from the centre, so no two basins are round.
+ * to {@code waterLevel}. The shoreline wobbles with the bearing from the centre, so no two basins are round. With a
+ * {@code ring} it is instead a river round a ring island: every column within {@code radius} of the ring's centre
+ * line.
  *
  * <p>Above the water a cone widening at {@link #BANK_SLOPE} blocks out per block up clears the banks, so a basin cut
  * into uneven ground gets a sloping shore instead of a well shaft.
  */
 public record BasinSite(BasinType type, int x, int z, double radius, double depth, int waterLevel, double phase1,
-                        double phase2) {
+                        double phase2, @org.jetbrains.annotations.Nullable RingPath ring) {
     /** Height of the cleared bank above the water. */
     static final int BANK_HEIGHT = 12;
     /** Blocks the bank recedes per block of height. */
@@ -30,14 +32,25 @@ public record BasinSite(BasinType type, int x, int z, double radius, double dept
     /** The largest the shoreline wobble can make a radius. */
     static final double MAX_WOBBLE = 1.22;
 
+    public BasinSite(BasinType type, int x, int z, double radius, double depth, int waterLevel, double phase1,
+                     double phase2) {
+        this(type, x, z, radius, depth, waterLevel, phase1, phase2, null);
+    }
+
     /** The shoreline's radius multiplier at a bearing. Shared with the atoll, so its lagoon matches its ring. */
     static double wobble(double angle, double phase1, double phase2) {
         return 1 + 0.15 * Math.sin(3 * angle + phase1) + 0.07 * Math.sin(5 * angle + phase2);
     }
 
-    /** How far out (x, z) lies, as a fraction of the shoreline radius in its direction: below 1 is under water. */
+    /**
+     * How far out (x, z) lies, as a fraction of the shoreline radius in its direction: below 1 is under water. On a
+     * river, the distance from its centre line as a fraction of its half width, on either bank.
+     */
     public double reach(int px, int pz) {
         double dx = px - x, dz = pz - z;
+        if (ring != null) {
+            return ring.distance(dx, dz) / radius;
+        }
         double distance = Math.sqrt(dx * dx + dz * dz);
         if (distance < 1e-6) {
             return 0;
@@ -47,6 +60,9 @@ public record BasinSite(BasinType type, int x, int z, double radius, double dept
 
     /** The furthest any column this basin touches, banks included, lies from its centre. */
     public double extent() {
+        if (ring != null) {
+            return ring.furthest() + radius + 2;
+        }
         return radius * MAX_WOBBLE + BANK_HEIGHT * BANK_SLOPE + 2;
     }
 
@@ -65,7 +81,7 @@ public record BasinSite(BasinType type, int x, int z, double radius, double dept
      * Atoll lagoons are shaped by the atoll's own terrain and never carve.
      */
     public boolean carves(int px, int py, int pz) {
-        if (type == BasinType.ATOLL_LAGOON || py < waterLevel - maxDepth()) {
+        if (type.atollShaped() || py < waterLevel - maxDepth()) {
             return false;
         }
         double reach = reach(px, pz);
@@ -83,5 +99,9 @@ public record BasinSite(BasinType type, int x, int z, double radius, double dept
 
     public boolean inFootprint(int px, int pz) {
         return reach(px, pz) < 1;
+    }
+
+    public boolean isRiver() {
+        return ring != null;
     }
 }

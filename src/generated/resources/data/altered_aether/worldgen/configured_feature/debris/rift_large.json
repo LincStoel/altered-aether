@@ -5,10 +5,11 @@
     "floating": true,
     "radius": {
       "type": "minecraft:uniform",
-      "max_inclusive": 4,
+      "max_inclusive": 5,
       "min_inclusive": 3
     },
-    "squash": 0.5,
+    "scatter": 18,
+    "squash": 0.6,
     "state": {
       "type": "minecraft:weighted_state_provider",
       "entries": [

@@ -81,11 +81,11 @@ public final class AACompatProvider extends FeatureData {
 
         JsonObject zero = Placement.aboveBottom(0);
         Map<String, Ore> ores = Map.of(
-                "copper", ore("copper", "", 6, "uniform", zero, Placement.aboveBottom(80), 18, 0.0),
+                "copper", ore("copper", "", 6, "uniform", zero, Placement.aboveBottom(128), 18, 0.0),
                 "emerald", ore("emerald", "", 4, "trapezoid", Placement.absolute(-16), Placement.absolute(190), 3, 0.0),
                 "gold", ore("gold", "", 6, "uniform", zero, Placement.absolute(64), 18, 0.0),
                 "lapis", ore("lapis", "", 6, "uniform", zero, Placement.absolute(52), 14, 0.0),
-                "nickel", ore("nickel", "", 8, "uniform", zero, Placement.absolute(96), 5, 0.0),
+                "nickel", ore("nickel", "", 8, "uniform", zero, Placement.absolute(128), 5, 0.0),
                 "redstone", ore("redstone", "[lit=false]", 8, "uniform", zero, Placement.absolute(44), 16, 0.0),
                 "zinc", ore("zinc", "", 8, "uniform", zero, Placement.absolute(96), 10, 0.0));
 
@@ -93,7 +93,7 @@ public final class AACompatProvider extends FeatureData {
         curate(ores.get("emerald"), List.of(), List.of(groves("flourishing")), List.of(List.of("deep_aether:luminescent_forest")));
         curate(ores.get("gold"), List.of(), List.of(groves("blazing")),
                 List.of(List.of("deep_aether:golden_heights", "deep_aether:golden_grove")));
-        curate(ores.get("lapis"), List.of(biomes("frozen_crags")), List.of(groves("cascading")),
+        curate(ores.get("lapis"), List.of(biomes("frozen_crags", "frozen_lakes")), List.of(groves("cascading")),
                 List.of(List.of("deep_aether:blue_aerglow_forest")));
         curate(ores.get("nickel"), List.of(biomes("windswept_dunes")), List.of(), List.of());
         curate(ores.get("redstone"), List.of(), List.of(groves("blazing")),
@@ -106,6 +106,15 @@ public final class AACompatProvider extends FeatureData {
                 Placement.inSquare(), Placement.heightRange(lapis.shape(), lapis.min(), lapis.max()), Placement.biome()),
                 AOO);
         addFeature("compat/aoo_lapis_boost", groves("cascading"), "underground_ores", AOO, ARS);
+        // and the frozen lakes' too: holystone lapis is a common find in their icestone
+        addFeature("compat/aoo_lapis_boost_lakes", "compat/aoo_lapis_boost", biomes("frozen_lakes"),
+                "underground_ores", AOO);
+        // The peaks' copper, like their own deepslate copper, is richest toward the summits.
+        Ore copper = ores.get("copper");
+        placed("compat/aoo_copper_upper", "compat/aoo_copper", Placement.list(Placement.count(copper.count()),
+                Placement.inSquare(), Placement.heightRange(copper.shape(), Placement.aboveBottom(72),
+                        Placement.aboveBottom(128)), Placement.biome()), AOO);
+        addFeature("compat/aoo_copper_upper", biomes("tempest_peaks"), "underground_ores", AOO);
     }
 
     /**

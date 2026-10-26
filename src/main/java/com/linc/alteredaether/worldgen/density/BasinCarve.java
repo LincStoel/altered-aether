@@ -112,7 +112,7 @@ public final class BasinCarve implements DensityFunction {
         int chunkX = x >> 4, chunkZ = z >> 4;
         if (column.field != field || column.x != chunkX || column.z != chunkZ) {
             List<BasinSite> sites = field.sitesTouching(chunkX << 4, chunkZ << 4, (chunkX << 4) + 15, (chunkZ << 4) + 15);
-            sites.removeIf(site -> site.type() == BasinType.ATOLL_LAGOON);
+            sites.removeIf(site -> site.type().atollShaped());
             column.field = field;
             column.x = chunkX;
             column.z = chunkZ;

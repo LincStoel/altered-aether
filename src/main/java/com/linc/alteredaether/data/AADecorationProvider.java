@@ -37,8 +37,10 @@ public final class AADecorationProvider extends FeatureData {
     static final String DUNE_BOULDER = NS + "boulder/dune";
     static final String RIFT_DEBRIS = NS + "debris/rift";
     static final String RIFT_SLAB_FRAGMENTS = NS + "debris/rift_large";
+    static final String RIFT_DEBRIS_CLOUD = NS + "debris/rift_cloud";
     static final String TEMPEST_SPIRES = NS + "copper_spike/cluster";
     static final String TEMPEST_LONE_SPIKE = NS + "copper_spike/lone";
+    static final String TEMPEST_COPPER_VEIN = NS + "copper_vein/tempest";
     static final String SNOW_DRIFT = NS + "drift/snow";
     static final String ICE_SPIKE = NS + "drift/ice_spike";
     static final String ICESTONE_SHARD = NS + "shard/icestone";
@@ -56,6 +58,7 @@ public final class AADecorationProvider extends FeatureData {
     static final String RIFT_BRIDGE = NS + "cloud/rift_bridge";
     static final String CRAG_ORES = NS + "ore/crag_";
     static final String TEMPEST_COPPER_ORE = NS + "ore/tempest_copper";
+    static final String TEMPEST_COPPER_ORE_UPPER = NS + "ore/tempest_copper_upper";
     static final String ASETERITE_BOULDER = NS + "boulder/aseterite";
     static final String CLORITE_BOULDER = NS + "boulder/clorite";
     static final String GROVE_BLUE_CLOUD = NS + "cloud/grove_blue";
@@ -115,42 +118,62 @@ public final class AADecorationProvider extends FeatureData {
     }
 
     /**
-     * Fragments of the shattered slabs hanging in the gaps between them: many small floating chunks anchored 1 to 12
-     * blocks over the surface, so they sit in the open air beside terrain, and a few larger pieces that read as slabs
-     * that came free.
+     * The debris of the island's tearing, hanging in the gaps between the rift's columns rather than over them: clouds
+     * of rubble, each a handful of small rocks trailing loose blocks, plus lone chunks among them and the odd big
+     * piece that came away whole. Positions are picked at column heights and kept only where they hang in the open
+     * with rock to either side.
      */
     private void riftDebris() {
         JsonObject stone = weighted("aether:holystone[double_drops=true]", 4,
                 "aether:mossy_holystone[double_drops=true]", 3, "aether:icestone", 1);
-        boulder("debris/rift", stone, 1, 2, 0.8, 0.0, null, true);
-        boulder("debris/rift_large", stone, 3, 4, 0.5, 0.0, simple("aether:mossy_holystone[double_drops=true]"), true);
+        boulder("debris/rift", stone, 1, 2, 0.8, 0.0, null, true, 5);
+        boulder("debris/rift_cloud", stone, 1, 3, 0.8, 0.0, null, true, 10);
+        boulder("debris/rift_large", stone, 3, 5, 0.6, 0.0, simple("aether:mossy_holystone[double_drops=true]"), true,
+                18);
 
-        placed("debris/rift", "debris/rift", Placement.list(Placement.configCount(7, "rift_debris"),
-                Placement.inSquare(), Placement.heightmap(SURFACE), Placement.randomOffset(7, 1, 12),
-                Placement.biome()));
-        placed("debris/rift_large", "debris/rift_large", Placement.list(Placement.configCount(0.5, "rift_debris"),
-                Placement.inSquare(), Placement.heightmap(SURFACE), Placement.randomOffset(4, 4, 14),
-                Placement.biome()));
+        JsonObject columns = Placement.heightRange("uniform", Placement.absolute(48), Placement.absolute(112));
+        placed("debris/rift_cloud", "debris/rift_cloud", Placement.list(Placement.configCount(2.5, "rift_debris"),
+                Placement.inSquare(), columns, Placement.riftGap(14, 10, 2), Placement.count(6),
+                Placement.randomOffset(6, -4, 4), Placement.biome()));
+        placed("debris/rift", "debris/rift", Placement.list(Placement.configCount(6, "rift_debris"),
+                Placement.inSquare(), columns, Placement.riftGap(14, 6, 2), Placement.biome()));
+        placed("debris/rift_large", "debris/rift_large", Placement.list(Placement.configCount(0.6, "rift_debris"),
+                Placement.inSquare(), columns, Placement.riftGap(14, 12, 2), Placement.biome()));
     }
 
     /**
-     * Tempest Peaks: clusters of leaning copper spires, one site per 4x4 chunks in most cells, three to five spikes
-     * of different heights within a few blocks of each other, plus the odd lone short one. They aim to read as a
-     * lightning field from far off, and the rods at their tips are what the storms strike.
+     * Tempest Peaks: clusters of native copper crystals, one site per 4x4 chunks in most cells, three to five
+     * branching growths of different heights within a few blocks of each other, plus the odd lone small one. They aim
+     * to read as a lightning field from far off, and the rods at their tips are what the storms strike. Thin spidery
+     * roots of the same copper spread through the rock from their feet, and webs of it run through the peaks' cliffs
+     * on their own.
      */
     private void copperSpikes() {
         JsonArray copper = new JsonArray();
         for (String block : new String[]{"copper_block", "exposed_copper", "weathered_copper", "oxidized_copper"}) {
             copper.add(Substitutes.state("minecraft:" + block));
         }
-        spike("cluster", 8, 24, 2.4f, 0.28f, 1.4f, 0.15f, 0.55f, copper);
-        spike("lone", 4, 10, 1.3f, 0.18f, 1.1f, 0.05f, 0.35f, copper);
+        // A knobbly stem two or three blocks across, forking every few blocks into thinner arms bristling with twigs.
+        spike("cluster", 8, 24, 1.6f, 0.28f, 1.2f, 0.2f, 0.55f, copper, 1, 2);
+        spike("lone", 4, 10, 1.1f, 0.18f, 1.0f, 0.18f, 0.35f, copper, 0, 1);
 
         placed("copper_spike/cluster", "copper_spike/cluster", Placement.list(
                 Placement.jitteredGrid(4, 11, 0.8), Placement.inSquare(),
                 Placement.configCount(4, "copper_spikes"), Placement.randomOffset(3, 0, 0),
                 Placement.heightmap(SURFACE), Placement.biome()));
         placed("copper_spike/lone", "copper_spike/lone", surface(0.3, "copper_spikes"));
+
+        // Webs on their own, through the body of the peaks: hidden in the rock mostly, a tracery on the cliffs where
+        // one is cut. thick_chance is the chance per block that a thread forks.
+        JsonObject vein = new JsonObject();
+        vein.add("length", uniform(5, 15));
+        vein.addProperty("thick_chance", 0.2);
+        vein.add("blocks", copper);
+        vein.addProperty("replaceable", TEMPEST_ROCK);
+        configured("copper_vein/tempest", "copper_vein", vein);
+        placed("copper_vein/tempest", "copper_vein/tempest", Placement.list(Placement.configCount(6, "copper_spikes"),
+                Placement.inSquare(), Placement.heightRange("uniform", Placement.aboveBottom(0), Placement.aboveBottom(128)),
+                Placement.biome()));
     }
 
     // ------------------------------------------------------------------------------------ snow and ice
@@ -273,7 +296,11 @@ public final class AADecorationProvider extends FeatureData {
         placed("cloud/grove_blue", "cloud/crag", skyPlacement(1 / 6.0, 2, 6));
 
         // Great drifting banks of cold cloud through the whole Aether, between the heights of 32 and 96 (the stock
-        // Aether's: the tall Aether stretches them). They stand in for the stock large aercloud where it is off.
+        // Aether's: the tall Aether stretches them). They stand in for the stock large aercloud where it is off, and
+        // replace the stock cold aercloud everywhere: its boxes re-roll their size on every step of the fill, which
+        // leaves them pitted with holes.
+        removeFeatures("cloud/stock_cold", List.of(IS_AETHER), List.of("aether:cold_aercloud"),
+                "top_layer_modification");
         configured("cloud/mass", "aercloud", cloud(cold, "streak", 22, 26, 4));
         placed("cloud/mass", "cloud/mass", Placement.list(
                 Placement.heightRange("uniform", Placement.absolute(32), Placement.absolute(96)),
@@ -310,10 +337,15 @@ public final class AADecorationProvider extends FeatureData {
         crags("gravitite", "aether:gravitite_ore", 4, 0.0, 7, -58, 74, "trapezoid");
         crags("gravitite_buried", "aether:gravitite_ore", 3, 0.5, 5, 0, 74, "uniform");
 
+        // Copper through the whole height of the peaks, and as much again in their upper half: the higher the climb,
+        // the richer the rock.
         configured("ore/tempest_copper", "minecraft:ore", ore("minecraft:deepslate_copper_ore", 30, 0.0, TEMPEST_ROCK));
-        placed("ore/tempest_copper", "ore/tempest_copper", Placement.list(Placement.count(12), Placement.inSquare(),
-                Placement.heightRange("uniform", Placement.aboveBottom(0), Placement.aboveBottom(53)),
+        placed("ore/tempest_copper", "ore/tempest_copper", Placement.list(Placement.count(8), Placement.inSquare(),
+                Placement.heightRange("uniform", Placement.aboveBottom(0), Placement.aboveBottom(128)),
                 Placement.biome()));
+        placed("ore/tempest_copper_upper", "ore/tempest_copper", Placement.list(Placement.count(10),
+                Placement.inSquare(), Placement.heightRange("uniform", Placement.aboveBottom(72),
+                        Placement.aboveBottom(128)), Placement.biome()));
     }
 
     private void crags(String name, String state, int size, double discard, int count, int min, int max, String shape) {
@@ -373,7 +405,7 @@ public final class AADecorationProvider extends FeatureData {
     }
 
     private void spike(String name, int minHeight, int maxHeight, float radius, float lean, float taper,
-                       float branch, float rod, JsonArray blocks) {
+                       float branch, float rod, JsonArray blocks, int minVeins, int maxVeins) {
         JsonObject config = new JsonObject();
         config.add("height", uniform(minHeight, maxHeight));
         config.addProperty("base_radius", radius);
@@ -382,11 +414,19 @@ public final class AADecorationProvider extends FeatureData {
         config.addProperty("branch_chance", branch);
         config.addProperty("rod_chance", rod);
         config.add("blocks", blocks);
+        config.add("veins", uniform(minVeins, maxVeins));
+        config.add("vein_length", uniform(5, 15));
+        config.addProperty("vein_rock", TEMPEST_ROCK);
         configured("copper_spike/" + name, "copper_spike", config);
     }
 
     private void boulder(String name, JsonObject state, int minRadius, int maxRadius, double squash, double burial,
                          JsonObject topCover, boolean floating) {
+        boulder(name, state, minRadius, maxRadius, squash, burial, topCover, floating, 0);
+    }
+
+    private void boulder(String name, JsonObject state, int minRadius, int maxRadius, double squash, double burial,
+                         JsonObject topCover, boolean floating, int scatter) {
         JsonObject config = new JsonObject();
         config.add("state", state);
         config.add("radius", uniform(minRadius, maxRadius));
@@ -396,6 +436,9 @@ public final class AADecorationProvider extends FeatureData {
             config.add("top_cover", topCover);
         }
         config.addProperty("floating", floating);
+        if (scatter > 0) {
+            config.addProperty("scatter", scatter);
+        }
         configured(name.contains("/") ? name : "boulder/" + name, "boulder", config);
     }
 }

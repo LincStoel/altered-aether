@@ -1,7 +1,7 @@
 {
   "type": "altered_aether:copper_spike",
   "config": {
-    "base_radius": 1.3,
+    "base_radius": 1.1,
     "blocks": [
       {
         "Name": "minecraft:copper_block"
@@ -16,7 +16,7 @@
         "Name": "minecraft:oxidized_copper"
       }
     ],
-    "branch_chance": 0.05,
+    "branch_chance": 0.18,
     "height": {
       "type": "minecraft:uniform",
       "max_inclusive": 10,
@@ -24,6 +24,17 @@
     },
     "lean": 0.18,
     "rod_chance": 0.35,
-    "taper": 1.1
+    "taper": 1.0,
+    "vein_length": {
+      "type": "minecraft:uniform",
+      "max_inclusive": 15,
+      "min_inclusive": 5
+    },
+    "vein_rock": "altered_aether:tempest_peak_ore_replaceables",
+    "veins": {
+      "type": "minecraft:uniform",
+      "max_inclusive": 1,
+      "min_inclusive": 0
+    }
   }
 }

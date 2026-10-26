@@ -15,6 +15,7 @@
 package com.linc.alteredaether.debug;
 
 import com.linc.alteredaether.AlteredAether;
+import com.linc.alteredaether.entity.TamedAerwhale;
 import com.linc.alteredaether.registry.AARegistries;
 import com.linc.alteredaether.storm.TempestStorms;
 import com.linc.alteredaether.worldgen.landmark.Landmark;
@@ -49,7 +50,8 @@ import java.util.concurrent.CompletableFuture;
 /**
  * A guided camera tour for checking how things look, without anyone at the keyboard. With the system property
  * {@code altered_aether.tour} set to a comma-separated list of stops (landmark types, {@code storm} for the Tempest
- * crown under a forced storm, and {@code campfire} for an ambrosium campfire at night), a dev client that quick-plays
+ * crown under a forced storm, {@code campfire} for an ambrosium campfire at night, and {@code whale} for a saddled
+ * tamed aerwhale and its calf, then the player riding it), a dev client that quick-plays
  * into a world flies to each stop, frames it from a few sides, saves a screenshot of each view to
  * {@code screenshots/tour/}, and quits.
  */
@@ -87,6 +89,8 @@ public final class Tour {
     private static volatile List<Shot> plan;
     /** Where the last campfire was put, once the server has found ground for it. */
     private static volatile BlockPos campfireAt;
+    /** The tamed aerwhale posed for the whale shots, whose names all start with "whale". */
+    private static TamedAerwhale whale;
 
     @EventBusSubscriber(modid = AlteredAether.MOD_ID)
     public static final class Server {
@@ -130,6 +134,10 @@ public final class Tour {
                 }
                 if (stop.startsWith("biome:")) {
                     biomeShots(aether, stop.substring(6), spawn, shots);
+                    continue;
+                }
+                if (stop.equals("whale")) {
+                    whaleShots(spawn, shots);
                     continue;
                 }
                 boolean storm = stop.equals("storm");
@@ -176,6 +184,20 @@ public final class Tour {
             shots.add(new Shot(label + "_aerial", x, 100, z, x, 90, z, 6000, false, false, true));
             // The ground shot finds its own footing once the chunks are there, and looks out its most open side.
             shots.add(new Shot(label + "_ground", x, 100, z, x, 90, z - 120, 6000, false, false, true));
+        }
+
+        /**
+         * A saddled aerwhale held still in open sky over spawn, facing south, from each side and from above to see the
+         * saddle sit on its back; then the player riding it, from behind in third person.
+         */
+        private static void whaleShots(BlockPos spawn, List<Shot> shots) {
+            double x = spawn.getX() + 0.5, y = Integer.getInteger("altered_aether.tour.stage", 200), z = spawn.getZ() + 0.5;
+            double fy = y + 2;
+            shots.add(new Shot("whale_side", x + 12, fy, z + 0.01, x, fy, z, 6000, false, false));
+            shots.add(new Shot("whale_front", x - 7, y + 6, z + 12, x, fy, z, 6000, false, false));
+            shots.add(new Shot("whale_top", x + 0.01, y + 16, z + 0.5, x, fy, z + 0.5, 6000, false, false));
+            shots.add(new Shot("whale_rear", x + 5, y + 5, z - 14, x, fy, z, 6000, false, false));
+            shots.add(new Shot("whale_ride", x, y + 8, z, x, fy, z + 20, 6000, false, false));
         }
 
         /** Walks from a point toward where the biome is widest, so the shots sit well inside it. */
@@ -276,11 +298,18 @@ public final class Tour {
                 }
             }
             shot = shot.from(shot.x(), shot.y() + lift, shot.z(), shot.fx(), shot.fy(), shot.fz());
-            minecraft.player.moveTo(shot.x(), shot.y(), shot.z(), shot.yaw(), shot.pitch());
-            minecraft.player.setDeltaMovement(0, 0, 0);
+            if (minecraft.player.isPassenger()) {
+                // riding: the whale carries the player, and the camera looks from behind them
+                minecraft.options.setCameraType(net.minecraft.client.CameraType.THIRD_PERSON_BACK);
+                minecraft.player.setYRot(shot.yaw() + 25);
+                minecraft.player.setXRot(10);
+            } else {
+                minecraft.player.moveTo(shot.x(), shot.y(), shot.z(), shot.yaw(), shot.pitch());
+                minecraft.player.setDeltaMovement(0, 0, 0);
+            }
             waited++;
             // Climb until nothing stands between the camera and most of the way to what it frames.
-            if (!shot.campfire() && (!shot.ground() || shot.name().endsWith("_aerial")) && lift < 120 && minecraft.level.hasChunk(Mth.floor(shot.x()) >> 4, Mth.floor(shot.z()) >> 4)) {
+            if (!shot.campfire() && !shot.name().startsWith("whale") && (!shot.ground() || shot.name().endsWith("_aerial")) && lift < 120 && minecraft.level.hasChunk(Mth.floor(shot.x()) >> 4, Mth.floor(shot.z()) >> 4)) {
                 net.minecraft.world.phys.Vec3 eye = minecraft.player.getEyePosition();
                 net.minecraft.world.phys.Vec3 target = eye.lerp(new net.minecraft.world.phys.Vec3(shot.fx(), shot.fy(), shot.fz()), 0.7);
                 var hit = minecraft.level.clip(new net.minecraft.world.level.ClipContext(eye, target,
@@ -300,6 +329,13 @@ public final class Tour {
                 AlteredAether.LOGGER.info("Tour: shooting {} from {} at time {}, {} ticks; client height {}..{}", shot.name(),
                         minecraft.player.position(), minecraft.level.getDayTime(), waited,
                         minecraft.level.getMinBuildHeight(), minecraft.level.getMaxBuildHeight());
+                if (minecraft.player.getVehicle() instanceof TamedAerwhale ridden) {
+                    net.minecraft.world.phys.Vec3 offset = minecraft.player.position().subtract(ridden.position());
+                    // the rider's feet sit one vehicle attachment below the seat
+                    net.minecraft.world.phys.Vec3 seat = ridden.getPassengerRidingPosition(minecraft.player)
+                            .subtract(ridden.position()).subtract(minecraft.player.getVehicleAttachmentPoint(ridden));
+                    AlteredAether.LOGGER.info("Tour: rider offset {} from the whale, seat at {}", offset, seat);
+                }
                 if (campfireAt != null) {
                     AlteredAether.LOGGER.info("Tour: client sees {} with {}", minecraft.level.getBlockState(campfireAt),
                             minecraft.level.getBlockEntity(campfireAt));
@@ -407,6 +443,37 @@ public final class Tour {
                 campfireAt = ground;
                 AlteredAether.LOGGER.info("Tour: campfire at {}: {}", ground.toShortString(), aether.getBlockState(ground));
             }
+            if (shot.name().startsWith("whale")) {
+                ServerPlayer player = server.getPlayerList().getPlayers().getFirst();
+                if (whale == null) {
+                    // clear out whales an earlier tour left in the world
+                    aether.getEntitiesOfClass(TamedAerwhale.class, new net.minecraft.world.phys.AABB(BlockPos.containing(
+                            shot.fx(), shot.fy(), shot.fz())).inflate(64)).forEach(net.minecraft.world.entity.Entity::discard);
+                    whale = poseWhale(aether, player, shot.fx(), shot.fy() - 2, shot.fz(), false);
+                    poseWhale(aether, player, shot.fx() - 12, shot.fy() - 1, shot.fz() - 2, true);
+                }
+                if (shot.name().equals("whale_ride")) {
+                    player.getAbilities().flying = false;
+                    player.onUpdateAbilities();
+                    player.startRiding(whale, true);
+                }
+            }
+        }
+
+        private static TamedAerwhale poseWhale(ServerLevel aether, ServerPlayer owner, double x, double y, double z,
+                                               boolean calf) {
+            TamedAerwhale tamed = AARegistries.TAMED_AERWHALE.get().create(aether);
+            tamed.moveTo(x, y, z, 0, 0);
+            tamed.setYRotData(0);
+            tamed.setNoAi(true);
+            tamed.setOwnerUUID(owner.getUUID());
+            if (calf) {
+                tamed.setBaby(true);
+            } else {
+                tamed.equipSaddle(new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.SADDLE), null);
+            }
+            aether.addFreshEntity(tamed);
+            return tamed;
         }
 
         private Client() {

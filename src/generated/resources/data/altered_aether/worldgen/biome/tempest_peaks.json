@@ -28,14 +28,15 @@
     [
       "altered_aether:copper_spike/cluster",
       "altered_aether:copper_spike/lone",
-      "altered_aether:crater/strike",
-      "altered_aether:boulder/ambrosium"
+      "altered_aether:crater/strike"
     ],
     [],
     [],
     [],
     [
-      "altered_aether:ore/tempest_copper"
+      "altered_aether:ore/tempest_copper",
+      "altered_aether:ore/tempest_copper_upper",
+      "altered_aether:copper_vein/tempest"
     ],
     [],
     [],

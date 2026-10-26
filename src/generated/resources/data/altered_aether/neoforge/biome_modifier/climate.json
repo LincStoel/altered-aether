@@ -53,10 +53,6 @@
       "downfall": 0.3,
       "temperature": 0.95
     },
-    "deep_aether:sacred_lands": {
-      "downfall": 0.8,
-      "temperature": 0.65
-    },
     "deep_aether:yagroot_swamp": {
       "downfall": 0.9,
       "temperature": 0.75

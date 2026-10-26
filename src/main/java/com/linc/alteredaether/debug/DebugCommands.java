@@ -29,7 +29,9 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
 import com.linc.alteredaether.worldgen.basin.BasinField;
+import com.linc.alteredaether.worldgen.basin.AtollSite;
 import com.linc.alteredaether.worldgen.basin.BasinSite;
+import com.linc.alteredaether.worldgen.basin.BasinType;
 import com.linc.alteredaether.worldgen.landmark.Landmark;
 import com.linc.alteredaether.worldgen.landmark.LandmarkField;
 import com.linc.alteredaether.worldgen.landmark.LandmarkType;
@@ -233,9 +235,63 @@ public final class DebugCommands {
                 origin = new BlockPos(site.x(), 64, site.z());
                 AlteredAether.LOGGER.info("Worldgen benchmark: centred on {} at {} (extent {})", type.id(),
                         origin.toShortString(), String.format("%.0f", site.extent()));
+            } else if (biome != null && biome.startsWith("atoll:")) {
+                // The nearest atoll-grid site of a type (atoll_lagoon or frozen_lake), optionally "ring" or "double"
+                // (atolls only).
+                String[] spec = biome.substring(6).split("/");
+                BasinType type = BasinType.valueOf(spec[0].toUpperCase(java.util.Locale.ROOT));
+                String shape = spec.length > 1 ? spec[1] : "";
+                BasinField field = BasinField.get(THE_AETHER);
+                int cell = field.atollCell(), ox = Math.floorDiv(origin.getX(), cell);
+                AtollSite found = null;
+                for (int r = 0; r < 40 && found == null; r++) {
+                    for (int cx = ox - r; cx <= ox + r && found == null; cx++) {
+                        for (int cz = -r; cz <= r && found == null; cz++) {
+                            if (Math.max(Math.abs(cx - ox), Math.abs(cz)) != r) {
+                                continue;
+                            }
+                            found = field.atollInCell(cx, cz).filter(s -> s.type() == type
+                                    && (shape.isEmpty() || shape.equals("ring") == s.isRing()
+                                    && shape.equals("double") == s.isDouble())).orElse(null);
+                        }
+                    }
+                }
+                if (found == null) {
+                    AlteredAether.LOGGER.error("Worldgen benchmark: no {} found", biome);
+                    return;
+                }
+                origin = new BlockPos(found.x(), 64, found.z());
+                AlteredAether.LOGGER.info("Worldgen benchmark: centred on {} at {}: {}", biome, origin.toShortString(),
+                        found);
             } else if (biome != null && biome.matches("-?\\d+:-?\\d+")) {
                 String[] xz = biome.split(":");
                 origin = new BlockPos(Integer.parseInt(xz[0]), 64, Integer.parseInt(xz[1]));
+            } else if (biome != null && biome.startsWith("core:")) {
+                // The nearest spot well inside the biome: it holds at the centre and 96 blocks out every way.
+                ResourceLocation id = ResourceLocation.parse(biome.substring(5));
+                BlockPos found = null;
+                for (int r = 0; r < 120 && found == null; r++) {
+                    for (int i = -r; i <= r && found == null; i++) {
+                        for (int[] p : new int[][]{{i, -r}, {i, r}, {-r, i}, {r, i}}) {
+                            int x = origin.getX() + p[0] * 64, z = origin.getZ() + p[1] * 64;
+                            boolean inside = true;
+                            for (int d = 0; d < 9 && inside; d++) {
+                                int sx = x + (d % 3 - 1) * 96, sz = z + (d / 3 - 1) * 96;
+                                inside = aether.getUncachedNoiseBiome(sx >> 2, 16, sz >> 2).is(id);
+                            }
+                            if (inside) {
+                                found = new BlockPos(x, 64, z);
+                                break;
+                            }
+                        }
+                    }
+                }
+                if (found == null) {
+                    AlteredAether.LOGGER.error("Worldgen benchmark: no core of {} found", biome);
+                    return;
+                }
+                origin = found;
+                AlteredAether.LOGGER.info("Worldgen benchmark: centred on {} at {}", biome, origin.toShortString());
             } else if (biome != null) {
                 ResourceLocation id = ResourceLocation.parse(biome);
                 var found = aether.findClosestBiome3d(b -> b.is(id), origin, 12000, 32, 64);
@@ -281,9 +337,27 @@ public final class DebugCommands {
             server.submit(() -> server.getCommands().performPrefixedCommand(server.createCommandSourceStack()
                     .withLevel(aether).withPosition(net.minecraft.world.phys.Vec3.atCenterOf(centrePos)),
                     AlteredAether.MOD_ID + " debug")).join();
+            String focus = System.getProperty("altered_aether.focus", "");
+            if (Boolean.getBoolean("altered_aether.render") && !focus.isEmpty()) {
+                // Close-ups of the first few of a block in the area, such as the rods crowning copper crystals.
+                List<BlockPos> found = server.submit(() -> find(aether, positions, focus, 3)).join();
+                for (int i = 0; i < found.size(); i++) {
+                    BlockPos at = found.get(i);
+                    String name = "focus_" + focus.replace(':', '_') + "_" + i;
+                    server.submit(() -> WorldRender.render(aether, name, at.getX() - 14, at.getZ() - 14,
+                            at.getX() + 14, at.getZ() + 14, at.getY() - 40, at.getY() + 4, 8)).join();
+                    // The same with the terrain left out, as if seen through the rock: veins and roots show.
+                    String bare = BuiltInRegistries.BLOCK.getKey(aether.getBlockState(at).getBlock()).getPath();
+                    String family = bare.contains("_") ? bare.substring(0, bare.indexOf('_')) : bare;
+                    server.submit(() -> WorldRender.render(aether, name + "_only", at.getX() - 14, at.getZ() - 14,
+                            at.getX() + 14, at.getZ() + 14, at.getY() - 40, at.getY() + 4, 8,
+                            state -> BuiltInRegistries.BLOCK.getKey(state.getBlock()).getPath().contains("copper")
+                                    || BuiltInRegistries.BLOCK.getKey(state.getBlock()).getPath().contains(family))).join();
+                }
+            }
             if (Boolean.getBoolean("altered_aether.render")) {
                 ChunkPos first = positions.getFirst(), last = positions.getLast();
-                String name = biome == null ? "bench" : biome.replace(':', '_');
+                String name = biome == null ? "bench" : biome.replace(':', '_').replace('/', '_');
                 server.submit(() -> WorldRender.render(aether, name, first.getMinBlockX(), first.getMinBlockZ(),
                         last.getMaxBlockX(), last.getMaxBlockZ())).join();
             }
@@ -294,6 +368,32 @@ public final class DebugCommands {
             }
             server.halt(false);
         }, server);
+    }
+
+    /** Up to {@code limit} positions of a block in the given chunks, well apart. */
+    private static List<BlockPos> find(ServerLevel level, List<ChunkPos> positions, String block, int limit) {
+        List<BlockPos> found = new ArrayList<>();
+        BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
+        for (ChunkPos chunk : positions) {
+            for (int x = chunk.getMinBlockX(); x <= chunk.getMaxBlockX(); x++) {
+                for (int z = chunk.getMinBlockZ(); z <= chunk.getMaxBlockZ(); z++) {
+                    for (int y = level.getMaxBuildHeight() - 1; y >= level.getMinBuildHeight(); y--) {
+                        var state = level.getBlockState(cursor.set(x, y, z));
+                        if (!BuiltInRegistries.BLOCK.getKey(state.getBlock()).toString().equals(block)) {
+                            continue;
+                        }
+                        BlockPos at = cursor.immutable();
+                        if (found.stream().noneMatch(p -> p.distManhattan(at) < 48)) {
+                            found.add(at);
+                            if (found.size() >= limit) {
+                                return found;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return found;
     }
 
     /** Blocks that mark this mod's decoration; counted per biome by decorationTally. */
@@ -398,8 +498,53 @@ public final class DebugCommands {
         if (!leaks.isEmpty()) {
             AlteredAether.LOGGER.info("  flowing basin water at {}", leaks);
         }
-        sites.forEach(site -> AlteredAether.LOGGER.info("  {} at {} {} radius {} water {}", site.type(), site.x(),
-                site.z(), String.format("%.1f", site.radius()), site.waterLevel()));
+        sites.forEach(site -> AlteredAether.LOGGER.info("  {} at {} {} radius {} water {}: {}", site.type(), site.x(),
+                site.z(), String.format("%.1f", site.radius()), site.waterLevel(), column(level, site)));
+    }
+
+    /**
+     * A sample column through the water, from a block over the surface down past the bed, at a point half way out
+     * (the middle of a ring's river), so the tally shows what each basin is made of.
+     */
+    private static String column(ServerLevel level, BasinSite site) {
+        StringBuilder column = new StringBuilder();
+        double[] reaches = site.isRiver() ? new double[]{0} : new double[]{0.15, 0.5, 0.8};
+        for (double reach : reaches) {
+            int x = site.x() + (int) Math.round(site.radius() * reach), z = site.z();
+            if (site.isRiver()) {
+                // The river's middle, due east of the centre.
+                for (int d = 0, best = Integer.MAX_VALUE; d < site.extent(); d++) {
+                    double r = site.reach(site.x() + d, z);
+                    if (r < 1 && (best == Integer.MAX_VALUE || r < site.reach(best, z))) {
+                        best = site.x() + d;
+                        x = best;
+                    }
+                }
+            }
+            column.append("[").append(String.format("%.2f", reach)).append("] ");
+            column.append(level.hasChunk(x >> 4, z >> 4) ? column(level, site, x, z) : "not generated").append(' ');
+        }
+        return column.toString();
+    }
+
+    private static String column(ServerLevel level, BasinSite site, int x, int z) {
+        StringBuilder column = new StringBuilder();
+        BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
+        String last = null;
+        int run = 0;
+        for (int y = site.waterLevel() + 1; y >= site.waterLevel() - site.maxDepth() - 8; y--) {
+            String block = BuiltInRegistries.BLOCK.getKey(level.getBlockState(cursor.set(x, y, z)).getBlock()).getPath();
+            if (block.equals(last)) {
+                run++;
+                continue;
+            }
+            if (last != null) {
+                column.append(last).append(run > 1 ? "x" + run : "").append(' ');
+            }
+            last = block;
+            run = 1;
+        }
+        return column.append(last).append(run > 1 ? "x" + run : "").toString();
     }
 
     /** The landmarks reaching into the given chunks. */

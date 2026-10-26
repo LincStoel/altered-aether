@@ -1,0 +1,8 @@
+{
+  "type": "neoforge:remove_features",
+  "biomes": "#aether:is_aether",
+  "features": [
+    "aether:cold_aercloud"
+  ],
+  "steps": "top_layer_modification"
+}

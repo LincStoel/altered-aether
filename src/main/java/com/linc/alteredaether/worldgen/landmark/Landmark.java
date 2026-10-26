@@ -46,6 +46,11 @@ public interface Landmark {
         return List.of();
     }
 
+    /** A word on how this one turned out, for the debug tools; empty when there's nothing to say. */
+    default String detail() {
+        return "";
+    }
+
     /** The height worth teleporting to when visiting it. */
     default int visitY() {
         return Integer.MIN_VALUE;

@@ -80,8 +80,11 @@ public final class SpawnPlacementEvents {
         orInAether(event, EntityType.GLOW_SQUID, (level, pos) -> inWater(level, pos)
                 && depthBelowSurface(level, pos) >= GLOW_SQUID_DEPTH
                 && level.getRawBrightness(pos, 0) <= GLOW_SQUID_MAX_LIGHT);
-        // Turtles need sand underfoot and daylight, as in vanilla, without vanilla's "just above sea level".
-        orInAether(event, EntityType.TURTLE, (level, pos) -> TurtleEggBlock.onSand(level, pos)
+        // Turtles need sand underfoot and daylight, as in vanilla, without vanilla's "just above sea level". The
+        // Aether's sand is quicksoil, which the atoll's shores are made of.
+        orInAether(event, EntityType.TURTLE, (level, pos) -> (TurtleEggBlock.onSand(level, pos)
+                || BuiltInRegistries.BLOCK.getKey(level.getBlockState(pos.below()).getBlock())
+                .equals(ResourceLocation.fromNamespaceAndPath("aether", "quicksoil")))
                 && daylit(level, pos));
 
         // Ars Nouveau's familiars test for minecraft:grass_block by identity, which no Aether soil is. In the Aether

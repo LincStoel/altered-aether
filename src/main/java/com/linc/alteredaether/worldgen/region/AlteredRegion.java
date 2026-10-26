@@ -67,11 +67,6 @@ public final class AlteredRegion extends Region {
                 present.add(biome.key().location().toString());
             }
         }
-        ResourceLocation sacredLands = ResourceLocation.parse(BiomeTable.SACRED_LANDS);
-        if (AACommonConfig.PLACE_SACRED_LANDS.get() && AACommonConfig.compat("deep_aether")
-                && registry.containsKey(sacredLands)) {
-            present.add(BiomeTable.SACRED_LANDS);
-        }
         return present;
     }
 

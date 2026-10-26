@@ -1,0 +1,101 @@
+{
+  "type": "minecraft:clamp",
+  "input": {
+    "type": "minecraft:min",
+    "argument1": {
+      "type": "minecraft:mul",
+      "argument1": 0.125,
+      "argument2": {
+        "type": "minecraft:add",
+        "argument1": {
+          "type": "minecraft:add",
+          "argument1": {
+            "type": "minecraft:add",
+            "argument1": "altered_aether:terrain/dune_centre",
+            "argument2": {
+              "type": "minecraft:add",
+              "argument1": {
+                "type": "minecraft:mul",
+                "argument1": 4.0,
+                "argument2": {
+                  "type": "minecraft:clamp",
+                  "input": {
+                    "type": "minecraft:mul",
+                    "argument1": 2.5,
+                    "argument2": "altered_aether:terrain/dune_reach"
+                  },
+                  "max": 1.0,
+                  "min": -4.0
+                }
+              },
+              "argument2": -2.0
+            }
+          },
+          "argument2": {
+            "type": "minecraft:mul",
+            "argument1": {
+              "type": "minecraft:clamp",
+              "input": {
+                "type": "minecraft:clamp",
+                "input": {
+                  "type": "minecraft:mul",
+                  "argument1": 2.5,
+                  "argument2": "altered_aether:terrain/dune_reach"
+                },
+                "max": 1.0,
+                "min": -4.0
+              },
+              "max": 1.0,
+              "min": 0.0
+            },
+            "argument2": "altered_aether:terrain/dune_ridges"
+          }
+        },
+        "argument2": {
+          "type": "minecraft:mul",
+          "argument1": -1.0,
+          "argument2": {
+            "type": "minecraft:y_clamped_gradient",
+            "from_value": -2048.0,
+            "from_y": -2048,
+            "to_value": 2048.0,
+            "to_y": 2048
+          }
+        }
+      }
+    },
+    "argument2": {
+      "type": "minecraft:mul",
+      "argument1": 0.16666666666666666,
+      "argument2": {
+        "type": "minecraft:add",
+        "argument1": {
+          "type": "minecraft:y_clamped_gradient",
+          "from_value": -2048.0,
+          "from_y": -2048,
+          "to_value": 2048.0,
+          "to_y": 2048
+        },
+        "argument2": {
+          "type": "minecraft:mul",
+          "argument1": -1.0,
+          "argument2": {
+            "type": "minecraft:add",
+            "argument1": "altered_aether:terrain/dune_centre",
+            "argument2": {
+              "type": "minecraft:add",
+              "argument1": -2.0,
+              "argument2": {
+                "type": "minecraft:mul",
+                "argument1": -12.0,
+                "argument2": "altered_aether:terrain/dune_reach"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "max": 1.0,
+  "min": -1.0
+}

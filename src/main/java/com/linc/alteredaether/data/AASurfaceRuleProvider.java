@@ -47,7 +47,6 @@ public final class AASurfaceRuleProvider extends JsonDataProvider {
     private static final String DEEPSLATE = "minecraft:cobbled_deepslate";
     private static final String BLACKSTONE = "minecraft:blackstone";
     private static final String GRAVEL = "minecraft:gravel";
-    private static final String SAND = "minecraft:sand";
     // Deep Aether blocks, placed through substitute_block so they fall back without it.
     private static final String COARSE_DIRT = "deep_aether:aether_coarse_dirt[double_drops=true]";
     private static final String GOLDEN_GRASS = "deep_aether:golden_heights_grass_block[double_drops=true,snowy=false]";
@@ -61,6 +60,7 @@ public final class AASurfaceRuleProvider extends JsonDataProvider {
     private static final String RIFT = biome("shattered_rift");
     private static final String DUNES = biome("windswept_dunes");
     private static final String ATOLL = biome("sunken_atoll");
+    private static final String LAKES = biome("frozen_lakes");
 
     public AASurfaceRuleProvider(PackOutput output) {
         super(output, "surface rules");
@@ -117,8 +117,10 @@ public final class AASurfaceRuleProvider extends JsonDataProvider {
                         when(noiseBand("minecraft:calcite", 0.26, BIG), block(MOSSY_HOLYSTONE)),
                         block(HOLYSTONE))),
                 when(inBiome(DUNES), block(QUICKSOIL)),
-                // Sandy shores around the lagoon, grass inland.
-                when(inBiome(ATOLL), when(noiseBand("minecraft:surface", 0.05, BIG), block(SAND))),
+                // Quicksoil shores around the lagoon, grass inland.
+                when(inBiome(ATOLL), when(noiseBand("minecraft:surface", 0.05, BIG), block(QUICKSOIL))),
+                // Bare aether dirt over icestone; the snow on the lake banks comes with the lakes.
+                when(inBiome(LAKES), block(DIRT)),
                 // Stock Aether ground for everything not matched above.
                 when(water(), block(GRASS)),
                 block(DIRT));
@@ -138,7 +140,8 @@ public final class AASurfaceRuleProvider extends JsonDataProvider {
                         when(inBiome(CRAGS), seq(when(noiseBand("minecraft:surface_secondary", 0.18, BIG),
                                 substitute(CLORITE)), block(ICESTONE))),
                         when(inBiome(TEMPEST), seq(when(noiseBand("minecraft:surface_secondary", 0.18, BIG),
-                                block(BLACKSTONE)), block(DEEPSLATE))))),
+                                block(BLACKSTONE)), block(DEEPSLATE))),
+                        when(inBiome(LAKES), block(ICESTONE)))),
                 // Forested and gentler islands only on true cliffs, so ordinary lumpy ground stays green.
                 when(steep(5), when(inBiome(RIFT, ATOLL, grove("blazing"), grove("cascading"), grove("flashing"),
                         grove("flourishing"), grove("vexing")), holystoneRock)));
@@ -160,7 +163,7 @@ public final class AASurfaceRuleProvider extends JsonDataProvider {
                 when(inBiome(RIFT), block(HOLYSTONE)),
                 // A few blocks of quicksoil under the dunes, so digging in doesn't hit ordinary dirt.
                 when(inBiome(DUNES), block(QUICKSOIL)),
-                when(inBiome(ATOLL), when(noiseBand("minecraft:surface", 0.05, BIG), block(SAND))),
+                when(inBiome(ATOLL), when(noiseBand("minecraft:surface", 0.05, BIG), block(QUICKSOIL))),
                 block(DIRT));
     }
 
@@ -181,7 +184,11 @@ public final class AASurfaceRuleProvider extends JsonDataProvider {
                         block(DEEPSLATE))),
                 when(inBiome(RIFT), seq(
                         when(noiseBand("minecraft:surface_secondary", 0.18, BIG), block(MOSSY_HOLYSTONE)),
-                        block(HOLYSTONE))));
+                        block(HOLYSTONE))),
+                // Icestone through and through, with the odd band of holystone.
+                when(inBiome(LAKES), seq(
+                        when(noiseBand("minecraft:calcite", 0.26, BIG), block(HOLYSTONE)),
+                        block(ICESTONE))));
     }
 
     /** Holystone layers with mossy and icy seams; the pattern repeats every 24 blocks. */

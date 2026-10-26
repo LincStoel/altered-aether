@@ -50,12 +50,12 @@ public final class BiomeTable {
     public static final String RIFT = "altered_aether:shattered_rift";
     public static final String DUNES = "altered_aether:windswept_dunes";
     public static final String ATOLL = "altered_aether:sunken_atoll";
+    public static final String FROZEN_LAKES = "altered_aether:frozen_lakes";
     public static final String BLAZING = "altered_aether:blazing_archwood_grove";
     public static final String CASCADING = "altered_aether:cascading_archwood_grove";
     public static final String FLASHING = "altered_aether:flashing_archwood_grove";
     public static final String FLOURISHING = "altered_aether:flourishing_archwood_grove";
     public static final String VEXING = "altered_aether:vexing_archwood_grove";
-    public static final String SACRED_LANDS = "deep_aether:sacred_lands";
 
     /** Plateau tier, mid-ramp of plateau_mask. P(continents &gt; this) = 6.1%. */
     public static final float PLATEAU_C = 0.545f;
@@ -117,13 +117,16 @@ public final class BiomeTable {
      * small.
      */
     private static final List<Rect> INSERTS = List.of(
-            rect(0.52f, 0.64f, -0.60f, 0.60f, SACRED_LANDS),
             // Narrow on the slow temperature axis, wide on the fast humidity axis: bigger, more contiguous patches
             // than a balanced box of the same area. 4.8% of the region, all on the dry side.
             rect(0.21f, 0.41f, -0.68f, -0.08f, DUNES),
-            // Warm and wet, between the vexing grove and sacred lands. Wide enough on both axes that a whole atoll,
-            // ring and moat, fits inside a typical patch.
-            rect(0.18f, 0.50f, 0.30f, 0.85f, ATOLL),
+            // Warm and wet, between the vexing and flourishing groves. Wide on the slow temperature axis and deep into
+            // the wet side, so patches are big enough to hold several atolls, rings and moats included.
+            rect(0.16f, 0.52f, 0.06f, 0.95f, ATOLL),
+            // The cold middle, between the flashing and cascading groves: high frozen lakes. Uncommon, but ahead of the
+            // crags, peaks and rift (the middle of the humidity range is far denser than its tails). Only big enough
+            // for a few lakes at a time; there are no rings to make room for.
+            rect(-0.45f, -0.29f, -0.13f, 0.13f, FROZEN_LAKES),
             rect(0.62f, 0.94f, -0.95f, -0.35f, BLAZING),
             rect(-0.94f, -0.62f, -0.95f, -0.35f, FLASHING),
             rect(-0.94f, -0.62f, 0.35f, 0.95f, CASCADING),

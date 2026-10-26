@@ -8,15 +8,15 @@
         "type": "altered_aether:config",
         "key": "dune_height"
       },
-      "argument2": 4.666666666666667
+      "argument2": 3.3333333333333335
     },
     "argument2": {
       "type": "altered_aether:wind_ridges",
-      "lee": 0.25,
+      "lee": 0.3,
       "swell": "altered_aether:dune_swell",
       "warp": "altered_aether:dune_warp",
-      "warp_amount": 24.0,
-      "wavelength": 40.0
+      "warp_amount": 32.0,
+      "wavelength": 64.0
     }
   }
 }

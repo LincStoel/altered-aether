@@ -48,8 +48,15 @@ import java.util.concurrent.ExecutionException;
 public final class BasinField {
     /** Grid cell for lakes and pools, in blocks. Big enough that the largest lake and its banks fit with room to move. */
     static final int CELL = 96;
-    /** Atoll cells are this times the configured atoll size. */
-    static final int ATOLL_CELL = 256;
+    /** Atoll cells are this times the configured atoll size: room for a double atoll or a wide ring. */
+    static final int ATOLL_CELL = 320;
+    /**
+     * Cells of the second, finer atoll grid, for small single atolls in the gaps the big ones leave, so the Sunken
+     * Atoll is crowded with lagoons. A small atoll stands only clear of every big one. The Sunken Atoll has no other
+     * islands to blend into, so a small atoll's influence reaches only a little beyond its moat.
+     */
+    static final int MINOR_CELL = 72;
+    private static final double MINOR_INFLUENCE = 8;
     /** Spots tried per cell before it is left dry. */
     private static final int ATTEMPTS = 10;
     /** Rim directions, in sixteenths of a turn, in the order they're checked. */
@@ -58,9 +65,16 @@ public final class BasinField {
     /** Basin types that come from the small grid, in the order they're rolled: the rare one gets first refusal. */
     private static final BasinType[] SMALL = {BasinType.DEEP_LAKE, BasinType.POOL, BasinType.CASCADING_LAKE,
             BasinType.FROZEN_POOL, BasinType.POISON_POOL};
-    private static final long BASIN_SALT = 0x5DEECE66DL, ATOLL_SALT = 0x2545F4914F6CDD1DL;
+    private static final long BASIN_SALT = 0x5DEECE66DL, ATOLL_SALT = 0x2545F4914F6CDD1DL,
+            MINOR_SALT = 0x9E3779B97F4A7C15L;
     /** The share of atolls that are double, before the landmark rarity multiplier. */
-    private static final double DOUBLE_ATOLL_CHANCE = 0.25;
+    private static final double DOUBLE_ATOLL_CHANCE = 0.45;
+    /** The chance a fine-grid cell over the Sunken Atoll holds a small atoll. */
+    private static final double MINOR_ATOLL_CHANCE = 0.9;
+    /** The share of the other atolls that are rings with a river round them. Frozen lakes are never rings. */
+    private static final double RING_CHANCE = 0.3;
+    /** Spots tried per atoll cell: the atoll biomes are big but patchy, and a miss leaves a whole cell empty. */
+    private static final int ATOLL_ATTEMPTS = 24;
 
     private static final Map<ResourceKey<Level>, BasinField> FIELDS = new ConcurrentHashMap<>();
 
@@ -78,7 +92,7 @@ public final class BasinField {
     }
 
     /** The parameters of the atoll density function, when the terrain has one. */
-    public record AtollSettings(int surface, double vertical) {
+    public record AtollSettings(int surface, int frozenSurface, double vertical) {
     }
 
     private final long seed;
@@ -90,13 +104,14 @@ public final class BasinField {
     private final int minY, maxY;
     private final double[] chances = new double[BasinType.values().length];
     private final double atollSize;
-    private final int atollCell;
+    private final int atollCell, minorCell;
 
     /** Why candidates were turned down, for the debug tools' tuning output. */
     private final Map<String, java.util.concurrent.atomic.AtomicInteger> rejections = new ConcurrentHashMap<>();
 
     private final Cache<Long, Optional<BasinSite>> basins = CacheBuilder.newBuilder().maximumSize(1 << 14).build();
     private final Cache<Long, Optional<AtollSite>> atolls = CacheBuilder.newBuilder().maximumSize(1 << 12).build();
+    private final Cache<Long, Optional<AtollSite>> minors = CacheBuilder.newBuilder().maximumSize(1 << 13).build();
 
     /**
      * @param probe    the terrain before basins are cut; when it has none, the world has no basin carve and only atoll
@@ -116,6 +131,7 @@ public final class BasinField {
         }
         this.atollSize = AACommonConfig.ATOLL_SIZE.get();
         this.atollCell = (int) Math.round(ATOLL_CELL * atollSize);
+        this.minorCell = (int) Math.round(MINOR_CELL * atollSize);
     }
 
     // ---------------------------------------------------------------------------------------------- queries --
@@ -141,6 +157,14 @@ public final class BasinField {
                             .ifPresent(found::add);
                 }
             }
+            reach = minorCell / 2;
+            for (int cx = Math.floorDiv(minX - reach, minorCell); cx <= Math.floorDiv(maxX + reach, minorCell); cx++) {
+                for (int cz = Math.floorDiv(minZ - reach, minorCell); cz <= Math.floorDiv(maxZ + reach, minorCell); cz++) {
+                    minor(cx, cz).map(AtollSite::lagoonBasin)
+                            .filter(site -> touches(site.x(), site.z(), site.extent(), minX, minZ, maxX, maxZ))
+                            .ifPresent(found::add);
+                }
+            }
         }
         return found;
     }
@@ -154,12 +178,18 @@ public final class BasinField {
         return atollCell;
     }
 
-    /** The atoll whose influence covers this column, if any. Each atoll stays inside its own cell. */
-    public Optional<AtollSite> atollAt(int x, int z) {
+    /**
+     * The terrain density at a block with the atolls laid over it. Each atoll stays inside its own cell, and a small
+     * one stands only clear of every big one, so at most one of the two touches any block.
+     */
+    public double atollDensity(int x, int y, int z, double terrain) {
         if (atoll == null) {
-            return Optional.empty();
+            return terrain;
         }
-        return atoll(Math.floorDiv(x, atollCell), Math.floorDiv(z, atollCell));
+        Optional<AtollSite> major = atoll(Math.floorDiv(x, atollCell), Math.floorDiv(z, atollCell));
+        double density = major.isEmpty() ? terrain : major.get().density(x, y, z, terrain);
+        Optional<AtollSite> minor = minor(Math.floorDiv(x, minorCell), Math.floorDiv(z, minorCell));
+        return minor.isEmpty() ? density : minor.get().density(x, y, z, density);
     }
 
     private static boolean touches(int x, int z, double extent, int minX, int minZ, int maxX, int maxZ) {
@@ -298,58 +328,190 @@ public final class BasinField {
         return cached(atolls, cx, cz, () -> timed(() -> Optional.ofNullable(findAtoll(cx, cz))));
     }
 
+    /**
+     * The cell's atoll or frozen lake. Its shape is rolled once for the cell: a double atoll or a ring with
+     * a river round it, or a single ring around a lagoon. Each spot tried then takes whichever of the two types suits
+     * its biome.
+     */
     @Nullable
     private AtollSite findAtoll(int cx, int cz) {
         AtollSettings settings = atoll;
-        BasinType type = BasinType.ATOLL_LAGOON;
-        RandomSource random = random(cx, cz, ATOLL_SALT);
-        if (settings == null || random.nextDouble() >= chances[type.ordinal()]) {
+        if (settings == null) {
             return null;
         }
-        double lagoon = Mth.lerp(random.nextDouble(), type.minRadius, type.maxRadius) * atollSize;
-        double outer = lagoon + Mth.lerp(random.nextDouble(), 12, 18) * atollSize;
-        double v = settings.vertical();
-        int top = settings.surface() + (int) Math.round((random.nextDouble() * 12 - 6) * v);
-        double depth = Mth.lerp(random.nextDouble(), type.minDepth, type.maxDepth) * v;
+        RandomSource random = random(cx, cz, ATOLL_SALT);
+        double roll = random.nextDouble();
+        double r1 = random.nextDouble(), r2 = random.nextDouble(), r3 = random.nextDouble(), offset = random.nextDouble();
         double phase1 = random.nextDouble() * Mth.TWO_PI, phase2 = random.nextDouble() * Mth.TWO_PI;
+        double v = settings.vertical();
         // A rare landmark: a wider lagoon holding a second ring island, with a hill of an islet at its heart.
-        AtollSite.Inner inner = null;
         double rarity = AACommonConfig.LANDMARK_RARITY.get();
-        if (rarity > 0 && random.nextDouble() < DOUBLE_ATOLL_CHANCE / rarity) {
-            double wide = Mth.lerp(random.nextDouble(), 52, 62) * atollSize;
-            double wideOuter = wide + Mth.lerp(random.nextDouble(), 14, 18) * atollSize;
-            if (wideOuter * BasinSite.MAX_WOBBLE + AtollSite.INFLUENCE <= atollCell / 2.0 - 2) {
-                lagoon = wide;
-                outer = wideOuter;
-                depth = Mth.lerp(random.nextDouble(), 11, 15) * v;
-                inner = new AtollSite.Inner(Mth.lerp(random.nextDouble(), 0.42, 0.52),
-                        Mth.lerp(random.nextDouble(), 5, 7) * atollSize, Mth.lerp(random.nextDouble(), 6, 8) * atollSize,
-                        random.nextDouble() * Mth.TWO_PI, Mth.lerp(random.nextDouble(), 0.5, 1.5) * Mth.PI);
+        boolean wantsDouble = rarity > 0 && random.nextDouble() < DOUBLE_ATOLL_CHANCE / rarity;
+        boolean ring = !wantsDouble && random.nextDouble() < RING_CHANCE;
+        RingPath path = ringPath(random);
+        double wide = Mth.lerp(random.nextDouble(), 52, 62) * atollSize;
+        double wideOuter = wide + Mth.lerp(random.nextDouble(), 14, 18) * atollSize;
+        double wideDepth = Mth.lerp(random.nextDouble(), 11, 15) * v;
+        AtollSite.Inner inner = new AtollSite.Inner(Mth.lerp(random.nextDouble(), 0.42, 0.52),
+                Mth.lerp(random.nextDouble(), 5, 7) * atollSize, Mth.lerp(random.nextDouble(), 6, 8) * atollSize,
+                random.nextDouble() * Mth.TWO_PI, Mth.lerp(random.nextDouble(), 0.5, 1.5) * Mth.PI);
+        boolean doubleFits = wantsDouble && wideOuter * BasinSite.MAX_WOBBLE + AtollSite.INFLUENCE <= atollCell / 2.0 - 2;
+
+        AtollSite[] shapes = new AtollSite[BasinType.values().length];
+        double largest = 0;
+        for (BasinType type : new BasinType[]{BasinType.ATOLL_LAGOON, BasinType.FROZEN_LAKE}) {
+            if (roll >= chances[type.ordinal()]) {
+                continue;
             }
+            boolean frozen = type == BasinType.FROZEN_LAKE;
+            int top = (frozen ? settings.frozenSurface() : settings.surface()) + (int) Math.round((offset * 12 - 6) * v);
+            AtollSite shape;
+            if (ring && !frozen) {
+                // Half the ring's width: enough for a shore either side of the river. The line is shrunk if need be
+                // so the ring and its moat stay inside the cell.
+                double width = Mth.lerp(r2, 11, 16) * atollSize;
+                double room = atollCell / 2.0 - 2 - AtollSite.INFLUENCE - width;
+                RingPath line = path.furthest() > room ? path.scaled(room / path.furthest()) : path;
+                shape = new AtollSite(type, 0, 0, width, line.furthest() + width, top, Mth.lerp(r3, 6, 9) * v, v,
+                        phase1, phase2, null, line);
+            } else if (doubleFits && !frozen) {
+                shape = new AtollSite(type, 0, 0, wide, wideOuter, top, wideDepth, v, phase1, phase2, inner, null);
+            } else {
+                double lagoon = Mth.lerp(r1, type.minRadius, type.maxRadius) * atollSize;
+                // The Sunken Atoll's ring is a narrow reef of land, so the lagoon takes most of the island.
+                double outer = lagoon + (frozen ? Mth.lerp(r2, 12, 18) : Mth.lerp(r2, 9, 13)) * atollSize;
+                shape = new AtollSite(type, 0, 0, lagoon, outer, top, Mth.lerp(r3, type.minDepth, type.maxDepth) * v,
+                        v, phase1, phase2, null, null);
+            }
+            shapes[type.ordinal()] = shape;
+            largest = Math.max(largest, shape.extent());
         }
-        double extent = outer * BasinSite.MAX_WOBBLE + AtollSite.INFLUENCE;
-        int jitter = Math.max(0, (int) (atollCell / 2.0 - extent));
-        for (int attempt = 0; attempt < ATTEMPTS; attempt++) {
+        if (largest == 0) {
+            return null;
+        }
+        // One jitter for both types, from the larger, so whichever is placed stays inside its cell.
+        int jitter = Math.max(0, (int) (atollCell / 2.0 - largest));
+        for (int attempt = 0; attempt < ATOLL_ATTEMPTS; attempt++) {
             int x = cx * atollCell + atollCell / 2 + random.nextInt(2 * jitter + 1) - jitter;
             int z = cz * atollCell + atollCell / 2 + random.nextInt(2 * jitter + 1) - jitter;
-            if (atollFits(x, z, lagoon, extent)) {
-                return new AtollSite(x, z, lagoon, outer, top, depth, v, phase1, phase2, inner);
+            String biome = biomeAt(x, z);
+            for (AtollSite shape : shapes) {
+                if (shape != null && shape.type().suits(biome) && atollFits(shape, x, z)) {
+                    return new AtollSite(shape.type(), x, z, shape.lagoon(), shape.outer(), shape.top(),
+                            shape.depth(), v, phase1, phase2, shape.inner(), shape.ring());
+                }
             }
         }
         return null;
     }
 
-    /** In the atoll biome at the centre and half way to the beach, and wholly inside our region. */
-    private boolean atollFits(int x, int z, double lagoon, double extent) {
-        BasinType type = BasinType.ATOLL_LAGOON;
-        if (!type.suits(biomeAt(x, z)) || probe.regionWeight(x, z) < 0.99) {
+    /**
+     * A ring's centre line: anything from a small round loop to a long, twisting oval well over two hundred blocks
+     * across. Small rings are the commonest.
+     */
+    private RingPath ringPath(RandomSource random) {
+        double radius = Mth.lerp(Math.pow(random.nextDouble(), 1.4), 26, 105) * atollSize;
+        double aspect = Mth.lerp(random.nextDouble(), 1.0, 1.9);
+        double rotation = random.nextDouble() * Mth.PI;
+        double[] amplitudes = new double[RingPath.harmonics()], phases = new double[RingPath.harmonics()];
+        double[] most = {0.1, 0.13, 0.07};
+        for (int k = 0; k < amplitudes.length; k++) {
+            amplitudes[k] = random.nextDouble() * most[k];
+            phases[k] = random.nextDouble() * Mth.TWO_PI;
+        }
+        // The radius describes the oval's mean size, so a stretched ring is that much bigger along its length.
+        return new RingPath(radius / Math.sqrt(aspect), aspect, rotation, amplitudes, phases);
+    }
+
+    // ------------------------------------------------------------------------------------ small atoll sites --
+
+    private Optional<AtollSite> minor(int cx, int cz) {
+        return cached(minors, cx, cz, () -> timed(() -> Optional.ofNullable(findMinor(cx, cz))));
+    }
+
+    /**
+     * A fine-grid cell's small single atoll: a lagoon 18 to 30 blocks across in a thin ring of land, standing clear
+     * of every big atoll near it. A big ring's open middle counts as clear.
+     */
+    @Nullable
+    private AtollSite findMinor(int cx, int cz) {
+        AtollSettings settings = atoll;
+        if (settings == null) {
+            return null;
+        }
+        RandomSource random = random(cx, cz, MINOR_SALT);
+        double roll = random.nextDouble();
+        double v = settings.vertical();
+        double lagoon = Mth.lerp(random.nextDouble(), 9, 15) * atollSize;
+        double outer = lagoon + Mth.lerp(random.nextDouble(), 4, 7) * atollSize;
+        double depth = Mth.lerp(random.nextDouble(), 8, 11) * v;
+        double offset = random.nextDouble();
+        double phase1 = random.nextDouble() * Mth.TWO_PI, phase2 = random.nextDouble() * Mth.TWO_PI;
+        double extent = outer * BasinSite.MAX_WOBBLE + MINOR_INFLUENCE;
+        int jitter = Math.max(0, (int) (minorCell / 2.0 - extent));
+        for (int attempt = 0; attempt < ATOLL_ATTEMPTS / 2; attempt++) {
+            int x = cx * minorCell + minorCell / 2 + random.nextInt(2 * jitter + 1) - jitter;
+            int z = cz * minorCell + minorCell / 2 + random.nextInt(2 * jitter + 1) - jitter;
+            String biome = biomeAt(x, z);
+            BasinType type = BasinType.ATOLL_LAGOON;
+            if (!type.suits(biome) || roll >= chances[type.ordinal()] * MINOR_ATOLL_CHANCE) {
+                continue;
+            }
+            int top = settings.surface() + (int) Math.round((offset * 12 - 6) * v);
+            AtollSite site = new AtollSite(type, x, z, lagoon, outer, top, depth, v, phase1, phase2, null, null,
+                    MINOR_INFLUENCE);
+            if (!clearOfMajors(site)) {
+                reject("minor_crowded");
+                continue;
+            }
+            if (atollFits(site, x, z)) {
+                return site;
+            }
+        }
+        return null;
+    }
+
+    /** Whether a small atoll's shore stays a moat's width from every big site's land. */
+    private boolean clearOfMajors(AtollSite site) {
+        int gx = Math.floorDiv(site.x(), atollCell), gz = Math.floorDiv(site.z(), atollCell);
+        double reach = site.outer() * BasinSite.MAX_WOBBLE + 2 * AtollSite.MOAT;
+        for (int cx = gx - 1; cx <= gx + 1; cx++) {
+            for (int cz = gz - 1; cz <= gz + 1; cz++) {
+                AtollSite major = atoll(cx, cz).orElse(null);
+                if (major == null) {
+                    continue;
+                }
+                double dx = site.x() - major.x(), dz = site.z() - major.z();
+                boolean crowded = major.isRing()
+                        ? major.ring().distance(dx, dz) < major.lagoon() + reach
+                        : Math.hypot(dx, dz) < major.outer() * BasinSite.MAX_WOBBLE + reach;
+                if (crowded) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    /**
+     * In the site's biome at the centre and on at least two of four points part way out (half way to the beach, or on
+     * a ring's centre line), and wholly inside our region. A lake on a biome border keeps its shape and simply takes
+     * the neighbouring biome's surface where it crosses over.
+     */
+    private boolean atollFits(AtollSite site, int x, int z) {
+        if (probe.regionWeight(x, z) < 0.99) {
             return false;
         }
+        double check = site.isRing() ? (site.ring().nearest() + site.ring().furthest()) / 2 : site.lagoon() * 0.5;
+        double extent = site.extent();
+        int outside = 0;
         for (int d = 0; d < 8; d++) {
             double angle = d * Math.PI / 4;
             double cos = Math.cos(angle), sin = Math.sin(angle);
-            if (d % 2 == 0 && !type.suits(biomeAt(x + (int) (cos * lagoon * 0.5), z + (int) (sin * lagoon * 0.5)))
-                    || probe.regionWeight(x + (int) (cos * extent), z + (int) (sin * extent)) < 0.99) {
+            if (d % 2 == 0 && !site.type().suits(biomeAt(x + (int) (cos * check), z + (int) (sin * check)))) {
+                outside++;
+            }
+            if (outside > 2 || probe.regionWeight(x + (int) (cos * extent), z + (int) (sin * extent)) < 0.99) {
                 reject("atoll_edge");
                 return false;
             }
@@ -373,6 +535,11 @@ public final class BasinField {
 
     private int surfaceNear(int x, int z, int guess, int low, int high) {
         return probe.surfaceNear(x, z, guess, low, high);
+    }
+
+    /** A random source of its own for a grid point, for decoration that every chunk must build the same way. */
+    public RandomSource randomAt(long salt, int x, int z) {
+        return random(x, z, salt);
     }
 
     private RandomSource random(int cx, int cz, long salt) {

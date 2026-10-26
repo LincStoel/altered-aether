@@ -119,7 +119,8 @@ public final class RegionBinding {
         BasinField basins = null;
         if (carve != null || atoll != null) {
             BasinField field = new BasinField(level.getSeed(), probe, vertical,
-                    atoll == null ? null : new BasinField.AtollSettings(atoll.surface(), atoll.verticalScale()));
+                    atoll == null ? null : new BasinField.AtollSettings(atoll.surface(), atoll.frozenSurface(),
+                            atoll.verticalScale()));
             carves.forEach(c -> c.binding().bind(field));
             atolls.forEach(a -> a.binding().bind(field));
             BasinField.put(level.dimension(), field);

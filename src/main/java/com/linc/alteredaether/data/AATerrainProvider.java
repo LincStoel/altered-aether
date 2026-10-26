@@ -75,8 +75,8 @@ public final class AATerrainProvider extends JsonDataProvider {
     private static final String TERRAIN = NS + "terrain/";
     /** Density functions whose shape depends on height, and so are overridden by the tall pack. */
     private static final Set<String> HEIGHT_DEPENDENT =
-            Set.of("crag_3d_noise", "jag", "crags", "tempest", "tempest_spires", "dune_lean", "dune_ridges", "plateau",
-                    "plateau_terraced", "island", "tall_base_3d_noise");
+            Set.of("crag_3d_noise", "jag", "crags", "tempest", "tempest_spires", "dune_ridges", "dune_centre", "dune_sheet",
+                    "plateau", "plateau_terraced", "island", "island_shift", "tall_base_3d_noise", "rift");
 
     private final HeightMode mode;
 
@@ -128,7 +128,9 @@ public final class AATerrainProvider extends JsonDataProvider {
         noise("rift_cells", -3, 1.0);
         noise("dune_warp", -6, 1.0);
         noise("dune_swell", -7, 1.0);
-        noise("dune_lean", -6, 1.0);
+        // The dune sheets: ribbons along the zero contours of a 256-block noise, at heights that drift on another.
+        noise("dune_path", -8, 1.0, 0.35);
+        noise("dune_drift", -8, 1.0);
         noise("mesa", -5, 1.0, 0.5, 0.25);
         noise("mesa_height", -6, 1.0);
         noise("plateau_relief", -6, 1.0, 0.5);
@@ -208,21 +210,35 @@ public final class AATerrainProvider extends JsonDataProvider {
         // lines up with the biome window exactly.
         df("dune_temperature", flatCache(shiftedNoise("aeroblender:temperature", 0.25, 0.0)));
         df("dune_humidity", flatCache(shiftedNoise("aether:vegetation", 0.25, 0.0)));
-        df("dune_mask", mul(
-                min(ramp(terrain("dune_temperature"), -1.6, 10.0), ramp(terrain("dune_temperature"), 4.6, -10.0)),
-                min(ramp(terrain("dune_humidity"), 7.3, 10.0), ramp(terrain("dune_humidity"), -0.3, -10.0))));
-        // Dune crests across the prevailing wind: gentle windward slopes, steep lee faces, up to 7 blocks high.
+        df("dune_mask", climateBox(0.21, 0.41, -0.68, -0.08));
+        // Long, low dune crests across the prevailing wind: gentle windward slopes, steep lee faces, up to 5 blocks.
         JsonObject ridges = Df.type(NS + "wind_ridges");
-        ridges.addProperty("wavelength", 40.0);
-        ridges.addProperty("lee", 0.25);
+        ridges.addProperty("wavelength", 64.0);
+        ridges.addProperty("lee", 0.3);
         ridges.addProperty("warp", NS + "dune_warp");
-        ridges.addProperty("warp_amount", 24.0);
+        ridges.addProperty("warp_amount", 32.0);
         ridges.addProperty("swell", NS + "dune_swell");
-        df("dune_ridges", flatCache(mul(mul(Df.config("dune_height"), mode.height(7)), ridges)));
-        // Sampling the lean noise at a point that drifts sideways with height shears each island from base to top.
-        df("dune_lean", mul(0.35, shiftedNoise(NS + "dune_lean",
-                add(ref("minecraft:shift_x"), mul(32.0, yGradient(mode.y(-52), 0.0, mode.y(20), 1.0))),
-                0.08, 0.0)));
+        df("dune_ridges", flatCache(mul(mul(Df.config("dune_height"), mode.height(5)), ridges)));
+        // The dunes are thin sheets of sand high in the sky, not islands: ribbons a hundred-odd blocks wide that wind
+        // along the zero contours of a 256-block noise, rising and falling on another as they go. Across a ribbon
+        // the sheet is a lens, about 16 blocks thick down its middle and tapering to a feather edge. The ribbon is
+        // where the ridged noise passes 0.62.
+        df("dune_reach", flatCache(add(-1.63, mul(2.63, ridged(shiftedNoise(NS + "dune_path", 1.0, 0.0))))));
+        df("dune_centre", flatCache(add(mode.y(92), mul(mode.height(14),
+                shiftedNoise(NS + "dune_drift", 1.0, 0.0)))));
+        JsonObject crown = clamp(mul(2.5, terrain("dune_reach")), -4.0, 1.0);
+        JsonObject summit = add(add(terrain("dune_centre"), add(mul(mode.height(4), crown), -mode.height(2))),
+                mul(clamp(crown, 0.0, 1.0), terrain("dune_ridges")));
+        JsonObject underside = add(terrain("dune_centre"),
+                add(-mode.height(2), mul(-mode.height(12), terrain("dune_reach"))));
+        df("dune_sheet", clamp(min(mul(0.125, add(summit, mul(-1.0, Df.y()))),
+                mul(1.0 / 6, add(Df.y(), mul(-1.0, underside)))), -1.0, 1.0));
+
+        // The Sunken Atoll's islands sink and the Frozen Lakes' rise, each on a box over its own climate window.
+        df("atoll_mask", climateBox(0.16, 0.52, 0.06, 0.95));
+        df("frozen_lakes_mask", climateBox(-0.45, -0.29, -0.13, 0.13));
+        df("island_shift", flatCache(mul(terrain("region_mask"), add(mul(-mode.height(20), terrain("atoll_mask")),
+                mul(mode.height(24), terrain("frozen_lakes_mask"))))));
 
         // Each landform's weight, confined to our region.
         df("plateau_weight", mul(terrain("region_mask"), terrain("plateau_mask")));
@@ -263,6 +279,18 @@ public final class AATerrainProvider extends JsonDataProvider {
         JsonObject footprint = mul(6.0, add(terrain("crag_massif"), 0.05));
         return add(add(min(min(below, above), footprint), mul(jag, terrain("jag"))),
                 mul(hollows, terrain("crag_3d_noise")));
+    }
+
+    /**
+     * 1 inside a temperature and humidity window of the biome table, ramping to 0 across 0.05 either side of each
+     * edge, so the window's edge sits mid-ramp. Reads the same fields the biome selector does.
+     */
+    private static JsonObject climateBox(double t0, double t1, double h0, double h1) {
+        return mul(
+                min(ramp(terrain("dune_temperature"), -10 * (t0 - 0.05), 10.0),
+                        ramp(terrain("dune_temperature"), 10 * (t1 + 0.05), -10.0)),
+                min(ramp(terrain("dune_humidity"), -10 * (h0 - 0.05), 10.0),
+                        ramp(terrain("dune_humidity"), 10 * (h1 + 0.05), -10.0)));
     }
 
     private void df(String name, JsonElement function) {
@@ -320,12 +348,12 @@ public final class AATerrainProvider extends JsonDataProvider {
         }
         // The island expression gets a file of its own, so every blend below refers to it rather than copying it.
         df("island", island);
-        // Dunes: the island sheared by the lean, then raised along the wind ridges.
-        JsonObject leaning = add(terrain("island"), mul(terrain("dune_weight"), terrain("dune_lean")));
+        // The island sunk under the atolls and raised under the frozen lakes, then given over to the dune sheets.
         JsonObject shifted = Df.type(NS + "shift_y");
-        shifted.add("argument", leaning);
-        shifted.add("offset", mul(terrain("dune_weight"), terrain("dune_ridges")));
-        df("island_dunes", shifted);
+        shifted.add("argument", terrain("island"));
+        shifted.add("offset", terrain("island_shift"));
+        df("island_shifted", shifted);
+        df("island_dunes", Df.choose(terrain("dune_weight"), terrain("island_shifted"), terrain("dune_sheet")));
         // The rift: the same island broken into drifting slabs, so the slabs carry the dunes too.
         rift(terrain("island_dunes"));
         JsonObject islandTier = Df.choose(terrain("rift_weight"), terrain("island_dunes"), terrain("rift"));
@@ -334,8 +362,12 @@ public final class AATerrainProvider extends JsonDataProvider {
         JsonObject atoll = Df.type(NS + "atoll");
         atoll.add("argument", Df.choose(terrain("plateau_weight"), withCrags, terrain("plateau_terraced")));
         atoll.add("weight", terrain("region_mask"));
-        atoll.addProperty("surface", mode.y(32));
+        // Atolls lie low, sunk toward the bottom of the islands; the frozen lakes stand high above them.
+        atoll.addProperty("surface", mode.y(8));
+        atoll.addProperty("frozen_surface", mode.y(88));
         atoll.addProperty("vertical_scale", vertical());
+        // The Sunken Atoll is its atolls alone: the islands between them are taken away.
+        atoll.add("clear", flatCache(mul(terrain("region_mask"), terrain("atoll_mask"))));
         blend.add("argument", atoll);
         // Basins are cut last, outside the interpolation, so their bowls and water lines are exact to the block.
         JsonObject carve = Df.type(NS + "basin_carve");
@@ -360,6 +392,16 @@ public final class AATerrainProvider extends JsonDataProvider {
         fracture.addProperty("max_offset", mode.height(16));
         fracture.addProperty("max_tilt", 0.15);
         fracture.add("roughness", terrain("jag"));
+        // The rift is an island torn apart: a sparse field of tall, blocky columns, each standing alone with open sky
+        // between it and the next, and the debris of the break hanging in the gaps.
+        JsonObject pillars = new JsonObject();
+        pillars.addProperty("top", mode.y(84));
+        pillars.addProperty("min_height", mode.height(64));
+        pillars.addProperty("max_height", mode.height(112));
+        pillars.addProperty("empty_chance", 0.3);
+        pillars.addProperty("step", (int) Math.round(mode.height(7)));
+        pillars.addProperty("gap", 10.0);
+        fracture.add("pillars", pillars);
         df("rift", fracture);
     }
 

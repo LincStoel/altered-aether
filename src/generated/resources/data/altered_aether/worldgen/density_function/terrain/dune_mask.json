@@ -6,7 +6,7 @@
       "type": "minecraft:clamp",
       "input": {
         "type": "minecraft:add",
-        "argument1": -1.6,
+        "argument1": -1.5999999999999996,
         "argument2": {
           "type": "minecraft:mul",
           "argument1": 10.0,
@@ -37,7 +37,7 @@
       "type": "minecraft:clamp",
       "input": {
         "type": "minecraft:add",
-        "argument1": 7.3,
+        "argument1": 7.300000000000001,
         "argument2": {
           "type": "minecraft:mul",
           "argument1": 10.0,

@@ -30,7 +30,9 @@ public enum BasinType {
     FROZEN_POOL("frozen_pool", 0.6, 4, 7, 3, 5, Fluid.FROZEN, "frozen_crags"),
     POISON_POOL("poison_pool", 0.5, 4, 8, 3, 5, Fluid.POISON, "vexing_archwood_grove"),
     /** The Sunken Atoll's lagoon, inside the ring island the atoll density function builds. */
-    ATOLL_LAGOON("atoll_lagoon", 0.9, 30, 42, 9, 13, Fluid.WATER, "sunken_atoll");
+    ATOLL_LAGOON("atoll_lagoon", 1.0, 30, 42, 9, 13, Fluid.WATER, "sunken_atoll"),
+    /** A Frozen Lakes lake: a single atoll's ring and lagoon, built high and frozen over. */
+    FROZEN_LAKE("frozen_lake", 1.0, 26, 38, 7, 11, Fluid.FROZEN, "frozen_lakes");
 
     public enum Fluid {
         WATER,
@@ -61,6 +63,11 @@ public enum BasinType {
 
     public Fluid fluid() {
         return fluid;
+    }
+
+    /** Built by the atoll density function on the atoll grid, rather than carved into the terrain. */
+    public boolean atollShaped() {
+        return this == ATOLL_LAGOON || this == FROZEN_LAKE;
     }
 
     boolean suits(String biome) {
