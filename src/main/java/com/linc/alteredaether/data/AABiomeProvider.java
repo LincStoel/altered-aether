@@ -61,6 +61,8 @@ public final class AABiomeProvider extends JsonDataProvider {
         biome("windswept_dunes", windsweptDunes());
         biome("sunken_atoll", sunkenAtoll());
         biome("frozen_lakes", frozenLakes());
+        biome("skyroot_cathedral", skyrootCathedral());
+        biome("nurselog_hollow", nurselogHollow());
 
         biome("blazing_archwood_grove", grove("blazing", ARIA)
                 .add(BiomeJson.LOCAL, AADecorationProvider.ASETERITE_BOULDER)
@@ -260,6 +262,29 @@ public final class AABiomeProvider extends JsonDataProvider {
                         spawner("aether:blue_swet", 20, 1, 1),
                         spawner("aether:whirlwind", 3, 1, 1))
                 .dropCost("aether:aechor_plant", "aether:golden_swet");
+    }
+
+    /**
+     * A cathedral forest of giant skyroots. The giants come from the grove field; the stock forest is thinned to the
+     * meadow's scattered trees so they never crowd it, and the fixed lake blob, which hangs off island edges, is gone.
+     * Deep green under a teal-tinted haze, as under a closed canopy.
+     */
+    private BiomeJson skyrootCathedral() {
+        return base()
+                .climate(0.6f, 0.9f)
+                .replace(FOREST_TREES, "aether:skyroot_meadow_trees")
+                .drop("aether:water_lake", "aether:holiday_tree")
+                .effect("fog_color", 0xA9D3C6).effect("foliage_color", 0x4E9A45).effect("grass_color", 0x6BAA5A)
+                .effect("water_color", 0x3F8F86).effect("water_fog_color", 0x1F4F4A);
+    }
+
+    /** The fallen elders: drier, olive and dusty, with the same thin forest between the logs. */
+    private BiomeJson nurselogHollow() {
+        return base()
+                .climate(0.45f, 0.5f)
+                .replace(FOREST_TREES, "aether:skyroot_meadow_trees")
+                .drop("aether:water_lake", "aether:holiday_tree")
+                .effect("fog_color", 0xCFC8AE).effect("foliage_color", 0x7F9152).effect("grass_color", 0x92A267);
     }
 
     private BiomeJson grove(String colour, String music) {

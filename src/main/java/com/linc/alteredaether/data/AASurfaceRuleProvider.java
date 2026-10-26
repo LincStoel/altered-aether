@@ -61,6 +61,8 @@ public final class AASurfaceRuleProvider extends JsonDataProvider {
     private static final String DUNES = biome("windswept_dunes");
     private static final String ATOLL = biome("sunken_atoll");
     private static final String LAKES = biome("frozen_lakes");
+    private static final String CATHEDRAL = biome("skyroot_cathedral");
+    private static final String NURSELOG = biome("nurselog_hollow");
 
     public AASurfaceRuleProvider(PackOutput output) {
         super(output, "surface rules");
@@ -121,6 +123,12 @@ public final class AASurfaceRuleProvider extends JsonDataProvider {
                 when(inBiome(ATOLL), when(noiseBand("minecraft:surface", 0.05, BIG), block(QUICKSOIL))),
                 // Bare aether dirt over icestone; the snow on the lake banks comes with the lakes.
                 when(inBiome(LAKES), block(DIRT)),
+                // Root litter: coarse dirt patches in the cathedral's shade, and wide worn ground between the fallen
+                // logs, with bare aether dirt in bands.
+                when(inBiome(CATHEDRAL), when(noiseBand("minecraft:surface", 0.44, BIG), substitute(COARSE_DIRT))),
+                when(inBiome(NURSELOG), seq(
+                        when(noiseBand("minecraft:surface", 0.15, BIG), substitute(COARSE_DIRT)),
+                        when(noiseBand("minecraft:surface_secondary", 0.18, BIG), block(DIRT)))),
                 // Stock Aether ground for everything not matched above.
                 when(water(), block(GRASS)),
                 block(DIRT));
@@ -143,7 +151,7 @@ public final class AASurfaceRuleProvider extends JsonDataProvider {
                                 block(BLACKSTONE)), block(DEEPSLATE))),
                         when(inBiome(LAKES), block(ICESTONE)))),
                 // Forested and gentler islands only on true cliffs, so ordinary lumpy ground stays green.
-                when(steep(5), when(inBiome(RIFT, ATOLL, grove("blazing"), grove("cascading"), grove("flashing"),
+                when(steep(5), when(inBiome(RIFT, ATOLL, CATHEDRAL, NURSELOG, grove("blazing"), grove("cascading"), grove("flashing"),
                         grove("flourishing"), grove("vexing")), holystoneRock)));
     }
 

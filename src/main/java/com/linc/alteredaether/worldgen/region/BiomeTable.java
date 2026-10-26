@@ -51,6 +51,8 @@ public final class BiomeTable {
     public static final String DUNES = "altered_aether:windswept_dunes";
     public static final String ATOLL = "altered_aether:sunken_atoll";
     public static final String FROZEN_LAKES = "altered_aether:frozen_lakes";
+    public static final String CATHEDRAL = "altered_aether:skyroot_cathedral";
+    public static final String NURSELOG = "altered_aether:nurselog_hollow";
     public static final String BLAZING = "altered_aether:blazing_archwood_grove";
     public static final String CASCADING = "altered_aether:cascading_archwood_grove";
     public static final String FLASHING = "altered_aether:flashing_archwood_grove";
@@ -127,6 +129,13 @@ public final class BiomeTable {
             // crags, peaks and rift (the middle of the humidity range is far denser than its tails). Only big enough
             // for a few lakes at a time; there are no rings to make room for.
             rect(-0.45f, -0.29f, -0.13f, 0.13f, FROZEN_LAKES),
+            // Temperate and humid, in the open middle between the frozen lakes and the vexing grove.
+            rect(-0.44f, -0.04f, 0.24f, 0.56f, CATHEDRAL),
+            // The same box grown by 0.05 on every side. The cathedral above keeps its window, so what is left is a
+            // frame: walking out of the cathedral, the climate passes through its fallen elders first.
+            rect(-0.49f, 0.01f, 0.19f, 0.61f, NURSELOG),
+            // A cooler, drier solo window, for the occasional dead colony with no living one beside it.
+            rect(-0.58f, -0.46f, -0.42f, -0.22f, NURSELOG),
             rect(0.62f, 0.94f, -0.95f, -0.35f, BLAZING),
             rect(-0.94f, -0.62f, -0.95f, -0.35f, FLASHING),
             rect(-0.94f, -0.62f, 0.35f, 0.95f, CASCADING),

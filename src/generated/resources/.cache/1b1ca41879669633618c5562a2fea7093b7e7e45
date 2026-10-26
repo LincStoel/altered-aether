@@ -1,5 +1,5 @@
-// 1.21.1	2026-10-25T14:48:51.379171	Altered Aether tags
-b376355857264848eab7a3636e5f2274b42b9c26 data/aether/tags/worldgen/biome/is_aether.json
+// 1.21.1	2026-10-26T07:58:55.985689	Altered Aether tags
+ab85daae8676f78f1769f9789d58dc49b8a8e7de data/aether/tags/worldgen/biome/is_aether.json
 7ec09b2e18ab43d296e2d76cad7fe25c11cda07f data/altered_aether/tags/block/breeze_spawnable_on.json
 dc18018d6883948531de73415dfcbb7e51ca20b8 data/altered_aether/tags/block/familiar_spawnable_on.json
 da43ab2bbe8355c871257730474643815250588c data/altered_aether/tags/block/frozen_crag_ore_replaceables.json

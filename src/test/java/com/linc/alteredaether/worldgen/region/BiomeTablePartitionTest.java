@@ -32,7 +32,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class BiomeTablePartitionTest {
     private static final List<String> OPTIONAL = List.of(
             BiomeTable.PLATEAU, BiomeTable.CRAGS, BiomeTable.TEMPEST, BiomeTable.RIFT, BiomeTable.DUNES,
-            BiomeTable.ATOLL, BiomeTable.FROZEN_LAKES, BiomeTable.BLAZING, BiomeTable.CASCADING, BiomeTable.FLASHING, BiomeTable.FLOURISHING,
+            BiomeTable.ATOLL, BiomeTable.FROZEN_LAKES, BiomeTable.CATHEDRAL, BiomeTable.NURSELOG, BiomeTable.BLAZING, BiomeTable.CASCADING, BiomeTable.FLASHING, BiomeTable.FLOURISHING,
             BiomeTable.VEXING);
     private static final int SAMPLES = 40_000;
 

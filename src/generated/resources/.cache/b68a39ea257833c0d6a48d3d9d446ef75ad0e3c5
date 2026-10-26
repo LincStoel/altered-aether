@@ -1,4 +1,4 @@
-// 1.21.1	2026-10-25T17:46:04.0029366	Altered Aether biomes
+// 1.21.1	2026-10-26T07:58:55.9886883	Altered Aether biomes
 a5563318a7abfbaf9c48812a45215cbc49806ad8 data/altered_aether/worldgen/biome/aether_plateau.json
 340e5963ae12026c52936fd99be54059961a55ef data/altered_aether/worldgen/biome/blazing_archwood_grove.json
 d7c459604e57415b751641165bb6dce4b4cc4602 data/altered_aether/worldgen/biome/cascading_archwood_grove.json
@@ -6,7 +6,9 @@ d7c459604e57415b751641165bb6dce4b4cc4602 data/altered_aether/worldgen/biome/casc
 30053694d3825814a7e70a66cdef8bebc5dd182a data/altered_aether/worldgen/biome/flourishing_archwood_grove.json
 85ce5a1fb507b4aae73d101d55cb5e81136f128d data/altered_aether/worldgen/biome/frozen_crags.json
 0a60974dc1ec4f10dff647fbb61f5fc83b912190 data/altered_aether/worldgen/biome/frozen_lakes.json
+e71874d838d8827e2c37145caf653fcff4316c81 data/altered_aether/worldgen/biome/nurselog_hollow.json
 d7927dfa8c5e4b1707e72d84c482e9a7b9482fa7 data/altered_aether/worldgen/biome/shattered_rift.json
+36664c23d174c3249ee115af9b2c840f65c2d0c8 data/altered_aether/worldgen/biome/skyroot_cathedral.json
 0238882cbb9c208e18a12a15f9ac453673b7dd66 data/altered_aether/worldgen/biome/sunken_atoll.json
 ceb1008c5d100f96e89057eab6cb285bb162647e data/altered_aether/worldgen/biome/tempest_peaks.json
 7f4f49f1edbb4403d614a0ae63cc6d6d00288730 data/altered_aether/worldgen/biome/vexing_archwood_grove.json
