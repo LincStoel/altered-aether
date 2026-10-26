@@ -26,6 +26,11 @@ public enum GiantType {
     TULE_MASS(GroveField.CATHEDRAL, 2),
     BOW_COLONY(GroveField.CATHEDRAL, 3),
     CATHEDRAL_RING(GroveField.CATHEDRAL, 2),
+    FALLEN_COLOSSUS(GroveField.NURSELOG, 4),
+    SNAG(GroveField.NURSELOG, 2),
+    COLOSSAL_STUMP(GroveField.NURSELOG, 2),
+    LATTICE_SKELETON(GroveField.NURSELOG, 1),
+    REGROWTH_RING(GroveField.NURSELOG, 2),
     LINK("", 0);
 
     final String biome;
@@ -40,8 +45,8 @@ public enum GiantType {
         return name().toLowerCase(Locale.ROOT);
     }
 
-    /** True for a standing tree with a crown, which can carry a canopy bridge. */
+    /** True for a living tree with a high crown, which can carry a canopy bridge. */
     boolean crowned() {
-        return this != LINK;
+        return biome.equals(GroveField.CATHEDRAL);
     }
 }

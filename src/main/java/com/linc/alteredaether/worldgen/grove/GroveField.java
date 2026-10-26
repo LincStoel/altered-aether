@@ -23,6 +23,7 @@ import net.minecraft.resources.ResourceKey;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.levelgen.XoroshiroRandomSource;
+import net.neoforged.fml.ModList;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
@@ -45,13 +46,13 @@ public final class GroveField {
     static final String CATHEDRAL = "altered_aether:skyroot_cathedral";
     static final String NURSELOG = "altered_aether:nurselog_hollow";
     /** How far any giant may reach from its centre. */
-    public static final int REACH = 60;
+    public static final int REACH = 64;
     /** Grid cell size at the default spacing. */
     private static final int CELL = 56;
     /** Neighbours further apart than this many cells are never linked. */
     private static final double LINK_CELLS = 1.9;
     private static final int LINKS = 3;
-    private static final double CHANCE = 0.92, BRIDGE_CHANCE = 0.35;
+    private static final double CHANCE = 0.92, BRIDGE_CHANCE = 0.35, NURSELOG_SHARE = 0.7;
     private static final Map<ResourceKey<Level>, GroveField> FIELDS = new ConcurrentHashMap<>();
 
     public static void put(ResourceKey<Level> dimension, @Nullable GroveField field) {
@@ -186,22 +187,48 @@ public final class GroveField {
             if (ground == Integer.MIN_VALUE) {
                 continue;
             }
+            // The fallen are thinner on the ground than the living.
+            if (type.biome.equals(NURSELOG) && random.nextDouble() >= NURSELOG_SHARE) {
+                return null;
+            }
             Sketch sketch = new Sketch(probe, random, vertical, buildTop, x, z, ground);
+            double heart = AACommonConfig.GOLDEN_HEART_CHANCE.get();
             switch (type) {
                 case HOLLOW_ELDER -> HollowElder.sketch(sketch);
                 case TUNNEL_GIANT -> TunnelGiant.sketch(sketch);
                 case TULE_MASS -> TuleMass.sketch(sketch);
                 case BOW_COLONY -> BowColony.sketch(sketch);
                 case CATHEDRAL_RING -> CathedralRing.sketch(sketch);
+                case FALLEN_COLOSSUS -> FallenColossus.sketch(sketch, heart);
+                case SNAG -> Snag.sketch(sketch);
+                case COLOSSAL_STUMP -> ColossalStump.sketch(sketch, heart);
+                case LATTICE_SKELETON -> LatticeSkeleton.sketch(sketch);
+                case REGROWTH_RING -> RegrowthRing.sketch(sketch);
                 case LINK -> {
                 }
             }
-            Giant giant = sketch.done(type, GrovePalette.SKYROOT, random.nextLong());
+            Giant giant = sketch.done(type, palette(cx, cz, type.biome), random.nextLong());
             if (giant.extent() <= REACH) {
                 return giant;
             }
         }
         return null;
+    }
+
+    /**
+     * The wood a giant is made of. Colonies share it: a block of four by four cells all draw the same palette, so a
+     * stand of Deep Aether wood reads as one clone among the skyroot.
+     */
+    private GrovePalette palette(int cx, int cz, String biome) {
+        if (!ModList.get().isLoaded("deep_aether") || !AACommonConfig.compat("deep_aether")) {
+            return GrovePalette.SKYROOT;
+        }
+        List<GrovePalette> woods = biome.equals(CATHEDRAL) ? GrovePalette.DEEP_CATHEDRAL : GrovePalette.DEEP_NURSELOG;
+        RandomSource random = random(key(Math.floorDiv(cx, 4), Math.floorDiv(cz, 4)), 2);
+        if (woods.isEmpty() || random.nextDouble() >= AACommonConfig.DEEP_AETHER_WOOD_CHANCE.get()) {
+            return GrovePalette.SKYROOT;
+        }
+        return woods.get(random.nextInt(woods.size()));
     }
 
     @Nullable

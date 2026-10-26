@@ -49,6 +49,8 @@ public final class AACommonConfig {
     public static final DoubleValue ATOLL_SIZE;
     public static final DoubleValue LANDMARK_RARITY;
     public static final DoubleValue GIANT_SPACING;
+    public static final DoubleValue GOLDEN_HEART_CHANCE;
+    public static final DoubleValue DEEP_AETHER_WOOD_CHANCE;
 
     // [basins]
     public static final Map<String, BooleanValue> BASIN_ENABLED = new LinkedHashMap<>();
@@ -154,6 +156,12 @@ public final class AACommonConfig {
                 .push("groves");
         GIANT_SPACING = b.comment("Spacing between giant trees, as a multiplier. Lower packs them closer.")
                 .defineInRange("giant_spacing", 1.0, 0.6, 3.0);
+        GOLDEN_HEART_CHANCE = b.comment("Chance a fallen colossus or colossal stump hides golden oak heartwood.")
+                .defineInRange("golden_heart_chance", 0.08, 0.0, 1.0);
+        DEEP_AETHER_WOOD_CHANCE = b.comment("With Deep Aether, the share of grove colonies grown from its woods",
+                        "(roseroot and sunroot in the cathedral; cruderoot, yagroot, conberry and roseroot among the",
+                        "fallen) instead of skyroot.")
+                .defineInRange("deep_aether_wood_chance", 0.35, 0.0, 1.0);
         b.pop();
 
         b.comment("Lakes, pools, lagoons and waterfalls.").push("basins");

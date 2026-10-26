@@ -115,7 +115,7 @@ public final class GroveBuilder {
                                 continue;
                             }
                         }
-                        level.setBlock(pos, material(palette, first, runnerUp, second, cut, bx, y, bz), 2);
+                        level.setBlock(pos, material(palette, first, best, runnerUp, second, cut, bx, y, bz), 2);
                         continue;
                     }
                     if (cut > 0) {
@@ -139,8 +139,8 @@ public final class GroveBuilder {
         }
     }
 
-    private static BlockState material(GrovePalette palette, Part part, Part runnerUp, double second, double cut,
-                                       int x, int y, int z) {
+    private static BlockState material(GrovePalette palette, Part part, double first, Part runnerUp, double second,
+                                       double cut, int x, int y, int z) {
         Direction.Axis axis = part.axis(x, y, z);
         // Where two pieces of different grain meet, neither grain shows: a knot of all-bark wood.
         if (axis != null && runnerUp != null && second > 0 && runnerUp.axis(x, y, z) != axis) {
@@ -152,6 +152,10 @@ public final class GroveBuilder {
             case STRIPPED -> palette.stripped(axis);
             case BARK -> laidBare ? palette.stripped(null) : palette.bark();
             case LOG -> laidBare ? palette.stripped(axis) : axis == null ? palette.bark() : palette.log(axis);
+            // Rings a block and a half apart; the outermost is bark.
+            case RINGS -> Math.floorMod((int) Math.floor(first / 1.5), 2) == 1 ? palette.stripped(axis)
+                    : axis == null ? palette.bark() : palette.log(axis);
+            case SOIL -> palette.soil();
         };
     }
 

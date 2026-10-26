@@ -25,6 +25,9 @@ import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.level.block.state.properties.Property;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * The wood a colony is made of. Every state is placed the way the Aether places its own trees: with
  * {@code double_drops} set where the block has it, so naturally grown wood keeps its doubled harvest.
@@ -33,6 +36,28 @@ public record GrovePalette(String name, Block log, Block wood, Block strippedLog
                            Block heart) {
     public static final GrovePalette SKYROOT = of("skyroot", "aether:skyroot_log", "aether:skyroot_wood",
             "aether:stripped_skyroot_log", "aether:stripped_skyroot_wood", "aether:skyroot_leaves");
+
+    /** Deep Aether's woods for each grove biome; empty without Deep Aether. */
+    static final List<GrovePalette> DEEP_CATHEDRAL = present(deep("roseroot"), deep("sunroot"));
+    static final List<GrovePalette> DEEP_NURSELOG = present(deep("cruderoot"), deep("yagroot"), deep("conberry"),
+            deep("roseroot"));
+
+    @Nullable
+    private static GrovePalette deep(String wood) {
+        return of(wood, "deep_aether:" + wood + "_log", "deep_aether:" + wood + "_wood",
+                "deep_aether:stripped_" + wood + "_log", "deep_aether:stripped_" + wood + "_wood",
+                "deep_aether:" + wood + "_leaves");
+    }
+
+    private static List<GrovePalette> present(GrovePalette... palettes) {
+        List<GrovePalette> list = new ArrayList<>();
+        for (GrovePalette palette : palettes) {
+            if (palette != null) {
+                list.add(palette);
+            }
+        }
+        return List.copyOf(list);
+    }
 
     /** A palette from block ids; null if any of them is missing. */
     @Nullable
@@ -67,6 +92,12 @@ public record GrovePalette(String name, Block log, Block wood, Block strippedLog
     public BlockState heart(@Nullable Direction.Axis axis) {
         return natural(heart.defaultBlockState().trySetValue(RotatedPillarBlock.AXIS,
                 axis == null ? Direction.Axis.Y : axis));
+    }
+
+    /** The earth a tree's roots tear up: Aether dirt. */
+    public BlockState soil() {
+        Block dirt = block("aether:aether_dirt");
+        return natural((dirt == null ? log : dirt).defaultBlockState());
     }
 
     /** Leaves {@code distance} steps from the nearest log, which may decay once the wood is gone. */

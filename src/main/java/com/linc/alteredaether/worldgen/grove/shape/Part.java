@@ -32,7 +32,11 @@ public interface Part {
         /** Bark stripped away: dead, weathered or rotten wood. */
         STRIPPED,
         /** The golden heartwood some elders hide. */
-        HEART
+        HEART,
+        /** Growth rings: bands of bark and bare wood by depth, which show on a cut face such as a stump's top. */
+        RINGS,
+        /** Earth, as torn up with a fallen tree's roots. */
+        SOIL
     }
 
     Bounds bounds();

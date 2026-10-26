@@ -55,6 +55,29 @@ public abstract class Carve {
     }
 
     /**
+     * A capsule from one point to another, tapering from {@code r0} to {@code r1} and never cutting below
+     * {@code floor}: a fallen log's hollow, flat-floored where the floor cuts it.
+     */
+    public static Carve capsule(double x0, double y0, double z0, double x1, double y1, double z1, double r0,
+                                double r1, int floor) {
+        Bounds bounds = Bounds.around(x0, y0, z0, r0, r0, r0).union(Bounds.around(x1, y1, z1, r1, r1, r1));
+        double dx = x1 - x0, dy = y1 - y0, dz = z1 - z0;
+        double length2 = dx * dx + dy * dy + dz * dz;
+        return new Carve(floor, bounds) {
+            @Override
+            public double margin(double px, double py, double pz) {
+                if (py < floor) {
+                    return -Double.MAX_VALUE;
+                }
+                double t = length2 < 1e-9 ? 0 : ((px - x0) * dx + (py - y0) * dy + (pz - z0) * dz) / length2;
+                t = t < 0 ? 0 : t > 1 ? 1 : t;
+                double ox = px - x0 - dx * t, oy = py - y0 - dy * t, oz = pz - z0 - dz * t;
+                return r0 + (r1 - r0) * t - Math.sqrt(ox * ox + oy * oy + oz * oz);
+            }
+        };
+    }
+
+    /**
      * A level passage from one point to another with a round-arched section, {@code halfWidth} across at the floor
      * and {@code height} tall at the crown: a tunnel through a trunk, or the slit into a hollow.
      */
