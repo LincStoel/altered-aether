@@ -1,0 +1,21 @@
+{
+  "feature": "altered_aether:grove/ruin",
+  "placement": [
+    {
+      "type": "altered_aether:jittered_grid",
+      "cell_chunks": 8,
+      "chance": 1.0,
+      "salt": 61
+    },
+    {
+      "type": "minecraft:in_square"
+    },
+    {
+      "type": "minecraft:heightmap",
+      "heightmap": "WORLD_SURFACE_WG"
+    },
+    {
+      "type": "minecraft:biome"
+    }
+  ]
+}

@@ -21,6 +21,7 @@ import net.minecraft.world.level.biome.BiomeSource;
 import net.minecraft.world.level.biome.MultiNoiseBiomeSource;
 import com.linc.alteredaether.worldgen.basin.BasinField;
 import com.linc.alteredaether.worldgen.TerrainProbe;
+import com.linc.alteredaether.worldgen.grove.BreakField;
 import com.linc.alteredaether.worldgen.grove.GroveField;
 import com.linc.alteredaether.worldgen.landmark.LandmarkField;
 import net.minecraft.world.level.levelgen.DensityFunction;
@@ -67,6 +68,7 @@ public final class RegionBinding {
         List<BasinCarve> carves = new ArrayList<>();
         List<Atoll> atolls = new ArrayList<>();
         Set<VoronoiFracture.Binding> fractures = Collections.newSetFromMap(new IdentityHashMap<>());
+        List<GroveBreak> breaks = new ArrayList<>();
         RandomState randomState = level.getChunkSource().randomState();
         randomState.router().mapAll(new DensityFunction.Visitor() {
             @Override
@@ -79,6 +81,8 @@ public final class RegionBinding {
                     atolls.add(atoll);
                 } else if (function instanceof VoronoiFracture fracture && fracture.binding() != null) {
                     fractures.add(fracture.binding());
+                } else if (function instanceof GroveBreak groveBreak && groveBreak.binding() != null) {
+                    breaks.add(groveBreak);
                 }
                 return function;
             }
@@ -93,7 +97,7 @@ public final class RegionBinding {
             bindings.forEach(binding -> binding.bind(solver));
             SOLVERS.put(level.dimension(), solver);
             AlteredAether.LOGGER.info("Bound Altered Aether's region mask for {}", level.dimension().location());
-            bindFields(level, randomState, source, carves, atolls, fractures);
+            bindFields(level, randomState, source, carves, atolls, fractures, breaks);
         } else {
             AlteredAether.LOGGER.warn("{} uses Altered Aether's region mask but its biome source has no TerraBlender "
                     + "regions; our landforms are disabled there.", level.dimension().location());
@@ -106,7 +110,8 @@ public final class RegionBinding {
      * sites are checked against.
      */
     private static void bindFields(ServerLevel level, RandomState randomState, BiomeSource source,
-                                   List<BasinCarve> carves, List<Atoll> atolls, Set<VoronoiFracture.Binding> fractures) {
+                                   List<BasinCarve> carves, List<Atoll> atolls, Set<VoronoiFracture.Binding> fractures,
+                                   List<GroveBreak> breaks) {
         if (carves.isEmpty() && atolls.isEmpty() && fractures.isEmpty()
                 || !(level.getChunkSource().getGenerator() instanceof NoiseBasedChunkGenerator generator)) {
             return;
@@ -127,10 +132,20 @@ public final class RegionBinding {
             BasinField.put(level.dimension(), field);
             basins = field;
         }
+        // The grove breaks, checked against the unbroken grove islands: their own function's argument.
+        BreakField breakField = null;
+        if (!breaks.isEmpty()) {
+            GroveBreak first = breaks.getFirst();
+            breakField = new BreakField(level.getSeed(), new TerrainProbe(source, randomState.sampler(),
+                    first.argument(), atoll == null ? null : atoll.weight(), noise.minY(), noise.minY() + noise.height()),
+                    first.verticalScale());
+            BreakField bound = breakField;
+            breaks.forEach(b -> b.binding().bind(bound));
+        }
         LandmarkField landmarks = new LandmarkField(level.getSeed(), probe, basins, vertical, level.getMaxBuildHeight());
         fractures.forEach(f -> f.bind(landmarks));
         LandmarkField.put(level.dimension(), landmarks);
-        GroveField.put(level.dimension(), new GroveField(level.getSeed(), probe, landmarks, vertical,
+        GroveField.put(level.dimension(), new GroveField(level.getSeed(), probe, landmarks, breakField, vertical,
                 level.getMaxBuildHeight()));
     }
 

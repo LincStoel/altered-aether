@@ -35,6 +35,10 @@ public final class AALootProvider extends JsonDataProvider {
         table("secret", pool(3, 5, camp()), pool(1, 2, secret()));
         table("heartwood", pool(2, 4, camp()), pool(2, 3, secret()), pool(1, 1, heartwood()),
                 pool(1, 1, entry("aether:golden_amber", 1, 8, 16)));
+        // A ruin's cellar or a head's cache: old odds and ends, a little better than a camp.
+        table("ruin", pool(2, 4, camp()), pool(0, 1, secret()));
+        // A deserted village's crates: mostly junk.
+        table("village_crate", pool(2, 5, junk()), pool(0, 1, camp()));
         table("stump", pool(2, 3, camp()), pool(2, 4, secret()), pool(2, 3, heartwood()), pool(1, 1, stump()),
                 pool(1, 1, entry("aether:golden_amber", 1, 12, 24)));
     }
@@ -54,6 +58,22 @@ public final class AALootProvider extends JsonDataProvider {
                 entry("aether:aechor_petal", 6, 1, 3),
                 entry("aether:skyroot_bucket", 3, 1, 1),
                 entry("aether:book_of_lore", 2, 1, 1));
+    }
+
+    /** What the villagers left behind when they went: nothing anyone came back for. */
+    private static JsonArray junk() {
+        return entries(
+                entry("aether:skyroot_stick", 20, 1, 6),
+                entry("aether:skyroot_planks", 12, 1, 4),
+                entry("minecraft:string", 12, 1, 3),
+                entry("minecraft:bowl", 10, 1, 2),
+                entry("aether:holystone", 10, 1, 4),
+                entry("minecraft:paper", 6, 1, 3),
+                entry("aether:aechor_petal", 5, 1, 2),
+                entry("aether:skyroot_bucket", 4, 1, 1),
+                entry("minecraft:wheat_seeds", 6, 1, 4),
+                entry("aether:zanite_gemstone", 2, 1, 1),
+                entry("aether:golden_amber", 2, 1, 2));
     }
 
     private static JsonArray secret() {

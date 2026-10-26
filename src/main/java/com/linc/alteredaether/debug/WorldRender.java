@@ -31,7 +31,7 @@ import java.nio.file.Path;
  * seen from the south and from the east, each block coloured by its map colour and fading with distance. Written as
  * PNGs to {@code renders/} in the server directory.
  */
-final class WorldRender {
+public final class WorldRender {
     /** Pixels per block: 2 for area renders, more for a close look at one feature. */
     private static int SCALE = 2;
     private static final int SKY = 0xB8D4F0;
@@ -42,8 +42,8 @@ final class WorldRender {
     }
 
     /** As above, between two heights, at {@code scale} pixels per block. */
-    static void render(ServerLevel level, String name, int minX, int minZ, int maxX, int maxZ, int minY, int maxY,
-                       int scale) {
+    public static void render(ServerLevel level, String name, int minX, int minZ, int maxX, int maxZ, int minY,
+                              int maxY, int scale) {
         render(level, name, minX, minZ, maxX, maxZ, minY, maxY, scale, null);
     }
 

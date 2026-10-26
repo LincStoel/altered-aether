@@ -51,6 +51,7 @@ public final class MireBuilder {
     /** How far above the water dug columns and banks are cleared. */
     private static final int CLEAR = 16;
     private static final BlockState WATER = Blocks.WATER.defaultBlockState();
+    private static final Block STONE = block("aether:holystone", Blocks.STONE);
     private static final TagKey<Block> AETHER_DIRT =
             TagKey.create(Registries.BLOCK, ResourceLocation.parse("aether:aether_dirt"));
 
@@ -211,8 +212,18 @@ public final class MireBuilder {
                 cut = true;
             }
         }
-        if (cut && level.getBlockState(pos.set(x, bank, z)).is(dirt)) {
+        if (!cut) {
+            return;
+        }
+        BlockState top = level.getBlockState(pos.set(x, bank, z));
+        if (top.is(dirt)) {
             level.setBlock(pos, natural(grass), Block.UPDATE_CLIENTS);
+        } else if (top.is(STONE)) {
+            // Cut deep into a rise, the bank lays bare the stone under its soil: it grasses over that too.
+            level.setBlock(pos, natural(grass), Block.UPDATE_CLIENTS);
+            for (int y = bank - 1; y >= bank - 2 && level.getBlockState(pos.set(x, y, z)).is(STONE); y--) {
+                level.setBlock(pos, natural(dirt), Block.UPDATE_CLIENTS);
+            }
         }
     }
 
@@ -232,6 +243,13 @@ public final class MireBuilder {
                     : natural(block("aether:aether_dirt", Blocks.DIRT));
         }
         level.setBlock(pos, bed, Block.UPDATE_CLIENTS);
+    }
+
+    /** What a flooded hollow's bed is made of: mud, or with no Deep Aether, dirt and clay. */
+    static BlockState bed(int x, int z) {
+        BlockState mud = deep("aether_mud");
+        return mud != null ? mud : noise(SALT + 3, x, z, 5) < -0.45 ? Blocks.CLAY.defaultBlockState()
+                : natural(block("aether:aether_dirt", Blocks.DIRT));
     }
 
     /**

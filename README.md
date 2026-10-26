@@ -32,7 +32,7 @@ switch in the config's `[compat]` section is on).
 | Sunken Atoll | a sky full of low-lying atolls, big and small: thin rings of quicksoil shore round lagoons with branching coral reefs, glowstone thickets, kelp, tropical fish, turtles and glow squid; some are half-bagel rings, oval or twisting, with a river round the crown and open sky in the middle |
 | Frozen Lakes | high icestone islands under aether dirt holding lakes frozen over at the surface, with snow on the banks |
 | Skyroot Cathedral | broad forest islands of giant skyroots standing shoulder to shoulder, joined by roots, layering bows and canopy bridges: hollow elders you can build in, tunnel giants, Tule masses, bow colonies and cathedral rings; trails, lamps, camps and fireflies |
-| Nurselog Hollow | the cathedral's fallen elders, round its edges and now and then alone: colossal fallen logs with root plates and walkable hollows, snags, giant stumps, lattice skeletons and rings of regrowth |
+| Nurselog Hollow | the cathedral's fallen elders, round its edges and now and then alone: colossal fallen logs with walkable hollows and root plates over craters, some flooded into muddy ponds, snags, giant stumps, lattice skeletons and rings of regrowth |
 | Blazing, Cascading, Flourishing and Vexing Archwood Groves | Ars Nouveau's archwood forests (need Ars Nouveau) |
 | Flashing Archwood Grove | needs Ars Nouveau and Ars Elemental |
 
@@ -53,8 +53,25 @@ through the water into a muddy bed. The lake has lily pads, seagrass and stands 
 (mangrove roots without Deep Aether), and cattails grow on its shores. Neighbouring lakes may join, and every
 giant that stands in one gets its own islet. The water of both grove biomes is a murky swamp green.
 
-`/altered_aether giant <type>` finds the nearest giant of a kind, and `giant mire` the nearest swamp lake (operators
-only).
+Rarely a colossal stump in the Nurselog Hollow holds a spring. Its heart is a brimming pool, and the water spills
+through notches in the rim and down grooves worn in the flanks. It ends in a mire choked with roots round the foot.
+Wherever the water runs, the bark is worn away and the bare grain lies the way the water flows. The wet top is green
+with grass and saplings.
+
+The Nurselog Hollow's islands are coming apart with no living roots left to hold them. Here and there a bite of an
+island's edge has broken off and drifted out, sunk and tipped. Across the gap lies the hollow giant whose fall began
+it, with its last roots sagging beneath. Much more rarely a fissure of open sky runs right across an island.
+
+Both groves hold the stonework of the people who came before the pilgrims, all holystone and moss and unlit. There
+are cottage shells broken to different heights, the stump of a keep with its curtain walls, and rings of standing
+stones with trilithons inside.
+
+Out on the Aether Plateau, rarely, a row of one to three great stone heads stands sunk to their chins in the turf,
+all gazing the same way.
+
+`/altered_aether giant <type>` finds the nearest giant of a kind (including `spring_stump`), `giant mire` the
+nearest swamp lake, and `giant break_edge` or `giant break_chasm` the nearest break. `/altered_aether ruin <kind>`
+builds a ruin (`cottage`, `keep`, `circle` or `head`) where you stand. All three are for operators only.
 
 **Rare landmarks**, each one-in-many:
 
@@ -68,6 +85,20 @@ only).
 - **The Grandfather**: the Skyroot Cathedral's ancestor tree, some 140 blocks tall, every kind of giant in one: a
   tunnel through its foot, a ring of children risen from its bows, and over the tunnel, up one of the bows, a room
   lined with golden oak heartwood.
+- **Deserted village tree**: a squat Skyroot Cathedral tree, wider than it is tall, with a canopy some 90 blocks
+  across.
+  - A street runs round its trunk, cut back under the overhang of the bulb above, with railings along the ledge.
+  - Rounded houses are grown into the heartwood off the street, with a burl swelling round each doorway, and two
+    passages lead to the atrium: a tall dome through both storeys, with long plank tables, lanterns, glowstone
+    dripping from the crown, an altar at its head, and with Deep Aether, totems set into the walls.
+  - A ramp winds up inside the wall to a second gallery and a balcony over the atrium. From there a ladder climbs
+    to the top of the bulb, where the villagers' fields lie overgrown round its neck: squash vines and berry bushes,
+    now and then a patch of overworld crops.
+  - Half the time it stands in a broad swamp that reaches out as far as the ground allows, a crescent on a small
+    island. The old stone ruins out in it stand on islets of their own, or have sunk into the water.
+  - The people are long gone: a bed here, a freezer there, crates of junk, dark lanterns over the street. Now and
+    then one nitwit still lives in a house.
+  - The ruins of their older stone houses lie round its foot among young trees.
 
 `/altered_aether landmark <type>` finds the nearest one (operators only).
 
@@ -116,7 +147,10 @@ on cold aerclouds.
 - `[basins]`: each kind of lake on or off and its rarity, waterfall frequency, coral density.
 - `[groves]`: giant spacing, golden heartwood chance, the share of Deep Aether wood colonies, camp and secret-chest
   chances, the share of trails and camps still tended, and the chance and size of the swamp lakes (`mire_chance`,
-  `mire_size`).
+  `mire_size`). Also the spring stumps (`spring_stump_chance`), ruins (`ruin_chance`, `stone_head_chance`), the
+  village tree's nitwit and swamp (`village_nitwit_chance`, `village_mire_chance`), flooded fallen-giant craters
+  (`flooded_crater_chance`) and the island breaks (`grove_break_chance`,
+  `grove_chasm_share`).
 - `[features]`: a density multiplier per decoration family.
 - `[spawns]`: per added mob: on or off, `aether_exclusive`, weight, group size and spawn cost.
 - `[climate]`: the biome temperature fix.
@@ -176,9 +210,11 @@ comma-separated list of jar name prefixes) picks which.
 
 Worldgen tools, all on the dev server:
 
-- `-PaaBench=radius[,biome|x:z|landmark:<type>|giant:<type>|giant:mire|core:<biome>]` generates that many chunks around a
-  point, logs the time per chunk, surface, decoration, basin and landmark tallies, then stops. `-PaaRender=true` also
-  writes top and side views of the area to `run-server/renders/`, and for `giant:` slices through the giant.
+- `-PaaBench=radius[,biome|x:z|landmark:<type>|giant:<type>|giant:mire|break:<edge|chasm>|core:<biome>]` generates
+  that many chunks around a point, logs the time per chunk, surface, decoration, basin and landmark tallies, then
+  stops. `-PaaRender=true` also writes top and side views of the area to `run-server/renders/`. For `giant:`,
+  `break:` and `landmark:village_tree` it adds slices through the site, and for the village tree, plans of its two
+  galleries.
 - `-PaaReport=radius,step` prints a report of biomes, masks and columns.
 - `/altered_aether debug` reports the biome, climate point, region mask, basin, landmark and storm at your position.
 - `-PaaTour=stop,stop,...` on the client quick-plays `run/saves/tour` and screenshots each landmark (and `storm`,

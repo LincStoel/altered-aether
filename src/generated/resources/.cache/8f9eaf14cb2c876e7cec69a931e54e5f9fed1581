@@ -1,4 +1,4 @@
-// 1.21.1	2026-10-26T11:41:23.7633508	Altered Aether terrain (tall)
+// 1.21.1	2026-10-26T14:42:02.8701641	Altered Aether terrain (tall)
 f42ea67ddb2a016ae6e8bcabfc213cce31a103fe datapacks/tall_aether/data/aether/dimension_type/the_aether.json
 e7d8bc7b25714231079ba52b6565836a7cc0e594 datapacks/tall_aether/data/aether/worldgen/configured_feature/quicksoil_shelf.json
 e665c2be2496cfe672706cb9d2257a31df67021f datapacks/tall_aether/data/aether/worldgen/noise_settings/skylands.json
@@ -14,6 +14,7 @@ dd175b95e78f5c71918ff43388a5659f6648eef7 datapacks/tall_aether/data/altered_aeth
 839b3e121dc386ed7812ce0fa68ff73841260bd6 datapacks/tall_aether/data/altered_aether/worldgen/density_function/terrain/dune_ridges.json
 a4d2291b31bf3a9f730e13245fb7cea3db28b451 datapacks/tall_aether/data/altered_aether/worldgen/density_function/terrain/dune_sheet.json
 5178b015130f87dbbe40c92df4381a56be51882f datapacks/tall_aether/data/altered_aether/worldgen/density_function/terrain/grove_land.json
+dcd5a0aced10a4413b3e5d81328bba5251b3e305 datapacks/tall_aether/data/altered_aether/worldgen/density_function/terrain/grove_land_broken.json
 a52a5a0ee55572a18bb86cff5b07db81e6770ef7 datapacks/tall_aether/data/altered_aether/worldgen/density_function/terrain/island.json
 a12074264b4e5cc1264a8518715c7bc023520d57 datapacks/tall_aether/data/altered_aether/worldgen/density_function/terrain/island_shift.json
 c46ac2a682aaed2da21192610462cb1a1103da16 datapacks/tall_aether/data/altered_aether/worldgen/density_function/terrain/jag.json

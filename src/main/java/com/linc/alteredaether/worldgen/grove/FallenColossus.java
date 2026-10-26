@@ -14,6 +14,7 @@
  */
 package com.linc.alteredaether.worldgen.grove;
 
+import com.linc.alteredaether.config.AACommonConfig;
 import com.linc.alteredaether.worldgen.grove.shape.Blob;
 import com.linc.alteredaether.worldgen.grove.shape.Carve;
 import com.linc.alteredaether.worldgen.grove.shape.Part;
@@ -37,6 +38,16 @@ final class FallenColossus {
         double rootX = s.x - hx * length * 0.4, rootZ = s.z - hz * length * 0.4;
         double tipX = s.x + hx * length * 0.6, tipZ = s.z + hz * length * 0.6;
         int rootGround = groundOr(s, rootX, rootZ), tipGround = groundOr(s, tipX, tipZ);
+        span(s, heartChance, radius, heading, rootX, rootZ, rootGround, tipX, tipZ, tipGround);
+    }
+
+    /**
+     * A fallen colossus lying from its root end to its crown end, each resting on the given ground: across a gap, its
+     * middle simply spans it.
+     */
+    static void span(Sketch s, double heartChance, double radius, double heading, double rootX, double rootZ,
+                     int rootGround, double tipX, double tipZ, int tipGround) {
+        double hx = Math.cos(heading), hz = Math.sin(heading);
         // Settled a little into the ground, the crown end lower as it tapers.
         double rootY = rootGround + radius * 0.7, tipY = tipGround + radius * 0.45;
         s.tube(Tube.line(rootX, rootY, rootZ, tipX, tipY, tipZ, radius, radius * 0.6, Part.Role.LOG));
@@ -82,7 +93,21 @@ final class FallenColossus {
         }
         // The crater it tore out, behind the plate.
         double craterX = plateX - hx * (across * 0.8 + 4), craterZ = plateZ - hz * (across * 0.8 + 4);
-        s.carve(Carve.chamber(craterX, rootGround + 1, craterZ, across * 0.7, 4.5, across * 0.7, rootGround - 3));
+        Carve crater = Carve.chamber(craterX, rootGround + 1, craterZ, across * 0.7, 4.5, across * 0.7,
+                rootGround - 3);
+        // Now and then it has filled with rain and silt: a pond over mud, banks of it breaking the surface. The roll
+        // is a hash of the crater's place, so every other fallen giant comes out just as before.
+        int pond = pond(s, craterX, craterZ, across * 0.7, rootGround);
+        if (pond != Integer.MIN_VALUE) {
+            int bed = crater.floor();
+            long salt = (long) Math.floor(craterX) * 31 + (long) Math.floor(craterZ);
+            crater = crater.pool(pond, (x, z) -> {
+                double n = GroveBuilder.hash(salt, Math.floorDiv(x, 2), 1, Math.floorDiv(z, 2));
+                return bed + Math.min(n < 0.5 ? 0 : n < 0.85 ? 1 : 2, pond - bed);
+            });
+            s.point("pond", craterX, pond, craterZ);
+        }
+        s.carve(crater);
         s.point("crater", craterX, rootGround - 3, craterZ);
 
         // The crown end, shattered: splinters of bare wood bristling out of the break.
@@ -137,6 +162,30 @@ final class FallenColossus {
             s.carve(Carve.chamber(sx, sf + 1, sz, 1.6, 1.6, 1.6, sf));
             Furnish.chest(s, sx, sf, sz, net.minecraft.core.Direction.NORTH, Furnish.SECRET, Prop.Anchor.AT);
         }
+    }
+
+    /**
+     * The water line of the pond in a crater, or MIN_VALUE where it stays dry: by the odds, and only where the ground
+     * all round and across it stands over the water, so it can't spill. The water lies a block under the lowest of
+     * it, and at least a block over the crater's floor.
+     */
+    private static int pond(Sketch s, double cx, double cz, double radius, int ground) {
+        if (GroveBuilder.hash(0x9E3779B97F4A7C15L, Mth.floor(cx), ground, Mth.floor(cz))
+                >= AACommonConfig.FLOODED_CRATER_CHANCE.get()) {
+            return Integer.MIN_VALUE;
+        }
+        int water = ground - 1;
+        for (int d = 0; d < 12; d++) {
+            double a = d * Mth.TWO_PI / 12;
+            for (double r : new double[]{radius * 0.5, radius + 1.5}) {
+                int g = s.groundAt(cx + Math.cos(a) * r, cz + Math.sin(a) * r);
+                if (g == Integer.MIN_VALUE) {
+                    return Integer.MIN_VALUE;
+                }
+                water = Math.min(water, g - 1);
+            }
+        }
+        return water >= ground - 2 ? water : Integer.MIN_VALUE;
     }
 
     private static int groundOr(Sketch s, double px, double pz) {

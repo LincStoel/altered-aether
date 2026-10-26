@@ -1,4 +1,4 @@
-// 1.21.1	2026-10-26T11:41:23.7643569	Altered Aether terrain (stock)
+// 1.21.1	2026-10-26T14:42:02.8727151	Altered Aether terrain (stock)
 e5fc8aa9d7e1f95a9222fc9d912a0e7dd37f965e data/aether/worldgen/noise_settings/skylands.json
 053b85fe60962463bbdb50fc2392adf0817db93b data/altered_aether/neoforge/biome_modifier/decoration/shelf_cascading.json
 8b0be10aaf6a3dfa2a2601e3dc0ccd5d81205889 data/altered_aether/neoforge/biome_modifier/decoration/shelf_vexing.json
@@ -24,11 +24,12 @@ c9386622fc169209769281c2eee3bcd1936f6a8d data/altered_aether/worldgen/density_fu
 cdf66ea29b88186e85dd8acb54a68ebbbb0b0ff6 data/altered_aether/worldgen/density_function/terrain/dune_weight.json
 5f0511b89952a580258ef1d95189a1b65e78e9fa data/altered_aether/worldgen/density_function/terrain/frozen_lakes_mask.json
 b8a18fd425601584c79e44e448b6eeba5f002ae5 data/altered_aether/worldgen/density_function/terrain/grove_land.json
+48f265e3fbf1d57e8ae5829c8a9af5a8d18233c4 data/altered_aether/worldgen/density_function/terrain/grove_land_broken.json
 ad9941fdc2f678c13aaf666f443f5ef7a072b655 data/altered_aether/worldgen/density_function/terrain/grove_mask.json
 db9a3fef0938a5c68a2e0fcd1f15c8120ad66eed data/altered_aether/worldgen/density_function/terrain/grove_weight.json
 bfeed5b7754442a7713417fadd9af16352cdf7b7 data/altered_aether/worldgen/density_function/terrain/island.json
 630277676c5c5ce5c924ce335840209f59b73031 data/altered_aether/worldgen/density_function/terrain/island_dunes.json
-2c43f52814a5c61a200e5f36b6d34a2bb7696e40 data/altered_aether/worldgen/density_function/terrain/island_groves.json
+255241373d9654e55453056b13640cfd41ec3b32 data/altered_aether/worldgen/density_function/terrain/island_groves.json
 53c85c707f9c60e53981f13fe6b4fcd1d87729fc data/altered_aether/worldgen/density_function/terrain/island_shift.json
 abe29ac17f1a09eb82bf8881294c58cfc2b42258 data/altered_aether/worldgen/density_function/terrain/island_shifted.json
 7e80c3ed938e1ae24a4e68cc1341c0313dfe2134 data/altered_aether/worldgen/density_function/terrain/jag.json

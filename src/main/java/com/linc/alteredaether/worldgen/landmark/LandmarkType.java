@@ -41,6 +41,11 @@ public enum LandmarkType {
      * room over its tunnel.
      */
     GRANDFATHER(1536, 0.9, 72, "skyroot_cathedral"),
+    /**
+     * A squat village tree long deserted: a street round its trunk, houses grown into its heartwood, and the ruins
+     * of older stone houses round its foot.
+     */
+    VILLAGE_TREE(2048, 0.45, 120, "skyroot_cathedral"),
     /** A Sunken Atoll with a second ring in its lagoon and an islet at its heart. */
     DOUBLE_ATOLL(0, 0, 0, "sunken_atoll");
 

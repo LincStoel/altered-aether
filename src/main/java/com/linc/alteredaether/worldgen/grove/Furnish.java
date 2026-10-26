@@ -23,11 +23,14 @@ import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
+import net.minecraft.world.level.block.BarrelBlock;
 import net.minecraft.world.level.block.BedBlock;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.CampfireBlock;
 import net.minecraft.world.level.block.ChestBlock;
+import net.minecraft.world.level.block.CropBlock;
+import net.minecraft.world.level.block.LadderBlock;
 import net.minecraft.world.level.block.RotatedPillarBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BedPart;
@@ -48,7 +51,7 @@ import java.util.Optional;
  */
 final class Furnish {
     static final ResourceKey<LootTable> CAMP = loot("camp"), SECRET = loot("secret"), HEARTWOOD = loot("heartwood"),
-            STUMP = loot("stump");
+            STUMP = loot("stump"), VILLAGE = loot("village_crate");
 
     private static ResourceKey<LootTable> loot(String name) {
         return ResourceKey.create(Registries.LOOT_TABLE, AlteredAether.id("chests/grove/" + name));
@@ -82,7 +85,7 @@ final class Furnish {
         return parsed.map(v -> state.setValue(property, v)).orElse(state);
     }
 
-    private static Direction horizontal(double angle) {
+    static Direction horizontal(double angle) {
         return Direction.fromYRot(angle * Mth.RAD_TO_DEG - 90);
     }
 
@@ -150,6 +153,259 @@ final class Furnish {
         s.prop(new Prop(Mth.floor(x), y, Mth.floor(z), anchor,
                 List.of(Blocks.CHEST.defaultBlockState().setValue(ChestBlock.FACING, facing)), loot));
         s.point("chest", x, y, z);
+    }
+
+    // ----------------------------------------------------------------------------------------------- houses --
+
+    /** What a deserted house may still hold, one of each at most. */
+    private enum Keepsake { BED, STATION, CRATE, POT }
+
+    /** The Aether's workstations, the old villagers' tools. */
+    private static final String[] STATIONS = {"aether:altar", "aether:freezer", "aether:incubator",
+            "aether:skyroot_bookshelf", "aether:altar", "aether:freezer"};
+
+    /**
+     * What is left in a deserted house round (cx, cz) on its floor: one to three things, no more. A bed against the
+     * back wall, head to the heartwood; one of the old workstations; a crate of odds and ends; a potted plant gone
+     * wild; now and then a lantern still hanging. {@code out} is the bearing from the house to its door.
+     */
+    static void house(Sketch s, double cx, int floor, double cz, double out) {
+        double in = out + Math.PI, side = out + Mth.HALF_PI;
+        List<Keepsake> left = new ArrayList<>(List.of(Keepsake.values()));
+        int items = s.range(1, 3);
+        for (int n = 0; n < items && !left.isEmpty(); n++) {
+            Keepsake keepsake = left.remove(s.random.nextInt(left.size()));
+            switch (keepsake) {
+                case BED -> {
+                    BlockState bed = block("aether:skyroot_bed");
+                    if (bed != null) {
+                        Direction toward = horizontal(in);
+                        int fx = Mth.floor(cx + Math.cos(in) * 0.6), fz = Mth.floor(cz + Math.sin(in) * 0.6);
+                        s.prop(new Prop(fx, floor, fz, Prop.Anchor.AT, List.of(bed.setValue(BedBlock.FACING, toward)
+                                .setValue(BedBlock.PART, BedPart.FOOT)), null));
+                        s.prop(new Prop(fx + toward.getStepX(), floor, fz + toward.getStepZ(), Prop.Anchor.AT,
+                                List.of(bed.setValue(BedBlock.FACING, toward).setValue(BedBlock.PART, BedPart.HEAD)),
+                                null));
+                    }
+                }
+                case STATION -> {
+                    BlockState station = block(STATIONS[s.random.nextInt(STATIONS.length)]);
+                    if (station != null) {
+                        station = with(station, "facing", horizontal(out).getSerializedName());
+                        s.prop(new Prop(Mth.floor(cx + Math.cos(side) * 1.7), floor,
+                                Mth.floor(cz + Math.sin(side) * 1.7), Prop.Anchor.AT, List.of(station), null));
+                    }
+                }
+                case CRATE -> crate(s, cx - Math.cos(side) * 1.7, floor, cz - Math.sin(side) * 1.7, out);
+                case POT -> {
+                    BlockState pot = block(s.random.nextBoolean() ? "aether:potted_skyroot_sapling"
+                            : "aether:potted_white_flower");
+                    if (pot != null) {
+                        s.prop(new Prop(Mth.floor(cx + Math.cos(in) * 1.6 + Math.cos(side)),
+                                floor, Mth.floor(cz + Math.sin(in) * 1.6 + Math.sin(side)), Prop.Anchor.AT,
+                                List.of(pot), null));
+                    }
+                }
+            }
+        }
+        if (s.random.nextDouble() < 0.35) {
+            hanging(s, Mth.floor(cx), floor + 2, Mth.floor(cz), 1);
+        }
+        s.point("house", cx, floor, cz);
+    }
+
+    /** A crate of whatever the villagers left behind: a barrel, or now and then a chest. */
+    static void crate(Sketch s, double x, int floor, double z, double facing) {
+        BlockState crate = s.random.nextDouble() < 0.75
+                ? Blocks.BARREL.defaultBlockState().setValue(BarrelBlock.FACING, Direction.UP)
+                : Blocks.CHEST.defaultBlockState().setValue(ChestBlock.FACING, horizontal(facing));
+        s.prop(new Prop(Mth.floor(x), floor, Mth.floor(z), Prop.Anchor.AT, List.of(crate), VILLAGE));
+    }
+
+    /** A workstation standing out on a street, its users long gone. */
+    static void station(Sketch s, double x, int floor, double z, double facing) {
+        BlockState station = block(STATIONS[s.random.nextInt(STATIONS.length)]);
+        if (station != null) {
+            s.prop(new Prop(Mth.floor(x), floor, Mth.floor(z), Prop.Anchor.AT,
+                    List.of(with(station, "facing", horizontal(facing).getSerializedName())), null));
+        }
+    }
+
+    /** A post of a railing, of skyroot fence, {@code tall} blocks high. */
+    static void rail(Sketch s, int x, int floor, int z, int tall) {
+        BlockState fence = block("aether:skyroot_fence");
+        if (fence != null) {
+            List<BlockState> blocks = new ArrayList<>();
+            for (int i = 0; i < tall; i++) {
+                blocks.add(fence);
+            }
+            s.prop(new Prop(x, floor, z, Prop.Anchor.AT, blocks, null));
+        }
+    }
+
+    /** One block set exactly where it is drawn, if it exists. */
+    static void place(Sketch s, int x, int y, int z, String id) {
+        BlockState state = block(id);
+        if (state != null) {
+            s.prop(new Prop(x, y, z, Prop.Anchor.AT, List.of(state), null));
+        }
+    }
+
+    // ---------------------------------------------------------------------------------------- atrium, fields --
+
+    /** One block of a long table of skyroot planks. */
+    static void table(Sketch s, int x, int floor, int z) {
+        place(s, x, floor, z, "aether:skyroot_planks");
+    }
+
+    /** A seat of skyroot stair at a table, its back to {@code back}. */
+    static void seat(Sketch s, int x, int floor, int z, Direction back) {
+        BlockState stair = block("aether:skyroot_stairs");
+        if (stair != null) {
+            s.prop(new Prop(x, floor, z, Prop.Anchor.AT, List.of(with(stair, "facing", back.getSerializedName())),
+                    null));
+        }
+    }
+
+    /** A lantern set down on a table or the floor. */
+    static void standingLantern(Sketch s, int x, int y, int z) {
+        s.prop(new Prop(x, y, z, Prop.Anchor.AT, List.of(with(lantern(), "hanging", "false")), null));
+    }
+
+    /** A drip of glowstone {@code length} blocks long from the first underside above (x, y, z). */
+    static void glowstone(Sketch s, int x, int y, int z, int length) {
+        List<BlockState> blocks = new ArrayList<>();
+        for (int i = 0; i < length; i++) {
+            blocks.add(Blocks.GLOWSTONE.defaultBlockState());
+        }
+        s.prop(new Prop(x, y, z, Prop.Anchor.HANG, blocks, null));
+    }
+
+    /** Deep Aether's totems, the villagers' carvings of the sky's creatures. */
+    private static final String[] TOTEMS = {"moa_totem", "aerwhale_totem", "zephyr_totem"};
+
+    /**
+     * With Deep Aether, a totem set in a niche cut into the wall at (x, y, z), facing out of it; nothing without.
+     * Returns whether there was one.
+     */
+    static boolean totem(Sketch s, int x, int y, int z, Direction facing) {
+        BlockState totem = deep(TOTEMS[s.random.nextInt(TOTEMS.length)]);
+        if (totem == null) {
+            return false;
+        }
+        s.carve(com.linc.alteredaether.worldgen.grove.shape.Carve.chamber(x, y, z, 0.7, 0.7, 0.7, y));
+        s.prop(new Prop(x, y, z, Prop.Anchor.AT, List.of(with(totem, "facing", facing.getSerializedName())), null));
+        return true;
+    }
+
+    /** A ladder {@code tall} rungs high up from (x, floor, z), its back to the wall opposite {@code facing}. */
+    static void ladder(Sketch s, int x, int floor, int z, int tall, Direction facing) {
+        List<BlockState> blocks = new ArrayList<>();
+        for (int i = 0; i < tall; i++) {
+            blocks.add(Blocks.LADDER.defaultBlockState().setValue(LadderBlock.FACING, facing));
+        }
+        s.prop(new Prop(x, floor, z, Prop.Anchor.AT, blocks, null));
+    }
+
+    /** What one patch of the villagers' fields was given over to. */
+    enum Crop {
+        /** Deep Aether's squash, on vines across tilled earth. */
+        SQUASH,
+        /** Rows of the Aether's blue berry bushes. */
+        BERRIES,
+        /** Seed brought up from below, now and then: wheat, carrots or potatoes. */
+        OVERWORLD
+    }
+
+    /** The overworld crops, rare up here. */
+    private static final Block[] OVERWORLD = {Blocks.WHEAT, Blocks.CARROTS, Blocks.POTATOES};
+    /** The squash a vine may bear. */
+    private static final String[] SQUASH = {"blue_squash", "green_squash", "purple_squash"};
+
+    /** What a patch grows: mostly the Aether's own plants, an overworld crop about one patch in ten. */
+    static Crop crop(Sketch s) {
+        double roll = s.random.nextDouble();
+        if (roll < 0.1) {
+            return Crop.OVERWORLD;
+        }
+        return deep("squash_stem") != null && roll < 0.6 ? Crop.SQUASH : Crop.BERRIES;
+    }
+
+    /**
+     * One block of an old field on the solid top near {@code guess}, of the patch's {@code crop}: a squash vine on
+     * tilled earth, now and then bearing its squash on the ground beside it; a berry bush, or a young one; or an
+     * overworld crop at whatever stage it reached. Where the weeds have won, grass and whatever seeded itself.
+     * {@code taken} holds the columns already planted, as {@code BlockPos.asLong(x, 0, z)}; this adds its own.
+     */
+    static void field(Sketch s, int x, int guess, int z, Crop crop, java.util.Set<Long> taken) {
+        if (!taken.add(net.minecraft.core.BlockPos.asLong(x, 0, z))) {
+            return;
+        }
+        BlockState farmland = block("aether:aether_farmland");
+        BlockState grass = block("aether:aether_grass_block");
+        double roll = s.random.nextDouble();
+        if (farmland != null && roll < 0.65) {
+            BlockState tilled = with(farmland, "moisture", "7");
+            switch (crop) {
+                case SQUASH -> {
+                    BlockState stem = deep("squash_stem"), attached = deep("attached_squash_stem");
+                    BlockState fruit = deep(SQUASH[s.random.nextInt(SQUASH.length)]);
+                    Direction toward = Direction.Plane.HORIZONTAL.getRandomDirection(s.random);
+                    if (attached != null && fruit != null && s.random.nextDouble() < 0.2 && taken.add(
+                            net.minecraft.core.BlockPos.asLong(x + toward.getStepX(), 0, z + toward.getStepZ()))) {
+                        s.prop(new Prop(x, guess, z, Prop.Anchor.TOPSOIL, List.of(tilled,
+                                with(attached, "facing", toward.getSerializedName())), null));
+                        s.prop(new Prop(x + toward.getStepX(), guess, z + toward.getStepZ(), Prop.Anchor.GROUND,
+                                List.of(fruit), null));
+                    } else if (stem != null) {
+                        s.prop(new Prop(x, guess, z, Prop.Anchor.TOPSOIL,
+                                List.of(tilled, with(stem, "age", String.valueOf(s.random.nextInt(8)))), null));
+                    }
+                    return;
+                }
+                case BERRIES -> {
+                    BlockState bush = block(s.random.nextDouble() < 0.7 ? "aether:berry_bush"
+                            : "aether:berry_bush_stem");
+                    if (bush != null && grass != null) {
+                        s.prop(new Prop(x, guess, z, Prop.Anchor.TOPSOIL, List.of(natural(grass), natural(bush)),
+                                null));
+                    }
+                    return;
+                }
+                case OVERWORLD -> {
+                    Block kind = OVERWORLD[s.random.nextInt(OVERWORLD.length)];
+                    BlockState plant = kind.defaultBlockState().setValue(CropBlock.AGE, 2 + s.random.nextInt(6));
+                    s.prop(new Prop(x, guess, z, Prop.Anchor.TOPSOIL, List.of(tilled, plant), null));
+                    return;
+                }
+            }
+        }
+        if (grass == null) {
+            return;
+        }
+        double weed = s.random.nextDouble();
+        List<BlockState> blocks = new ArrayList<>(List.of(natural(grass)));
+        if (weed < 0.3) {
+            BlockState feather = deep("tall_feather_grass");
+            BlockState tall = feather != null && s.random.nextBoolean() ? feather : Blocks.TALL_GRASS.defaultBlockState();
+            blocks.add(with(tall, "half", "lower"));
+            blocks.add(with(tall, "half", "upper"));
+        } else if (weed < 0.7) {
+            BlockState feather = deep("feather_grass");
+            blocks.add(feather != null && s.random.nextBoolean() ? feather : Blocks.SHORT_GRASS.defaultBlockState());
+        } else {
+            String[] flowers = {"aether:white_flower", "aether:purple_flower", "deep_aether:aerlavender",
+                    "deep_aether:sky_tulips", "deep_aether:radiant_orchid"};
+            String id = flowers[s.random.nextInt(flowers.length)];
+            BlockState flower = id.startsWith("deep_aether:") ? deep(id.substring(12)) : block(id);
+            if (flower == null) {
+                flower = block("aether:white_flower");
+            }
+            if (flower != null) {
+                blocks.add(flower);
+            }
+        }
+        s.prop(new Prop(x, guess, z, Prop.Anchor.TOPSOIL, blocks, null));
     }
 
     // ------------------------------------------------------------------------------------------------ light --

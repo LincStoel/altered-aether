@@ -37,6 +37,7 @@ import net.minecraft.world.level.block.GrowingPlantHeadBlock;
 import net.minecraft.world.level.block.LeavesBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.Heightmap;
+import net.minecraft.world.level.material.Fluids;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -279,14 +280,18 @@ public final class GroveBuilder {
                             runnerUp = part;
                         }
                     }
-                    double cut = -Double.MAX_VALUE;
-                    Carve carve = null;
+                    double cut = -Double.MAX_VALUE, wetCut = -Double.MAX_VALUE;
+                    Carve carve = null, wet = null;
                     for (Carve c : carves) {
                         if (c.bounds().height(y)) {
                             double m = c.margin(bx, y, bz);
                             if (m > cut) {
                                 cut = m;
                                 carve = c;
+                            }
+                            if (c.wet() && m > wetCut) {
+                                wetCut = m;
+                                wet = c;
                             }
                         }
                     }
@@ -303,15 +308,29 @@ public final class GroveBuilder {
                                 continue;
                             }
                         }
-                        level.setBlock(pos, material(palette, first, best, runnerUp, second, cut, bx, y, bz), 2);
+                        level.setBlock(pos, material(palette, first, best, runnerUp, second, cut, wet, wetCut, bx, y,
+                                bz),
+                                2);
                         continue;
                     }
                     if (cut > 0) {
                         if (y >= carve.floor()) {
-                            BlockState open = waters.flooded(bx, y, bz) ? Blocks.WATER.defaultBlockState()
+                            if (y <= carve.mud(bx, bz)) {
+                                level.setBlock(pos, MireBuilder.bed(bx, bz), 2);
+                                continue;
+                            }
+                            BlockState here = level.getBlockState(pos);
+                            // A carve that holds water fills only what it cuts from wood or ground, never the open
+                            // air past a notch in its rim, where the water spills over instead.
+                            boolean pooled = y <= carve.water() && (best > 0 || !here.isAir());
+                            BlockState open = pooled || waters.flooded(bx, y, bz) ? Blocks.WATER.defaultBlockState()
                                     : Blocks.AIR.defaultBlockState();
-                            if (level.getBlockState(pos) != open) {
+                            if (here != open) {
                                 level.setBlock(pos, open, 2);
+                            }
+                            // The surface wakes up as soon as the chunk loads, so it spills where it can.
+                            if (pooled && y == carve.water()) {
+                                level.scheduleTick(pos.immutable(), Fluids.WATER, 0);
                             }
                         }
                         continue;
@@ -332,13 +351,18 @@ public final class GroveBuilder {
     }
 
     private static BlockState material(GrovePalette palette, Part part, double first, Part runnerUp, double second,
-                                       double cut, int x, int y, int z) {
+                                       double cut, Carve wet, double wetCut, int x, int y, int z) {
         Direction.Axis axis = part.axis(x, y, z);
         // Where two pieces of different grain meet, neither grain shows: a knot of all-bark wood.
         if (axis != null && runnerUp != null && second > 0 && runnerUp.axis(x, y, z) != axis) {
             axis = null;
         }
         boolean laidBare = cut > -STRIP_DEPTH;
+        // Running water wears the bark away and leaves the grain lying the way it flows, even where a dry hollow
+        // lies nearer.
+        if (wetCut > -STRIP_DEPTH && part.role() != Part.Role.HEART && part.role() != Part.Role.SOIL) {
+            return palette.stripped(wet.flow(x, y, z));
+        }
         return switch (part.role()) {
             case HEART -> palette.heart(axis);
             case STRIPPED -> palette.stripped(axis);

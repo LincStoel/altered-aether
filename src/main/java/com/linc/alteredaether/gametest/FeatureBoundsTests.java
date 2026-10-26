@@ -20,6 +20,7 @@ import com.linc.alteredaether.worldgen.feature.AercloudFeature;
 import com.linc.alteredaether.worldgen.feature.BoulderFeature;
 import com.linc.alteredaether.worldgen.feature.CopperSpikeFeature;
 import com.linc.alteredaether.worldgen.feature.CopperVeinFeature;
+import com.linc.alteredaether.worldgen.feature.RuinFeature;
 import com.linc.alteredaether.worldgen.feature.RuinedPillarFeature;
 import com.linc.alteredaether.worldgen.feature.SnowDriftFeature;
 import com.linc.alteredaether.worldgen.feature.StrikeCraterFeature;
@@ -55,7 +56,7 @@ public final class FeatureBoundsTests {
     private static final Set<Class<?>> CHECKED = Set.of(BoulderFeature.class, CopperSpikeFeature.class,
             CopperVeinFeature.class,
             SnowDriftFeature.class, RuinedPillarFeature.class, StrikeCraterFeature.class, AercloudFeature.class,
-            AercloudBridgeFeature.class, TotemFeature.class);
+            AercloudBridgeFeature.class, TotemFeature.class, RuinFeature.class);
     private static final int REACH = 16, SCAN = 22, PLACEMENTS = 8;
 
     @GameTest(template = "arena", timeoutTicks = 200)

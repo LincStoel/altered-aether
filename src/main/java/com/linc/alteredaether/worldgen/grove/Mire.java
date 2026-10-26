@@ -15,6 +15,7 @@
 package com.linc.alteredaether.worldgen.grove;
 
 import net.minecraft.util.Mth;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 
@@ -27,15 +28,24 @@ import java.util.List;
  * @param radius  the shore's mean radius
  * @param depth   the most water over the bed, in open water
  * @param islets  the islets the giants stand on, the owner's first
+ * @param bank    the width of the cleared bank outside the shore
+ * @param shore   the shore's radius at evenly spaced bearings from +x, a lake that follows the ground (0 where it
+ *                comes no further out than the islet, so that side stays dry); or null for the usual wobbling ring
+ *                of {@code radius}, its widest
  */
 public record Mire(int x, int z, int water, double radius, double depth, double phase1, double phase2,
-                   List<Islet> islets, long salt) {
+                   List<Islet> islets, long salt, double bank, @Nullable double[] shore) {
     /** Blocks from a shore, the lake's or an islet's, over which the bed shelves to full depth. */
     static final double SHELF = 6;
-    /** Width of the cleared bank outside the shore, and blocks it recedes per block of rise. */
-    static final double BANK_WIDTH = 8, BANK_SLOPE = 2;
+    /** Usual width of the cleared bank outside the shore, and blocks it recedes per block of rise. */
+    public static final double BANK_WIDTH = 8, BANK_SLOPE = 2;
     /** The largest the shore's wobble can make the radius. */
     static final double MAX_WOBBLE = 1.22;
+
+    public Mire(int x, int z, int water, double radius, double depth, double phase1, double phase2,
+                List<Islet> islets, long salt) {
+        this(x, z, water, radius, depth, phase1, phase2, islets, salt, BANK_WIDTH, null);
+    }
 
     /**
      * One giant's islet: a wobbling disc of dry ground round its trunk.
@@ -65,18 +75,34 @@ public record Mire(int x, int z, int water, double radius, double depth, double 
         return 1 + 0.15 * Math.sin(3 * angle + phase1) + 0.07 * Math.sin(5 * angle + phase2);
     }
 
+    /** The lake's shore radius at a bearing; 0 where that side is dry. */
+    public double shoreAt(double angle) {
+        if (shore == null) {
+            return radius * wobble(angle, phase1, phase2);
+        }
+        double f = Mth.positiveModulo(angle / Mth.TWO_PI, 1.0) * shore.length;
+        int i = Mth.floor(f);
+        return Mth.lerp(f - i, shore[i % shore.length], shore[(i + 1) % shore.length]);
+    }
+
     /** How far out (px, pz) lies as a fraction of the shore in its direction: below 1 is in the lake. */
     public double reach(double px, double pz) {
         double dx = px - x, dz = pz - z;
         double distance = Math.sqrt(dx * dx + dz * dz);
-        return distance < 1e-6 ? 0 : distance / (radius * wobble(Math.atan2(dz, dx), phase1, phase2));
+        if (distance < 1e-6) {
+            return 0;
+        }
+        double r = shoreAt(Math.atan2(dz, dx));
+        return r <= 0 ? Double.MAX_VALUE : distance / r;
     }
 
     /** Blocks past the lake's shore, out onto the bank; negative in the lake. */
     double pastShore(double px, double pz) {
         double dx = px - x, dz = pz - z;
         double distance = Math.sqrt(dx * dx + dz * dz);
-        return distance - radius * wobble(Math.atan2(dz, dx), phase1, phase2);
+        double r = shoreAt(Math.atan2(dz, dx));
+        // A dry side has no bank: the islet simply meets the ground there.
+        return r <= 0 ? Double.MAX_VALUE : distance - r;
     }
 
     /** Whether a column is on one of this lake's islets. */
@@ -119,9 +145,9 @@ public record Mire(int x, int z, int water, double radius, double depth, double 
      * The highest the ground may stand in a column of the bank, outside the shore: a block over the water at the
      * shore, rising {@link #BANK_SLOPE} blocks out per block up. MAX_VALUE beyond the bank.
      */
-    int bankTop(int px, int pz) {
+    public int bankTop(int px, int pz) {
         double past = pastShore(px + 0.5, pz + 0.5);
-        if (past < 0 || past > BANK_WIDTH) {
+        if (past < 0 || past > bank) {
             return Integer.MAX_VALUE;
         }
         return water + 1 + (int) Math.floor(past / BANK_SLOPE);
@@ -129,7 +155,7 @@ public record Mire(int x, int z, int water, double radius, double depth, double 
 
     /** The furthest any column the lake or its banks touch lies from its centre. */
     public double extent() {
-        return radius * MAX_WOBBLE + BANK_WIDTH + 2;
+        return (shore == null ? radius * MAX_WOBBLE : radius) + bank + 2;
     }
 
     public boolean touches(int minX, int minZ, int maxX, int maxZ) {
@@ -138,8 +164,20 @@ public record Mire(int x, int z, int water, double radius, double depth, double 
         return dx * dx + dz * dz <= e * e;
     }
 
+    /** The lake with a bank of another width, for ground that stands higher round it. */
+    public Mire withBank(double width) {
+        return new Mire(x, z, water, radius, depth, phase1, phase2, islets, salt, width, shore);
+    }
+
+    /** The lake with more islets raised in it, for whatever else stands in the water. */
+    public Mire withIslets(List<Islet> more) {
+        List<Islet> all = new java.util.ArrayList<>(islets);
+        all.addAll(more);
+        return settle(water, all);
+    }
+
     /** The lake with its own water line replaced, and its islets, once its neighbours are known. */
     Mire settle(int water, List<Islet> islets) {
-        return new Mire(x, z, water, radius, depth, phase1, phase2, List.copyOf(islets), salt);
+        return new Mire(x, z, water, radius, depth, phase1, phase2, List.copyOf(islets), salt, bank, shore);
     }
 }

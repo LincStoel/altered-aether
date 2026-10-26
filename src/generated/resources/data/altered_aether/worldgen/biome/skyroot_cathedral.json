@@ -43,7 +43,8 @@
       "aether:tall_grass_patch",
       "aether:white_flower_patch",
       "aether:purple_flower_patch",
-      "aether:berry_bush_patch"
+      "aether:berry_bush_patch",
+      "altered_aether:grove/ruin"
     ],
     [
       "aether:crystal_island",

@@ -25,6 +25,14 @@ public final class GroveSamples {
         return sketch.done(GiantType.LINK, random.nextLong());
     }
 
+    /** A spring stump standing on level ground at a height, with no mire round it, in skyroot. */
+    public static Giant springStump(RandomSource random, int x, int ground, int z) {
+        Sketch sketch = new Sketch(null, random, 1, Integer.MAX_VALUE, x, z, ground);
+        ColossalStump.sketch(sketch, 0, true);
+        ColossalStump.runoff(sketch, null);
+        return sketch.done(GiantType.SPRING_STUMP, random.nextLong());
+    }
+
     private GroveSamples() {
     }
 }

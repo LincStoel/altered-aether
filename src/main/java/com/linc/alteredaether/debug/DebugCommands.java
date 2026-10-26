@@ -87,14 +87,43 @@ public final class DebugCommands {
                                 .suggests((ctx, builder) -> SharedSuggestionProvider.suggest(
                                         java.util.Arrays.stream(LandmarkType.values()).map(LandmarkType::id), builder))
                                 .executes(DebugCommands::landmark)))
+                .then(Commands.literal("ruin")
+                        .then(Commands.argument("kind", StringArgumentType.word())
+                                .suggests((ctx, builder) -> SharedSuggestionProvider.suggest(
+                                        java.util.Arrays.stream(com.linc.alteredaether.worldgen.ruin.Ruins.Kind.values())
+                                                .map(com.linc.alteredaether.worldgen.ruin.Ruins.Kind::id), builder))
+                                .executes(DebugCommands::ruin)))
                 .then(Commands.literal("giant")
                         .then(Commands.argument("type", StringArgumentType.word())
                                 .suggests((ctx, builder) -> SharedSuggestionProvider.suggest(
                                         java.util.stream.Stream.concat(java.util.Arrays.stream(GiantType.values())
                                                 .filter(t -> t != GiantType.LINK && t != GiantType.GRANDFATHER
+                                                        && t != GiantType.VILLAGE_TREE && t != GiantType.BREAK_BRIDGE
                                                         && t != GiantType.YOUNG)
-                                                .map(GiantType::id), java.util.stream.Stream.of(MIRE)), builder))
+                                                .map(GiantType::id), java.util.stream.Stream.of(MIRE, "break_edge", "break_chasm")), builder))
                                 .executes(DebugCommands::giant))));
+    }
+
+    /**
+     * {@code /altered_aether ruin <kind>}: builds a grove ruin of a kind centred on the caller, on the ground as it
+     * lies, for a look at it. Each use draws a new one.
+     */
+    private static int ruin(CommandContext<CommandSourceStack> ctx) {
+        CommandSourceStack source = ctx.getSource();
+        var kind = com.linc.alteredaether.worldgen.ruin.Ruins.kind(StringArgumentType.getString(ctx, "kind"));
+        if (kind == null) {
+            source.sendFailure(Component.literal("No such ruin."));
+            return 0;
+        }
+        ServerLevel level = source.getLevel();
+        BlockPos pos = BlockPos.containing(source.getPosition());
+        var plan = com.linc.alteredaether.worldgen.ruin.Ruins.draw(kind, level.getRandom(), pos.getX(), pos.getZ());
+        int reach = com.linc.alteredaether.worldgen.ruin.Ruins.REACH;
+        plan.place(level, pos.getX() - reach, pos.getZ() - reach, pos.getX() + reach, pos.getZ() + reach,
+                (x, z) -> com.linc.alteredaether.worldgen.ruin.RuinPlan.groundOf(level, x, z));
+        source.sendSuccess(() -> Component.literal("Built a " + kind.id() + " ruin of " + plan.pieces().size()
+                + " blocks."), false);
+        return 1;
     }
 
     /** The name {@code giant} takes, in the commands and the bench, for the nearest swamp lake round a giant. */
@@ -122,6 +151,27 @@ public final class DebugCommands {
                         source.sendSuccess(() -> Component.literal("mire at " + mire.x() + ", " + mire.z()
                                 + " water " + mire.water() + ", " + mire.islets().size() + " islets ").append(
                                 Component.literal("[go]").withStyle(style -> style.withColor(ChatFormatting.GREEN)
+                                        .withClickEvent(new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, tp)))), false);
+                    }, source.getServer());
+            return 1;
+        }
+        String name = StringArgumentType.getString(ctx, "type");
+        if (field != null && field.breaks() != null && name.startsWith("break_")) {
+            var kind = com.linc.alteredaether.worldgen.grove.BreakField.Kind.valueOf(name.substring(6)
+                    .toUpperCase(java.util.Locale.ROOT));
+            int x = (int) source.getPosition().x, z = (int) source.getPosition().z;
+            CompletableFuture.supplyAsync(() -> field.breaks().nearest(kind, x, z, 20000), Util.backgroundExecutor())
+                    .thenAcceptAsync(found -> {
+                        if (found.isEmpty()) {
+                            source.sendFailure(Component.literal("No " + kind.id() + " break within 20000 blocks."));
+                            return;
+                        }
+                        var site = found.get();
+                        int sx = (int) Math.round(site.x() - site.nx() * 12), sz = (int) Math.round(site.z() - site.nz() * 12);
+                        String tp = "/execute in aether:the_aether run tp @s " + sx + " " + (site.ground() + 6) + " " + sz;
+                        source.sendSuccess(() -> Component.literal(kind.id() + " break at " + (int) site.x() + ", "
+                                + (int) site.z() + String.format(" (gap %.0f, sunk %.0f) ", site.gap(), site.sink()))
+                                .append(Component.literal("[go]").withStyle(style -> style.withColor(ChatFormatting.GREEN)
                                         .withClickEvent(new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, tp)))), false);
                     }, source.getServer());
             return 1;
@@ -316,6 +366,20 @@ public final class DebugCommands {
                 origin = new BlockPos(site.x(), 64, site.z());
                 AlteredAether.LOGGER.info("Worldgen benchmark: centred on a mire at {} (water {}, {} islets)",
                         origin.toShortString(), site.water(), site.islets().size());
+            } else if (biome != null && biome.startsWith("break:")) {
+                GroveField field = GroveField.get(THE_AETHER);
+                var kind = com.linc.alteredaether.worldgen.grove.BreakField.Kind.valueOf(biome.substring(6)
+                        .toUpperCase(java.util.Locale.ROOT));
+                var site = field == null || field.breaks() == null ? null
+                        : field.breaks().nearest(kind, origin.getX(), origin.getZ(), 60000).orElse(null);
+                if (site == null) {
+                    AlteredAether.LOGGER.error("Worldgen benchmark: no {} break within 60000 blocks", kind.id());
+                    return;
+                }
+                origin = new BlockPos((int) site.x(), 64, (int) site.z());
+                AlteredAether.LOGGER.info("Worldgen benchmark: centred on a {} break at {} (gap {}, sunk {}, radius {})",
+                        kind.id(), origin.toShortString(), String.format("%.1f", site.gap()),
+                        String.format("%.1f", site.sink()), String.format("%.0f", site.radius()));
             } else if (biome != null && biome.startsWith("giant:")) {
                 GiantType type = GiantType.valueOf(biome.substring(6).toUpperCase(java.util.Locale.ROOT));
                 GroveField field = GroveField.get(THE_AETHER);
@@ -463,6 +527,63 @@ public final class DebugCommands {
                             site.x(), site.z() + r, site.water() - 12, site.water() + 90, 4)).join();
                     server.submit(() -> WorldRender.render(aether, "mire_plan", site.x() - r, site.z() - r,
                             site.x() + r, site.z() + r, site.water() - 6, site.water() + 2, 4)).join();
+                }
+            } else if (Boolean.getBoolean("altered_aether.render") && biome != null && biome.startsWith("break:")) {
+                // A section along the break's normal, through the bridge, and the same across it.
+                GroveField field = GroveField.get(THE_AETHER);
+                var kind = com.linc.alteredaether.worldgen.grove.BreakField.Kind.valueOf(biome.substring(6)
+                        .toUpperCase(java.util.Locale.ROOT));
+                var site = field == null || field.breaks() == null ? null
+                        : field.breaks().nearest(kind, origin.getX(), origin.getZ(), 64).orElse(null);
+                if (site != null) {
+                    int cx = (int) site.x(), cz = (int) site.z(), r = 90, g = site.ground();
+                    server.submit(() -> WorldRender.render(aether, "break_slice_x", cx - r, cz, cx + r, cz, g - 70,
+                            g + 50, 4)).join();
+                    server.submit(() -> WorldRender.render(aether, "break_slice_z", cx, cz - r, cx, cz + r, g - 70,
+                            g + 50, 4)).join();
+                }
+            } else if (Boolean.getBoolean("altered_aether.render") && biome != null
+                    && biome.equals("landmark:village_tree")) {
+                // Sections through the village tree, and plans cut through its street and its upper gallery.
+                LandmarkField field = LandmarkField.get(THE_AETHER);
+                Landmark site = field == null ? null : field.nearest(LandmarkType.VILLAGE_TREE, origin.getX(),
+                        origin.getZ(), 64).orElse(null);
+                if (site != null) {
+                    int r = (int) Math.ceil(site.extent());
+                    int street = site.visitY() - 1;
+                    server.submit(() -> WorldRender.render(aether, "village_slice_x", site.x() - r, site.z(),
+                            site.x() + r, site.z(), street - 30, street + 90, 4)).join();
+                    server.submit(() -> WorldRender.render(aether, "village_slice_z", site.x(), site.z() - r,
+                            site.x() + r, site.z() + r, street - 30, street + 90, 4)).join();
+                    server.submit(() -> WorldRender.render(aether, "village_street", site.x() - 40, site.z() - 40,
+                            site.x() + 40, site.z() + 40, street - 1, street + 2, 6)).join();
+                    server.submit(() -> WorldRender.render(aether, "village_upper", site.x() - 40, site.z() - 40,
+                            site.x() + 40, site.z() + 40, street + 10, street + 13, 6)).join();
+                    // The top of the bulb under the crown, where the fields are.
+                    server.submit(() -> WorldRender.render(aether, "village_top", site.x() - 30, site.z() - 30,
+                            site.x() + 30, site.z() + 30, street + 18, street + 40, 6)).join();
+                    // What the village holds, by block, to check its furnishing without a client.
+                    server.submit(() -> {
+                        java.util.Map<String, Integer> tally = new java.util.TreeMap<>();
+                        java.util.Set<String> wanted = java.util.Set.of("ladder", "aether_farmland", "wheat",
+                                "carrots", "potatoes", "glowstone", "skyroot_planks", "skyroot_stairs",
+                                "skyjade_lantern", "soul_lantern", "moa_totem", "aerwhale_totem", "zephyr_totem",
+                                "water", "aether_mud", "altar", "squash_stem", "attached_squash_stem", "blue_squash", "green_squash",
+                                "purple_squash", "berry_bush", "berry_bush_stem");
+                        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
+                        for (int bx = site.x() - r; bx <= site.x() + r; bx++) {
+                            for (int bz = site.z() - r; bz <= site.z() + r; bz++) {
+                                for (int by = street - 30; by <= street + 60; by++) {
+                                    String id = net.minecraft.core.registries.BuiltInRegistries.BLOCK
+                                            .getKey(aether.getBlockState(pos.set(bx, by, bz)).getBlock()).getPath();
+                                    if (wanted.contains(id)) {
+                                        tally.merge(id, 1, Integer::sum);
+                                    }
+                                }
+                            }
+                        }
+                        AlteredAether.LOGGER.info("Village tree holds: {} ({})", tally, site.detail());
+                    }).join();
                 }
             } else if (Boolean.getBoolean("altered_aether.render") && biome != null && biome.startsWith("giant:")) {
                 // Sections through the giant: a slice north to south and one east to west through its centre, and a

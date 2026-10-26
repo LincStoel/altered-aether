@@ -60,6 +60,14 @@ public final class AACommonConfig {
     public static final DoubleValue MIRE_CHANCE;
     public static final DoubleValue UNDERSTORY;
     public static final DoubleValue MIRE_SIZE;
+    public static final DoubleValue SPRING_STUMP_CHANCE;
+    public static final DoubleValue RUIN_CHANCE;
+    public static final DoubleValue STONE_HEAD_CHANCE;
+    public static final DoubleValue VILLAGE_NITWIT_CHANCE;
+    public static final DoubleValue VILLAGE_MIRE_CHANCE;
+    public static final DoubleValue FLOODED_CRATER_CHANCE;
+    public static final DoubleValue GROVE_BREAK_CHANCE;
+    public static final DoubleValue GROVE_CHASM_SHARE;
 
     // [basins]
     public static final Map<String, BooleanValue> BASIN_ENABLED = new LinkedHashMap<>();
@@ -191,6 +199,30 @@ public final class AACommonConfig {
                 .defineInRange("mire_chance", 0.17, 0.0, 1.0);
         MIRE_SIZE = b.comment("Size of the swamp lakes round the giants, as a multiplier. The grid spacing caps it.")
                 .defineInRange("mire_size", 1.0, 0.5, 1.5);
+        SPRING_STUMP_CHANCE = b.comment("Chance a colossal stump in the Nurselog Hollow holds a spring: a brimming pool in",
+                        "its hollow heart, streams down its flanks and a mire choked with roots round its foot.")
+                .defineInRange("spring_stump_chance", 0.3, 0.0, 1.0);
+        RUIN_CHANCE = b.comment("Chance each candidate spot in the groves holds a ruin: a cottage shell, a broken keep",
+                        "or a ring of standing stones. Sites too steep or under a giant are skipped anyway.")
+                .defineInRange("ruin_chance", 0.75, 0.0, 1.0);
+        STONE_HEAD_CHANCE = b.comment("Chance each (very sparse) candidate spot on the Aether Plateau holds a group of one",
+                        "to three great stone heads, about one spot in every sixteen-chunk cell.")
+                .defineInRange("stone_head_chance", 0.5, 0.0, 1.0);
+        VILLAGE_NITWIT_CHANCE = b.comment("Chance one nitwit still lives in a deserted village tree, the only one who",
+                        "never left.")
+                .defineInRange("village_nitwit_chance", 0.3, 0.0, 1.0);
+        VILLAGE_MIRE_CHANCE = b.comment("Chance a deserted village tree stands in a broad swamp lake, the ruins round it on",
+                        "islets of their own. Only where the ground will hold one.")
+                .defineInRange("village_mire_chance", 0.5, 0.0, 1.0);
+        FLOODED_CRATER_CHANCE = b.comment("Chance the crater a fallen colossus tore out with its roots has filled with water",
+                        "and mud.")
+                .defineInRange("flooded_crater_chance", 0.4, 0.0, 1.0);
+        GROVE_BREAK_CHANCE = b.comment("Chance each 320-block cell tries for a break in a Nurselog Hollow island, where a",
+                        "piece has cracked away and drifted, a fallen giant across the gap. Only suitable spots are used.")
+                .defineInRange("grove_break_chance", 0.6, 0.0, 1.0);
+        GROVE_CHASM_SHARE = b.comment("Share of those breaks that are a crack right across an island rather than a bite",
+                        "out of its edge. Few spots suit one.")
+                .defineInRange("grove_chasm_share", 0.15, 0.0, 1.0);
         UNDERSTORY = b.comment("Density of the young skyroots and ground cover between the giants, as a multiplier.",
                         "0 leaves the ground between them bare.")
                 .defineInRange("understory", 1.0, 0.0, 2.0);

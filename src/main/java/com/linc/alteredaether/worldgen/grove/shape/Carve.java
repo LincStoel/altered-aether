@@ -14,6 +14,9 @@
  */
 package com.linc.alteredaether.worldgen.grove.shape;
 
+import net.minecraft.core.Direction;
+import org.jetbrains.annotations.Nullable;
+
 /**
  * A space cut out of a giant: a hollow, a tunnel, an alcove. Nothing of the tree is placed inside it, and wood within
  * a block or so of its surface is stripped, as heartwood laid bare. Above its floor it also clears the ground, so a
@@ -39,6 +42,142 @@ public abstract class Carve {
 
     /** Positive inside, in roughly blocks. */
     public abstract double margin(double x, double y, double z);
+
+    /** The top block of water the carve holds, or MIN_VALUE for a dry one. */
+    public int water() {
+        return Integer.MIN_VALUE;
+    }
+
+    /** The top of the mud bedded on the carve's floor in a column, or MIN_VALUE where the floor is bare. */
+    public int mud(int x, int z) {
+        return Integer.MIN_VALUE;
+    }
+
+    /** How high the mud lies on a pool's floor, column by column. */
+    @FunctionalInterface
+    public interface Mud {
+        int top(int x, int z);
+    }
+
+    /** Whether water runs through the carve, so the wood it lays bare is stripped along the flow. */
+    public boolean wet() {
+        return false;
+    }
+
+    /** Which way water runs past a point of the carve's surface, or null where it has no clear way. */
+    @Nullable
+    public Direction.Axis flow(double x, double y, double z) {
+        return null;
+    }
+
+    /** The way water runs at a point. */
+    @FunctionalInterface
+    public interface Flow {
+        @Nullable
+        Direction.Axis at(double x, double y, double z);
+    }
+
+    /**
+     * This carve with water running through it: still water up to {@code water} (MIN_VALUE for none, as down a
+     * stream bed the water finds its own way), and the wood round it stripped with the grain along {@code flow}.
+     */
+    public Carve wet(int water, Flow flow) {
+        Carve dry = this;
+        return new Carve(floor, new Bounds(bounds.minX(), bounds.minY() - 2, bounds.minZ(), bounds.maxX(),
+                bounds.maxY(), bounds.maxZ())) {
+            @Override
+            public double margin(double x, double y, double z) {
+                double m = dry.margin(x, y, z);
+                // Under a flat floor, how deep below it: the water reaches the floor's wood too.
+                if (y < floor && dry.margin(x, floor, z) > 0) {
+                    return y - floor;
+                }
+                return m;
+            }
+
+            @Override
+            public int water() {
+                return water;
+            }
+
+            @Override
+            public boolean wet() {
+                return true;
+            }
+
+            @Nullable
+            @Override
+            public Direction.Axis flow(double x, double y, double z) {
+                return flow.at(x, y, z);
+            }
+        };
+    }
+
+    /**
+     * This carve holding still water up to {@code water} over a bed of mud, as a crater floods: the water stands
+     * still, so it leaves the wood round it as it was.
+     */
+    public Carve pool(int water, Mud mud) {
+        Carve dry = this;
+        return new Carve(floor, bounds) {
+            @Override
+            public double margin(double x, double y, double z) {
+                return dry.margin(x, y, z);
+            }
+
+            @Override
+            public int water() {
+                return water;
+            }
+
+            @Override
+            public int mud(int x, int z) {
+                return mud.top(x, z);
+            }
+        };
+    }
+
+    /**
+     * A level gallery round an axis: everything from {@code inner} to {@code outer} out from (x, z), {@code height}
+     * tall over {@code floor}. Cut into a trunk it leaves a street under the trunk's own overhang, open to the air.
+     * It spares the spheres in {@code keep}, each {x, y, z, radius}: wood the tree has grown out into the street.
+     */
+    public static Carve ring(double x, double z, double inner, double outer, int floor, double height,
+                             java.util.List<double[]> keep) {
+        Bounds bounds = new Bounds((int) Math.floor(x - outer) - 1, floor, (int) Math.floor(z - outer) - 1,
+                (int) Math.ceil(x + outer) + 1, floor + (int) Math.ceil(height) + 1, (int) Math.ceil(z + outer) + 1);
+        return new Carve(floor, bounds) {
+            @Override
+            public double margin(double px, double py, double pz) {
+                if (py < floor) {
+                    return -Double.MAX_VALUE;
+                }
+                double r = Math.sqrt((px - x) * (px - x) + (pz - z) * (pz - z));
+                double m = Math.min(Math.min(r - inner, outer - r), floor + height - py);
+                for (double[] k : keep) {
+                    double dx = px - k[0], dy = py - k[1], dz = pz - k[2];
+                    m = Math.min(m, Math.sqrt(dx * dx + dy * dy + dz * dz) - k[3]);
+                }
+                return m;
+            }
+        };
+    }
+
+    /** The space a tube would fill, cut out instead, never below {@code floor}: a channel, a gully. */
+    public static Carve tube(Tube tube, int floor) {
+        return new Carve(floor, tube.bounds()) {
+            @Override
+            public double margin(double x, double y, double z) {
+                return y < floor ? -Double.MAX_VALUE : tube.margin(x, y, z);
+            }
+
+            @Nullable
+            @Override
+            public Direction.Axis flow(double x, double y, double z) {
+                return tube.axis(x, y, z);
+            }
+        };
+    }
 
     /** An upright ellipsoid, cut off flat at {@code floor}: a chamber. */
     public static Carve chamber(double x, double y, double z, double rx, double ry, double rz, int floor) {

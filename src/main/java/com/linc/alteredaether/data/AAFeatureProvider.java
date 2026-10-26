@@ -36,6 +36,8 @@ public final class AAFeatureProvider extends JsonDataProvider {
     static final String HANGING_ROOTS = NS + "grove/hanging_roots";
     /** The young trees and ground cover between the giants, in place of the stock forest's trees. */
     static final String UNDERSTORY = NS + "grove/understory";
+    /** The ruins in the groves, and the rare stone heads of the plateau. */
+    static final String RUIN = NS + "grove/ruin", STONE_HEAD = NS + "plateau/stone_heads";
     static final String[] LANDMARK_DECORATION = {NS + "landmark/tempest_ring", NS + "landmark/spire_drifts",
             NS + "landmark/fracture_debris", NS + "landmark/fracture_slabs", NS + "landmark/fracture_bridges",
             NS + "landmark/islet_meadow", NS + "landmark/islet_oak"};
@@ -56,6 +58,25 @@ public final class AAFeatureProvider extends JsonDataProvider {
         placed("grove/hanging_roots", HANGING_ROOTS, new JsonArray());
         configured("grove/understory", NS + "understory", new JsonObject());
         placed("grove/understory", UNDERSTORY, new JsonArray());
+        ruins();
+    }
+
+    /**
+     * The grove ruins: a cottage, keep or stone circle for about one in every eight-chunk cell; and on the Aether
+     * Plateau, a row of one to three stone heads for one in every sixteen-chunk cell, by the odds. Each is kept
+     * only where the ground suits it.
+     */
+    private void ruins() {
+        JsonObject any = new JsonObject();
+        any.addProperty("kind", "any");
+        configured("grove/ruin", NS + "ruin", any);
+        placed("grove/ruin", RUIN, Placement.list(Placement.jitteredGrid(8, 61, 1.0), Placement.inSquare(),
+                Placement.heightmap("WORLD_SURFACE_WG"), Placement.biome()));
+        JsonObject head = new JsonObject();
+        head.addProperty("kind", "head");
+        configured("plateau/stone_heads", NS + "ruin", head);
+        placed("plateau/stone_heads", STONE_HEAD, Placement.list(Placement.jitteredGrid(16, 62, 1.0),
+                Placement.inSquare(), Placement.heightmap("WORLD_SURFACE_WG"), Placement.biome()));
     }
 
     /**

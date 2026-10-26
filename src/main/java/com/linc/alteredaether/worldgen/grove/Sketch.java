@@ -61,6 +61,9 @@ final class Sketch {
     /** The swamp lake round the giant's foot, if it stands in one. */
     @Nullable
     Mire mire;
+    /** A spring stump's outlets, each its bearing and how far out its groove ends at the foot; null on any other. */
+    @Nullable
+    double[][] spring;
 
     Sketch(TerrainProbe probe, RandomSource random, double vertical, int buildTop, int x, int z, int ground) {
         this.probe = probe;
@@ -87,6 +90,10 @@ final class Sketch {
 
     /** The ground near a column, searched from this giant's own ground; MIN_VALUE over a void. */
     int groundAt(double px, double pz) {
+        if (probe == null) {
+            // Drawn for a test, on level ground.
+            return ground;
+        }
         return probe.surfaceNear(Mth.floor(px), Mth.floor(pz), ground, ground - 48, ground + 48);
     }
 
@@ -225,8 +232,13 @@ final class Sketch {
      * more. They draw on the lake's own random stream.
      */
     void mireRoots(Mire mire, RandomSource random) {
+        mireRoots(mire, random, false);
+    }
+
+    /** Prop roots, or with {@code dense}, a tangle of them twice as thick, kneed more often, as round a spring. */
+    void mireRoots(Mire mire, RandomSource random, boolean dense) {
         Mire.Islet islet = mire.islets().getFirst();
-        int count = 4 + random.nextInt(5);
+        int count = dense ? 10 + random.nextInt(7) : 4 + random.nextInt(5);
         double phase = random.nextDouble() * Mth.TWO_PI;
         double furthest = mire.radius() * 0.8;
         for (int i = 0; i < count; i++) {
@@ -247,7 +259,7 @@ final class Sketch {
                     new double[]{x + cos * end, bedAt(mire, x + cos * end, z + sin * end) - 1, z + sin * end},
                     r0, 0.9, 8, Part.Role.LOG));
             double knee = Mth.lerp(random.nextDouble(), 4, 7);
-            if (random.nextDouble() < 0.4 && end + knee < mire.radius() * 0.9) {
+            if (random.nextDouble() < (dense ? 0.75 : 0.4) && end + knee < mire.radius() * 0.9) {
                 double far = end + knee;
                 wood.add(Tube.bezier(new double[]{x + cos * end, bedAt(mire, x + cos * end, z + sin * end), z + sin * end},
                         new double[]{x + cos * (end + 1), mire.water() + 3, z + sin * (end + 1)},

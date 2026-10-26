@@ -78,7 +78,7 @@ public final class AATerrainProvider extends JsonDataProvider {
     private static final Set<String> HEIGHT_DEPENDENT =
             Set.of("crag_3d_noise", "jag", "crags", "tempest", "tempest_spires", "dune_ridges", "dune_centre", "dune_sheet",
                     "plateau", "plateau_terraced", "island", "island_shift", "tall_base_3d_noise", "rift",
-                    "grove_land");
+                    "grove_land", "grove_land_broken");
 
     private final HeightMode mode;
 
@@ -376,7 +376,12 @@ public final class AATerrainProvider extends JsonDataProvider {
         shifted.add("offset", terrain("island_shift"));
         df("island_shifted", shifted);
         df("island_dunes", Df.choose(terrain("dune_weight"), terrain("island_shifted"), terrain("dune_sheet")));
-        df("island_groves", Df.choose(terrain("grove_weight"), terrain("island_dunes"), terrain("grove_land")));
+        // The grove islands broken apart where the Nurselog Hollow's have drifted (see BreakField).
+        JsonObject broken = Df.type(NS + "grove_break");
+        broken.add("argument", terrain("grove_land"));
+        broken.addProperty("vertical_scale", vertical());
+        df("grove_land_broken", broken);
+        df("island_groves", Df.choose(terrain("grove_weight"), terrain("island_dunes"), terrain("grove_land_broken")));
         // The rift: the same island broken into drifting slabs, so the slabs carry the dunes and groves too.
         rift(terrain("island_groves"));
         JsonObject islandTier = Df.choose(terrain("rift_weight"), terrain("island_groves"), terrain("rift"));

@@ -68,13 +68,13 @@ public final class AABiomeProvider extends JsonDataProvider {
                 .add(BiomeJson.LOCAL, AADecorationProvider.ASETERITE_BOULDER)
                 .add(BiomeJson.TOP, AADecorationProvider.GOLDEN_HIGH_CLOUD)
                 .climate(0.5f, 0.65f)
-                .effect("foliage_color", 12470327).effect("grass_color", 12873818).effect("sky_color", 16750472),
+                .effect("foliage_color", 12470327).effect("grass_color", 12873818).sky(16750472),
                 "ars_nouveau");
         biome("cascading_archwood_grove", grove("cascading", ARIA)
                 .add(BiomeJson.LOCAL, AADecorationProvider.CLORITE_BOULDER)
                 .add(BiomeJson.TOP, AADecorationProvider.GROVE_BLUE_CLOUD)
                 .climate(0.45f, 0.5f)
-                .effect("foliage_color", 3958452).effect("grass_color", 8166354).effect("sky_color", 8958719)
+                .effect("foliage_color", 3958452).effect("grass_color", 8166354).sky(8958719)
                 .particle(BiomeJson.particleType("aether:crystal_leaves"), 0.0025f)
                 // The stock lake is a fixed 16x16x8 blob that hangs off island edges; this grove gets real lakes.
                 .drop("aether:water_lake")
@@ -83,18 +83,18 @@ public final class AABiomeProvider extends JsonDataProvider {
         biome("flashing_archwood_grove", grove("flashing", ARIA)
                 .add(BiomeJson.TOP, AADecorationProvider.GOLDEN_HIGH_CLOUD)
                 .climate(1.95f, 0.0f)
-                .effect("foliage_color", 13084948).effect("grass_color", 13414701).effect("sky_color", 16769928)
+                .effect("foliage_color", 13084948).effect("grass_color", 13414701).sky(16769928)
                 .drop(VANILLA_GRASS)
                 .weight("aether:golden_swet", 20), "ars_nouveau", "ars_elemental");
         biome("flourishing_archwood_grove", grove("flourishing", ARIA)
                 .add(BiomeJson.VEG, AADecorationProvider.LUSH_GRASS)
                 .climate(0.65f, 0.8f)
-                .effect("foliage_color", 5290563).effect("grass_color", 7654499).effect("sky_color", 9830280),
+                .effect("foliage_color", 5290563).effect("grass_color", 7654499).sky(9830280),
                 "ars_nouveau");
         biome("vexing_archwood_grove", grove("vexing", "ars_nouveau:firel_the_wild_hunt")
                 .climate(0.75f, 0.9f)
                 .effect("fog_color", 14386175).effect("foliage_color", 8732340).effect("grass_color", 10384582)
-                .effect("sky_color", 10979583).effect("water_color", 12080623).effect("water_fog_color", 11832560)
+                .sky(10979583).effect("water_color", 12080623).effect("water_fog_color", 11832560)
                 .drop("aether:water_lake")
                 .add(BiomeJson.SPRINGS, AAFeatureProvider.WATERFALL_VEXING),
                 "ars_nouveau");
@@ -120,6 +120,7 @@ public final class AABiomeProvider extends JsonDataProvider {
                 .drop("aether:water_lake")
                 .add(BiomeJson.SPRINGS, AAFeatureProvider.WATERFALL_PLATEAU)
                 .add(BiomeJson.LOCAL, AADecorationProvider.PLATEAU_BOULDER, AADecorationProvider.PLATEAU_RUINS)
+                .add(BiomeJson.VEG, AAFeatureProvider.STONE_HEAD)
                 .add(BiomeJson.TOP, AADecorationProvider.PLATEAU_CLOUD, AADecorationProvider.PLATEAU_GOLDEN_CLOUD)
                 .creatureProbability(0.07f)
                 .packScale(0.5)
@@ -133,7 +134,7 @@ public final class AABiomeProvider extends JsonDataProvider {
                 .drop(BARREN).drop(FOREST_TREES)
                 .drop("aether:water_lake")
                 .effect("fog_color", 12575730).effect("foliage_color", 9418436).effect("grass_color", 10470345)
-                .effect("sky_color", 11984111).effect("water_color", 4025996).effect("water_fog_color", 1981520)
+                .sky(11984111).effect("water_color", 4025996).effect("water_fog_color", 1981520)
                 .particle(BiomeJson.particleType("minecraft:snowflake"), 0.0035f)
                 .add(BiomeJson.LOCAL, AADecorationProvider.CRAG_BOULDER, AADecorationProvider.AMBROSIUM_BOULDER, AADecorationProvider.SNOW_DRIFT, AADecorationProvider.ICE_SPIKE, AADecorationProvider.ICESTONE_SHARD,
                         AADecorationProvider.HANGING_CHAIN)
@@ -167,7 +168,7 @@ public final class AABiomeProvider extends JsonDataProvider {
                 .precipitation(true)
                 .drop(BARREN).drop(FOREST_TREES)
                 .effect("fog_color", 13214247).effect("foliage_color", 9211020).effect("grass_color", 9211020)
-                .effect("sky_color", 15915105)
+                .sky(15915105)
                 .particle(BiomeJson.particleType("minecraft:electric_spark"), 0.006f)
                 .add(BiomeJson.LOCAL, AADecorationProvider.TEMPEST_SPIRES, AADecorationProvider.TEMPEST_LONE_SPIKE,
                         AADecorationProvider.STRIKE_CRATER)
@@ -188,7 +189,7 @@ public final class AABiomeProvider extends JsonDataProvider {
                 .drop("aether:quicksoil_shelf", "aether:water_lake", "aether:water_spring")
                 .drop(STOCK_VEGETATION)
                 .effect("fog_color", 9412787).effect("foliage_color", 7240558).effect("grass_color", 7240558)
-                .effect("sky_color", 11583177).effect("water_color", 4875634).effect("water_fog_color", 2965066)
+                .sky(11583177).effect("water_color", 4875634).effect("water_fog_color", 2965066)
                 .add(BiomeJson.LOCAL, AADecorationProvider.RIFT_DEBRIS_CLOUD, AADecorationProvider.RIFT_DEBRIS,
                         AADecorationProvider.RIFT_SLAB_FRAGMENTS)
                 .add(BiomeJson.TOP, AADecorationProvider.RIFT_STRAND, AADecorationProvider.RIFT_BRIDGE)
@@ -203,7 +204,7 @@ public final class AABiomeProvider extends JsonDataProvider {
                 .drop("aether:quicksoil_shelf", "aether:water_lake", "aether:cold_aercloud", "aether:blue_aercloud")
                 .drop(STOCK_VEGETATION)
                 .effect("fog_color", 14263434).effect("foliage_color", 12105576).effect("grass_color", 12766328)
-                .effect("sky_color", 15787686).effect("water_color", ARS_WATER)
+                .sky(15787686).effect("water_color", ARS_WATER)
                 .particle(dust(0.87f, 0.75f, 0.42f), 0.015f)
                 .add(BiomeJson.LOCAL, AADecorationProvider.DUNE_BOULDER, AADecorationProvider.DUNE_RUINS, AADecorationProvider.SKYJADE_PILLAR)
                 .add(BiomeJson.TOP, AADecorationProvider.PLATEAU_GOLDEN_CLOUD, AADecorationProvider.GROVE_BLUE_CLOUD)
@@ -230,7 +231,7 @@ public final class AABiomeProvider extends JsonDataProvider {
                 .climate(0.85f, 0.8f)
                 .replace(FOREST_TREES, "aether:skyroot_meadow_trees")
                 .drop("aether:water_lake", "aether:holiday_tree")
-                .effect("fog_color", 11396863).effect("sky_color", 10875903)
+                .effect("fog_color", 11396863).sky(10875903)
                 .effect("water_color", 0x3FCFD8).effect("water_fog_color", 0x1A8C9C)
                 .effect("grass_color", 0x9EDB8A).effect("foliage_color", 0x7FCC6A)
                 .spawners("water_ambient", spawner("minecraft:tropical_fish", 25, 8, 8))
@@ -249,7 +250,7 @@ public final class AABiomeProvider extends JsonDataProvider {
                 .drop(BARREN).drop(FOREST_TREES)
                 .drop("aether:water_lake")
                 .effect("fog_color", 13363950).effect("foliage_color", 9418436).effect("grass_color", 10470345)
-                .effect("sky_color", 12376047).effect("water_color", 4025996).effect("water_fog_color", 1981520)
+                .sky(12376047).effect("water_color", 4025996).effect("water_fog_color", 1981520)
                 .particle(BiomeJson.particleType("minecraft:snowflake"), 0.0015f)
                 .add(BiomeJson.LOCAL, AADecorationProvider.CRAG_BOULDER, AADecorationProvider.ICESTONE_SHARD)
                 .add(BiomeJson.ORES, AADecorationProvider.CRAG_ORES + "aether_dirt", AADecorationProvider.CRAG_ORES + "ambrosium", AADecorationProvider.CRAG_ORES + "zanite",
@@ -274,6 +275,7 @@ public final class AABiomeProvider extends JsonDataProvider {
         return base()
                 .climate(0.6f, 0.9f)
                 .replace(FOREST_TREES, AAFeatureProvider.UNDERSTORY)
+                .add(BiomeJson.VEG, AAFeatureProvider.RUIN)
                 .drop("aether:water_lake", "aether:holiday_tree")
                 .effect("fog_color", 0xA9D3C6).effect("foliage_color", 0x4E9A45).effect("grass_color", 0x6BAA5A)
                 // Swamp water, green and murky, for the lakes round the giants' feet.
@@ -285,6 +287,7 @@ public final class AABiomeProvider extends JsonDataProvider {
         return base()
                 .climate(0.45f, 0.5f)
                 .replace(FOREST_TREES, AAFeatureProvider.UNDERSTORY)
+                .add(BiomeJson.VEG, AAFeatureProvider.RUIN)
                 .drop("aether:water_lake", "aether:holiday_tree")
                 .effect("fog_color", 0xCFC8AE).effect("foliage_color", 0x7F9152).effect("grass_color", 0x92A267)
                 .effect("water_color", 0x5E7552).effect("water_fog_color", 0x2C3524);

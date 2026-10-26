@@ -242,6 +242,7 @@ public final class LandmarkField {
                 case GRAND_CASCADE -> GrandCascade.tryAt(this, x, z, random);
                 case GREAT_FRACTURE -> GreatFracture.tryAt(this, x, z, random, fractureScale);
                 case GRANDFATHER -> Grandfather.tryAt(this, x, z, random);
+                case VILLAGE_TREE -> VillageTreeSite.tryAt(this, x, z, random);
                 case DOUBLE_ATOLL -> null;
             };
             if (site != null && site.extent() <= reach(type)) {

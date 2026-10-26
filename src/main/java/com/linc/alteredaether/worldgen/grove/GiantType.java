@@ -31,9 +31,15 @@ public enum GiantType {
     COLOSSAL_STUMP(GroveField.NURSELOG, 2),
     LATTICE_SKELETON(GroveField.NURSELOG, 1),
     REGROWTH_RING(GroveField.NURSELOG, 2),
+    /** A colossal stump with a spring in its hollow heart, chosen in place of a plain one rather than by weight. */
+    SPRING_STUMP("", 0),
     /** The Cathedral's landmark, placed by the landmark field rather than the grove grid. */
     GRANDFATHER("", 0),
+    /** The deserted village tree, a Cathedral landmark like the Grandfather. */
+    VILLAGE_TREE("", 0),
     LINK("", 0),
+    /** The fallen giant and roots across a break in a Nurselog Hollow island, placed by the break field. */
+    BREAK_BRIDGE("", 0),
     /** A young skyroot of the midstory between the giants, placed by {@link Understory} rather than the grid. */
     YOUNG("", 0);
 

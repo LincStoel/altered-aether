@@ -28,6 +28,7 @@ import com.linc.alteredaether.worldgen.feature.BasinFillFeature;
 import com.linc.alteredaether.worldgen.feature.GroveFeature;
 import com.linc.alteredaether.worldgen.feature.HangingRootsFeature;
 import com.linc.alteredaether.worldgen.feature.UnderstoryFeature;
+import com.linc.alteredaether.worldgen.feature.RuinFeature;
 import com.linc.alteredaether.worldgen.feature.AercloudFeature;
 import com.linc.alteredaether.worldgen.feature.AercloudBridgeFeature;
 import com.linc.alteredaether.worldgen.feature.RuinedPillarFeature;
@@ -159,6 +160,7 @@ public final class AARegistries {
         DENSITY_FUNCTIONS.register("voronoi_fracture", () -> VoronoiFracture.MAP_CODEC);
         DENSITY_FUNCTIONS.register("config", () -> ConfigValue.MAP_CODEC);
         DENSITY_FUNCTIONS.register("basin_carve", () -> BasinCarve.MAP_CODEC);
+        DENSITY_FUNCTIONS.register("grove_break", () -> com.linc.alteredaether.worldgen.density.GroveBreak.MAP_CODEC);
         DENSITY_FUNCTIONS.register("atoll", () -> Atoll.MAP_CODEC);
     }
 
@@ -176,6 +178,8 @@ public final class AARegistries {
             FEATURES.register("grove", GroveFeature::new);
     public static final DeferredHolder<Feature<?>, HangingRootsFeature> HANGING_ROOTS =
             FEATURES.register("hanging_roots", HangingRootsFeature::new);
+    public static final DeferredHolder<Feature<?>, RuinFeature> RUIN =
+            FEATURES.register("ruin", RuinFeature::new);
     public static final DeferredHolder<Feature<?>, UnderstoryFeature> UNDERSTORY =
             FEATURES.register("understory", UnderstoryFeature::new);
     public static final DeferredHolder<Feature<?>, EdgeSpringFeature> EDGE_SPRING =

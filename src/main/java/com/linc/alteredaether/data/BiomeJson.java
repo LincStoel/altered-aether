@@ -57,6 +57,20 @@ final class BiomeJson {
         return this;
     }
 
+    /** How far a biome's sky moves from the template's toward its own tint; the full hue is jarring to fly into. */
+    private static final float SKY_TINT = 0.4f;
+
+    /** Tints the sky toward {@code color}, blended with the template's sky so crossing a border stays gentle. */
+    BiomeJson sky(int color) {
+        int base = effects().get("sky_color").getAsInt();
+        int blended = 0;
+        for (int shift = 0; shift <= 16; shift += 8) {
+            int from = base >> shift & 0xFF, to = color >> shift & 0xFF;
+            blended |= Math.round(from + (to - from) * SKY_TINT) << shift;
+        }
+        return effect("sky_color", blended);
+    }
+
     BiomeJson music(String sound) {
         effects().getAsJsonObject("music").addProperty("sound", sound);
         return this;

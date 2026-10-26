@@ -77,6 +77,8 @@ public final class GroveField {
     private final TerrainProbe probe;
     @Nullable
     private final LandmarkField landmarks;
+    @Nullable
+    private final BreakField breaks;
     private final double vertical;
     private final int buildTop;
     private final int cell;
@@ -86,15 +88,17 @@ public final class GroveField {
     private final Cache<Long, List<Long>> neighbours = CacheBuilder.newBuilder().maximumSize(1 << 12).build();
     private final Cache<Long, List<Giant>> links = CacheBuilder.newBuilder().maximumSize(1 << 10).build();
     private final Cache<Long, Optional<Mire>> mires = CacheBuilder.newBuilder().maximumSize(1 << 10).build();
+    private final Cache<Long, Optional<Giant>> bridges = CacheBuilder.newBuilder().maximumSize(1 << 8).build();
 
     /**
      * @param vertical vertical scale for the height mode: 1 in the tall Aether
      * @param buildTop the top of the world, which no crown may pass
      */
-    public GroveField(long seed, TerrainProbe probe, @Nullable LandmarkField landmarks, double vertical,
-                      int buildTop) {
+    public GroveField(long seed, TerrainProbe probe, @Nullable LandmarkField landmarks, @Nullable BreakField breaks,
+                      double vertical, int buildTop) {
         this.seed = seed;
         this.landmarks = landmarks;
+        this.breaks = breaks;
         this.probe = probe;
         this.vertical = vertical;
         this.buildTop = buildTop;
@@ -122,7 +126,24 @@ public final class GroveField {
                 }
             }
         }
+        if (breaks != null) {
+            for (BreakField.Site site : breaks.touching(minX - REACH, minZ - REACH, maxX + REACH, maxZ + REACH)) {
+                bridge(site).filter(g -> g.bounds().touches(minX, minZ, maxX, maxZ)).ifPresent(found::add);
+            }
+        }
         return found;
+    }
+
+    /** The fallen giant and roots across a break. */
+    Optional<Giant> bridge(BreakField.Site site) {
+        return cached(bridges, BreakField.key(site), () -> Optional.ofNullable(BreakBridge.sketch(probe,
+                random(BreakField.key(site), 7), vertical, buildTop, site, AACommonConfig.GOLDEN_HEART_CHANCE.get())));
+    }
+
+    /** The world's breaks, if it has any. */
+    @Nullable
+    public BreakField breaks() {
+        return breaks;
     }
 
     /** Every swamp lake whose water or banks reach into the given block rectangle. */
@@ -236,7 +257,8 @@ public final class GroveField {
             }
             // The Grandfather's own children stand round it; no other giant may crowd it.
             if (landmarks != null && landmarks.touching(x - REACH, z - REACH, x + REACH, z + REACH).stream()
-                    .anyMatch(site -> site.type() == LandmarkType.GRANDFATHER)) {
+                    .anyMatch(site -> site.type() == LandmarkType.GRANDFATHER
+                    || site.type() == LandmarkType.VILLAGE_TREE)) {
                 continue;
             }
             int ground = footing(x, z);
@@ -251,41 +273,19 @@ public final class GroveField {
             if (biome.equals(CATHEDRAL) && random.nextDouble() < CATHEDRAL_FALLEN) {
                 type = GiantType.FALLEN_COLOSSUS;
             }
-            Sketch sketch = new Sketch(probe, random, vertical, buildTop, x, z, ground);
-            sketch.palette = palette(cx, cz, biome);
-            sketch.arching = type.crowned();
-            sketch.tended = random.nextDouble() < AACommonConfig.TENDED_FRACTION.get();
-            sketch.campChance = AACommonConfig.CAMP_CHANCE.get();
-            sketch.secretChance = AACommonConfig.SECRET_CHANCE.get();
-            double heart = AACommonConfig.GOLDEN_HEART_CHANCE.get();
-            switch (type) {
-                case HOLLOW_ELDER -> HollowElder.sketch(sketch);
-                case TUNNEL_GIANT -> TunnelGiant.sketch(sketch);
-                case TULE_MASS -> TuleMass.sketch(sketch);
-                case BOW_COLONY -> BowColony.sketch(sketch);
-                case CATHEDRAL_RING -> CathedralRing.sketch(sketch);
-                case FALLEN_COLOSSUS -> FallenColossus.sketch(sketch, heart);
-                case SNAG -> Snag.sketch(sketch);
-                case COLOSSAL_STUMP -> ColossalStump.sketch(sketch, heart);
-                case LATTICE_SKELETON -> LatticeSkeleton.sketch(sketch);
-                case REGROWTH_RING -> RegrowthRing.sketch(sketch);
-                case GRANDFATHER, LINK -> {
-                }
+            // Now and then a stump holds a spring. The roll draws on a stream of its own, so every other stump is
+            // drawn just as before.
+            if (type == GiantType.COLOSSAL_STUMP && random(key(cx, cz) * 4 + attempt, 5).nextDouble()
+                    < AACommonConfig.SPRING_STUMP_CHANCE.get()) {
+                type = GiantType.SPRING_STUMP;
             }
-            // A lake round its foot draws on a stream of its own too, so lakes leave every other giant as it was.
-            if (type.crowned()) {
-                RandomSource wet = random(key(cx, cz) * 4 + attempt, 4);
-                if (wet.nextDouble() < AACommonConfig.MIRE_CHANCE.get()) {
-                    sketch.mire = planMire(sketch, wet);
-                    if (sketch.mire != null) {
-                        sketch.mireRoots(sketch.mire, wet);
-                    }
-                }
-            }
-            // Roots under the island draw on a stream of their own, so turning them off changes nothing else.
-            RandomSource roots = random(key(cx, cz) * 4 + attempt, 3);
-            if (roots.nextDouble() < AACommonConfig.UNDER_ROOT_CHANCE.get()) {
-                UnderRoots.sketch(sketch, roots, roots.nextDouble() < 0.3 ? 2 : 1, REACH);
+            Sketch sketch = draw(type, cx, cz, attempt, x, z, ground, biome, random);
+            // A spring has to have its mire; where the ground won't hold one, the stump is a plain one after all,
+            // drawn from a stream of its own.
+            if (type == GiantType.SPRING_STUMP && sketch.mire == null) {
+                type = GiantType.COLOSSAL_STUMP;
+                random = random(key(cx, cz) * 4 + attempt, 6);
+                sketch = draw(type, cx, cz, attempt, x, z, ground, biome, random);
             }
             Giant giant = sketch.done(type, random.nextLong());
             if (giant.extent() <= REACH) {
@@ -293,6 +293,54 @@ public final class GroveField {
             }
         }
         return null;
+    }
+
+    /** Draws one giant of a type at a site, with its lake and its roots under the island if it has them. */
+    private Sketch draw(GiantType type, int cx, int cz, int attempt, int x, int z, int ground, String biome,
+                        RandomSource random) {
+        Sketch sketch = new Sketch(probe, random, vertical, buildTop, x, z, ground);
+        sketch.palette = palette(cx, cz, biome);
+        sketch.arching = type.crowned();
+        sketch.tended = random.nextDouble() < AACommonConfig.TENDED_FRACTION.get();
+        sketch.campChance = AACommonConfig.CAMP_CHANCE.get();
+        sketch.secretChance = AACommonConfig.SECRET_CHANCE.get();
+        double heart = AACommonConfig.GOLDEN_HEART_CHANCE.get();
+        switch (type) {
+            case HOLLOW_ELDER -> HollowElder.sketch(sketch);
+            case TUNNEL_GIANT -> TunnelGiant.sketch(sketch);
+            case TULE_MASS -> TuleMass.sketch(sketch);
+            case BOW_COLONY -> BowColony.sketch(sketch);
+            case CATHEDRAL_RING -> CathedralRing.sketch(sketch);
+            case FALLEN_COLOSSUS -> FallenColossus.sketch(sketch, heart);
+            case SNAG -> Snag.sketch(sketch);
+            case COLOSSAL_STUMP -> ColossalStump.sketch(sketch, heart, false);
+            case SPRING_STUMP -> ColossalStump.sketch(sketch, heart, true);
+            case LATTICE_SKELETON -> LatticeSkeleton.sketch(sketch);
+            case REGROWTH_RING -> RegrowthRing.sketch(sketch);
+            case GRANDFATHER, VILLAGE_TREE, LINK, BREAK_BRIDGE -> {
+            }
+        }
+        // A lake round its foot draws on a stream of its own too, so lakes leave every other giant as it was.
+        // A spring always tries for one, fed by its streams, and chokes it with roots.
+        boolean spring = type == GiantType.SPRING_STUMP;
+        if (type.crowned() || spring) {
+            RandomSource wet = random(key(cx, cz) * 4 + attempt, 4);
+            if (wet.nextDouble() < (spring ? 1 : AACommonConfig.MIRE_CHANCE.get())) {
+                sketch.mire = planMire(sketch, wet);
+                if (sketch.mire != null) {
+                    sketch.mireRoots(sketch.mire, wet, spring);
+                }
+            }
+            if (spring) {
+                ColossalStump.runoff(sketch, sketch.mire);
+            }
+        }
+        // Roots under the island draw on a stream of their own, so turning them off changes nothing else.
+        RandomSource roots = random(key(cx, cz) * 4 + attempt, 3);
+        if (roots.nextDouble() < AACommonConfig.UNDER_ROOT_CHANCE.get()) {
+            UnderRoots.sketch(sketch, roots, roots.nextDouble() < 0.3 ? 2 : 1, REACH);
+        }
+        return sketch;
     }
 
     public double vertical() {
@@ -384,20 +432,30 @@ public final class GroveField {
         double radius = Math.min(most, Math.max(isletRadius + 10,
                 Mth.lerp(random.nextDouble(), 16, 26) * cell / CELL * AACommonConfig.MIRE_SIZE.get()));
         double depth = Math.max(1.5, Mth.lerp(random.nextDouble(), 1.6, 3.0) * vertical);
+        return planMire(probe, vertical, s.x, s.z, s.ground, isletRadius, radius, depth,
+                (int) Math.round(Math.max(4, 6 * vertical)), random);
+    }
+
+    /**
+     * A lake of a given size round a foot standing on {@code ground} at (x, z), checked against the terrain as
+     * {@link #planMire(Sketch, RandomSource)} describes, the shore standing at most {@code hill} over the water.
+     * Null where the ground won't hold it.
+     */
+    @Nullable
+    public static Mire planMire(TerrainProbe probe, double vertical, int x, int z, int ground, double isletRadius,
+                                double radius, double depth, int hill, RandomSource random) {
         double phase1 = random.nextDouble() * Mth.TWO_PI, phase2 = random.nextDouble() * Mth.TWO_PI;
         double isletPhase = random.nextDouble() * Mth.TWO_PI;
         long salt = random.nextLong();
         if (radius < isletRadius + 8) {
             return null;
         }
-        int ground = s.ground;
-        int hill = (int) Math.round(Math.max(4, 6 * vertical));
         int lowest = Integer.MAX_VALUE, highest = Integer.MIN_VALUE;
         for (int d = 0; d < 16; d++) {
             double angle = d * Math.PI / 8;
             double r = radius * Mire.wobble(angle, phase1, phase2) + 3;
-            int top = probe.surfaceNear(s.x + (int) Math.round(Math.cos(angle) * r),
-                    s.z + (int) Math.round(Math.sin(angle) * r), ground, ground - 12, ground + hill + 2);
+            int top = probe.surfaceNear(x + (int) Math.round(Math.cos(angle) * r),
+                    z + (int) Math.round(Math.sin(angle) * r), ground, ground - 12, ground + hill + 2);
             if (top == Integer.MIN_VALUE) {
                 return null;
             }
@@ -411,14 +469,72 @@ public final class GroveField {
         for (int d = 0; d < 8; d++) {
             double angle = d * Math.PI / 4 + phase2;
             double r = Mth.lerp((d % 3) / 2.0, isletRadius + 3, radius * 0.9);
-            int px = s.x + (int) Math.round(Math.cos(angle) * r), pz = s.z + (int) Math.round(Math.sin(angle) * r);
+            int px = x + (int) Math.round(Math.cos(angle) * r), pz = z + (int) Math.round(Math.sin(angle) * r);
             int g = probe.surfaceNear(px, pz, water, water - 8, water + hill + 1);
             if (g == Integer.MIN_VALUE || g > water + hill || !probe.solid(px, Math.min(g, water - 3) - 3, pz)) {
                 return null;
             }
         }
-        Mire.Islet own = new Mire.Islet(s.x, s.z, isletRadius, isletPhase, ground);
-        return new Mire(s.x, s.z, water, radius, depth, phase1, phase2, List.of(own), salt);
+        Mire.Islet own = new Mire.Islet(x, z, isletRadius, isletPhase, ground);
+        return new Mire(x, z, water, radius, depth, phase1, phase2, List.of(own), salt);
+    }
+
+    /**
+     * A broad swamp round a foot on {@code ground} at (x, z) that follows the ground rather than keeping to a ring:
+     * out each of a number of bearings, the shore runs as far as {@code radius} (with the usual wobble), or stops a
+     * few blocks short of where the ground fails to hold water, dropping away, rising more than {@code hill} over it,
+     * or running out at the island's edge. A side where it can't get clear of the islet stays dry, so on a small or
+     * sloping island the swamp is a crescent. The water sits two blocks under the ground. Null unless at least a
+     * third of the way round holds water.
+     */
+    @Nullable
+    public static Mire planSwamp(TerrainProbe probe, double vertical, int x, int z, int ground, double isletRadius,
+                                 double radius, double depth, int hill, RandomSource random) {
+        double phase1 = random.nextDouble() * Mth.TWO_PI, phase2 = random.nextDouble() * Mth.TWO_PI;
+        double isletPhase = random.nextDouble() * Mth.TWO_PI;
+        long salt = random.nextLong();
+        Mire.Islet own = new Mire.Islet(x, z, isletRadius, isletPhase, ground);
+        int water = ground - 2;
+        int bearings = 32;
+        double[] shore = new double[bearings];
+        double widest = 0;
+        int wet = 0;
+        for (int i = 0; i < bearings; i++) {
+            double angle = i * Mth.TWO_PI / bearings;
+            double cos = Math.cos(angle), sin = Math.sin(angle);
+            double from = own.shore(angle), most = radius * Mire.wobble(angle, phase1, phase2);
+            double held = from;
+            for (double r = from; r <= most + 3; r += 1.5) {
+                int px = x + (int) Math.round(cos * r), pz = z + (int) Math.round(sin * r);
+                int g = probe.surfaceNear(px, pz, ground, water - 12, water + hill + 2);
+                if (g == Integer.MIN_VALUE || g <= water || g > water + hill
+                        || !probe.solid(px, Math.min(g, water - 3) - 3, pz)) {
+                    break;
+                }
+                held = r;
+            }
+            double reach = Math.min(most, held - 3);
+            if (reach >= from + 5) {
+                shore[i] = reach;
+                widest = Math.max(widest, reach);
+                wet++;
+            }
+        }
+        if (wet < bearings / 3) {
+            return null;
+        }
+        // No spikes: a bearing reaches at most a little past its neighbours.
+        for (int pass = 0; pass < 2; pass++) {
+            double[] smooth = shore.clone();
+            for (int i = 0; i < bearings; i++) {
+                double a = shore[(i + bearings - 1) % bearings], b = shore[(i + 1) % bearings];
+                if (shore[i] > 0) {
+                    smooth[i] = Math.min(shore[i], (a + b) / 2 + 4);
+                }
+            }
+            shore = smooth;
+        }
+        return new Mire(x, z, water, widest, depth, phase1, phase2, List.of(own), salt, Mire.BANK_WIDTH, shore);
     }
 
     /**
