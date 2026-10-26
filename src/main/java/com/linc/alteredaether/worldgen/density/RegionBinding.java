@@ -130,7 +130,8 @@ public final class RegionBinding {
         LandmarkField landmarks = new LandmarkField(level.getSeed(), probe, basins, vertical, level.getMaxBuildHeight());
         fractures.forEach(f -> f.bind(landmarks));
         LandmarkField.put(level.dimension(), landmarks);
-        GroveField.put(level.dimension(), new GroveField(level.getSeed(), probe, vertical, level.getMaxBuildHeight()));
+        GroveField.put(level.dimension(), new GroveField(level.getSeed(), probe, landmarks, vertical,
+                level.getMaxBuildHeight()));
     }
 
     @SubscribeEvent

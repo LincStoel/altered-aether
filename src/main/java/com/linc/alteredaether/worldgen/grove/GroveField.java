@@ -19,6 +19,8 @@ import com.google.common.cache.CacheBuilder;
 import com.linc.alteredaether.config.AACommonConfig;
 import com.linc.alteredaether.worldgen.TerrainProbe;
 import com.linc.alteredaether.worldgen.basin.BasinField;
+import com.linc.alteredaether.worldgen.landmark.LandmarkField;
+import com.linc.alteredaether.worldgen.landmark.LandmarkType;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.Level;
@@ -70,6 +72,8 @@ public final class GroveField {
 
     private final long seed;
     private final TerrainProbe probe;
+    @Nullable
+    private final LandmarkField landmarks;
     private final double vertical;
     private final int buildTop;
     private final int cell;
@@ -83,8 +87,10 @@ public final class GroveField {
      * @param vertical vertical scale for the height mode: 1 in the tall Aether
      * @param buildTop the top of the world, which no crown may pass
      */
-    public GroveField(long seed, TerrainProbe probe, double vertical, int buildTop) {
+    public GroveField(long seed, TerrainProbe probe, @Nullable LandmarkField landmarks, double vertical,
+                      int buildTop) {
         this.seed = seed;
+        this.landmarks = landmarks;
         this.probe = probe;
         this.vertical = vertical;
         this.buildTop = buildTop;
@@ -183,6 +189,11 @@ public final class GroveField {
             if (type == null || probe.regionWeight(x, z) < 0.99) {
                 continue;
             }
+            // The Grandfather's own children stand round it; no other giant may crowd it.
+            if (landmarks != null && landmarks.touching(x - REACH, z - REACH, x + REACH, z + REACH).stream()
+                    .anyMatch(site -> site.type() == LandmarkType.GRANDFATHER)) {
+                continue;
+            }
             int ground = footing(x, z);
             if (ground == Integer.MIN_VALUE) {
                 continue;
@@ -208,7 +219,7 @@ public final class GroveField {
                 case COLOSSAL_STUMP -> ColossalStump.sketch(sketch, heart);
                 case LATTICE_SKELETON -> LatticeSkeleton.sketch(sketch);
                 case REGROWTH_RING -> RegrowthRing.sketch(sketch);
-                case LINK -> {
+                case GRANDFATHER, LINK -> {
                 }
             }
             Giant giant = sketch.done(type, random.nextLong());

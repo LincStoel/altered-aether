@@ -31,6 +31,8 @@ public enum GiantType {
     COLOSSAL_STUMP(GroveField.NURSELOG, 2),
     LATTICE_SKELETON(GroveField.NURSELOG, 1),
     REGROWTH_RING(GroveField.NURSELOG, 2),
+    /** The Cathedral's landmark, placed by the landmark field rather than the grove grid. */
+    GRANDFATHER("", 0),
     LINK("", 0);
 
     final String biome;

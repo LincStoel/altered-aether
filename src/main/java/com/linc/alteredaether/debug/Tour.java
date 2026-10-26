@@ -149,7 +149,8 @@ public final class Tour {
                 }
                 last = site;
                 AlteredAether.LOGGER.info("Tour: {} at {} {}", type.id(), site.x(), site.z());
-                boolean tall = type == LandmarkType.TEMPEST_SPIRES || type == LandmarkType.FROZEN_SPIRE;
+                boolean tall = type == LandmarkType.TEMPEST_SPIRES || type == LandmarkType.FROZEN_SPIRE
+                        || type == LandmarkType.GRANDFATHER;
                 int top = site.visitY() == Integer.MIN_VALUE ? 70 : site.visitY();
                 double focus = tall ? top - 70 : top - 6;
                 double distance = tall ? Math.max(90, site.extent() * 2.2) : Mth.clamp(site.extent() * 0.9, 48, 110);

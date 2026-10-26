@@ -188,12 +188,15 @@ public final class GroveBuilder {
                 bottom = Math.max(bottom, level.getMinBuildHeight());
                 for (int y = top; y >= bottom; y--) {
                     double best = -Double.MAX_VALUE, second = -Double.MAX_VALUE;
-                    Part first = null, runnerUp = null;
+                    Part first = null, runnerUp = null, heart = null;
                     for (Part part : wood) {
                         if (!part.bounds().height(y)) {
                             continue;
                         }
                         double m = part.margin(bx, y, bz);
+                        if (m > 0 && part.role() == Part.Role.HEART) {
+                            heart = part;
+                        }
                         if (m > best) {
                             second = best;
                             runnerUp = first;
@@ -216,6 +219,11 @@ public final class GroveBuilder {
                         }
                     }
                     pos.set(bx, y, bz);
+                    // Heartwood shows wherever it reaches, however deep inside the rest of the tree it lies.
+                    if (heart != null) {
+                        first = heart;
+                        runnerUp = null;
+                    }
                     if (best > 0 && cut <= 0) {
                         if (y < first.foot()) {
                             BlockState here = level.getBlockState(pos);

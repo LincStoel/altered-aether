@@ -36,6 +36,11 @@ public enum LandmarkType {
     GRAND_CASCADE(1024, 0.5, 128, "cascading_archwood_grove", "aether_plateau"),
     /** A canyon across the rift: its slabs grown to giants, one side heaved up over the other. */
     GREAT_FRACTURE(1536, 1.0, 0, "shattered_rift"),
+    /**
+     * The Grandfather: the Skyroot Cathedral's ancestor tree, every kind of giant in one, with a golden heartwood
+     * room over its tunnel.
+     */
+    GRANDFATHER(1536, 0.9, 72, "skyroot_cathedral"),
     /** A Sunken Atoll with a second ring in its lagoon and an islet at its heart. */
     DOUBLE_ATOLL(0, 0, 0, "sunken_atoll");
 
