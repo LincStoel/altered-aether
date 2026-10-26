@@ -31,6 +31,8 @@ public final class AATags {
 
     /** Biomes where Tempest storms gather and strike. */
     public static final TagKey<Biome> HAS_STORMS = TagKey.create(Registries.BIOME, AlteredAether.id("has_storms"));
+    /** Biomes where fireflies drift: the giant-tree groves. */
+    public static final TagKey<Biome> HAS_FIREFLIES = TagKey.create(Registries.BIOME, AlteredAether.id("has_fireflies"));
     /** Ground a storm strike may scorch, besides dirt and sand. */
     public static final TagKey<Block> SCORCHABLE = TagKey.create(Registries.BLOCK, AlteredAether.id("scorchable"));
 
