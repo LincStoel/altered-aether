@@ -1,4 +1,4 @@
-// 1.21.1	2026-10-26T08:21:27.6385673	Altered Aether terrain (stock)
+// 1.21.1	2026-10-26T11:41:23.7643569	Altered Aether terrain (stock)
 e5fc8aa9d7e1f95a9222fc9d912a0e7dd37f965e data/aether/worldgen/noise_settings/skylands.json
 053b85fe60962463bbdb50fc2392adf0817db93b data/altered_aether/neoforge/biome_modifier/decoration/shelf_cascading.json
 8b0be10aaf6a3dfa2a2601e3dc0ccd5d81205889 data/altered_aether/neoforge/biome_modifier/decoration/shelf_vexing.json
@@ -23,7 +23,7 @@ c9386622fc169209769281c2eee3bcd1936f6a8d data/altered_aether/worldgen/density_fu
 36336f2759aec13d68232d513e9d59791c2f869a data/altered_aether/worldgen/density_function/terrain/dune_temperature.json
 cdf66ea29b88186e85dd8acb54a68ebbbb0b0ff6 data/altered_aether/worldgen/density_function/terrain/dune_weight.json
 5f0511b89952a580258ef1d95189a1b65e78e9fa data/altered_aether/worldgen/density_function/terrain/frozen_lakes_mask.json
-162501650a615caafd0fb85f37b4788881e0728f data/altered_aether/worldgen/density_function/terrain/grove_land.json
+b8a18fd425601584c79e44e448b6eeba5f002ae5 data/altered_aether/worldgen/density_function/terrain/grove_land.json
 ad9941fdc2f678c13aaf666f443f5ef7a072b655 data/altered_aether/worldgen/density_function/terrain/grove_mask.json
 db9a3fef0938a5c68a2e0fcd1f15c8120ad66eed data/altered_aether/worldgen/density_function/terrain/grove_weight.json
 bfeed5b7754442a7713417fadd9af16352cdf7b7 data/altered_aether/worldgen/density_function/terrain/island.json
@@ -56,6 +56,7 @@ dee3d1cb549513644a534b3d41b89380ace745a2 data/altered_aether/worldgen/noise/dune
 f819fb29070e13882767d5ea75439dde044abd17 data/altered_aether/worldgen/noise/dune_swell.json
 1f3b305d4fe2b96445cc7f07af92be7e3ef559c5 data/altered_aether/worldgen/noise/dune_warp.json
 c021e8baf54c20e19aff540457c0e96ba7d7d12f data/altered_aether/worldgen/noise/grove_footprint.json
+10ad7550cabe441d7f690ce5d79c31d913552648 data/altered_aether/worldgen/noise/grove_hummock.json
 b6986e0dcbf3b18a6af6394445e6b5eb99a832b8 data/altered_aether/worldgen/noise/grove_roll.json
 a61ecdc653acffccb0909ac1955bb8fb2ff4ae2a data/altered_aether/worldgen/noise/grove_root.json
 7779e4393f9e1ce9c4fb225b326ca4cc06ea17ae data/altered_aether/worldgen/noise/mesa.json

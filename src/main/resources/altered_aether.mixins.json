@@ -8,6 +8,7 @@
     "ArsArchwoodRegionMixins$ArsElemental",
     "ArsArchwoodRegionMixins$ArsNouveau",
     "AerwhaleDeckFloatingMixin",
+    "AirshipVillageSetMixin",
     "DeepAetherHeightChecksMixin",
     "DeepAetherWhaleCargoMixin",
     "GleamVinesMixins$BeeGrow",

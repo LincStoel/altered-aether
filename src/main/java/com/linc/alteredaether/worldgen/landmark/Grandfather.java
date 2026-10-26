@@ -75,6 +75,7 @@ record Grandfather(int x, int z, Giant giant) implements Landmark {
         GroveBuilder.paint(level, x0, z0, x1, z1, giant);
         GroveBuilder.build(level, x0, z0, x1, z1, giant);
         GroveBuilder.furnish(level, x0, z0, x1, z1, giant);
+        GroveBuilder.hangVines(level, x0, z0, x1, z1, giant);
     }
 
     @Override

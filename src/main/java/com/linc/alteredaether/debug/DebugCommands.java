@@ -35,6 +35,7 @@ import com.linc.alteredaether.worldgen.basin.BasinType;
 import com.linc.alteredaether.worldgen.grove.Giant;
 import com.linc.alteredaether.worldgen.grove.GiantType;
 import com.linc.alteredaether.worldgen.grove.GroveField;
+import com.linc.alteredaether.worldgen.grove.Mire;
 import com.linc.alteredaether.worldgen.landmark.Landmark;
 import com.linc.alteredaether.worldgen.landmark.LandmarkField;
 import com.linc.alteredaether.worldgen.landmark.LandmarkType;
@@ -89,16 +90,42 @@ public final class DebugCommands {
                 .then(Commands.literal("giant")
                         .then(Commands.argument("type", StringArgumentType.word())
                                 .suggests((ctx, builder) -> SharedSuggestionProvider.suggest(
-                                        java.util.Arrays.stream(GiantType.values())
-                                                .filter(t -> t != GiantType.LINK && t != GiantType.GRANDFATHER)
-                                                .map(GiantType::id), builder))
+                                        java.util.stream.Stream.concat(java.util.Arrays.stream(GiantType.values())
+                                                .filter(t -> t != GiantType.LINK && t != GiantType.GRANDFATHER
+                                                        && t != GiantType.YOUNG)
+                                                .map(GiantType::id), java.util.stream.Stream.of(MIRE)), builder))
                                 .executes(DebugCommands::giant))));
     }
 
-    /** {@code /altered_aether giant <type>}: the nearest grove giant of a type, with a link to go and see it. */
+    /** The name {@code giant} takes, in the commands and the bench, for the nearest swamp lake round a giant. */
+    static final String MIRE = "mire";
+
+    /**
+     * {@code /altered_aether giant <type>}: the nearest grove giant of a type, with a link to go and see it.
+     * {@code giant mire} finds the nearest swamp lake and stands you on its shore.
+     */
     private static int giant(CommandContext<CommandSourceStack> ctx) {
         CommandSourceStack source = ctx.getSource();
         GroveField field = GroveField.get(THE_AETHER);
+        if (field != null && StringArgumentType.getString(ctx, "type").equals(MIRE)) {
+            int x = (int) source.getPosition().x, z = (int) source.getPosition().z;
+            CompletableFuture.supplyAsync(() -> field.nearestMire(x, z, 20000), Util.backgroundExecutor())
+                    .thenAcceptAsync(found -> {
+                        if (found.isEmpty()) {
+                            source.sendFailure(Component.literal("No mire within 20000 blocks."));
+                            return;
+                        }
+                        Mire mire = found.get();
+                        int sx = mire.x() + (int) Math.round(mire.radius() * 1.1);
+                        String tp = "/execute in aether:the_aether run tp @s " + sx + " " + (mire.water() + 4) + " "
+                                + mire.z() + " 90 15";
+                        source.sendSuccess(() -> Component.literal("mire at " + mire.x() + ", " + mire.z()
+                                + " water " + mire.water() + ", " + mire.islets().size() + " islets ").append(
+                                Component.literal("[go]").withStyle(style -> style.withColor(ChatFormatting.GREEN)
+                                        .withClickEvent(new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, tp)))), false);
+                    }, source.getServer());
+            return 1;
+        }
         GiantType type;
         try {
             type = GiantType.valueOf(StringArgumentType.getString(ctx, "type").toUpperCase(java.util.Locale.ROOT));
@@ -279,6 +306,16 @@ public final class DebugCommands {
                 origin = new BlockPos(site.x(), 64, site.z());
                 AlteredAether.LOGGER.info("Worldgen benchmark: centred on {} at {} (extent {})", type.id(),
                         origin.toShortString(), String.format("%.0f", site.extent()));
+            } else if (biome != null && biome.equals("giant:" + MIRE)) {
+                GroveField field = GroveField.get(THE_AETHER);
+                Mire site = field == null ? null : field.nearestMire(origin.getX(), origin.getZ(), 60000).orElse(null);
+                if (site == null) {
+                    AlteredAether.LOGGER.error("Worldgen benchmark: no mire within 60000 blocks");
+                    return;
+                }
+                origin = new BlockPos(site.x(), 64, site.z());
+                AlteredAether.LOGGER.info("Worldgen benchmark: centred on a mire at {} (water {}, {} islets)",
+                        origin.toShortString(), site.water(), site.islets().size());
             } else if (biome != null && biome.startsWith("giant:")) {
                 GiantType type = GiantType.valueOf(biome.substring(6).toUpperCase(java.util.Locale.ROOT));
                 GroveField field = GroveField.get(THE_AETHER);
@@ -389,6 +426,7 @@ public final class DebugCommands {
                 Thread.currentThread().interrupt();
             }
             server.submit(() -> basinTally(aether, positions)).join();
+            server.submit(() -> mireTally(aether, positions)).join();
             server.submit(() -> landmarkTally(aether, positions)).join();
             // The debug command at the centre, so its output can be checked headlessly.
             BlockPos centrePos = origin.atY(aether.getHeight(Heightmap.Types.MOTION_BLOCKING, origin.getX(), origin.getZ()));
@@ -413,7 +451,20 @@ public final class DebugCommands {
                                     || BuiltInRegistries.BLOCK.getKey(state.getBlock()).getPath().contains(family))).join();
                 }
             }
-            if (Boolean.getBoolean("altered_aether.render") && biome != null && biome.startsWith("giant:")) {
+            if (Boolean.getBoolean("altered_aether.render") && biome != null && biome.equals("giant:" + MIRE)) {
+                // Sections through the lake and a plan at its water line, so islets, roots and the bed show.
+                GroveField field = GroveField.get(THE_AETHER);
+                Mire site = field == null ? null : field.nearestMire(origin.getX(), origin.getZ(), 64).orElse(null);
+                if (site != null) {
+                    int r = (int) Math.ceil(site.extent());
+                    server.submit(() -> WorldRender.render(aether, "mire_slice_x", site.x() - r, site.z(),
+                            site.x() + r, site.z(), site.water() - 12, site.water() + 90, 4)).join();
+                    server.submit(() -> WorldRender.render(aether, "mire_slice_z", site.x(), site.z() - r,
+                            site.x(), site.z() + r, site.water() - 12, site.water() + 90, 4)).join();
+                    server.submit(() -> WorldRender.render(aether, "mire_plan", site.x() - r, site.z() - r,
+                            site.x() + r, site.z() + r, site.water() - 6, site.water() + 2, 4)).join();
+                }
+            } else if (Boolean.getBoolean("altered_aether.render") && biome != null && biome.startsWith("giant:")) {
                 // Sections through the giant: a slice north to south and one east to west through its centre, and a
                 // plan cut just above its ground, so hollows and tunnels show.
                 GroveField field = GroveField.get(THE_AETHER);
@@ -537,6 +588,53 @@ public final class DebugCommands {
                 net.minecraft.world.level.block.entity.BlockEntityType.CAMPFIRE.isValid(
                         com.linc.alteredaether.registry.AARegistries.AMBROSIUM_CAMPFIRE.get().defaultBlockState()));
         AlteredAether.LOGGER.info("Features placed: {}", com.linc.alteredaether.worldgen.feature.FeatureStats.snapshot());
+    }
+
+    /** The swamp lakes over the given chunks, what they are made of, and any of their water that has started to flow. */
+    private static void mireTally(ServerLevel level, List<ChunkPos> positions) {
+        GroveField field = GroveField.get(level.dimension());
+        if (field == null) {
+            return;
+        }
+        ChunkPos first = positions.getFirst(), last = positions.getLast();
+        List<Mire> mires = field.miresTouching(first.getMinBlockX(), first.getMinBlockZ(), last.getMaxBlockX(),
+                last.getMaxBlockZ());
+        Map<String, Integer> blocks = new TreeMap<>();
+        List<String> leaks = new ArrayList<>();
+        BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
+        for (ChunkPos chunk : positions) {
+            for (int x = chunk.getMinBlockX(); x <= chunk.getMaxBlockX(); x++) {
+                for (int z = chunk.getMinBlockZ(); z <= chunk.getMaxBlockZ(); z++) {
+                    for (Mire mire : mires) {
+                        if (mire.reach(x + 0.5, z + 0.5) > 1.3) {
+                            continue;
+                        }
+                        for (int y = mire.water() - 16; y <= mire.water() + 2; y++) {
+                            var state = level.getBlockState(cursor.set(x, y, z));
+                            var fluid = state.getFluidState();
+                            String name = BuiltInRegistries.BLOCK.getKey(state.getBlock()).getPath();
+                            if (!fluid.isEmpty() && !fluid.isSource()) {
+                                blocks.merge("flowing", 1, Integer::sum);
+                                if (leaks.size() < 12) {
+                                    leaks.add(cursor.toShortString() + " below=" + BuiltInRegistries.BLOCK.getKey(
+                                            level.getBlockState(cursor.below()).getBlock()).getPath());
+                                }
+                            } else if (name.contains("root") || name.contains("mud") || name.equals("lily_pad")
+                                    || name.contains("seagrass") || name.contains("cattail") || name.equals("water")) {
+                                blocks.merge(name, 1, Integer::sum);
+                            }
+                        }
+                        break;
+                    }
+                }
+            }
+        }
+        AlteredAether.LOGGER.info("Mires: {} lakes; blocks {}", mires.size(), blocks);
+        mires.forEach(mire -> AlteredAether.LOGGER.info("  mire at {} {} radius {} water {} islets {}", mire.x(),
+                mire.z(), String.format("%.1f", mire.radius()), mire.water(), mire.islets().size()));
+        if (!leaks.isEmpty()) {
+            AlteredAether.LOGGER.info("  flowing mire water at {}", leaks);
+        }
     }
 
     /** The basins over the given chunks, the water they hold, and any water that has since started to flow. */

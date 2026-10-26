@@ -285,7 +285,8 @@ public final class AACompatProvider extends FeatureData {
 
     /**
      * Integrated Villages' airship village, set drifting through the Aether. Its own structure set puts it in the
-     * overworld; this one is ours, with the village's own template pools, on the Aether's biomes. The start height is
+     * overworld, and AirshipVillageSetMixin keeps that one from placing anywhere; this one is ours, with the village's
+     * own template pools, on the Aether's biomes. The start height is
      * a stock-Aether height (166 to 176), which the tall Aether stretches to 185..200 like any other.
      */
     private void airshipVillage() {

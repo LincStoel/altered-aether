@@ -187,6 +187,21 @@ public final class Tour {
          */
         private static void giantShots(String name, BlockPos spawn, List<Shot> shots) {
             GroveField field = GroveField.get(THE_AETHER);
+            if (name.equals("mire")) {
+                // A swamp lake from low over the water, looking across it at its giant, and from above.
+                var mire = field == null ? null : field.nearestMire(spawn.getX(), spawn.getZ(), 30000).orElse(null);
+                if (mire == null) {
+                    AlteredAether.LOGGER.error("Tour: no mire found");
+                    return;
+                }
+                AlteredAether.LOGGER.info("Tour: mire at {} {}", mire.x(), mire.z());
+                double out = mire.radius() * 1.05;
+                shots.add(new Shot("mire", mire.x() + out * 0.7, mire.water() + 3, mire.z() + out * 0.7, mire.x(),
+                        mire.water() + 8, mire.z(), 6000, false, false));
+                shots.add(new Shot("mire_above", mire.x() + out, mire.water() + out, mire.z() - out, mire.x(),
+                        mire.water(), mire.z(), 6000, false, false));
+                return;
+            }
             GiantType type = GiantType.valueOf(name.toUpperCase(Locale.ROOT));
             Giant site = field == null ? null : field.nearest(type, spawn.getX(), spawn.getZ(), 30000).orElse(null);
             if (site == null) {

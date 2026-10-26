@@ -24,6 +24,7 @@ import com.linc.alteredaether.worldgen.grove.shape.Tube;
 import net.minecraft.core.BlockPos;
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -35,6 +36,8 @@ import java.util.Map;
  * of giant is drawn in (crowns, buttress roots, reading the ground), then seals them into a {@link Giant}.
  */
 final class Sketch {
+    /** How much further an arching giant's buttress roots reach. */
+    private static final double ARCH_REACH = 1.6;
     final RandomSource random;
     final TerrainProbe probe;
     /** Vertical scale for the height mode: 1 in the tall Aether. */
@@ -52,7 +55,12 @@ final class Sketch {
     boolean tended;
     double campChance, secretChance;
     double footRadius;
+    /** Whether its buttress roots reach far out and arch over the ground, as a living Cathedral giant's do. */
+    boolean arching;
     int crown = Integer.MIN_VALUE;
+    /** The swamp lake round the giant's foot, if it stands in one. */
+    @Nullable
+    Mire mire;
 
     Sketch(TerrainProbe probe, RandomSource random, double vertical, int buildTop, int x, int z, int ground) {
         this.probe = probe;
@@ -187,7 +195,10 @@ final class Sketch {
             if (Math.min(off, Math.PI - off) < clearance) {
                 continue;
             }
-            double reach = length * range(0.7, 1.2);
+            double reach = length * range(0.7, 1.2) * (arching ? ARCH_REACH : 1);
+            // A living giant's roots hump up over the ground as they go, and now and then arch high enough to duck
+            // under.
+            double arch = arching ? range(1.0, 5.0) * v : 0;
             int n = 5;
             double[] xs = new double[n], ys = new double[n], zs = new double[n], rs = new double[n];
             double last = ground;
@@ -201,11 +212,55 @@ final class Sketch {
                 int g = groundAt(xs[k], zs[k]);
                 double surface = g == Integer.MIN_VALUE ? last - 4 : g;
                 last = surface;
-                ys[k] = k == 0 ? ground + radius * 0.9 : surface + 0.4 - t * 1.2;
+                ys[k] = k == 0 ? ground + radius * 0.9 : surface + 0.4 - t * 1.2 + arch * Math.sin(Math.PI * t);
                 rs[k] = Mth.lerp(t, radius * 0.5, 0.9);
             }
             wood.add(new Tube(xs, ys, zs, rs, Part.Role.LOG, Integer.MIN_VALUE));
         }
+    }
+
+    /**
+     * Prop roots out into the giant's lake, as a mangrove stands in the tide: each leaves the trunk a few blocks over
+     * the water, arches out past the islet's shore and dives into the bed; some surface again in a knee and dive once
+     * more. They draw on the lake's own random stream.
+     */
+    void mireRoots(Mire mire, RandomSource random) {
+        Mire.Islet islet = mire.islets().getFirst();
+        int count = 4 + random.nextInt(5);
+        double phase = random.nextDouble() * Mth.TWO_PI;
+        double furthest = mire.radius() * 0.8;
+        for (int i = 0; i < count; i++) {
+            double angle = phase + i * Mth.TWO_PI / count + Mth.lerp(random.nextDouble(), -0.3, 0.3);
+            double cos = Math.cos(angle), sin = Math.sin(angle);
+            double start = footRadius * 0.7;
+            double edge = islet.shore(angle) + Mth.lerp(random.nextDouble(), 0.5, 2.5);
+            double end = Math.min(furthest, edge + Mth.lerp(random.nextDouble(), 5, 13));
+            if (end < edge + 3) {
+                continue;
+            }
+            double top = mire.water() + Mth.lerp(random.nextDouble(), 3, 6) * Math.max(v, 0.6);
+            double rise = Mth.lerp(random.nextDouble(), 0.5, 2.5);
+            double r0 = Mth.lerp(random.nextDouble(), 1.3, 2.1);
+            wood.add(Tube.bezier(new double[]{x + cos * start, top, z + sin * start},
+                    new double[]{x + cos * edge, top + rise, z + sin * edge},
+                    new double[]{x + cos * (end - 2), mire.water() + 1.5, z + sin * (end - 2)},
+                    new double[]{x + cos * end, bedAt(mire, x + cos * end, z + sin * end) - 1, z + sin * end},
+                    r0, 0.9, 8, Part.Role.LOG));
+            double knee = Mth.lerp(random.nextDouble(), 4, 7);
+            if (random.nextDouble() < 0.4 && end + knee < mire.radius() * 0.9) {
+                double far = end + knee;
+                wood.add(Tube.bezier(new double[]{x + cos * end, bedAt(mire, x + cos * end, z + sin * end), z + sin * end},
+                        new double[]{x + cos * (end + 1), mire.water() + 3, z + sin * (end + 1)},
+                        new double[]{x + cos * (far - 1), mire.water() + 3, z + sin * (far - 1)},
+                        new double[]{x + cos * far, bedAt(mire, x + cos * far, z + sin * far) - 1, z + sin * far},
+                        0.95, 0.8, 6, Part.Role.LOG));
+            }
+        }
+    }
+
+    private static int bedAt(Mire mire, double px, double pz) {
+        int bx = Mth.floor(px), bz = Mth.floor(pz);
+        return mire.wet(bx, bz) ? mire.bed(bx, bz) : mire.water() - 1;
     }
 
     Giant done(GiantType type, long salt) {
@@ -230,6 +285,6 @@ final class Sketch {
         points.forEach((kind, list) -> sealed.put(kind, List.copyOf(list)));
         return new Giant(type, x, z, ground, footRadius, crown, List.copyOf(wood), List.copyOf(carves),
                 List.copyOf(leaves), List.copyOf(props), List.copyOf(paths), Map.copyOf(sealed), palette, bounds,
-                salt);
+                salt, mire);
     }
 }

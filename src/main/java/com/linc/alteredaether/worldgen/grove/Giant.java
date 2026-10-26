@@ -19,6 +19,7 @@ import com.linc.alteredaether.worldgen.grove.shape.Carve;
 import com.linc.alteredaether.worldgen.grove.shape.LeafCluster;
 import com.linc.alteredaether.worldgen.grove.shape.Part;
 import net.minecraft.core.BlockPos;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 import java.util.Map;
@@ -33,10 +34,12 @@ import java.util.Map;
  * @param footRadius  how far its trunk reaches at the ground, where links attach
  * @param crown       the top of its crown, where a canopy bridge may meet it, or MIN_VALUE without one
  * @param points      spots for decoration and finding things, by kind
+ * @param mire        the swamp lake round its foot as it planned it, before its neighbours are known, or null
  */
 public record Giant(GiantType type, int x, int z, int base, double footRadius, int crown, List<Part> wood,
                     List<Carve> carves, List<LeafCluster> leaves, List<Prop> props, List<PathStroke> paths,
-                    Map<String, List<BlockPos>> points, GrovePalette palette, Bounds bounds, long salt) {
+                    Map<String, List<BlockPos>> points, GrovePalette palette, Bounds bounds, long salt,
+                    @Nullable Mire mire) {
     /** How far the plan reaches from its centre, horizontally. */
     public double extent() {
         return Math.max(Math.max(x - bounds.minX(), bounds.maxX() - x), Math.max(z - bounds.minZ(), bounds.maxZ() - z));

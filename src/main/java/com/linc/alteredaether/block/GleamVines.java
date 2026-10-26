@@ -18,11 +18,13 @@ import com.linc.alteredaether.registry.AARegistries;
 import net.minecraft.core.BlockPos;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
+import net.minecraft.tags.BlockTags;
 import net.minecraft.util.Mth;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.LevelReader;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.CaveVines;
@@ -34,7 +36,8 @@ import org.jetbrains.annotations.Nullable;
  * Gleam vines are cave vines in Aether colours, hung with gleamberries. They share everything with vanilla's vines but
  * the berry: {@link #pick} is vanilla's {@link CaveVines#use} with our berry in place of the glow berry, and the two
  * places vanilla names the cave vine blocks outright (foxes picking berries, bees growing vines) are taught ours in
- * mixin/GleamVinesMixins. Fire is told how they burn by the blocks themselves, at vanilla's rates.
+ * mixin/GleamVinesMixins. Fire is told how they burn by the blocks themselves, at vanilla's rates. Unlike cave vines
+ * they also hang from leaves, so they can drape the groves' canopies.
  */
 public final class GleamVines {
     /** Vanilla's cave vines catch (15) and burn away (60) like leaves. */
@@ -49,6 +52,11 @@ public final class GleamVines {
     public static boolean standsInFor(BlockState state, Block vanilla) {
         return vanilla == Blocks.CAVE_VINES && state.is(AARegistries.GLEAM_VINES.get())
                 || vanilla == Blocks.CAVE_VINES_PLANT && state.is(AARegistries.GLEAM_VINES_PLANT.get());
+    }
+
+    /** Whether the vine at {@code pos} hangs from leaves, which hold gleam vines though they hold no cave vines. */
+    public static boolean hangsFromLeaves(LevelReader level, BlockPos pos) {
+        return level.getBlockState(pos.above()).is(BlockTags.LEAVES);
     }
 
     /** {@link CaveVines#use}, dropping a gleamberry. */

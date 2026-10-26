@@ -14,6 +14,9 @@
  */
 package com.linc.alteredaether.worldgen.grove;
 
+import com.linc.alteredaether.config.AACommonConfig;
+import com.linc.alteredaether.registry.AARegistries;
+import com.linc.alteredaether.worldgen.AABiomes;
 import com.linc.alteredaether.worldgen.grove.shape.Carve;
 import com.linc.alteredaether.worldgen.grove.shape.LeafCluster;
 import com.linc.alteredaether.worldgen.grove.shape.Part;
@@ -29,6 +32,8 @@ import net.minecraft.world.RandomizableContainer;
 import net.minecraft.world.level.WorldGenLevel;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.CaveVines;
+import net.minecraft.world.level.block.GrowingPlantHeadBlock;
 import net.minecraft.world.level.block.LeavesBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.Heightmap;
@@ -46,6 +51,8 @@ public final class GroveBuilder {
     private static final double LEAF_REACH = 5.6;
     /** Wood within this far of a carve's surface is stripped: the heartwood inside a hollow. */
     private static final double STRIP_DEPTH = 1.5;
+    /** Per-column odds, at density 1, of a gleam vine hanging from a Cathedral canopy; and of each block bearing. */
+    private static final double GLEAM_VINE = 0.03, GLEAM_BERRIES = 0.4;
     private static final Block DIRT_PATH = BuiltInRegistries.BLOCK
             .getOptional(ResourceLocation.parse("aether:aether_dirt_path")).orElse(Blocks.DIRT_PATH);
 
@@ -112,10 +119,69 @@ public final class GroveBuilder {
         }
     }
 
+    /**
+     * Hangs gleam vines from the underside of a Skyroot Cathedral giant's canopy: from the lowest leaves over air in a
+     * scattering of its columns, mostly a block or two long, now and then a long strand, hung with gleamberries. Runs
+     * after every giant in the chunk is built, so no later canopy grows round them.
+     */
+    public static void hangVines(WorldGenLevel level, int minX, int minZ, int maxX, int maxZ, Giant giant) {
+        double chance = GLEAM_VINE * AACommonConfig.GLEAM_VINES.get();
+        if (chance <= 0 || giant.leaves().isEmpty()) {
+            return;
+        }
+        Bounds canopy = giant.leaves().getFirst().bounds();
+        for (LeafCluster cluster : giant.leaves()) {
+            canopy = canopy.union(cluster.bounds());
+        }
+        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
+        for (int x = Math.max(minX, canopy.minX()); x <= Math.min(maxX, canopy.maxX()); x++) {
+            for (int z = Math.max(minZ, canopy.minZ()); z <= Math.min(maxZ, canopy.maxZ()); z++) {
+                if (hash(giant.salt(), x, 7, z) >= chance) {
+                    continue;
+                }
+                int bottom = Integer.MAX_VALUE, top = Integer.MIN_VALUE;
+                for (LeafCluster cluster : giant.leaves()) {
+                    if (cluster.bounds().column(x, z)) {
+                        bottom = Math.min(bottom, cluster.bounds().minY());
+                        top = Math.max(top, cluster.bounds().maxY());
+                    }
+                }
+                bottom = Math.max(bottom, level.getMinBuildHeight() + 1);
+                int y = bottom;
+                while (y <= top && !(level.getBlockState(pos.set(x, y, z)).is(BlockTags.LEAVES)
+                        && level.getBlockState(pos.set(x, y - 1, z)).isAir())) {
+                    y++;
+                }
+                if (y > top || !level.getBiome(pos.set(x, y - 1, z)).is(AABiomes.SKYROOT_CATHEDRAL)) {
+                    continue;
+                }
+                double r = hash(giant.salt(), x, 8, z);
+                int length = 1 + (int) (r * r * 7);
+                for (int i = 1; i <= length; i++) {
+                    pos.set(x, y - i, z);
+                    boolean tip = i == length || y - i - 1 <= level.getMinBuildHeight()
+                            || !level.getBlockState(pos.below()).isAir();
+                    BlockState vine = tip ? AARegistries.GLEAM_VINES.get().defaultBlockState()
+                            .setValue(GrowingPlantHeadBlock.AGE, 23 + (int) (hash(giant.salt(), x, y - i, z) * 3))
+                            : AARegistries.GLEAM_VINES_PLANT.get().defaultBlockState();
+                    boolean berries = hash(giant.salt() + 1, x, y - i, z) < GLEAM_BERRIES;
+                    level.setBlock(pos, vine.setValue(CaveVines.BERRIES, berries), 2);
+                    if (tip) {
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
     /** Where a standing prop goes: just above the first solid top below, or for topsoil, the top itself. */
     private static int top(WorldGenLevel level, BlockPos.MutableBlockPos pos, Prop prop) {
         for (int y = prop.y() + Prop.REACH; y >= prop.y() - Prop.REACH; y--) {
             BlockState state = level.getBlockState(pos.set(prop.x(), y, prop.z()));
+            if (!state.getFluidState().isEmpty()) {
+                // Over water: nothing stands on the bed of a lake.
+                return Integer.MIN_VALUE;
+            }
             if (state.isAir() || state.canBeReplaced() || state.getBlock() instanceof LeavesBlock) {
                 continue;
             }
@@ -146,6 +212,12 @@ public final class GroveBuilder {
     }
 
     public static void build(WorldGenLevel level, int minX, int minZ, int maxX, int maxZ, Giant giant) {
+        build(level, minX, minZ, maxX, maxZ, giant, MireBuilder.Waters.NONE);
+    }
+
+    /** Builds a giant standing among lakes: where a hollow or tunnel opens below the water line, it floods. */
+    public static void build(WorldGenLevel level, int minX, int minZ, int maxX, int maxZ, Giant giant,
+                             MireBuilder.Waters waters) {
         int x0 = Math.max(minX, giant.bounds().minX()), x1 = Math.min(maxX, giant.bounds().maxX());
         int z0 = Math.max(minZ, giant.bounds().minZ()), z1 = Math.min(maxZ, giant.bounds().maxZ());
         List<Part> wood = new ArrayList<>();
@@ -235,8 +307,12 @@ public final class GroveBuilder {
                         continue;
                     }
                     if (cut > 0) {
-                        if (y >= carve.floor() && !level.getBlockState(pos).isAir()) {
-                            level.setBlock(pos, Blocks.AIR.defaultBlockState(), 2);
+                        if (y >= carve.floor()) {
+                            BlockState open = waters.flooded(bx, y, bz) ? Blocks.WATER.defaultBlockState()
+                                    : Blocks.AIR.defaultBlockState();
+                            if (level.getBlockState(pos) != open) {
+                                level.setBlock(pos, open, 2);
+                            }
                         }
                         continue;
                     }

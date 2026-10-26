@@ -1,7 +1,8 @@
-// 1.21.1	2026-10-26T10:12:39.102323	Altered Aether features
+// 1.21.1	2026-10-26T11:41:23.7618463	Altered Aether features
 59ea928160ba488ba3a41b9357860d56bb169e7a data/altered_aether/worldgen/configured_feature/basin_fill.json
 e73aaba044310485fc1356945f37b1f2a3895357 data/altered_aether/worldgen/configured_feature/grove/build.json
 9ba8399e55243b8c81e58859d8dc0feaa9bcd4dc data/altered_aether/worldgen/configured_feature/grove/hanging_roots.json
+487a2071c2bd8a31dc8cdbac100edf1687764f16 data/altered_aether/worldgen/configured_feature/grove/understory.json
 b438923038fba16e3175cc05b1fcf4fb0254af08 data/altered_aether/worldgen/configured_feature/landmark/build.json
 a0739b2aa09adab4d3fee0458709df930b0f72a0 data/altered_aether/worldgen/configured_feature/landmark/islet_meadow.json
 5bb7f7634e00bd8b634c1b8d648fd27b5d347840 data/altered_aether/worldgen/configured_feature/waterfall/poison.json
@@ -9,6 +10,7 @@ a0739b2aa09adab4d3fee0458709df930b0f72a0 data/altered_aether/worldgen/configured
 db9519f6292b265f64c32572dcfbb637f05bf0d0 data/altered_aether/worldgen/placed_feature/basin_fill.json
 f06a876d24818c96e53d85efe339871f5b18e0fe data/altered_aether/worldgen/placed_feature/grove/build.json
 d33c7c1f3629c930a086b6bcdd9ba7626414c358 data/altered_aether/worldgen/placed_feature/grove/hanging_roots.json
+1f0da5929602a901aa2f168baa04f47da58aca17 data/altered_aether/worldgen/placed_feature/grove/understory.json
 6a9ef864aa8f0815f7adadebfc0826a1d88e9d00 data/altered_aether/worldgen/placed_feature/grove_trees/blazing.json
 52b8560f06855551110ec5cf6d444a5a8acfc5f4 data/altered_aether/worldgen/placed_feature/grove_trees/cascading.json
 218181edc448aacde59d09e6a62f7ed4b61025a4 data/altered_aether/worldgen/placed_feature/grove_trees/flourishing.json

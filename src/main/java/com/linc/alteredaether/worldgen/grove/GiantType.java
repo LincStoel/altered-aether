@@ -33,7 +33,9 @@ public enum GiantType {
     REGROWTH_RING(GroveField.NURSELOG, 2),
     /** The Cathedral's landmark, placed by the landmark field rather than the grove grid. */
     GRANDFATHER("", 0),
-    LINK("", 0);
+    LINK("", 0),
+    /** A young skyroot of the midstory between the giants, placed by {@link Understory} rather than the grid. */
+    YOUNG("", 0);
 
     final String biome;
     final int weight;

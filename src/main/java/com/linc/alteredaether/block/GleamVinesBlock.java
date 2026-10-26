@@ -48,6 +48,11 @@ public final class GleamVinesBlock extends CaveVinesBlock {
     }
 
     @Override
+    protected boolean canSurvive(BlockState state, LevelReader level, BlockPos pos) {
+        return super.canSurvive(state, level, pos) || GleamVines.hangsFromLeaves(level, pos);
+    }
+
+    @Override
     public ItemStack getCloneItemStack(LevelReader level, BlockPos pos, BlockState state) {
         return new ItemStack(AARegistries.GLEAMBERRIES.get());
     }

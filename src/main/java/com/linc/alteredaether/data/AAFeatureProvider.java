@@ -34,6 +34,8 @@ public final class AAFeatureProvider extends JsonDataProvider {
     static final String GROVE = NS + "grove/build";
     /** The roots hanging under the grove islands. */
     static final String HANGING_ROOTS = NS + "grove/hanging_roots";
+    /** The young trees and ground cover between the giants, in place of the stock forest's trees. */
+    static final String UNDERSTORY = NS + "grove/understory";
     static final String[] LANDMARK_DECORATION = {NS + "landmark/tempest_ring", NS + "landmark/spire_drifts",
             NS + "landmark/fracture_debris", NS + "landmark/fracture_slabs", NS + "landmark/fracture_bridges",
             NS + "landmark/islet_meadow", NS + "landmark/islet_oak"};
@@ -52,6 +54,8 @@ public final class AAFeatureProvider extends JsonDataProvider {
         placed("grove/build", GROVE, new JsonArray());
         configured("grove/hanging_roots", NS + "hanging_roots", new JsonObject());
         placed("grove/hanging_roots", HANGING_ROOTS, new JsonArray());
+        configured("grove/understory", NS + "understory", new JsonObject());
+        placed("grove/understory", UNDERSTORY, new JsonArray());
     }
 
     /**

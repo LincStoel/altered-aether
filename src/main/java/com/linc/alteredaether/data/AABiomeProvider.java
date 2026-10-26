@@ -265,26 +265,29 @@ public final class AABiomeProvider extends JsonDataProvider {
     }
 
     /**
-     * A cathedral forest of giant skyroots. The giants come from the grove field; the stock forest is thinned to the
-     * meadow's scattered trees so they never crowd it, and the fixed lake blob, which hangs off island edges, is gone.
+     * A cathedral forest of giant skyroots. The giants come from the grove field; in place of the stock forest grows
+     * our own understory of young skyroots and ground cover, which keeps clear of them, and the fixed lake blob, which
+     * hangs off island edges, is gone.
      * Deep green under a teal-tinted haze, as under a closed canopy.
      */
     private BiomeJson skyrootCathedral() {
         return base()
                 .climate(0.6f, 0.9f)
-                .replace(FOREST_TREES, "aether:skyroot_meadow_trees")
+                .replace(FOREST_TREES, AAFeatureProvider.UNDERSTORY)
                 .drop("aether:water_lake", "aether:holiday_tree")
                 .effect("fog_color", 0xA9D3C6).effect("foliage_color", 0x4E9A45).effect("grass_color", 0x6BAA5A)
-                .effect("water_color", 0x3F8F86).effect("water_fog_color", 0x1F4F4A);
+                // Swamp water, green and murky, for the lakes round the giants' feet.
+                .effect("water_color", 0x4F7A5C).effect("water_fog_color", 0x253A2B);
     }
 
-    /** The fallen elders: drier, olive and dusty, with the same thin forest between the logs. */
+    /** The fallen elders: drier, olive and dusty, with a thinner understory between the logs. */
     private BiomeJson nurselogHollow() {
         return base()
                 .climate(0.45f, 0.5f)
-                .replace(FOREST_TREES, "aether:skyroot_meadow_trees")
+                .replace(FOREST_TREES, AAFeatureProvider.UNDERSTORY)
                 .drop("aether:water_lake", "aether:holiday_tree")
-                .effect("fog_color", 0xCFC8AE).effect("foliage_color", 0x7F9152).effect("grass_color", 0x92A267);
+                .effect("fog_color", 0xCFC8AE).effect("foliage_color", 0x7F9152).effect("grass_color", 0x92A267)
+                .effect("water_color", 0x5E7552).effect("water_fog_color", 0x2C3524);
     }
 
     private BiomeJson grove(String colour, String music) {

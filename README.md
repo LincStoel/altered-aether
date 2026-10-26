@@ -48,7 +48,13 @@ hollows and secret places: sealed in burls, fallen logs and stumps, or in a nest
 lit by fire, which goes out in the Aether: the lamps are ambrosium torches, and with Deep Aether skyjade lanterns and
 tiki torches. Fireflies drift in the shade by day and swarm at night.
 
-`/altered_aether giant <type>` finds the nearest giant of a kind (operators only).
+Now and then a Cathedral giant stands in a shallow swamp lake on an islet of its own, its prop roots arching out
+through the water into a muddy bed. The lake has lily pads, seagrass and stands of waterlogged yagroot roots
+(mangrove roots without Deep Aether), and cattails grow on its shores. Neighbouring lakes may join, and every
+giant that stands in one gets its own islet. The water of both grove biomes is a murky swamp green.
+
+`/altered_aether giant <type>` finds the nearest giant of a kind, and `giant mire` the nearest swamp lake (operators
+only).
 
 **Rare landmarks**, each one-in-many:
 
@@ -93,7 +99,7 @@ With the tall pack, other mods' Aether structures and ores are moved to the matc
 | Dried Ghast | dried ghast fields in the Windswept Dunes |
 | Snuffles | Snuffles in the Frozen Crags, and only in the Aether |
 | Mowzie's Mobs | nagas in the Aether |
-| Integrated Villages | its airship village in the Aether |
+| Integrated Villages | its airship village in the Aether, and no longer in the overworld |
 | Aether: Beyond Parity | its ambrosium campfire is swapped for ours |
 
 Mobs added to the Aether from other mods spawn only in the Aether by default (each has an `aether_exclusive`
@@ -109,7 +115,8 @@ on cold aerclouds.
   `landmark_rarity` (higher is rarer, 0 turns landmarks off).
 - `[basins]`: each kind of lake on or off and its rarity, waterfall frequency, coral density.
 - `[groves]`: giant spacing, golden heartwood chance, the share of Deep Aether wood colonies, camp and secret-chest
-  chances, and the share of trails and camps still tended.
+  chances, the share of trails and camps still tended, and the chance and size of the swamp lakes (`mire_chance`,
+  `mire_size`).
 - `[features]`: a density multiplier per decoration family.
 - `[spawns]`: per added mob: on or off, `aether_exclusive`, weight, group size and spawn cost.
 - `[climate]`: the biome temperature fix.
@@ -169,7 +176,7 @@ comma-separated list of jar name prefixes) picks which.
 
 Worldgen tools, all on the dev server:
 
-- `-PaaBench=radius[,biome|x:z|landmark:<type>|giant:<type>|core:<biome>]` generates that many chunks around a
+- `-PaaBench=radius[,biome|x:z|landmark:<type>|giant:<type>|giant:mire|core:<biome>]` generates that many chunks around a
   point, logs the time per chunk, surface, decoration, basin and landmark tallies, then stops. `-PaaRender=true` also
   writes top and side views of the area to `run-server/renders/`, and for `giant:` slices through the giant.
 - `-PaaReport=radius,step` prints a report of biomes, masks and columns.

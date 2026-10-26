@@ -41,7 +41,7 @@ public final class HangingRoots {
     private static final TagKey<Block> AERCLOUDS = TagKey.create(Registries.BLOCK,
             ResourceLocation.fromNamespaceAndPath("aether", "aerclouds"));
     /** Per-column odds at density 1: a wooden strand, or failing that a tuft; under a root, a strand. */
-    private static final double STRAND = 0.07, TUFT = 0.14, UNDER_ROOT = 0.3;
+    private static final double STRAND = 0.035, TUFT = 0.07, UNDER_ROOT = 0.09;
 
     public static boolean place(WorldGenLevel level, RandomSource random, int x0, int z0, double density) {
         ChunkAccess chunk = level.getChunk(x0 >> 4, z0 >> 4);

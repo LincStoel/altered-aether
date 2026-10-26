@@ -56,6 +56,10 @@ public final class AACommonConfig {
     public static final DoubleValue TENDED_FRACTION;
     public static final DoubleValue UNDER_ROOT_CHANCE;
     public static final DoubleValue HANGING_ROOTS;
+    public static final DoubleValue GLEAM_VINES;
+    public static final DoubleValue MIRE_CHANCE;
+    public static final DoubleValue UNDERSTORY;
+    public static final DoubleValue MIRE_SIZE;
 
     // [basins]
     public static final Map<String, BooleanValue> BASIN_ENABLED = new LinkedHashMap<>();
@@ -179,6 +183,17 @@ public final class AACommonConfig {
                 .defineInRange("under_root_chance", 0.5, 0.0, 1.0);
         HANGING_ROOTS = b.comment("Density of the roots hanging under the grove islands, as a multiplier. 0 disables them.")
                 .defineInRange("hanging_roots", 1.0, 0.0, 4.0);
+        GLEAM_VINES = b.comment("Density of the gleam vines hanging from the Skyroot Cathedral's canopy, as a multiplier.",
+                        "0 disables them.")
+                .defineInRange("gleam_vines", 1.0, 0.0, 4.0);
+        MIRE_CHANCE = b.comment("Chance a living Skyroot Cathedral giant stands in a shallow swamp lake, on an islet of",
+                        "its own. Neighbouring lakes may join. 0 disables them.")
+                .defineInRange("mire_chance", 0.17, 0.0, 1.0);
+        MIRE_SIZE = b.comment("Size of the swamp lakes round the giants, as a multiplier. The grid spacing caps it.")
+                .defineInRange("mire_size", 1.0, 0.5, 1.5);
+        UNDERSTORY = b.comment("Density of the young skyroots and ground cover between the giants, as a multiplier.",
+                        "0 leaves the ground between them bare.")
+                .defineInRange("understory", 1.0, 0.0, 2.0);
         b.pop();
 
         b.comment("Lakes, pools, lagoons and waterfalls.").push("basins");

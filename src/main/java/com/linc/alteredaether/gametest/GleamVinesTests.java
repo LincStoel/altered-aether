@@ -31,6 +31,7 @@ import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.BonemealableBlock;
 import net.minecraft.world.level.block.CaveVines;
+import net.minecraft.world.level.block.LeavesBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
 import net.neoforged.neoforge.gametest.GameTestHolder;
@@ -42,7 +43,8 @@ import java.lang.reflect.Method;
 
 /**
  * Gleam vines must behave as vanilla's cave vines do: grow from a ceiling into their stem block, give up a gleamberry
- * (not a glow berry) to a player or a fox, glow only with berries, burn, and sit in the same tags.
+ * (not a glow berry) to a player or a fox, glow only with berries, burn, and sit in the same tags. Unlike them, they
+ * hang from leaves.
  */
 @GameTestHolder(AlteredAether.MOD_ID)
 @PrefixGameTestTemplate(false)
@@ -123,6 +125,24 @@ public final class GleamVinesTests {
                 || !stem.is(BlockTags.MOSS_REPLACEABLE)
                 || !AARegistries.GLEAMBERRIES.get().getDefaultInstance().is(ItemTags.FOX_FOOD)) {
             helper.fail("Gleam vines and gleamberries should share cave vines' and glow berries' tags");
+            return;
+        }
+        helper.succeed();
+    }
+
+    @GameTest(template = "arena")
+    public static void gleamVinesHangFromLeaves(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        BlockPos canopy = helper.absolutePos(new BlockPos(20, 12, 20));
+        BlockPos below = canopy.below();
+        level.setBlockAndUpdate(canopy, Blocks.OAK_LEAVES.defaultBlockState().setValue(LeavesBlock.PERSISTENT, true));
+        if (!AARegistries.GLEAM_VINES.get().defaultBlockState().canSurvive(level, below)
+                || !AARegistries.GLEAM_VINES_PLANT.get().defaultBlockState().canSurvive(level, below)) {
+            helper.fail("Gleam vines should hang from leaves");
+            return;
+        }
+        if (Blocks.CAVE_VINES.defaultBlockState().canSurvive(level, below)) {
+            helper.fail("Cave vines should still not hang from leaves");
             return;
         }
         helper.succeed();

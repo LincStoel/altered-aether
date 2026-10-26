@@ -22,6 +22,7 @@ import com.linc.alteredaether.worldgen.basin.BasinField;
 import com.linc.alteredaether.worldgen.landmark.LandmarkField;
 import com.linc.alteredaether.worldgen.landmark.LandmarkType;
 import net.minecraft.resources.ResourceKey;
+import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.levelgen.XoroshiroRandomSource;
@@ -55,6 +56,8 @@ public final class GroveField {
     private static final double LINK_CELLS = 1.9;
     private static final int LINKS = 3;
     private static final double CHANCE = 0.92, BRIDGE_CHANCE = 0.35, NURSELOG_SHARE = 0.7;
+    /** The odds a Cathedral cell holds a fallen colossus among the living, rather than a living giant. */
+    private static final double CATHEDRAL_FALLEN = 0.06;
     private static final Map<ResourceKey<Level>, GroveField> FIELDS = new ConcurrentHashMap<>();
 
     public static void put(ResourceKey<Level> dimension, @Nullable GroveField field) {
@@ -82,6 +85,7 @@ public final class GroveField {
     private final Cache<Long, Optional<Giant>> sites = CacheBuilder.newBuilder().maximumSize(1 << 10).build();
     private final Cache<Long, List<Long>> neighbours = CacheBuilder.newBuilder().maximumSize(1 << 12).build();
     private final Cache<Long, List<Giant>> links = CacheBuilder.newBuilder().maximumSize(1 << 10).build();
+    private final Cache<Long, Optional<Mire>> mires = CacheBuilder.newBuilder().maximumSize(1 << 10).build();
 
     /**
      * @param vertical vertical scale for the height mode: 1 in the tall Aether
@@ -119,6 +123,46 @@ public final class GroveField {
             }
         }
         return found;
+    }
+
+    /** Every swamp lake whose water or banks reach into the given block rectangle. */
+    public List<Mire> miresTouching(int minX, int minZ, int maxX, int maxZ) {
+        List<Mire> found = new ArrayList<>(2);
+        int scan = (int) Math.ceil(mireReach()) + 2;
+        for (int cx = Math.floorDiv(minX - scan, cell); cx <= Math.floorDiv(maxX + scan, cell); cx++) {
+            for (int cz = Math.floorDiv(minZ - scan, cell); cz <= Math.floorDiv(maxZ + scan, cell); cz++) {
+                mire(cx, cz).filter(m -> m.touches(minX, minZ, maxX, maxZ)).ifPresent(found::add);
+            }
+        }
+        return found;
+    }
+
+    /** The nearest swamp lake to a point, searching out ring by ring of cells. */
+    public Optional<Mire> nearestMire(int x, int z, int maxDistance) {
+        int ox = Math.floorDiv(x, cell), oz = Math.floorDiv(z, cell);
+        for (int ring = 0; ring <= maxDistance / cell + 1; ring++) {
+            Mire best = null;
+            double bestDistance = Double.MAX_VALUE;
+            for (int cx = ox - ring; cx <= ox + ring; cx++) {
+                for (int cz = oz - ring; cz <= oz + ring; cz++) {
+                    if (Math.max(Math.abs(cx - ox), Math.abs(cz - oz)) != ring) {
+                        continue;
+                    }
+                    Optional<Mire> mire = mire(cx, cz);
+                    if (mire.isPresent()) {
+                        double d = Math.hypot(mire.get().x() - x, mire.get().z() - z);
+                        if (d < bestDistance) {
+                            bestDistance = d;
+                            best = mire.get();
+                        }
+                    }
+                }
+            }
+            if (best != null) {
+                return Optional.of(best);
+            }
+        }
+        return Optional.empty();
     }
 
     /** The nearest giant of a type to a point, searching out ring by ring of cells. */
@@ -185,7 +229,8 @@ public final class GroveField {
         for (int attempt = 0; attempt < 3; attempt++) {
             int x = cx * cell + cell / 2 + random.nextInt(2 * jitter + 1) - jitter;
             int z = cz * cell + cell / 2 + random.nextInt(2 * jitter + 1) - jitter;
-            GiantType type = pick(probe.biomeAt(x, z), random);
+            String biome = probe.biomeAt(x, z);
+            GiantType type = pick(biome, random);
             if (type == null || probe.regionWeight(x, z) < 0.99) {
                 continue;
             }
@@ -199,11 +244,16 @@ public final class GroveField {
                 continue;
             }
             // The fallen are thinner on the ground than the living.
-            if (type.biome.equals(NURSELOG) && random.nextDouble() >= NURSELOG_SHARE) {
+            if (biome.equals(NURSELOG) && random.nextDouble() >= NURSELOG_SHARE) {
                 return null;
             }
+            // Now and then one of the Cathedral's giants has come down among the living.
+            if (biome.equals(CATHEDRAL) && random.nextDouble() < CATHEDRAL_FALLEN) {
+                type = GiantType.FALLEN_COLOSSUS;
+            }
             Sketch sketch = new Sketch(probe, random, vertical, buildTop, x, z, ground);
-            sketch.palette = palette(cx, cz, type.biome);
+            sketch.palette = palette(cx, cz, biome);
+            sketch.arching = type.crowned();
             sketch.tended = random.nextDouble() < AACommonConfig.TENDED_FRACTION.get();
             sketch.campChance = AACommonConfig.CAMP_CHANCE.get();
             sketch.secretChance = AACommonConfig.SECRET_CHANCE.get();
@@ -222,6 +272,16 @@ public final class GroveField {
                 case GRANDFATHER, LINK -> {
                 }
             }
+            // A lake round its foot draws on a stream of its own too, so lakes leave every other giant as it was.
+            if (type.crowned()) {
+                RandomSource wet = random(key(cx, cz) * 4 + attempt, 4);
+                if (wet.nextDouble() < AACommonConfig.MIRE_CHANCE.get()) {
+                    sketch.mire = planMire(sketch, wet);
+                    if (sketch.mire != null) {
+                        sketch.mireRoots(sketch.mire, wet);
+                    }
+                }
+            }
             // Roots under the island draw on a stream of their own, so turning them off changes nothing else.
             RandomSource roots = random(key(cx, cz) * 4 + attempt, 3);
             if (roots.nextDouble() < AACommonConfig.UNDER_ROOT_CHANCE.get()) {
@@ -233,6 +293,15 @@ public final class GroveField {
             }
         }
         return null;
+    }
+
+    public double vertical() {
+        return vertical;
+    }
+
+    /** The wood the giants of the colony round a block are made of, so the young growing among them match. */
+    GrovePalette paletteAt(int x, int z, String biome) {
+        return palette(Math.floorDiv(x, cell), Math.floorDiv(z, cell), biome);
     }
 
     /**
@@ -295,6 +364,107 @@ public final class GroveField {
             }
         }
         return held >= 7 ? low : Integer.MIN_VALUE;
+    }
+
+    /** The furthest a lake's water and banks reach from its giant. */
+    private double mireReach() {
+        return cell * 0.75;
+    }
+
+    /**
+     * A giant's own lake, checked against the terrain before anything is cut, much as a basin is: the ground all
+     * round the shore stands a little above the water, never a cliff over it, and the ground under open water is
+     * neither a hill nor a hole and thick enough to hold it. The water sits a block under the giant's ground, or
+     * lower if the shore dips, so the giant always stands on an islet. Null where the ground won't hold a lake.
+     */
+    @Nullable
+    private Mire planMire(Sketch s, RandomSource random) {
+        double isletRadius = s.footRadius * 1.05 + Mth.lerp(random.nextDouble(), 2, 4);
+        double most = (mireReach() - Mire.BANK_WIDTH - 2) / Mire.MAX_WOBBLE;
+        double radius = Math.min(most, Math.max(isletRadius + 10,
+                Mth.lerp(random.nextDouble(), 16, 26) * cell / CELL * AACommonConfig.MIRE_SIZE.get()));
+        double depth = Math.max(1.5, Mth.lerp(random.nextDouble(), 1.6, 3.0) * vertical);
+        double phase1 = random.nextDouble() * Mth.TWO_PI, phase2 = random.nextDouble() * Mth.TWO_PI;
+        double isletPhase = random.nextDouble() * Mth.TWO_PI;
+        long salt = random.nextLong();
+        if (radius < isletRadius + 8) {
+            return null;
+        }
+        int ground = s.ground;
+        int hill = (int) Math.round(Math.max(4, 6 * vertical));
+        int lowest = Integer.MAX_VALUE, highest = Integer.MIN_VALUE;
+        for (int d = 0; d < 16; d++) {
+            double angle = d * Math.PI / 8;
+            double r = radius * Mire.wobble(angle, phase1, phase2) + 3;
+            int top = probe.surfaceNear(s.x + (int) Math.round(Math.cos(angle) * r),
+                    s.z + (int) Math.round(Math.sin(angle) * r), ground, ground - 12, ground + hill + 2);
+            if (top == Integer.MIN_VALUE) {
+                return null;
+            }
+            lowest = Math.min(lowest, top);
+            highest = Math.max(highest, top);
+        }
+        int water = Math.min(ground - 1, lowest - 1);
+        if (water < ground - Math.max(2, Math.round(3 * vertical)) || highest - water > hill + 1) {
+            return null;
+        }
+        for (int d = 0; d < 8; d++) {
+            double angle = d * Math.PI / 4 + phase2;
+            double r = Mth.lerp((d % 3) / 2.0, isletRadius + 3, radius * 0.9);
+            int px = s.x + (int) Math.round(Math.cos(angle) * r), pz = s.z + (int) Math.round(Math.sin(angle) * r);
+            int g = probe.surfaceNear(px, pz, water, water - 8, water + hill + 1);
+            if (g == Integer.MIN_VALUE || g > water + hill || !probe.solid(px, Math.min(g, water - 3) - 3, pz)) {
+                return null;
+            }
+        }
+        Mire.Islet own = new Mire.Islet(s.x, s.z, isletRadius, isletPhase, ground);
+        return new Mire(s.x, s.z, water, radius, depth, phase1, phase2, List.of(own), salt);
+    }
+
+    /**
+     * A cell's lake as it is finally built, once its neighbours are known. Lakes that overlap join: each takes the
+     * lowest water line among its own and theirs, so joined lakes mostly agree, and where a chain of them doesn't,
+     * the seal leaves a levee between. Every giant whose foot reaches the water stands on an islet of its own; a
+     * giant whose ground lies too far off the water line to be one drops the lake.
+     */
+    Optional<Mire> mire(int cx, int cz) {
+        return cached(mires, key(cx, cz), () -> {
+            Optional<Giant> self = site(cx, cz);
+            if (self.isEmpty() || self.get().mire() == null) {
+                return Optional.<Mire>empty();
+            }
+            Mire own = self.get().mire();
+            List<Giant> near = new ArrayList<>();
+            for (int nx = cx - 2; nx <= cx + 2; nx++) {
+                for (int nz = cz - 2; nz <= cz + 2; nz++) {
+                    if (nx != cx || nz != cz) {
+                        site(nx, nz).ifPresent(near::add);
+                    }
+                }
+            }
+            int water = own.water();
+            for (Giant other : near) {
+                Mire theirs = other.mire();
+                if (theirs != null && Math.hypot(other.x() - own.x(), other.z() - own.z())
+                        < own.extent() + theirs.extent()) {
+                    water = Math.min(water, theirs.water());
+                }
+            }
+            List<Mire.Islet> islets = new ArrayList<>(own.islets());
+            double hill = Math.max(4, 6 * vertical) + 1;
+            for (Giant other : near) {
+                double islet = other.footRadius() * 1.05 + 3;
+                if (Math.hypot(other.x() - own.x(), other.z() - own.z()) - islet >= own.radius() * Mire.MAX_WOBBLE) {
+                    continue;
+                }
+                if (other.base() < water - 2 || other.base() > water + hill) {
+                    return Optional.<Mire>empty();
+                }
+                islets.add(new Mire.Islet(other.x(), other.z(), islet, (other.salt() >>> 11) * 0x1.0p-53 * Mth.TWO_PI,
+                        other.base()));
+            }
+            return Optional.of(own.settle(water, islets));
+        });
     }
 
     /** The cells of this cell's nearest linkable neighbours, nearest first. */

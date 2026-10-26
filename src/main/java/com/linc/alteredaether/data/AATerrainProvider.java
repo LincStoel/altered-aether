@@ -137,6 +137,7 @@ public final class AATerrainProvider extends JsonDataProvider {
         // The grove islands: broad 256-block forest islands, gently rolling, with lobes hanging beneath.
         noise("grove_footprint", -8, 1.0, 0.5);
         noise("grove_roll", -7, 1.0, 0.5);
+        noise("grove_hummock", -5, 1.0, 0.4);
         noise("grove_root", -6, 1.0, 0.5);
         noise("mesa_height", -6, 1.0);
         noise("plateau_relief", -6, 1.0, 0.5);
@@ -250,7 +251,10 @@ public final class AATerrainProvider extends JsonDataProvider {
         // the Aether's scattered ones. The mask covers the nurselog frame (and so the cathedral inside it) and the
         // nurselog's own solo window.
         df("grove_mask", max(climateBox(-0.49, 0.01, 0.19, 0.61), climateBox(-0.58, -0.46, -0.42, -0.22)));
-        JsonObject groveSummit = add(mode.y(44), mul(mode.height(7), shiftedNoise(NS + "grove_roll", 1.0, 0.0)));
+        // Broad swells, and over them low mounds and hollows a few dozen blocks across, so the forest floor is never
+        // a lawn.
+        JsonObject groveSummit = add(add(mode.y(44), mul(mode.height(7), shiftedNoise(NS + "grove_roll", 1.0, 0.0))),
+                mul(mode.height(3), shiftedNoise(NS + "grove_hummock", 1.0, 0.0)));
         JsonObject groveUnderside = add(mode.y(22), mul(-mode.height(26),
                 clamp(add(shiftedNoise(NS + "grove_root", 1.0, 0.0), 0.2), 0.0, 1.0)));
         df("grove_land", min(min(mul(0.125, add(groveSummit, mul(-1.0, Df.y()))),
