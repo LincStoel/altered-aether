@@ -1,4 +1,4 @@
-// 1.21.1	2026-10-26T22:43:39.6173095	Altered Aether tags
+// 1.21.1	2026-10-27T07:01:45.7558693	Altered Aether tags
 963f3bec27a385f2b84a064074c07dfcec208cb3 data/aether/tags/worldgen/biome/is_aether.json
 7ec09b2e18ab43d296e2d76cad7fe25c11cda07f data/altered_aether/tags/block/breeze_spawnable_on.json
 ced54e3c0345a29f08205713ce269209a192e5b8 data/altered_aether/tags/block/charged_copper.json
@@ -11,7 +11,6 @@ f76decdcce75cd4e962a371b9b30e0f57f123884 data/altered_aether/tags/block/scorchab
 b1fe34d2a9ffbf95392b5399248e0d0ce4eed170 data/altered_aether/tags/item/aerwhale_breeding_food.json
 bbf0d0c17212568adf6c02381fe81bf1670bf7ff data/altered_aether/tags/item/aerwhale_taming_food.json
 382f42a5e82fcadecd2d78d451c21d40b9aff2ca data/altered_aether/tags/item/attracts_lightning.json
-e9730a41c42191b70c0fd4cbcfc86cc4e1f32d48 data/altered_aether/tags/worldgen/biome/has_fireflies.json
 b9cb72fb4859bb228260166a46afc3921c7f737b data/altered_aether/tags/worldgen/biome/has_lanterns.json
 8cf8a4cb0dc6acc9f95a83ab65901cc331d98695 data/altered_aether/tags/worldgen/biome/has_storms.json
 56ec7456c37fbf5edbd08d84896d3455ded5c0cd data/ars_nouveau/tags/block/harvest/foliage.json

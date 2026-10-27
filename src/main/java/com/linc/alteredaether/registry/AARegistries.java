@@ -64,8 +64,6 @@ import com.linc.alteredaether.worldgen.surface.Steep;
 import com.linc.alteredaether.worldgen.surface.Strata;
 import com.linc.alteredaether.worldgen.surface.SubstituteBlock;
 import com.mojang.serialization.MapCodec;
-import net.minecraft.core.particles.ParticleType;
-import net.minecraft.core.particles.SimpleParticleType;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.world.entity.EntityType;
@@ -167,12 +165,6 @@ public final class AARegistries {
         DENSITY_FUNCTIONS.register("atoll", () -> Atoll.MAP_CODEC);
     }
 
-    public static final DeferredRegister<ParticleType<?>> PARTICLE_TYPES =
-            DeferredRegister.create(Registries.PARTICLE_TYPE, AlteredAether.MOD_ID);
-    /** The groves' fireflies; see client/FireflyParticle. */
-    public static final DeferredHolder<ParticleType<?>, SimpleParticleType> FIREFLY =
-            PARTICLE_TYPES.register("firefly", () -> new SimpleParticleType(false));
-
     public static final DeferredRegister<SoundEvent> SOUND_EVENTS =
             DeferredRegister.create(Registries.SOUND_EVENT, AlteredAether.MOD_ID);
     /** The crackle before a Tempest strike hits a player; see storm/TempestStorms. */
@@ -261,7 +253,6 @@ public final class AARegistries {
         BLOCK_STATE_PROVIDERS.register(modBus);
         FEATURES.register(modBus);
         PLACEMENT_MODIFIERS.register(modBus);
-        PARTICLE_TYPES.register(modBus);
         SOUND_EVENTS.register(modBus);
     }
 

@@ -28,7 +28,6 @@ public final class AAClientConfig {
     public static final BooleanValue SKY_FLASHES;
     public static final BooleanValue LOCAL_RAIN;
     public static final DoubleValue PARTICLE_DENSITY;
-    public static final BooleanValue FIREFLIES;
     public static final EnumValue<ShaderMode> SHADER_MODE;
 
     public enum ShaderMode {
@@ -51,9 +50,6 @@ public final class AAClientConfig {
         LOCAL_RAIN = b.comment("Show rain inside storm biomes.").define("local_rain", true);
         PARTICLE_DENSITY = b.comment("Multiplier for ambient biome particles added by this mod.")
                 .defineInRange("particle_density", 1.0, 0.0, 4.0);
-        FIREFLIES = b.comment("Fireflies in the Skyroot Cathedral and Nurselog Hollow: a few in the shade by day, swarms",
-                        "at night. Scaled by particle_density.")
-                .define("fireflies", true);
         SHADER_MODE = b.comment("How atmospheric effects adapt to shaderpacks. AUTO detects Iris.")
                 .defineEnum("shader_mode", ShaderMode.AUTO);
         b.pop();

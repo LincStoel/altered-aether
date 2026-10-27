@@ -30,7 +30,7 @@ switch in the config's `[compat]` section is on).
 | Shattered Rift | an island torn apart: a sparse field of tall, blocky columns standing apart, with clouds of rubble hanging in the gaps between them |
 | Windswept Dunes | thin sheets of quicksoil winding high through the sky, rippled by long wind ridges; ruins, dead bushes |
 | Frozen Lakes | high icestone islands under aether dirt holding lakes frozen over at the surface, with snow on the banks |
-| Skyroot Cathedral | broad forest islands of giant skyroots standing shoulder to shoulder, joined by roots, layering bows and canopy bridges: hollow elders you can build in, tunnel giants, Tule masses, bow colonies and cathedral rings; trails, lamps, camps and fireflies |
+| Skyroot Cathedral | broad forest islands of giant skyroots standing shoulder to shoulder, joined by roots, layering bows and canopy bridges: hollow elders you can build in, tunnel giants, Tule masses, bow colonies and cathedral rings; trails, lamps and camps |
 | Nurselog Hollow | the cathedral's fallen elders, round its edges and now and then alone: colossal fallen logs with walkable hollows and root plates over craters, some flooded into muddy ponds, snags, giant stumps, lattice skeletons and rings of regrowth |
 | Blazing, Cascading, Flourishing and Vexing Archwood Groves | Ars Nouveau's archwood forests (need Ars Nouveau) |
 | Flashing Archwood Grove | needs Ars Nouveau and Ars Elemental |
@@ -47,7 +47,7 @@ are roseroot, sunroot, cruderoot, yagroot or conberry. Pilgrims once tended the 
 and lit, some camps round an ambrosium campfire still burn, and others are long forgotten. Chests are hidden in
 hollows and secret places: sealed in burls, fallen logs and stumps, or in a nest at the top of a trunk. Nothing is
 lit by fire, which goes out in the Aether: the lamps are ambrosium torches, and with Deep Aether skyjade lanterns and
-tiki torches. Fireflies drift in the shade by day and swarm at night.
+tiki torches.
 
 Now and then a Cathedral giant stands in a shallow swamp lake on an islet of its own, its prop roots arching out
 through the water into a muddy bed. The lake has lily pads, seagrass and stands of waterlogged yagroot roots
@@ -176,7 +176,7 @@ on cold aerclouds.
 - `[tall_mode]`: structures the tall Aether should leave at their own heights.
 - `[compat]`: one switch per optional mod, the Beyond Parity campfire swap, and `disable_overworld_archwood`.
 
-`config/altered_aether-client.toml`: storm fog, sky flashes, local rain, fireflies, particle density, and how the
+`config/altered_aether-client.toml`: storm fog, sky flashes, local rain, particle density, and how the
 effects adapt to shaderpacks.
 
 ## Shaders
@@ -239,10 +239,9 @@ Worldgen tools, all on the dev server:
 - `-PaaReport=radius,step` prints a report of biomes, masks and columns.
 - `/altered_aether debug` reports the biome, climate point, region mask, basin, landmark and storm at your position.
 - `-PaaTour=stop,stop,...` on the client quick-plays `run/saves/tour` and screenshots each landmark (and `storm`,
-  `campfire`, `fireflies`, `biome:<name>`, `giant:<type>`) into `run/screenshots/tour/`.
+  `campfire`, `biome:<name>`, `giant:<type>`) into `run/screenshots/tour/`.
 - `/altered_aether fly <from> <to> <speed> [radius]` (run in the Aether, e.g. through RCON) moves a chunk ticket
   along a line like a flying player and logs tick times, chunks generated and how many near it are still missing.
-- `python tools/textures/firefly.py` redraws the firefly sprite.
 - `python tools/parity/parity.py` compares the biomes with the World Traveler 2 datapack they replace.
 
 ## License

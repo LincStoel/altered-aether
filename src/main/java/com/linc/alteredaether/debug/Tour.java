@@ -140,16 +140,6 @@ public final class Tour {
                     biomeShots(aether, stop.substring(6), spawn, shots);
                     continue;
                 }
-                if (stop.equals("fireflies")) {
-                    // A cathedral giant at midnight, for the fireflies and the lamps. A biome ground shot could land
-                    // outside the grove (the biome search samples one height), so the shot is the giant's own.
-                    List<Shot> night = new ArrayList<>();
-                    giantShots("hollow_elder", spawn, night);
-                    night.stream().filter(shot -> !shot.name().endsWith("_inside")).findFirst().ifPresent(shot ->
-                            shots.add(new Shot("fireflies", shot.x(), shot.y(), shot.z(), shot.fx(), shot.fy(),
-                                    shot.fz(), 18000, false, false)));
-                    continue;
-                }
                 if (stop.startsWith("giant:")) {
                     giantShots(stop.substring(6), spawn, shots);
                     continue;
