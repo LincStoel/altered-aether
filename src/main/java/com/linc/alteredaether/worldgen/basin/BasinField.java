@@ -242,13 +242,43 @@ public final class BasinField {
         if (atoll == null) {
             return terrain;
         }
-        Optional<AtollSite> major = atoll(Math.floorDiv(x, atollCell), Math.floorDiv(z, atollCell));
+        // Called for every sample of the terrain; the cells are wide, so the last three almost always still apply.
+        Recent recent = this.recent.get();
+        int cx = Math.floorDiv(x, atollCell), cz = Math.floorDiv(z, atollCell);
+        if (recent.majorX != cx || recent.majorZ != cz || recent.major == null) {
+            recent.major = atoll(cx, cz);
+            recent.majorX = cx;
+            recent.majorZ = cz;
+        }
+        Optional<AtollSite> major = recent.major;
         double density = major.isEmpty() ? terrain : major.get().density(x, y, z, terrain);
-        Optional<AtollSite> minor = minor(Math.floorDiv(x, minorCell), Math.floorDiv(z, minorCell));
+        cx = Math.floorDiv(x, minorCell);
+        cz = Math.floorDiv(z, minorCell);
+        if (recent.minorX != cx || recent.minorZ != cz || recent.minor == null) {
+            recent.minor = minor(cx, cz);
+            recent.minorX = cx;
+            recent.minorZ = cz;
+        }
+        Optional<AtollSite> minor = recent.minor;
         density = minor.isEmpty() ? density : minor.get().density(x, y, z, density);
-        Optional<AtollSite> twin = doubleAtoll(Math.floorDiv(x, doubleCell), Math.floorDiv(z, doubleCell));
+        cx = Math.floorDiv(x, doubleCell);
+        cz = Math.floorDiv(z, doubleCell);
+        if (recent.twinX != cx || recent.twinZ != cz || recent.twin == null) {
+            recent.twin = doubleAtoll(cx, cz);
+            recent.twinX = cx;
+            recent.twinZ = cz;
+        }
+        Optional<AtollSite> twin = recent.twin;
         return twin.isEmpty() ? density : twin.get().density(x, y, z, density);
     }
+
+    /** The atoll cells this thread looked up last, one of each grid. */
+    private static final class Recent {
+        int majorX, majorZ, minorX, minorZ, twinX, twinZ;
+        Optional<AtollSite> major, minor, twin;
+    }
+
+    private final ThreadLocal<Recent> recent = ThreadLocal.withInitial(Recent::new);
 
     private static boolean touches(int x, int z, double extent, int minX, int minZ, int maxX, int maxZ) {
         double dx = Math.max(0, Math.max(minX - x, x - maxX)), dz = Math.max(0, Math.max(minZ - z, z - maxZ));
