@@ -50,7 +50,8 @@ public final class GroveBreak implements DensityFunction {
 
     /** The breaks reaching into the last chunk this thread asked about. */
     private static final class Column {
-        BreakField field;
+        /** Weak, so a worker thread doesn't keep a closed world's field (and all it reaches) alive. */
+        java.lang.ref.WeakReference<BreakField> field = new java.lang.ref.WeakReference<>(null);
         int x = Integer.MIN_VALUE, z = Integer.MIN_VALUE;
         BreakField.Site[] sites = NONE;
     }
@@ -110,10 +111,10 @@ public final class GroveBreak implements DensityFunction {
     private static BreakField.Site[] sitesAt(BreakField field, int x, int z) {
         Column column = COLUMN.get();
         int chunkX = x >> 4, chunkZ = z >> 4;
-        if (column.field != field || column.x != chunkX || column.z != chunkZ) {
+        if (column.field.get() != field || column.x != chunkX || column.z != chunkZ) {
             List<BreakField.Site> sites = field.touching(chunkX << 4, chunkZ << 4, (chunkX << 4) + 15,
                     (chunkZ << 4) + 15);
-            column.field = field;
+            column.field = new java.lang.ref.WeakReference<>(field);
             column.x = chunkX;
             column.z = chunkZ;
             column.sites = sites.isEmpty() ? NONE : sites.toArray(BreakField.Site[]::new);

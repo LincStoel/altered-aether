@@ -58,7 +58,8 @@ public final class BasinCarve implements DensityFunction {
      * cell order, so the column changes almost every block but the chunk rarely does.
      */
     private static final class Column {
-        BasinField field;
+        /** Weak, so a worker thread doesn't keep a closed world's field (and all it reaches) alive. */
+        java.lang.ref.WeakReference<BasinField> field = new java.lang.ref.WeakReference<>(null);
         int x = Integer.MIN_VALUE, z = Integer.MIN_VALUE;
         BasinSite[] sites = NONE;
     }
@@ -110,10 +111,10 @@ public final class BasinCarve implements DensityFunction {
     private static BasinSite[] sitesAt(BasinField field, int x, int z) {
         Column column = COLUMN.get();
         int chunkX = x >> 4, chunkZ = z >> 4;
-        if (column.field != field || column.x != chunkX || column.z != chunkZ) {
+        if (column.field.get() != field || column.x != chunkX || column.z != chunkZ) {
             List<BasinSite> sites = field.sitesTouching(chunkX << 4, chunkZ << 4, (chunkX << 4) + 15, (chunkZ << 4) + 15);
             sites.removeIf(site -> site.type().atollShaped());
-            column.field = field;
+            column.field = new java.lang.ref.WeakReference<>(field);
             column.x = chunkX;
             column.z = chunkZ;
             column.sites = sites.isEmpty() ? NONE : sites.toArray(BasinSite[]::new);
