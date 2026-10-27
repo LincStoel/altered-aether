@@ -112,7 +112,7 @@ public final class RuinedPillarFeature extends Feature<RuinedPillarFeature.Confi
         BlockPos start = origin.relative(direction, distance);
         for (int i = 0; i < length; i++) {
             BlockPos pos = start.relative(direction.getClockWise(), i);
-            if (!level.getBlockState(pos).isAir() || !solid(level, pos.below()) || !level.ensureCanWrite(pos)) {
+            if (!WriteBounds.writable(level, pos) || !level.getBlockState(pos).isAir() || !solid(level, pos.below())) {
                 return;
             }
         }

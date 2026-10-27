@@ -87,12 +87,15 @@ public final class SnowDriftFeature extends Feature<SnowDriftFeature.Config> {
                     continue;
                 }
                 int x = origin.getX() + dx, z = origin.getZ() + dz;
+                if (!WriteBounds.reachable(level, x, z)) {
+                    continue;
+                }
                 int surface = level.getHeight(Heightmap.Types.WORLD_SURFACE_WG, x, z);
                 BlockPos ground = new BlockPos(x, surface - 1, z);
                 BlockState below = level.getBlockState(ground);
                 if (surface <= level.getMinBuildHeight() || below.isAir() || !below.getFluidState().isEmpty()
                         || below.is(BlockTags.LEAVES) || Math.abs(surface - origin.getY()) > 6
-                        || !level.ensureCanWrite(ground)) {
+                        || !WriteBounds.writable(level, ground)) {
                     continue;
                 }
                 int full = (int) Math.floor(drift);

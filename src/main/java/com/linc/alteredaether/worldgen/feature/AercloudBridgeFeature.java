@@ -65,9 +65,12 @@ public final class AercloudBridgeFeature extends Feature<AercloudBridgeFeature.C
         for (Direction direction : directions) {
             for (int length = config.maxLength(); length >= config.minLength(); length--) {
                 int ex = start.getX() + direction.getStepX() * length, ez = start.getZ() + direction.getStepZ() * length;
+                if (!WriteBounds.reachable(level, ex, ez)) {
+                    continue;
+                }
                 int landing = level.getHeight(Heightmap.Types.WORLD_SURFACE_WG, ex, ez);
                 if (landing <= level.getMinBuildHeight() || Math.abs(landing - start.getY()) > 8
-                        || !level.ensureCanWrite(new BlockPos(ex, landing, ez))) {
+                        || !WriteBounds.writable(level, new BlockPos(ex, landing, ez))) {
                     continue;
                 }
                 // the span between must be open sky at the middle, or this is not a gap
@@ -93,7 +96,7 @@ public final class AercloudBridgeFeature extends Feature<AercloudBridgeFeature.C
             int width = t > 0.15 && t < 0.85 ? 1 : 0;
             for (int w = -width; w <= width; w++) {
                 BlockPos pos = start.relative(direction, step).relative(side, w).atY((int) Math.round(y));
-                if (level.getBlockState(pos).isAir() && level.ensureCanWrite(pos)) {
+                if (WriteBounds.writable(level, pos) && level.getBlockState(pos).isAir()) {
                     level.setBlock(pos, config.block().getState(random, pos), Block.UPDATE_CLIENTS);
                     // a thicker core down the middle
                     if (w == 0 && step % 3 != 0 && level.getBlockState(pos.below()).isAir()) {

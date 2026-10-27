@@ -73,11 +73,14 @@ public final class StrikeCraterFeature extends Feature<StrikeCraterFeature.Confi
                 // an uneven outline: the radius drifts with the angle
                 double edge = radius * (1 + 0.18 * Math.sin(angle * 3 + wobble));
                 int x = origin.getX() + dx, z = origin.getZ() + dz;
+                if (!WriteBounds.reachable(level, x, z)) {
+                    continue;
+                }
                 int surface = level.getHeight(Heightmap.Types.WORLD_SURFACE_WG, x, z);
                 BlockPos ground = new BlockPos(x, surface - 1, z);
                 BlockState top = level.getBlockState(ground);
                 if (surface <= level.getMinBuildHeight() || !solid(top) || Math.abs(surface - origin.getY()) > 5
-                        || !level.ensureCanWrite(ground)) {
+                        || !WriteBounds.writable(level, ground)) {
                     continue;
                 }
                 double d = distance / edge;

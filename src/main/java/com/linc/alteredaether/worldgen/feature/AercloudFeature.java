@@ -134,7 +134,7 @@ public final class AercloudFeature extends Feature<AercloudFeature.Config> {
     }
 
     private static int put(WorldGenLevel level, Config config, RandomSource random, BlockPos pos) {
-        if (level.getBlockState(pos).isAir() && level.ensureCanWrite(pos)) {
+        if (WriteBounds.writable(level, pos) && level.getBlockState(pos).isAir()) {
             level.setBlock(pos, config.block().getState(random, pos), Block.UPDATE_CLIENTS);
             return 1;
         }
