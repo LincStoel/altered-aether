@@ -82,6 +82,13 @@ public final class DebugCommands {
                                         .executes(ctx -> report(ctx, IntegerArgumentType.getInteger(ctx, "radius"),
                                                 IntegerArgumentType.getInteger(ctx, "step"))))))
                 .then(Commands.literal("debug").executes(DebugCommands::here))
+                .then(Commands.literal("fly")
+                        .then(Commands.argument("from", net.minecraft.commands.arguments.coordinates.ColumnPosArgument.columnPos())
+                                .then(Commands.argument("to", net.minecraft.commands.arguments.coordinates.ColumnPosArgument.columnPos())
+                                        .then(Commands.argument("speed", IntegerArgumentType.integer(1, 200))
+                                                .executes(ctx -> fly(ctx, 10))
+                                                .then(Commands.argument("radius", IntegerArgumentType.integer(2, 32))
+                                                        .executes(ctx -> fly(ctx, IntegerArgumentType.getInteger(ctx, "radius"))))))))
                 .then(Commands.literal("landmark")
                         .then(Commands.argument("type", StringArgumentType.word())
                                 .suggests((ctx, builder) -> SharedSuggestionProvider.suggest(
@@ -102,6 +109,19 @@ public final class DebugCommands {
                                                         && t != GiantType.YOUNG)
                                                 .map(GiantType::id), java.util.stream.Stream.of(MIRE, "break_edge", "break_chasm")), builder))
                                 .executes(DebugCommands::giant))));
+    }
+
+    /** {@code /altered_aether fly <from> <to> <speed> [radius]}: see {@link Flight}. */
+    private static int fly(CommandContext<CommandSourceStack> ctx, int radius) {
+        var from = net.minecraft.commands.arguments.coordinates.ColumnPosArgument.getColumnPos(ctx, "from");
+        var to = net.minecraft.commands.arguments.coordinates.ColumnPosArgument.getColumnPos(ctx, "to");
+        if (!Flight.start(ctx.getSource().getLevel(), from.x(), from.z(), to.x(), to.z(),
+                IntegerArgumentType.getInteger(ctx, "speed"), radius)) {
+            ctx.getSource().sendFailure(Component.literal("A flight is already under way."));
+            return 0;
+        }
+        ctx.getSource().sendSuccess(() -> Component.literal("Flying; progress goes to the log."), false);
+        return 1;
     }
 
     /**
