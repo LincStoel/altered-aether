@@ -145,6 +145,28 @@ public final class RegionMask implements DensityFunction {
         return binding;
     }
 
+    /**
+     * Copies bound to one solver are the same function. Each NoiseChunk wraps the router afresh and shares one
+     * {@code flat_cache} per distinct function; without this, every reference to the mask built and filled its own
+     * cache for every chunk, which was over a third of all world generation time.
+     */
+    @Override
+    public boolean equals(Object other) {
+        if (!(other instanceof RegionMask mask)) {
+            return false;
+        }
+        if (mask.binding == binding) {
+            return true;
+        }
+        Solver solver = binding == null ? null : binding.solver;
+        return solver != null && mask.binding != null && mask.binding.solver == solver;
+    }
+
+    @Override
+    public int hashCode() {
+        return RegionMask.class.hashCode();
+    }
+
     @Override
     public double compute(FunctionContext context) {
         return binding == null ? 0 : binding.sample(context.blockX(), context.blockZ());

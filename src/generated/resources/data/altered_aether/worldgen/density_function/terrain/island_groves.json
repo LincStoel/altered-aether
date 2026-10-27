@@ -1,35 +1,6 @@
 {
-  "type": "minecraft:range_choice",
-  "input": "altered_aether:terrain/grove_weight",
-  "max_exclusive": 1.0E-4,
-  "min_inclusive": -1.0,
-  "when_in_range": "altered_aether:terrain/island_dunes",
-  "when_out_of_range": {
-    "type": "minecraft:range_choice",
-    "input": "altered_aether:terrain/grove_weight",
-    "max_exclusive": 2.0,
-    "min_inclusive": 0.9999,
-    "when_in_range": "altered_aether:terrain/grove_land_broken",
-    "when_out_of_range": {
-      "type": "minecraft:add",
-      "argument1": {
-        "type": "minecraft:mul",
-        "argument1": {
-          "type": "minecraft:add",
-          "argument1": 1.0,
-          "argument2": {
-            "type": "minecraft:mul",
-            "argument1": -1.0,
-            "argument2": "altered_aether:terrain/grove_weight"
-          }
-        },
-        "argument2": "altered_aether:terrain/island_dunes"
-      },
-      "argument2": {
-        "type": "minecraft:mul",
-        "argument1": "altered_aether:terrain/grove_weight",
-        "argument2": "altered_aether:terrain/grove_land_broken"
-      }
-    }
-  }
+  "type": "altered_aether:choose",
+  "high": "altered_aether:terrain/grove_land_broken",
+  "low": "altered_aether:terrain/island_dunes",
+  "mask": "altered_aether:terrain/grove_weight"
 }

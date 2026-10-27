@@ -157,6 +157,7 @@ public final class AARegistries {
 
     static {
         DENSITY_FUNCTIONS.register("shift_y", () -> ShiftY.MAP_CODEC);
+        DENSITY_FUNCTIONS.register("choose", () -> com.linc.alteredaether.worldgen.density.Choose.MAP_CODEC);
         DENSITY_FUNCTIONS.register("terrace", () -> Terrace.MAP_CODEC);
         DENSITY_FUNCTIONS.register("wind_ridges", () -> WindRidges.MAP_CODEC);
         DENSITY_FUNCTIONS.register("voronoi_fracture", () -> VoronoiFracture.MAP_CODEC);

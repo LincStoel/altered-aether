@@ -1,7 +1,7 @@
-// 1.21.1	2026-10-26T22:31:53.5947617	Altered Aether terrain (tall)
+// 1.21.1	2026-10-27T00:21:33.3731882	Altered Aether terrain (tall)
 f42ea67ddb2a016ae6e8bcabfc213cce31a103fe datapacks/tall_aether/data/aether/dimension_type/the_aether.json
 e7d8bc7b25714231079ba52b6565836a7cc0e594 datapacks/tall_aether/data/aether/worldgen/configured_feature/quicksoil_shelf.json
-95448c207351adadc6ff96cb949757a6ffea5be5 datapacks/tall_aether/data/aether/worldgen/noise_settings/skylands.json
+0749994adaf7a83e8450e9be7c207c71a0d10961 datapacks/tall_aether/data/aether/worldgen/noise_settings/skylands.json
 78d8bcbcdba119434d1c210d802c554b1b3bd056 datapacks/tall_aether/data/aether/worldgen/structure/bronze_dungeon.json
 fe240419f7da67646c2b49776eac062f025c6a30 datapacks/tall_aether/data/aether/worldgen/structure/gold_dungeon.json
 ff56f6ae4025bdda1cdd2f68a6ca5454f85d339b datapacks/tall_aether/data/aether/worldgen/structure/large_aercloud.json

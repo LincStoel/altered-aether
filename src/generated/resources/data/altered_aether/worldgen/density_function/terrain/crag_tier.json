@@ -1,35 +1,6 @@
 {
-  "type": "minecraft:range_choice",
-  "input": "altered_aether:terrain/tempest_mask",
-  "max_exclusive": 1.0E-4,
-  "min_inclusive": -1.0,
-  "when_in_range": "altered_aether:terrain/crags",
-  "when_out_of_range": {
-    "type": "minecraft:range_choice",
-    "input": "altered_aether:terrain/tempest_mask",
-    "max_exclusive": 2.0,
-    "min_inclusive": 0.9999,
-    "when_in_range": "altered_aether:terrain/tempest",
-    "when_out_of_range": {
-      "type": "minecraft:add",
-      "argument1": {
-        "type": "minecraft:mul",
-        "argument1": {
-          "type": "minecraft:add",
-          "argument1": 1.0,
-          "argument2": {
-            "type": "minecraft:mul",
-            "argument1": -1.0,
-            "argument2": "altered_aether:terrain/tempest_mask"
-          }
-        },
-        "argument2": "altered_aether:terrain/crags"
-      },
-      "argument2": {
-        "type": "minecraft:mul",
-        "argument1": "altered_aether:terrain/tempest_mask",
-        "argument2": "altered_aether:terrain/tempest"
-      }
-    }
-  }
+  "type": "altered_aether:choose",
+  "high": "altered_aether:terrain/tempest",
+  "low": "altered_aether:terrain/crags",
+  "mask": "altered_aether:terrain/tempest_mask"
 }

@@ -80,8 +80,13 @@ final class Df {
      * even where its weight is 0. The mask must stay within [0, 1].
      */
     static JsonObject choose(Object mask, Object low, Object high) {
-        JsonObject mix = rangeChoice(mask, 0.9999, 2.0, high, lerp(mask, low, high));
-        return rangeChoice(mask, -1.0, 0.0001, low, mix);
+        // altered_aether:choose is range_choice(mask, low, range_choice(mask, high, lerp)) as one function, naming
+        // each argument once; spelled out, nested choices doubled the router at every level.
+        JsonObject json = type("altered_aether:choose");
+        json.add("mask", of(mask));
+        json.add("low", of(low));
+        json.add("high", of(high));
+        return json;
     }
 
     static JsonObject rangeChoice(Object input, double minInclusive, double maxExclusive, Object inRange,
