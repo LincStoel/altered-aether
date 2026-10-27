@@ -111,6 +111,22 @@ of sparks and thunder first. Lightning rods take strikes as in vanilla. Explosio
 **Ambrosium campfire**: a campfire of skyroot and ambrosium that burns in the Aether. Aether: Beyond Parity's
 campfire is replaced by it when that mod is installed.
 
+**Gleam vines**: cave vines in Aether colours that hang from the giants' bows and canopies, lit by gleamberries.
+The berries are eaten like glow berries, foxes pick them and bees grow the vines.
+
+**Tamed aerwhales.** Feed a wild aerwhale blue berries and now and then it's yours (it follows anyone holding them).
+- Saddled, an adult seats four, and whoever climbs on first steers. Its back is a deck you can walk around on while
+  it flies, and whatever stands there is carried along. Unsaddled it carries one rider and stays put.
+- Fly it by looking where you want to go. Jump charges a dive, and the leap key (J by default, under Altered Aether
+  in Controls) throws you off upward at the whale's speed. The whale coasts on long enough for you to land back on
+  it, then turns to follow you.
+- Sneak and use it to cycle stay, wander and follow. The inventory key, while riding, opens its saddle and
+  saddlebag.
+- Blue and golden gummy swets heal it, and holding one draws it to you from far off. Enchanted berries breed two
+  whales, and an Aether spawn egg used on any aerwhale makes a calf.
+- With Deep Aether installed its own aerwhales (saddle, chest, two seats) are used instead if you prefer them:
+  `use_deep_aether_aerwhales` in the config's `[aerwhales]` section. Server and players must match.
+
 ## The tall Aether
 
 The built-in datapack **Altered Aether: Tall Aether** (on by default) makes the Aether -64..319 like the Overworld,
@@ -178,11 +194,14 @@ landmarks, no basins), so the terrain is the stock Aether's.
 
 | Area | Stock terrain | Altered Aether | Cost |
 |---|---|---|---|
-| Around 0, 0 (mixed biomes) | 32.3 ms per chunk | 33.6 ms | +4% |
-| Around 3000, -2000 (mostly Aether Plateau) | 29.6 ms | 38.8 ms | +31% |
+| Around 0, 0 | 28.3 ms per chunk | 35.1 ms | +24% |
+| Around 3000, -2000 | 16.1 ms | 17.0 ms | +6% |
 
-Most of the extra time over the plateau goes on the extra terrain its mesas put where stock islands leave sky:
-more blocks to surface, light and decorate. Overall the difference is about 17%.
+Overall the difference is about 18%. Most of it goes on the extra terrain the plateau's mesas and the groves'
+islands put where stock islands leave sky: more blocks to surface, light and decorate.
+
+Exploring keeps up with flight: a server-side stand-in for a player crossing 11,000 blocks at 30 blocks a second
+(`/altered_aether fly`) has every chunk near it generated in time, at an average tick of under 4 ms.
 
 The Skyroot Cathedral's forest islands cost about the same as the plateau, for the same reason. The giants
 themselves are cheap: planning and building every giant in a 289-chunk benchmark takes 2 to 3 seconds of worker
@@ -221,6 +240,8 @@ Worldgen tools, all on the dev server:
 - `/altered_aether debug` reports the biome, climate point, region mask, basin, landmark and storm at your position.
 - `-PaaTour=stop,stop,...` on the client quick-plays `run/saves/tour` and screenshots each landmark (and `storm`,
   `campfire`, `fireflies`, `biome:<name>`, `giant:<type>`) into `run/screenshots/tour/`.
+- `/altered_aether fly <from> <to> <speed> [radius]` (run in the Aether, e.g. through RCON) moves a chunk ticket
+  along a line like a flying player and logs tick times, chunks generated and how many near it are still missing.
 - `python tools/textures/firefly.py` redraws the firefly sprite.
 - `python tools/parity/parity.py` compares the biomes with the World Traveler 2 datapack they replace.
 
