@@ -59,7 +59,6 @@ public final class AABiomeProvider extends JsonDataProvider {
         biome("tempest_peaks", tempestPeaks());
         biome("shattered_rift", shatteredRift());
         biome("windswept_dunes", windsweptDunes());
-        biome("sunken_atoll", sunkenAtoll());
         biome("frozen_lakes", frozenLakes());
         biome("skyroot_cathedral", skyrootCathedral());
         biome("nurselog_hollow", nurselogHollow());
@@ -218,25 +217,6 @@ public final class AABiomeProvider extends JsonDataProvider {
         JsonObject costs = new JsonObject();
         biome.json.add("spawn_costs", costs);
         return biome.cost("aether:whirlwind", 0.4, 0.1).cost("aether:zephyr", 0.6, 0.16);
-    }
-
-    /**
-     * A ring of land around a sunlit lagoon. The basin and its water come from the terrain and the basin fill
-     * feature. Vanilla's water mobs and turtles key their spawning to sea level, which the Aether doesn't have:
-     * tropical fish use the atoll's place in vanilla's any-height tag, and the rest have Aether-only spawn rules
-     * (SpawnPlacementEvents). Values follow vanilla's warm ocean and beach.
-     */
-    private BiomeJson sunkenAtoll() {
-        return base()
-                .climate(0.85f, 0.8f)
-                .replace(FOREST_TREES, "aether:skyroot_meadow_trees")
-                .drop("aether:water_lake", "aether:holiday_tree")
-                .effect("fog_color", 11396863).sky(10875903)
-                .effect("water_color", 0x3FCFD8).effect("water_fog_color", 0x1A8C9C)
-                .effect("grass_color", 0x9EDB8A).effect("foliage_color", 0x7FCC6A)
-                .spawners("water_ambient", spawner("minecraft:tropical_fish", 25, 8, 8))
-                .spawners("underground_water_creature", spawner("minecraft:glow_squid", 10, 2, 4))
-                .addSpawner("creature", spawner("minecraft:turtle", 5, 2, 5));
     }
 
     /**

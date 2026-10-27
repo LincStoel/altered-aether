@@ -274,16 +274,8 @@
                   }
                 }
               },
-              "clear": {
-                "type": "minecraft:flat_cache",
-                "argument": {
-                  "type": "minecraft:mul",
-                  "argument1": "altered_aether:terrain/region_mask",
-                  "argument2": "altered_aether:terrain/atoll_mask"
-                }
-              },
               "frozen_surface": 101,
-              "surface": 48,
+              "surface": 69,
               "vertical_scale": 0.6666666666666666,
               "weight": "altered_aether:terrain/region_mask"
             }

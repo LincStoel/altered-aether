@@ -9,7 +9,6 @@
   "biome.altered_aether.nurselog_hollow": "Nurselog Hollow",
   "biome.altered_aether.shattered_rift": "Shattered Rift",
   "biome.altered_aether.skyroot_cathedral": "Skyroot Cathedral",
-  "biome.altered_aether.sunken_atoll": "Sunken Atoll",
   "biome.altered_aether.tempest_peaks": "Tempest Peaks",
   "biome.altered_aether.vexing_archwood_grove": "Vexing Archwood Grove",
   "biome.altered_aether.windswept_dunes": "Windswept Dunes",
@@ -23,5 +22,6 @@
   "message.altered_aether.aerwhale.follow": "%s will follow you",
   "message.altered_aether.aerwhale.not_owner": "This aerwhale answers to someone else",
   "message.altered_aether.aerwhale.stay": "%s will circle here",
-  "message.altered_aether.aerwhale.wander": "%s will roam freely"
+  "message.altered_aether.aerwhale.wander": "%s will roam freely",
+  "subtitles.altered_aether.storm.incoming_lightning": "Lightning gathers"
 }

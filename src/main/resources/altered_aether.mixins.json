@@ -14,12 +14,16 @@
     "GleamVinesMixins$BeeGrow",
     "GleamVinesMixins$FoxPick",
     "LargeAercloudStructureMixin",
+    "SilverDungeonStructureMixin",
     "TallRemapExclusionMixins$Features",
     "TallRemapExclusionMixins$Jigsaw",
     "TallRemapExclusionMixins$Structures",
     "VerticalAnchorMixins$AboveBottom",
     "VerticalAnchorMixins$Absolute",
     "WorldGenerationContextMixin"
+  ],
+  "client": [
+    "AetherCloudHeightMixin"
   ],
   "injectors": {
     "defaultRequire": 1

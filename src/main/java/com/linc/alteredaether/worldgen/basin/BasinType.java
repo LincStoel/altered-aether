@@ -29,8 +29,12 @@ public enum BasinType {
     CASCADING_LAKE("cascading_lake", 0.7, 7, 12, 4, 7, Fluid.WATER, "cascading_archwood_grove"),
     FROZEN_POOL("frozen_pool", 0.6, 4, 7, 3, 5, Fluid.FROZEN, "frozen_crags"),
     POISON_POOL("poison_pool", 0.5, 4, 8, 3, 5, Fluid.POISON, "vexing_archwood_grove"),
-    /** The Sunken Atoll's lagoon, inside the ring island the atoll density function builds. */
-    ATOLL_LAGOON("atoll_lagoon", 1.0, 30, 42, 9, 13, Fluid.WATER, "sunken_atoll"),
+    /**
+     * An atoll's lagoon, inside the ring of land the atoll density function sets into the forests and the plateau.
+     * Double atolls are landmarks on a grid of their own, and stand anywhere in the skyroot biomes.
+     */
+    ATOLL_LAGOON("atoll_lagoon", 0.35, 30, 42, 9, 13, Fluid.WATER, "aether:skyroot_grove", "aether:skyroot_forest",
+            "aether:skyroot_woodland", "aether_plateau"),
     /** A Frozen Lakes lake: a single atoll's ring and lagoon, built high and frozen over. */
     FROZEN_LAKE("frozen_lake", 1.0, 26, 38, 7, 11, Fluid.FROZEN, "frozen_lakes");
 
@@ -57,7 +61,7 @@ public enum BasinType {
         this.minDepth = minDepth;
         this.maxDepth = maxDepth;
         this.fluid = fluid;
-        this.biomes = java.util.Arrays.stream(biomes).map(b -> AlteredAether.MOD_ID + ":" + b)
+        this.biomes = java.util.Arrays.stream(biomes).map(b -> b.contains(":") ? b : AlteredAether.MOD_ID + ":" + b)
                 .collect(java.util.stream.Collectors.toUnmodifiableSet());
     }
 

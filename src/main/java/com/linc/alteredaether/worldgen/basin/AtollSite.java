@@ -18,17 +18,20 @@ import net.minecraft.util.Mth;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * A ring island around a lagoon, standing on its own in a moat of open sky. Seen in profile: a bowl-shaped lagoon
- * floor rising to a beach, a low sandy crest, an outer shore falling away, and a cone of rock hanging underneath,
- * deepest beneath the lagoon. Horizontal sizes are in blocks; vertical ones are scaled by {@code vertical} for the
- * height mode.
+ * A ring of land around a lagoon. Seen in profile: a bowl-shaped lagoon floor rising to a beach, a low sandy crest,
+ * and an outer shore. Horizontal sizes are in blocks; vertical ones are scaled by {@code vertical} for the height mode.
  *
- * <p>A ring site is the other shape: a horizontal torus cut in half, flat face up, like half a bagel. Its middle is
- * open sky; the land is a ring with a walkable shore along both edges and a river running round its crown, and the
- * underside is the torus's rounded half. The ring follows a {@link RingPath}, so it may be oval and twist as it goes,
- * and keeps one width all the way round.
+ * <p>An atoll lagoon is set into the land it stands in (see {@link #setIn()}): the ground is trimmed down to the
+ * atoll's surface, and the atoll's own body, a shell sagging deepest under the lagoon, is joined smoothly to the
+ * island beneath, so where the bowl goes deeper than the island the two underneaths blend instead of meeting in a
+ * seam. A double atoll and a frozen lake stand on their own instead, in a moat of open sky, with a cone of rock
+ * hanging underneath.
  *
- * @param type   the lagoon's basin type: the Sunken Atoll's, or the Frozen Lakes' frozen one
+ * <p>A ring site is the other shape: a band of land following a {@link RingPath}, so it may be oval and twist as it
+ * goes, with a walkable shore along both edges and a river running round its crown. Set into the land, the island
+ * carries on inside and outside it.
+ *
+ * @param type   the lagoon's basin type: an atoll lagoon, or the Frozen Lakes' frozen one
  * @param lagoon radius of the lagoon floor where it meets the beach; on a ring, the ring's half width
  * @param outer  radius where the outer shore ends; on a ring, the furthest its outer edge strays from the centre
  * @param top    height of the crest's base; the lagoon's water stands two blocks below it
@@ -39,10 +42,20 @@ import org.jetbrains.annotations.Nullable;
 public record AtollSite(BasinType type, int x, int z, double lagoon, double outer, int top, double depth,
                         double vertical, double phase1, double phase2, @Nullable Inner inner, @Nullable RingPath ring,
                         double influence) {
-    /** The open-sky gap kept between the atoll's shore and whatever island surrounds it. */
+    /** The open-sky gap kept between a frozen lake's shore and whatever island surrounds it. */
     static final double MOAT = 6;
-    /** The usual influence: room for the surrounding islands to fall away gently into the moat. */
+    /** A double atoll's wider gap, so it stands alone in open sky. */
+    static final double DOUBLE_MOAT = 22;
+    /** The usual influence: room for the surrounding islands to fall away gently into the moat, or up to the shore. */
     static final double INFLUENCE = 26;
+    /** A double atoll's influence, covering its wider moat. */
+    static final double DOUBLE_INFLUENCE = 44;
+    /** A set-in atoll's body: this deep under its surface at the shore, and this much more under its middle. */
+    static final double SHELL = 4, SAG = 6;
+    /** Beyond a set-in atoll's shore, the land is trimmed to a slope rising this many blocks per block. */
+    static final double TRIM_SLOPE = 1.2;
+    /** How softly a set-in atoll's body joins the island under it, in density units of a tenth of a block. */
+    static final double BLEND = 0.8;
 
     public AtollSite(BasinType type, int x, int z, double lagoon, double outer, int top, double depth, double vertical,
                      double phase1, double phase2, @Nullable Inner inner, @Nullable RingPath ring) {
@@ -70,6 +83,16 @@ public record AtollSite(BasinType type, int x, int z, double lagoon, double oute
         return ring != null;
     }
 
+    /** Set into the land around it, rather than standing alone in a moat: every atoll lagoon but a double. */
+    public boolean setIn() {
+        return type == BasinType.ATOLL_LAGOON && inner == null;
+    }
+
+    /** The same site at another place and height. */
+    AtollSite at(int x, int z, int top) {
+        return new AtollSite(type, x, z, lagoon, outer, top, depth, vertical, phase1, phase2, inner, ring, influence);
+    }
+
     public double extent() {
         return ring != null ? outer + influence : outer * BasinSite.MAX_WOBBLE + influence;
     }
@@ -89,7 +112,7 @@ public record AtollSite(BasinType type, int x, int z, double lagoon, double oute
     }
 
     /**
-     * The atoll blended into the terrain around it: the ring wherever it is solid, and the surrounding terrain
+     * The atoll laid over the terrain around it: set into the land, or standing alone with the surrounding terrain
      * pushed back to leave a moat. {@code terrain} is the density the atoll replaces.
      */
     public double density(int px, int py, int pz, double terrain) {
@@ -103,7 +126,13 @@ public record AtollSite(BasinType type, int x, int z, double lagoon, double oute
         if (distance > out + influence) {
             return terrain;
         }
-        double surrounding = Math.min(terrain, 0.1 * (distance - out - MOAT));
+        boolean setIn = setIn();
+        // A set-in atoll's outer shore falls only to the level of the land around it.
+        double fall = setIn ? 3 : 8;
+        if (setIn && distance > out) {
+            return setInDensity(top + (2 - fall) * vertical, distance - out, 0, py, terrain);
+        }
+        double surrounding = Math.min(terrain, 0.1 * (distance - out - (inner != null ? DOUBLE_MOAT : MOAT)));
         if (distance > out) {
             return surrounding;
         }
@@ -117,35 +146,34 @@ public record AtollSite(BasinType type, int x, int z, double lagoon, double oute
         } else if (distance <= crest) {
             surface = top - 1 + 2 * vertical * smooth((distance - in) / (crest - in));
         } else {
-            surface = top + 2 * vertical - 8 * vertical * smooth((distance - crest) / (out - crest));
+            surface = top + 2 * vertical - fall * vertical * smooth((distance - crest) / (out - crest));
         }
         double t = distance / out;
+        if (setIn) {
+            return setInDensity(surface, 0, 1 - t * t, py, terrain);
+        }
         double underside = top - vertical * (10 + 42 * (1 - t * t));
         double ring = Mth.clamp(0.1 * Math.min(surface - py, py - underside), -1, 1);
         return Math.max(ring, surrounding);
     }
 
     /**
-     * The half bagel: across the ring, a shore at each edge rounding off over the lip, a river down the middle, and
-     * beneath, the torus's round underside, deepest under the river. Nothing stands in the ring's middle, and the
-     * terrain outside is pushed back to leave a moat.
+     * A ring set into the land: across it, a shore at each edge rounding off over the lip and a river down the
+     * middle, with the island carrying on inside and outside. Only atoll lagoons are rings, so a ring is always set in.
      */
     private double ringDensity(double dx, double dz, double distance, int py, double terrain) {
         double width = lagoon;
-        if (distance > ring.furthest() + width + influence) {
+        if (distance > ring.furthest() + width + influence || distance < ring.nearest() - width - influence) {
             return terrain;
         }
-        if (distance < ring.nearest() - width) {
-            return -1;
-        }
         double off = ring.distance(dx, dz);
+        double water = top - 2;
         if (off > width) {
-            return ring.inside(dx, dz) ? -1 : Math.min(terrain, 0.1 * (off - width - MOAT));
+            return off > width + influence ? terrain
+                    : setInDensity(water + 1 - vertical, off - width, 0, py, terrain);
         }
-        double surrounding = Math.min(terrain, 0.1 * (off - width - MOAT));
         // 0 on the ring's centre line, 1 at either edge
         double across = off / width;
-        double water = top - 2;
         double surface;
         if (across < RIVER) {
             double t = across / RIVER;
@@ -154,9 +182,33 @@ public record AtollSite(BasinType type, int x, int z, double lagoon, double oute
             surface = water + 1 + 2 * vertical * smooth((across - RIVER) / 0.12)
                     - 3 * vertical * smooth((across - 0.85) / 0.15);
         }
-        double minor = width * vertical;
-        double underside = top - minor * Math.sqrt(Math.max(0, 1 - across * across));
-        return Math.max(Mth.clamp(0.1 * Math.min(surface - py, py - underside), -1, 1), surrounding);
+        return setInDensity(surface, 0, 1 - across * across, py, terrain);
+    }
+
+    /**
+     * A set-in atoll over the land. The land is trimmed down to the atoll's surface, and beyond its shore to a slope
+     * rising away from it, so nothing stands over the lagoon. Under the surface, the atoll's body is a shell joined
+     * smoothly to the island: where the island is thick the shell is lost inside it, and where the bowl goes deeper
+     * than the island the two undersides blend. Past the shore the body tapers to nothing, so its edge is no wall.
+     *
+     * @param surface the atoll's ground height here; beyond its shore, the height at the shore
+     * @param past    how far beyond the shore this column is, 0 within it
+     * @param sag     0 at the shore, rising to 1 where the body hangs deepest
+     */
+    private double setInDensity(double surface, double past, double sag, int py, double terrain) {
+        double trim = 0.1 * (surface + TRIM_SLOPE * past - py);
+        double bodyTop = surface - past, underside = surface - vertical * (SHELL + SAG * sag) + past;
+        if (bodyTop <= underside) {
+            return Math.min(terrain, trim);
+        }
+        double body = Mth.clamp(0.1 * Math.min(bodyTop - py, py - underside), -1, 1);
+        return Math.min(smoothMax(terrain, body, BLEND), trim);
+    }
+
+    /** The larger of two densities, with the crease where they cross rounded off over {@code k}. */
+    private static double smoothMax(double a, double b, double k) {
+        double h = Mth.clamp(0.5 + 0.5 * (a - b) / k, 0, 1);
+        return Mth.lerp(h, b, a) + k * h * (1 - h);
     }
 
     /**

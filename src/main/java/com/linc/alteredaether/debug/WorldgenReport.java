@@ -25,6 +25,7 @@ import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.NoiseColumn;
 import net.minecraft.world.level.biome.Biome;
+import net.minecraft.world.level.biome.Climate;
 import net.minecraft.world.level.chunk.ChunkGenerator;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.world.level.levelgen.DensityFunction;
@@ -131,6 +132,10 @@ public final class WorldgenReport {
                 s.columnsWithLand == 0 ? 0 : s.topMin, s.columnsWithLand == 0 ? 0 : s.topMax,
                 100.0 * s.probeLand / s.samples, s.probeLand == 0 ? 0 : (double) s.probeSolid / s.probeLand,
                 s.probeLand == 0 ? 0 : (double) s.probeTopSum / s.probeLand)));
+        String climate = System.getProperty("altered_aether.report.climate", "");
+        if (!climate.isEmpty()) {
+            climateDump(level, originX, originZ, radius, Math.max(1, step / 4), java.nio.file.Path.of(climate), lines);
+        }
         basinSurvey(level, originX, originZ, radius, lines);
         landmarkSurvey(level, originX, originZ, radius, lines);
         if (Boolean.getBoolean("altered_aether.report.structures")) {
@@ -138,6 +143,37 @@ public final class WorldgenReport {
         }
         lines.forEach(AlteredAether.LOGGER::info);
         return lines;
+    }
+
+    /**
+     * Writes the climate (t, h, c, e, w) at every in-region sample to a CSV, at a finer step than the column survey
+     * since it generates nothing. For sizing BiomeTable's windows against the real distribution.
+     */
+    private static void climateDump(ServerLevel level, int originX, int originZ, int radius, int step,
+                                    java.nio.file.Path out, List<String> lines) {
+        var sampler = level.getChunkSource().randomState().sampler();
+        StringBuilder csv = new StringBuilder("t,h,c,e,w\n");
+        int rows = 0;
+        for (int x = originX - radius; x <= originX + radius; x += step) {
+            for (int z = originZ - radius; z <= originZ + radius; z += step) {
+                if (RegionBinding.maskAt(level, x, z) <= 0) {
+                    continue;
+                }
+                var p = sampler.sample(QuartPos.fromBlock(x), QuartPos.fromBlock(64), QuartPos.fromBlock(z));
+                csv.append(String.format(java.util.Locale.ROOT, "%.4f,%.4f,%.4f,%.4f,%.4f%n",
+                        Climate.unquantizeCoord(p.temperature()), Climate.unquantizeCoord(p.humidity()),
+                        Climate.unquantizeCoord(p.continentalness()), Climate.unquantizeCoord(p.erosion()),
+                        Climate.unquantizeCoord(p.weirdness())));
+                rows++;
+            }
+        }
+        try {
+            java.nio.file.Files.writeString(out, csv);
+            lines.add(String.format("Climate: %d in-region samples at step %d written to %s", rows, step,
+                    out.toAbsolutePath()));
+        } catch (java.io.IOException e) {
+            lines.add("Climate: could not write " + out + ": " + e);
+        }
     }
 
     /**

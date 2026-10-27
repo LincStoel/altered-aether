@@ -18,7 +18,6 @@ import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.linc.alteredaether.config.AACommonConfig;
 import com.linc.alteredaether.worldgen.TerrainProbe;
-import com.linc.alteredaether.worldgen.basin.AtollSite;
 import com.linc.alteredaether.worldgen.basin.BasinField;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceKey;
@@ -130,10 +129,10 @@ public final class LandmarkField {
         fractureNear((minX + maxX) / 2, (minZ + maxZ) / 2).filter(site -> touches(site, minX, minZ, maxX, maxZ))
                 .ifPresent(found::add);
         if (basins != null) {
-            int cell = basins.atollCell();
+            int cell = basins.doubleCell();
             for (int cx = Math.floorDiv(minX - cell / 2, cell); cx <= Math.floorDiv(maxX + cell / 2, cell); cx++) {
                 for (int cz = Math.floorDiv(minZ - cell / 2, cell); cz <= Math.floorDiv(maxZ + cell / 2, cell); cz++) {
-                    basins.atollInCell(cx, cz).filter(AtollSite::isDouble).map(DoubleAtoll::new)
+                    basins.doubleInCell(cx, cz).map(DoubleAtoll::new)
                             .filter(site -> touches(site, minX, minZ, maxX, maxZ)).ifPresent(found::add);
                 }
             }
@@ -160,7 +159,7 @@ public final class LandmarkField {
 
     /** The nearest landmark of a type to a point, searching out ring by ring of grid cells. */
     public Optional<Landmark> nearest(LandmarkType type, int x, int z, int maxDistance) {
-        int cell = type.gridded() ? cell(type) : basins == null ? 0 : basins.atollCell();
+        int cell = type.gridded() ? cell(type) : basins == null ? 0 : basins.doubleCell();
         if (cell == 0 || rarity() <= 0) {
             return Optional.empty();
         }
@@ -175,7 +174,7 @@ public final class LandmarkField {
                         continue;
                     }
                     Optional<Landmark> site = type.gridded() ? in(type, cx, cz)
-                            : basins.atollInCell(cx, cz).filter(AtollSite::isDouble).map(DoubleAtoll::new);
+                            : basins.doubleInCell(cx, cz).map(DoubleAtoll::new);
                     if (site.isPresent()) {
                         double d = Math.hypot(site.get().x() - x, site.get().z() - z);
                         if (d < bestDistance) {

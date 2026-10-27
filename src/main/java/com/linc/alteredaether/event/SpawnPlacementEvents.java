@@ -17,6 +17,7 @@ package com.linc.alteredaether.event;
 import com.linc.alteredaether.AATags;
 import com.linc.alteredaether.AlteredAether;
 import com.linc.alteredaether.compat.AddedMob;
+import com.linc.alteredaether.worldgen.basin.BasinField;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceKey;
@@ -32,7 +33,6 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.ServerLevelAccessor;
 import net.minecraft.world.level.block.Blocks;
-import net.minecraft.world.level.block.TurtleEggBlock;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -75,17 +75,24 @@ public final class SpawnPlacementEvents {
                 Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, (t, level, reason, pos, random) -> true,
                 RegisterSpawnPlacementsEvent.Operation.REPLACE));
 
-        // Lagoon life. Tropical fish need no rule: the atoll is in vanilla's
-        // allows_tropical_fish_spawns_at_any_height biome tag instead.
+        // Lagoon life. The host biomes spawn it (see the lagoon_life biome modifier), but only an atoll's lagoon will
+        // have it, so the forests' other water stays empty.
+        orInAether(event, EntityType.TROPICAL_FISH, (level, pos) -> surfaceWater(level, pos)
+                && nearLagoon(level, pos, 0));
         orInAether(event, EntityType.GLOW_SQUID, (level, pos) -> inWater(level, pos)
                 && depthBelowSurface(level, pos) >= GLOW_SQUID_DEPTH
-                && level.getRawBrightness(pos, 0) <= GLOW_SQUID_MAX_LIGHT);
-        // Turtles need sand underfoot and daylight, as in vanilla, without vanilla's "just above sea level". The
-        // Aether's sand is quicksoil, which the atoll's shores are made of.
-        orInAether(event, EntityType.TURTLE, (level, pos) -> (TurtleEggBlock.onSand(level, pos)
-                || BuiltInRegistries.BLOCK.getKey(level.getBlockState(pos.below()).getBlock())
-                .equals(ResourceLocation.fromNamespaceAndPath("aether", "quicksoil")))
-                && daylit(level, pos));
+                && level.getRawBrightness(pos, 0) <= GLOW_SQUID_MAX_LIGHT
+                && nearLagoon(level, pos, 0));
+
+        // Mowzie's mobs check their own spawn config, which names the overworld, a height band below Y 68 and
+        // vanilla ground, so none of them can pass in the Aether. Their light rules are dropped here: the Aether's
+        // eternal day would otherwise keep them out until the Sun Spirit falls. Spawn costs keep them rare.
+        entity("mowziesmobs:naga").ifPresent(type -> orInAether(event, type, (level, pos) ->
+                level.getBlockState(pos.below()).is(AATags.NAGA_SPAWNABLE_ON) && level.canSeeSky(pos)));
+        // Lanterns only where we list them: Mowzie's own biome modifier may add them to other Aether forests by tag.
+        entity("mowziesmobs:lantern").ifPresent(type -> orInAether(event, type, (level, pos) ->
+                level.getBiome(pos).is(AATags.HAS_LANTERNS)
+                        && level.getBlockState(pos.below()).is(AATags.LANTERN_SPAWNABLE_ON)));
 
         // Ars Nouveau's familiars test for minecraft:grass_block by identity, which no Aether soil is. In the Aether
         // they spawn like any passive animal: on Aether soil, in daylight. The siren lives in water.
@@ -140,6 +147,12 @@ public final class SpawnPlacementEvents {
 
     private static boolean isWorldSpawn(MobSpawnType reason) {
         return reason == MobSpawnType.NATURAL || reason == MobSpawnType.CHUNK_GENERATION;
+    }
+
+    /** In an atoll's lagoon, or within {@code margin} blocks of its water. */
+    private static boolean nearLagoon(ServerLevelAccessor level, BlockPos pos, double margin) {
+        BasinField field = BasinField.get(level.getLevel().dimension());
+        return field != null && field.nearLagoon(pos.getX(), pos.getZ(), margin);
     }
 
     /** Animal.isBrightEnoughToSpawn: the light level passive animals need. */

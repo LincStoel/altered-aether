@@ -59,7 +59,6 @@ public final class AASurfaceRuleProvider extends JsonDataProvider {
     private static final String TEMPEST = biome("tempest_peaks");
     private static final String RIFT = biome("shattered_rift");
     private static final String DUNES = biome("windswept_dunes");
-    private static final String ATOLL = biome("sunken_atoll");
     private static final String LAKES = biome("frozen_lakes");
     private static final String CATHEDRAL = biome("skyroot_cathedral");
     private static final String NURSELOG = biome("nurselog_hollow");
@@ -119,8 +118,6 @@ public final class AASurfaceRuleProvider extends JsonDataProvider {
                         when(noiseBand("minecraft:calcite", 0.26, BIG), block(MOSSY_HOLYSTONE)),
                         block(HOLYSTONE))),
                 when(inBiome(DUNES), block(QUICKSOIL)),
-                // Quicksoil shores around the lagoon, grass inland.
-                when(inBiome(ATOLL), when(noiseBand("minecraft:surface", 0.05, BIG), block(QUICKSOIL))),
                 // Bare aether dirt over icestone; the snow on the lake banks comes with the lakes.
                 when(inBiome(LAKES), block(DIRT)),
                 // Root litter: coarse dirt patches in the cathedral's shade, and wide worn ground between the fallen
@@ -151,7 +148,7 @@ public final class AASurfaceRuleProvider extends JsonDataProvider {
                                 block(BLACKSTONE)), block(DEEPSLATE))),
                         when(inBiome(LAKES), block(ICESTONE)))),
                 // Forested and gentler islands only on true cliffs, so ordinary lumpy ground stays green.
-                when(steep(5), when(inBiome(RIFT, ATOLL, CATHEDRAL, NURSELOG, grove("blazing"), grove("cascading"), grove("flashing"),
+                when(steep(5), when(inBiome(RIFT, CATHEDRAL, NURSELOG, grove("blazing"), grove("cascading"), grove("flashing"),
                         grove("flourishing"), grove("vexing")), holystoneRock)));
     }
 
@@ -171,7 +168,6 @@ public final class AASurfaceRuleProvider extends JsonDataProvider {
                 when(inBiome(RIFT), block(HOLYSTONE)),
                 // A few blocks of quicksoil under the dunes, so digging in doesn't hit ordinary dirt.
                 when(inBiome(DUNES), block(QUICKSOIL)),
-                when(inBiome(ATOLL), when(noiseBand("minecraft:surface", 0.05, BIG), block(QUICKSOIL))),
                 block(DIRT));
     }
 

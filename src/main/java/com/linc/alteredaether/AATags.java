@@ -29,12 +29,27 @@ public final class AATags {
     public static final TagKey<Block> FAMILIAR_SPAWNABLE_ON =
             TagKey.create(Registries.BLOCK, AlteredAether.id("familiar_spawnable_on"));
 
+    /** Ground nagas may spawn on in the Aether: Aether soil and holystone, as grass and stone in the overworld. */
+    public static final TagKey<Block> NAGA_SPAWNABLE_ON =
+            TagKey.create(Registries.BLOCK, AlteredAether.id("naga_spawnable_on"));
+    /** What Mowzie's lanterns may spawn over in the Aether: soil, leaves and logs, as in the overworld. */
+    public static final TagKey<Block> LANTERN_SPAWNABLE_ON =
+            TagKey.create(Registries.BLOCK, AlteredAether.id("lantern_spawnable_on"));
+    /** Aether biomes where Mowzie's lanterns drift: Skyroot Cathedral, and Deep Aether's Luminescent Forest. */
+    public static final TagKey<Biome> HAS_LANTERNS = TagKey.create(Registries.BIOME, AlteredAether.id("has_lanterns"));
+
     /** Biomes where Tempest storms gather and strike. */
     public static final TagKey<Biome> HAS_STORMS = TagKey.create(Registries.BIOME, AlteredAether.id("has_storms"));
     /** Biomes where fireflies drift: the giant-tree groves. */
     public static final TagKey<Biome> HAS_FIREFLIES = TagKey.create(Registries.BIOME, AlteredAether.id("has_fireflies"));
     /** Ground a storm strike may scorch, besides dirt and sand. */
     public static final TagKey<Block> SCORCHABLE = TagKey.create(Registries.BLOCK, AlteredAether.id("scorchable"));
+
+    /** Overworld-metal armour and tools that draw Tempest lightning when worn or carried in the hotbar. */
+    public static final TagKey<Item> ATTRACTS_LIGHTNING =
+            TagKey.create(Registries.ITEM, AlteredAether.id("attracts_lightning"));
+    /** Copper that calls a strike down on a player standing on it in a storm biome without boots. */
+    public static final TagKey<Block> CHARGED_COPPER = TagKey.create(Registries.BLOCK, AlteredAether.id("charged_copper"));
 
     /** Food that tames a wild aerwhale. */
     public static final TagKey<Item> AERWHALE_TAMING_FOOD =

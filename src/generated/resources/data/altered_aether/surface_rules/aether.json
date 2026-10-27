@@ -193,7 +193,6 @@
                     "type": "minecraft:biome",
                     "biome_is": [
                       "altered_aether:shattered_rift",
-                      "altered_aether:sunken_atoll",
                       "altered_aether:skyroot_cathedral",
                       "altered_aether:nurselog_hollow",
                       "altered_aether:blazing_archwood_grove",
@@ -713,33 +712,6 @@
             "if_true": {
               "type": "minecraft:biome",
               "biome_is": [
-                "altered_aether:sunken_atoll"
-              ]
-            },
-            "then_run": {
-              "type": "minecraft:condition",
-              "if_true": {
-                "type": "minecraft:noise_threshold",
-                "max_threshold": 4.0,
-                "min_threshold": 0.05,
-                "noise": "minecraft:surface"
-              },
-              "then_run": {
-                "type": "minecraft:block",
-                "result_state": {
-                  "Name": "aether:quicksoil",
-                  "Properties": {
-                    "double_drops": "true"
-                  }
-                }
-              }
-            }
-          },
-          {
-            "type": "minecraft:condition",
-            "if_true": {
-              "type": "minecraft:biome",
-              "biome_is": [
                 "altered_aether:frozen_lakes"
               ]
             },
@@ -974,33 +946,6 @@
                 "Name": "aether:quicksoil",
                 "Properties": {
                   "double_drops": "true"
-                }
-              }
-            }
-          },
-          {
-            "type": "minecraft:condition",
-            "if_true": {
-              "type": "minecraft:biome",
-              "biome_is": [
-                "altered_aether:sunken_atoll"
-              ]
-            },
-            "then_run": {
-              "type": "minecraft:condition",
-              "if_true": {
-                "type": "minecraft:noise_threshold",
-                "max_threshold": 4.0,
-                "min_threshold": 0.05,
-                "noise": "minecraft:surface"
-              },
-              "then_run": {
-                "type": "minecraft:block",
-                "result_state": {
-                  "Name": "aether:quicksoil",
-                  "Properties": {
-                    "double_drops": "true"
-                  }
                 }
               }
             }

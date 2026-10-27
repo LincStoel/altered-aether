@@ -2,7 +2,7 @@
   "type": "minecraft:flat_cache",
   "argument": {
     "type": "minecraft:add",
-    "argument1": 92.0,
+    "argument1": -22.0,
     "argument2": {
       "type": "minecraft:mul",
       "argument1": 14.0,

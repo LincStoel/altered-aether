@@ -49,7 +49,6 @@ public final class BiomeTable {
     public static final String TEMPEST = "altered_aether:tempest_peaks";
     public static final String RIFT = "altered_aether:shattered_rift";
     public static final String DUNES = "altered_aether:windswept_dunes";
-    public static final String ATOLL = "altered_aether:sunken_atoll";
     public static final String FROZEN_LAKES = "altered_aether:frozen_lakes";
     public static final String CATHEDRAL = "altered_aether:skyroot_cathedral";
     public static final String NURSELOG = "altered_aether:nurselog_hollow";
@@ -115,16 +114,12 @@ public final class BiomeTable {
 
     /**
      * Windows punched into the island tier, in priority order: an earlier insert keeps its full window where two
-     * collide. Each archwood grove sits where two distribution tails meet, which makes it both rare and physically
-     * small.
+     * collide. Shares are measured with {@code -PaaReport} and {@code -PaaClimate}.
      */
     private static final List<Rect> INSERTS = List.of(
             // Narrow on the slow temperature axis, wide on the fast humidity axis: bigger, more contiguous patches
             // than a balanced box of the same area. 4.8% of the region, all on the dry side.
             rect(0.21f, 0.41f, -0.68f, -0.08f, DUNES),
-            // Warm and wet, between the vexing and flourishing groves. Wide on the slow temperature axis and deep into
-            // the wet side, so patches are big enough to hold several atolls, rings and moats included.
-            rect(0.16f, 0.52f, 0.06f, 0.95f, ATOLL),
             // The cold middle, between the flashing and cascading groves: high frozen lakes. Uncommon, but ahead of the
             // crags, peaks and rift (the middle of the humidity range is far denser than its tails). Only big enough
             // for a few lakes at a time; there are no rings to make room for.
@@ -136,11 +131,14 @@ public final class BiomeTable {
             rect(-0.49f, 0.01f, 0.19f, 0.61f, NURSELOG),
             // A cooler, drier solo window, for the occasional dead colony with no living one beside it.
             rect(-0.58f, -0.46f, -0.42f, -0.22f, NURSELOG),
-            rect(0.62f, 0.94f, -0.95f, -0.35f, BLAZING),
-            rect(-0.94f, -0.62f, -0.95f, -0.35f, FLASHING),
-            rect(-0.94f, -0.62f, 0.35f, 0.95f, CASCADING),
-            rect(0.62f, 0.94f, 0.35f, 0.95f, FLOURISHING),
-            rect(-0.16f, 0.16f, 0.62f, 0.95f, VEXING));
+            // The archwood groves hold the four corners and the humid middle. Humidity rarely passes +/-0.4 here (its
+            // 5% tails), so each window reaches well inside that: about 2% of the island tier apiece. The flashing
+            // grove gives up a corner to the solo nurselog, so it reaches a little further toward the middle.
+            rect(0.45f, 1.00f, -1.00f, -0.20f, BLAZING),
+            rect(-1.00f, -0.50f, -1.00f, -0.15f, FLASHING),
+            rect(-1.00f, -0.50f, 0.20f, 1.00f, CASCADING),
+            rect(0.45f, 1.00f, 0.20f, 1.00f, FLOURISHING),
+            rect(0.08f, 0.40f, 0.33f, 1.00f, VEXING));
 
     /**
      * Builds the region's table.

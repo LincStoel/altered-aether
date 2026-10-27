@@ -1,0 +1,14 @@
+{
+  "neoforge:conditions": [
+    {
+      "type": "altered_aether:mod_enabled",
+      "modid": "mowziesmobs"
+    }
+  ],
+  "type": "altered_aether:configured_spawns",
+  "biomes": "#altered_aether:has_lanterns",
+  "max_count": 4,
+  "min_count": 2,
+  "mob": "lantern",
+  "weight": 5
+}

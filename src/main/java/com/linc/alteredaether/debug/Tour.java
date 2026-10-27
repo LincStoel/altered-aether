@@ -53,8 +53,9 @@ import java.util.concurrent.CompletableFuture;
 /**
  * A guided camera tour for checking how things look, without anyone at the keyboard. With the system property
  * {@code altered_aether.tour} set to a comma-separated list of stops (landmark types, {@code storm} for the Tempest
- * crown under a forced storm, {@code campfire} for an ambrosium campfire at night, and {@code whale} for a saddled
- * tamed aerwhale and its calf, then the player riding it), a dev client that quick-plays
+ * crown under a forced storm, {@code campfire} for an ambrosium campfire at night, {@code whale} for a saddled
+ * tamed aerwhale and its calf, then the player riding it, and {@code leap} for the rider leaping off it at full charge,
+ * logging their height each tick rather than taking a screenshot), a dev client that quick-plays
  * into a world flies to each stop, frames it from a few sides, saves a screenshot of each view to
  * {@code screenshots/tour/}, and quits.
  */
@@ -154,6 +155,11 @@ public final class Tour {
                 }
                 if (stop.equals("whale")) {
                     whaleShots(spawn, shots);
+                    continue;
+                }
+                if (stop.equals("leap")) {
+                    double x = spawn.getX() + 0.5, y = Integer.getInteger("altered_aether.tour.stage", 200) + 2, z = spawn.getZ() + 0.5;
+                    shots.add(new Shot("whale_leap", x, y + 8, z, x, y, z + 20, 6000, false, false));
                     continue;
                 }
                 boolean storm = stop.equals("storm");
@@ -360,6 +366,20 @@ public final class Tour {
                 }
             }
             shot = shot.from(shot.x(), shot.y() + lift, shot.z(), shot.fx(), shot.fy(), shot.fz());
+            if (shot.name().equals("whale_leap") && (leapTick >= 0 || minecraft.player.isPassenger() && ++waited > SETTLE)) {
+                if (leapTick < 0) {
+                    net.neoforged.neoforge.network.PacketDistributor.sendToServer(
+                            new com.linc.alteredaether.entity.AerwhaleEjectPayload(1, net.minecraft.world.phys.Vec3.ZERO));
+                }
+                AlteredAether.LOGGER.info("Tour leap {}: y {} motion {} riding {} onGround {}", leapTick,
+                        String.format("%.3f", minecraft.player.getY()), minecraft.player.getDeltaMovement(),
+                        minecraft.player.isPassenger(), minecraft.player.onGround());
+                if (++leapTick > 40) {
+                    leapTick = -1;
+                    next(minecraft, server, shots);
+                }
+                return;
+            }
             if (minecraft.player.isPassenger()) {
                 // riding: the whale carries the player, and the camera looks from behind them
                 minecraft.options.setCameraType(net.minecraft.client.CameraType.THIRD_PERSON_BACK);
@@ -411,6 +431,7 @@ public final class Tour {
         }
 
         private static int readyTicks;
+        private static int leapTick = -1;
 
         /** The bearing, of eight, along which the view from an eye runs furthest before meeting anything. */
         private static double openest(Minecraft minecraft, double x, double y, double z) {
@@ -514,7 +535,7 @@ public final class Tour {
                     whale = poseWhale(aether, player, shot.fx(), shot.fy() - 2, shot.fz(), false);
                     poseWhale(aether, player, shot.fx() - 12, shot.fy() - 1, shot.fz() - 2, true);
                 }
-                if (shot.name().equals("whale_ride")) {
+                if (shot.name().equals("whale_ride") || shot.name().equals("whale_leap")) {
                     player.getAbilities().flying = false;
                     player.onUpdateAbilities();
                     player.startRiding(whale, true);

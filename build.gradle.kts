@@ -53,6 +53,8 @@ neoForge {
             systemProperty("altered_aether.bench", (findProperty("aaBench") as String?) ?: "")
             // -PaaStructures=true adds each Aether structure's height against its ground to the report.
             systemProperty("altered_aether.report.structures", (findProperty("aaStructures") as String?) ?: "false")
+            // -PaaClimate=<file> writes the climate at every in-region report sample to a CSV, for sizing BiomeTable.
+            systemProperty("altered_aether.report.climate", (findProperty("aaClimate") as String?) ?: "")
             // -PaaRender=true writes top and side views of the benchmark's area to run-server/renders/. A benchmark
             // centred on "landmark:<type>" goes to the nearest landmark of that type.
             systemProperty("altered_aether.render", (findProperty("aaRender") as String?) ?: "false")

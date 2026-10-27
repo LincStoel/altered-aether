@@ -224,6 +224,7 @@ public final class AABlockProvider extends JsonDataProvider {
         lang.put("message." + AlteredAether.MOD_ID + ".aerwhale.not_owner", "This aerwhale answers to someone else");
         lang.put("key." + AlteredAether.MOD_ID + ".aerwhale_eject", "Leap off Aerwhale");
         lang.put("key.categories." + AlteredAether.MOD_ID, "Altered Aether");
+        lang.put("subtitles." + AlteredAether.MOD_ID + ".storm.incoming_lightning", "Lightning gathers");
         JsonObject json = new JsonObject();
         lang.forEach(json::addProperty);
         asset("lang", AlteredAether.id("en_us"), json);

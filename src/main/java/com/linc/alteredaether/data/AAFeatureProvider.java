@@ -28,6 +28,8 @@ public final class AAFeatureProvider extends JsonDataProvider {
     private static final String NS = AlteredAether.MOD_ID + ":";
     /** The basin fill, in every biome that holds basins. */
     static final String BASIN_FILL = NS + "basin_fill";
+    /** Plugs what the dungeons cut under the basins' water after the fill. */
+    static final String BASIN_SEAL = NS + "basin_seal";
     /** The landmark builder, and the decoration placed at landmarks' points, in the order they run. */
     static final String LANDMARK = NS + "landmark/build";
     /** The giant-tree builder of the Skyroot Cathedral and Nurselog Hollow. */
@@ -156,10 +158,15 @@ public final class AAFeatureProvider extends JsonDataProvider {
                 Placement.biome());
     }
 
-    /** Fills every basin reaching into a chunk. It places nothing itself, so it takes no placement modifiers. */
+    /**
+     * Fills every basin reaching into a chunk, and later seals it. They place nothing themselves, so they take no
+     * placement modifiers.
+     */
     private void basinFill() {
         configured("basin_fill", NS + "basin_fill", new JsonObject());
         placed("basin_fill", NS + "basin_fill", new JsonArray());
+        configured("basin_seal", NS + "basin_seal", new JsonObject());
+        placed("basin_seal", NS + "basin_seal", new JsonArray());
     }
 
     /**

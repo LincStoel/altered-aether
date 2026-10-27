@@ -29,12 +29,13 @@ switch in the config's `[compat]` section is on).
 | Tempest Peaks | the crags' sharpest summits: needle spires, branching native copper crystals with spidery roots of greening copper spreading through the rock, strike craters, storms |
 | Shattered Rift | an island torn apart: a sparse field of tall, blocky columns standing apart, with clouds of rubble hanging in the gaps between them |
 | Windswept Dunes | thin sheets of quicksoil winding high through the sky, rippled by long wind ridges; ruins, dead bushes |
-| Sunken Atoll | a sky full of low-lying atolls, big and small: thin rings of quicksoil shore round lagoons with branching coral reefs, glowstone thickets, kelp, tropical fish, turtles and glow squid; some are half-bagel rings, oval or twisting, with a river round the crown and open sky in the middle |
 | Frozen Lakes | high icestone islands under aether dirt holding lakes frozen over at the surface, with snow on the banks |
 | Skyroot Cathedral | broad forest islands of giant skyroots standing shoulder to shoulder, joined by roots, layering bows and canopy bridges: hollow elders you can build in, tunnel giants, Tule masses, bow colonies and cathedral rings; trails, lamps, camps and fireflies |
 | Nurselog Hollow | the cathedral's fallen elders, round its edges and now and then alone: colossal fallen logs with walkable hollows and root plates over craters, some flooded into muddy ponds, snags, giant stumps, lattice skeletons and rings of regrowth |
 | Blazing, Cascading, Flourishing and Vexing Archwood Groves | Ars Nouveau's archwood forests (need Ars Nouveau) |
 | Flashing Archwood Grove | needs Ars Nouveau and Ars Elemental |
+
+**Atolls.** Scattered through the Skyroot Grove, Forest and Woodland and over the Aether Plateau, rings of land are set into the islands round sunlit lagoons: quicksoil beaches, branching coral reefs, glowstone thickets, kelp, tropical fish and glow squid. Some are rings, oval or twisting, with a river round the crown. Each takes the height of the land it sits in, and its underside blends into the island below.
 
 Without Ars Nouveau the grove windows fall back to the Aether's own skyroot biomes. Landforms appear only inside
 the region, and blend out at its edges. The holystone under every lake, pool and lagoon bed is richer in zanite and
@@ -81,7 +82,8 @@ builds a ruin (`cottage`, `keep`, `circle` or `head`) where you stand. All three
 - **Grand cascade**: a staircase of pools stepping down to an island's edge, each spilling into the next, the last
   pouring off into the sky.
 - **Great fracture**: a canyon across the rift, its slabs grown into giant plates, one side heaved up over the other.
-- **Double atoll**: an atoll with a second ring in its lagoon and a golden oak on an islet at its heart.
+- **Double atoll**: an atoll standing alone in open sky among the skyroot islands, with a second ring in its lagoon
+  and a golden oak on an islet at its heart.
 - **The Grandfather**: the Skyroot Cathedral's ancestor tree, some 140 blocks tall, every kind of giant in one: a
   tunnel through its foot, a ring of children risen from its bows, and over the tunnel, up one of the bows, a room
   lined with golden oak heartwood.
@@ -129,7 +131,7 @@ With the tall pack, other mods' Aether structures and ores are moved to the matc
 | Oreganized | silver in the crags and the rift |
 | Dried Ghast | dried ghast fields in the Windswept Dunes |
 | Snuffles | Snuffles in the Frozen Crags, and only in the Aether |
-| Mowzie's Mobs | nagas in the Aether |
+| Mowzie's Mobs | nagas in the Aether; lanterns in the Skyroot Cathedral and Deep Aether's Luminescent Forest |
 | Integrated Villages | its airship village in the Aether, and no longer in the overworld |
 | Aether: Beyond Parity | its ambrosium campfire is swapped for ours |
 
@@ -226,3 +228,8 @@ Worldgen tools, all on the dev server:
 
 Altered Aether is free software under the GNU General Public License, version 3 or (at your option) any later
 version. See [LICENSE](LICENSE).
+
+## Credits
+
+The incoming-lightning warning sound is a royalty-free electricity effect from
+[Fesliyan Studios](https://www.fesliyanstudios.com/royalty-free-sound-effects-download/electricity-197).

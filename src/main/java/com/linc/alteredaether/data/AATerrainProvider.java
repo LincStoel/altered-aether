@@ -229,9 +229,9 @@ public final class AATerrainProvider extends JsonDataProvider {
         // The dunes are thin sheets of sand high in the sky, not islands: ribbons a hundred-odd blocks wide that wind
         // along the zero contours of a 256-block noise, rising and falling on another as they go. Across a ribbon
         // the sheet is a lens, about 16 blocks thick down its middle and tapering to a feather edge. The ribbon is
-        // where the ridged noise passes 0.62.
+        // where the ridged noise passes 0.62. They lie low, the sand surface about y -20 (tall).
         df("dune_reach", flatCache(add(-1.63, mul(2.63, ridged(shiftedNoise(NS + "dune_path", 1.0, 0.0))))));
-        df("dune_centre", flatCache(add(mode.y(92), mul(mode.height(14),
+        df("dune_centre", flatCache(add(mode.y(-22), mul(mode.height(14),
                 shiftedNoise(NS + "dune_drift", 1.0, 0.0)))));
         JsonObject crown = clamp(mul(2.5, terrain("dune_reach")), -4.0, 1.0);
         JsonObject summit = add(add(terrain("dune_centre"), add(mul(mode.height(4), crown), -mode.height(2))),
@@ -241,11 +241,10 @@ public final class AATerrainProvider extends JsonDataProvider {
         df("dune_sheet", clamp(min(mul(0.125, add(summit, mul(-1.0, Df.y()))),
                 mul(1.0 / 6, add(Df.y(), mul(-1.0, underside)))), -1.0, 1.0));
 
-        // The Sunken Atoll's islands sink and the Frozen Lakes' rise, each on a box over its own climate window.
-        df("atoll_mask", climateBox(0.16, 0.52, 0.06, 0.95));
+        // The Frozen Lakes' islands rise, on a box over its climate window.
         df("frozen_lakes_mask", climateBox(-0.45, -0.29, -0.13, 0.13));
-        df("island_shift", flatCache(mul(terrain("region_mask"), add(mul(-mode.height(20), terrain("atoll_mask")),
-                mul(mode.height(24), terrain("frozen_lakes_mask"))))));
+        df("island_shift", flatCache(mul(terrain("region_mask"),
+                mul(mode.height(24), terrain("frozen_lakes_mask")))));
 
         // Skyroot Cathedral and Nurselog Hollow: broad, gentle forest islands for the giants to stand on, in place of
         // the Aether's scattered ones. The mask covers the nurselog frame (and so the cathedral inside it) and the
@@ -370,7 +369,7 @@ public final class AATerrainProvider extends JsonDataProvider {
         }
         // The island expression gets a file of its own, so every blend below refers to it rather than copying it.
         df("island", island);
-        // The island sunk under the atolls and raised under the frozen lakes, then given over to the dune sheets.
+        // The island raised under the frozen lakes, then given over to the dune sheets.
         JsonObject shifted = Df.type(NS + "shift_y");
         shifted.add("argument", terrain("island"));
         shifted.add("offset", terrain("island_shift"));
@@ -386,16 +385,15 @@ public final class AATerrainProvider extends JsonDataProvider {
         rift(terrain("island_groves"));
         JsonObject islandTier = Df.choose(terrain("rift_weight"), terrain("island_groves"), terrain("rift"));
         JsonObject withCrags = Df.choose(terrain("crag_weight"), islandTier, terrain("crag_tier"));
-        // Atolls stand over whatever tier is beneath them, each kept wholly inside our region by its site check.
+        // Atolls are set into whatever tier is beneath them, each kept wholly inside our region by its site check.
         JsonObject atoll = Df.type(NS + "atoll");
         atoll.add("argument", Df.choose(terrain("plateau_weight"), withCrags, terrain("plateau_terraced")));
         atoll.add("weight", terrain("region_mask"));
-        // Atolls lie low, sunk toward the bottom of the islands; the frozen lakes stand high above them.
-        atoll.addProperty("surface", mode.y(8));
+        // Set-in atolls and double atolls take their height from the islands round them; this is a double atoll's
+        // where there are none. The frozen lakes stand high.
+        atoll.addProperty("surface", mode.y(40));
         atoll.addProperty("frozen_surface", mode.y(88));
         atoll.addProperty("vertical_scale", vertical());
-        // The Sunken Atoll is its atolls alone: the islands between them are taken away.
-        atoll.add("clear", flatCache(mul(terrain("region_mask"), terrain("atoll_mask"))));
         blend.add("argument", atoll);
         // Basins are cut last, outside the interpolation, so their bowls and water lines are exact to the block.
         JsonObject carve = Df.type(NS + "basin_carve");
@@ -540,6 +538,12 @@ public final class AATerrainProvider extends JsonDataProvider {
                 if (structure.has(key)) {
                     structure.addProperty(key, Math.round(1.5 * structure.get(key).getAsInt()));
                 }
+            }
+            if (name.equals("silver_dungeon")) {
+                // SilverDungeonStructureMixin floats the silver dungeon over the ground; over the void it takes this band.
+                structure.addProperty("minY", 100);
+                structure.addProperty("maxY", 135);
+                structure.addProperty("rangeY", 36);
             }
             data("worldgen/structure", ResourceLocation.fromNamespaceAndPath("aether", name), structure);
         }

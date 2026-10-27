@@ -22,6 +22,7 @@ import net.minecraft.util.Mth;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.client.event.CalculateDetachedCameraDistanceEvent;
 import net.neoforged.neoforge.client.event.RenderFrameEvent;
 
 import javax.annotation.Nullable;
@@ -29,7 +30,8 @@ import javax.annotation.Nullable;
 /**
  * Turns the view of a player standing on an aerwhale's back along with the whale, frame by frame. A player's camera
  * shows their yaw exactly as it stands rather than easing it between ticks, since the mouse moves it every frame, so
- * turning it once a tick, as the deck carries everything else, makes the view judder through every turn.
+ * turning it once a tick, as the deck carries everything else, makes the view judder through every turn. Also pulls
+ * the third person camera further back while riding one, so the whale fits in the view.
  */
 @EventBusSubscriber(modid = AlteredAether.MOD_ID, value = Dist.CLIENT)
 public final class AerwhaleDeckCamera {
@@ -37,6 +39,8 @@ public final class AerwhaleDeckCamera {
     @Nullable
     private static TamedAerwhale whale;
     private static float lastYaw;
+    /** How much further back the third person camera sits while riding an aerwhale. */
+    private static final float RIDING_DISTANCE_SCALE = 1.5F;
 
     @SubscribeEvent
     public static void onFrame(RenderFrameEvent.Pre event) {
@@ -61,6 +65,13 @@ public final class AerwhaleDeckCamera {
         }
         whale = under;
         lastYaw = yaw;
+    }
+
+    @SubscribeEvent
+    public static void onCameraDistance(CalculateDetachedCameraDistanceEvent event) {
+        if (event.getCamera().getEntity().getVehicle() instanceof TamedAerwhale) {
+            event.setDistance(event.getDistance() * RIDING_DISTANCE_SCALE);
+        }
     }
 
     private AerwhaleDeckCamera() {

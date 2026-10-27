@@ -21,6 +21,8 @@ import com.linc.alteredaether.worldgen.AABiomes;
 import net.minecraft.data.PackOutput;
 import net.minecraft.resources.ResourceLocation;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -41,13 +43,17 @@ public final class AATagProvider extends JsonDataProvider {
         // Every Aether soil is in #minecraft:dirt (aether grass and dirt, enchanted grass, and Deep Aether's coarse
         // dirt, mud and golden grass), so familiars follow the groves' varied surfaces without a list of their own.
         tag("block", AlteredAether.id("familiar_spawnable_on"), "#minecraft:dirt");
+        // Mowzie's own rules want vanilla grass and overworld stone (and the overworld itself, below Y 68).
+        tag("block", AlteredAether.id("naga_spawnable_on"), "#minecraft:dirt", "#aether:holystone");
+        tag("block", AlteredAether.id("lantern_spawnable_on"), "#minecraft:dirt", "#minecraft:leaves",
+                "#minecraft:logs");
+        tag("worldgen/biome", AlteredAether.id("has_lanterns"), "altered_aether:skyroot_cathedral",
+                "deep_aether:luminescent_forest");
         // Snuffles key their spawning to this tag (plus a cold biome), not sea level, so the Frozen Crags' ground
         // only needs adding to it.
         tag("block", ResourceLocation.fromNamespaceAndPath("snuffles", "snuffles_spawnable_on"),
                 "aether:icestone", "minecraft:snow_block", "minecraft:ice", "minecraft:packed_ice",
                 "deep_aether:aether_coarse_dirt");
-        tag("worldgen/biome", ResourceLocation.withDefaultNamespace("allows_tropical_fish_spawns_at_any_height"),
-                "altered_aether:sunken_atoll");
         // The ores that are holystone-only in the Aether have to be retargeted at the rock of the biomes that replace it.
         tag("block", AlteredAether.id("frozen_crag_ore_replaceables"), "aether:icestone", "deep_aether:clorite",
                 "aether:holystone");
@@ -65,11 +71,44 @@ public final class AATagProvider extends JsonDataProvider {
         tag("block", AlteredAether.id("scorchable"), "aether:holystone", "aether:mossy_holystone", "aether:icestone",
                 "minecraft:cobbled_deepslate", "minecraft:deepslate", "minecraft:stone", "minecraft:snow_block",
                 "deep_aether:aseterite", "deep_aether:clorite");
+        lightning();
         // Tamed aerwhales (see TamedAerwhale).
         tag("item", AlteredAether.id("aerwhale_taming_food"), "aether:blue_berry");
         tag("item", AlteredAether.id("aerwhale_breeding_food"), "aether:enchanted_berry");
         gleamVines();
         aetherBiomes();
+    }
+
+    /**
+     * What draws Tempest lightning onto a player (see TempestStorms): overworld-metal armour and tools, and bare feet
+     * on copper. Aether gear (zanite, gravitite, the dungeon sets) is left out, so it is safe to wear in a storm.
+     */
+    private void lightning() {
+        List<String> items = new ArrayList<>();
+        for (String metal : new String[]{"iron", "golden", "chainmail", "netherite"}) {
+            for (String piece : new String[]{"helmet", "chestplate", "leggings", "boots"}) {
+                items.add("minecraft:" + metal + "_" + piece);
+            }
+        }
+        for (String metal : new String[]{"iron", "golden", "netherite"}) {
+            for (String tool : new String[]{"sword", "shovel", "pickaxe", "axe", "hoe"}) {
+                items.add("minecraft:" + metal + "_" + tool);
+            }
+        }
+        items.addAll(List.of("minecraft:shears", "minecraft:flint_and_steel", "minecraft:mace"));
+        tag("item", AlteredAether.id("attracts_lightning"), items.toArray(String[]::new));
+
+        List<String> blocks = new ArrayList<>();
+        for (String wax : new String[]{"", "waxed_"}) {
+            for (String age : new String[]{"", "exposed_", "weathered_", "oxidized_"}) {
+                String copper = age.isEmpty() ? "copper_block" : age + "copper";
+                for (String block : new String[]{copper, age + "cut_copper", age + "cut_copper_stairs",
+                        age + "cut_copper_slab", age + "chiseled_copper", age + "copper_grate", age + "copper_bulb"}) {
+                    blocks.add("minecraft:" + wax + block);
+                }
+            }
+        }
+        tag("block", AlteredAether.id("charged_copper"), blocks.toArray(String[]::new));
     }
 
     /**

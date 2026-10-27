@@ -25,6 +25,7 @@ import com.linc.alteredaether.worldgen.density.Atoll;
 import com.linc.alteredaether.worldgen.density.BasinCarve;
 import com.linc.alteredaether.worldgen.density.ConfigValue;
 import com.linc.alteredaether.worldgen.feature.BasinFillFeature;
+import com.linc.alteredaether.worldgen.feature.BasinSealFeature;
 import com.linc.alteredaether.worldgen.feature.GroveFeature;
 import com.linc.alteredaether.worldgen.feature.HangingRootsFeature;
 import com.linc.alteredaether.worldgen.feature.UnderstoryFeature;
@@ -66,6 +67,7 @@ import com.mojang.serialization.MapCodec;
 import net.minecraft.core.particles.ParticleType;
 import net.minecraft.core.particles.SimpleParticleType;
 import net.minecraft.core.registries.Registries;
+import net.minecraft.sounds.SoundEvent;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.MobCategory;
 import net.minecraft.world.inventory.MenuType;
@@ -170,10 +172,18 @@ public final class AARegistries {
     public static final DeferredHolder<ParticleType<?>, SimpleParticleType> FIREFLY =
             PARTICLE_TYPES.register("firefly", () -> new SimpleParticleType(false));
 
+    public static final DeferredRegister<SoundEvent> SOUND_EVENTS =
+            DeferredRegister.create(Registries.SOUND_EVENT, AlteredAether.MOD_ID);
+    /** The crackle before a Tempest strike hits a player; see storm/TempestStorms. */
+    public static final DeferredHolder<SoundEvent, SoundEvent> INCOMING_LIGHTNING = SOUND_EVENTS.register(
+            "storm.incoming_lightning", () -> SoundEvent.createVariableRangeEvent(AlteredAether.id("storm.incoming_lightning")));
+
     public static final DeferredRegister<Feature<?>> FEATURES = DeferredRegister.create(Registries.FEATURE, AlteredAether.MOD_ID);
 
     public static final DeferredHolder<Feature<?>, BasinFillFeature> BASIN_FILL =
             FEATURES.register("basin_fill", BasinFillFeature::new);
+    public static final DeferredHolder<Feature<?>, BasinSealFeature> BASIN_SEAL =
+            FEATURES.register("basin_seal", BasinSealFeature::new);
     public static final DeferredHolder<Feature<?>, GroveFeature> GROVE =
             FEATURES.register("grove", GroveFeature::new);
     public static final DeferredHolder<Feature<?>, HangingRootsFeature> HANGING_ROOTS =
@@ -251,6 +261,7 @@ public final class AARegistries {
         FEATURES.register(modBus);
         PLACEMENT_MODIFIERS.register(modBus);
         PARTICLE_TYPES.register(modBus);
+        SOUND_EVENTS.register(modBus);
     }
 
     private AARegistries() {

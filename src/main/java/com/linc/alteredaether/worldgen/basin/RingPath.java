@@ -90,6 +90,12 @@ public final class RingPath {
         return furthest;
     }
 
+    /** The point a fraction of the way round the line, as an offset {x, z} from the centre. */
+    public double[] pointAt(double fraction) {
+        int i = Math.floorMod((int) Math.round(fraction * POINTS), POINTS);
+        return new double[]{px[i], pz[i]};
+    }
+
     /** Whether the offset lies inside the loop, toward the centre. */
     public boolean inside(double dx, double dz) {
         double u = (dx * cos + dz * sin) / aspect, v = -dx * sin + dz * cos;

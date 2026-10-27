@@ -31,6 +31,8 @@ public record BasinSite(BasinType type, int x, int z, double radius, double dept
     static final double BANK_SLOPE = 1.5;
     /** The largest the shoreline wobble can make a radius. */
     static final double MAX_WOBBLE = 1.22;
+    /** How far past the water a lagoon's quicksoil shore may reach, in blocks; inside a lake's banks anyway. */
+    public static final int SHORE_REACH = 14;
 
     public BasinSite(BasinType type, int x, int z, double radius, double depth, int waterLevel, double phase1,
                      double phase2) {
@@ -58,10 +60,10 @@ public record BasinSite(BasinType type, int x, int z, double radius, double dept
         return distance / (radius * wobble(Math.atan2(dz, dx), phase1, phase2));
     }
 
-    /** The furthest any column this basin touches, banks included, lies from its centre. */
+    /** The furthest any column this basin touches, banks and shores included, lies from its centre. */
     public double extent() {
         if (ring != null) {
-            return ring.furthest() + radius + 2;
+            return ring.furthest() + radius + SHORE_REACH;
         }
         return radius * MAX_WOBBLE + BANK_HEIGHT * BANK_SLOPE + 2;
     }

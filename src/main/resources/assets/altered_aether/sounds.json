@@ -1,0 +1,8 @@
+{
+  "storm.incoming_lightning": {
+    "subtitle": "subtitles.altered_aether.storm.incoming_lightning",
+    "sounds": [
+      "altered_aether:storm/incoming_lightning"
+    ]
+  }
+}

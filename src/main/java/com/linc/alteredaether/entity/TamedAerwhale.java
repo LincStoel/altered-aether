@@ -32,7 +32,6 @@ import net.minecraft.nbt.NbtUtils;
 import net.minecraft.nbt.Tag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.game.ClientboundSetEntityMotionPacket;
-import net.minecraft.network.protocol.game.ClientboundSetPassengersPacket;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
@@ -233,6 +232,10 @@ public class TamedAerwhale extends Aerwhale
     /** The rider leaping off right now, who leaves from their seat rather than onto the deck. */
     @Nullable
     private Entity ejecting;
+    /** A player who just leapt off, and how fast they leapt, to tell their client on the next tick. */
+    @Nullable
+    private ServerPlayer thrown;
+    private Vec3 throwMotion = Vec3.ZERO;
     /** Ticks left coasting on after its pilot leapt off, before it turns to follow its owner. */
     private int coast;
 
@@ -695,6 +698,15 @@ public class TamedAerwhale extends Aerwhale
     @Override
     public void aiStep() {
         if (!level().isClientSide) {
+            if (thrown != null) {
+                // The tracker has now sent the dismount, and the teleport that comes with it, which stops the player
+                // on their client; only now does the throw stick.
+                if (!thrown.isRemoved() && !thrown.isPassenger()) {
+                    thrown.setDeltaMovement(throwMotion);
+                    thrown.connection.send(new ClientboundSetEntityMotionPacket(thrown));
+                }
+                thrown = null;
+            }
             if (getControllingPassenger() != null) {
                 // The rider's vehicle packets set the rotation. The Aether's aiStep copies the synced pitch and yaw
                 // back over it, so store it there first; that also shows other players where the whale points.
@@ -969,11 +981,11 @@ public class TamedAerwhale extends Aerwhale
         rider.setDeltaMovement(velocity.add(0, launch, 0));
         rider.resetFallDistance();
         if (rider instanceof ServerPlayer player) {
-            // The rider's client must hear it's off before it hears of the throw: still seated, it drops the throw,
-            // and the passenger update otherwise only goes out with the end of the tick. The throw also has to come
-            // after the dismount's teleport, which stops the player on their client.
-            player.connection.send(new ClientboundSetPassengersPacket(this));
-            player.connection.send(new ClientboundSetEntityMotionPacket(player));
+            // A player's client places them, so the throw has to reach it. Not yet, though: the tracker sends the
+            // dismount at the start of the next tick along with a teleport to where the server has them, which stops
+            // them dead on their client, so the throw goes out after it, from this whale's next tick.
+            thrown = player;
+            throwMotion = rider.getDeltaMovement();
         }
         if (pilot) {
             // whoever takes the reins next carries on at this speed

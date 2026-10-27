@@ -113,7 +113,7 @@ public record GrovePalette(String name, Block log, Block wood, Block strippedLog
         return natural(state);
     }
 
-    static BlockState natural(BlockState state) {
+    public static BlockState natural(BlockState state) {
         for (Property<?> property : state.getProperties()) {
             if (property.getName().equals("double_drops") && property instanceof BooleanProperty flag) {
                 return state.setValue(flag, true);

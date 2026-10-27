@@ -17,6 +17,7 @@ package com.linc.alteredaether.storm;
 import com.linc.alteredaether.AATags;
 import com.linc.alteredaether.AlteredAether;
 import com.linc.alteredaether.config.AACommonConfig;
+import com.linc.alteredaether.registry.AARegistries;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.core.registries.Registries;
@@ -30,7 +31,9 @@ import net.minecraft.tags.BlockTags;
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LightningBolt;
+import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.level.GameRules;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
@@ -55,6 +58,12 @@ import java.util.List;
  * or now and then on the player; a lightning rod in range takes it instead, as in vanilla. Sparks crackle and thunder
  * rumbles at the spot for a moment first, then the bolt lands with an explosion and leaves a scorch.
  *
+ * <p>Players also draw strikes on themselves, storm or calm: wearing overworld-metal armour or carrying an
+ * overworld-metal tool in the hotbar ({@code #altered_aether:attracts_lightning}) is a good chance of a strike each roll,
+ * and standing on copper ({@code #altered_aether:charged_copper}) without boots is a sure one. Either way a warning
+ * crackles first, and the bolt follows the player a second later, unless they have dropped the cause by then. These
+ * strikes are the bolt alone: no blast or scorch, and no rod takes them, since the copper spires all wear one.
+ *
  * <p>Only loaded chunks are struck, strikes per tick are capped, and the whole system switches itself off after
  * repeated errors rather than risk the world.
  */
@@ -64,8 +73,20 @@ public final class TempestStorms {
             ResourceKey.create(Registries.DIMENSION, ResourceLocation.fromNamespaceAndPath("aether", "the_aether"));
     private static final int CANDIDATES = 6, ERROR_LIMIT = 8;
 
-    /** A strike on its way: sparks and rumbling at {@code target} until the countdown ends. */
-    private record PendingStrike(BlockPos target, boolean rod, int[] ticks) {
+    /** Why a strike is aimed at a player, checked again as it lands. */
+    private enum Cause {
+        METAL, COPPER
+    }
+
+    /**
+     * A strike on its way: sparks and rumbling at {@code target} until the countdown ends. One aimed at a
+     * {@code victim} follows them instead, and lands only if its {@code cause} still holds.
+     */
+    private record PendingStrike(BlockPos target, boolean rod, int[] ticks, @Nullable ServerPlayer victim,
+                                 @Nullable Cause cause) {
+        PendingStrike(BlockPos target, boolean rod, int[] ticks) {
+            this(target, rod, ticks, null, null);
+        }
     }
 
     private static final List<PendingStrike> PENDING = new ArrayList<>();
@@ -131,6 +152,17 @@ public final class TempestStorms {
             if (time % 20 == player.getId() % 20) {
                 PacketDistributor.sendToPlayer(player, new StormPayload((float) intensity));
             }
+            if (enabled && budget > 0 && !player.isSpectator() && !player.isCreative()
+                    && level.getBiome(player.blockPosition()).is(AATags.HAS_STORMS) && !targeted(player)) {
+                Cause cause = holds(level, player, Cause.COPPER) ? Cause.COPPER
+                        : (time + player.getId()) % interval == 0 && holds(level, player, Cause.METAL)
+                        && random.nextDouble() < AACommonConfig.STORM_METAL_STRIKE_CHANCE.get() ? Cause.METAL : null;
+                if (cause != null) {
+                    budget--;
+                    warn(level, player, cause, random);
+                    continue;
+                }
+            }
             if (!stormy || budget <= 0 || (time + player.getId()) % interval != 0
                     || random.nextDouble() >= AACommonConfig.STORM_STRIKE_CHANCE.get() * intensity) {
                 continue;
@@ -155,7 +187,12 @@ public final class TempestStorms {
         while (it.hasNext()) {
             PendingStrike strike = it.next();
             int left = --strike.ticks()[0];
-            BlockPos at = strike.target();
+            ServerPlayer victim = strike.victim();
+            if (victim != null && (victim.isRemoved() || !victim.isAlive() || victim.level() != level)) {
+                it.remove();
+                continue;
+            }
+            BlockPos at = victim != null ? victim.blockPosition() : strike.target();
             if (!level.isLoaded(at)) {
                 it.remove();
                 continue;
@@ -166,8 +203,70 @@ public final class TempestStorms {
             }
             if (left <= 0) {
                 it.remove();
-                land(level, strike);
+                if (victim == null) {
+                    land(level, strike);
+                } else if (holds(level, victim, strike.cause())) {
+                    strike(level, victim);
+                }
             }
+        }
+    }
+
+    /** Whether a strike is already on its way to this player. */
+    private static boolean targeted(ServerPlayer player) {
+        for (PendingStrike strike : PENDING) {
+            if (strike.victim() == player) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /** Whether the player is still drawing lightning for this reason. */
+    private static boolean holds(ServerLevel level, ServerPlayer player, Cause cause) {
+        return switch (cause) {
+            case COPPER -> AACommonConfig.STORM_COPPER_STRIKES.get() && player.onGround()
+                    && player.getItemBySlot(EquipmentSlot.FEET).isEmpty()
+                    && level.getBlockState(player.getOnPos()).is(AATags.CHARGED_COPPER);
+            case METAL -> AACommonConfig.STORM_METAL_STRIKE_CHANCE.get() > 0 && carriesMetal(player);
+        };
+    }
+
+    /** Overworld metal worn, in the off hand, or anywhere on the hotbar. */
+    private static boolean carriesMetal(ServerPlayer player) {
+        for (EquipmentSlot slot : EquipmentSlot.values()) {
+            if (slot != EquipmentSlot.MAINHAND && slot != EquipmentSlot.BODY
+                    && player.getItemBySlot(slot).is(AATags.ATTRACTS_LIGHTNING)) {
+                return true;
+            }
+        }
+        Inventory inventory = player.getInventory();
+        for (int i = 0; i < Inventory.getSelectionSize(); i++) {
+            if (inventory.getItem(i).is(AATags.ATTRACTS_LIGHTNING)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /** The warning crackle at a player, then their strike a moment later. */
+    private static void warn(ServerLevel level, ServerPlayer player, Cause cause, RandomSource random) {
+        level.playSound(null, player.getX(), player.getY(), player.getZ(), AARegistries.INCOMING_LIGHTNING.get(),
+                SoundSource.WEATHER, 1.0f, 0.95f + random.nextFloat() * 0.1f);
+        int ticks = AACommonConfig.STORM_PLAYER_WARNING_TICKS.get();
+        if (ticks <= 0) {
+            strike(level, player);
+        } else {
+            PENDING.add(new PendingStrike(player.blockPosition(), false, new int[]{ticks}, player, cause));
+        }
+    }
+
+    /** A bolt straight down on the player, without the blast and scorch of a storm strike. */
+    private static void strike(ServerLevel level, ServerPlayer player) {
+        LightningBolt bolt = EntityType.LIGHTNING_BOLT.create(level);
+        if (bolt != null) {
+            bolt.moveTo(player.position());
+            level.addFreshEntity(bolt);
         }
     }
 

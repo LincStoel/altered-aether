@@ -47,6 +47,14 @@ public final class AABiomeModifierProvider extends JsonDataProvider {
         fill.addProperty("features", AAFeatureProvider.BASIN_FILL);
         fill.addProperty("step", "lakes");
         data(FOLDER, AlteredAether.id("basin_fill"), fill);
+        // The Aether's dungeons are placed at the last step, after the fill, and may open under a basin; the seal runs
+        // after them at that step and plugs what they cut.
+        JsonObject seal = new JsonObject();
+        seal.addProperty("type", "neoforge:add_features");
+        seal.addProperty("biomes", IS_AETHER);
+        seal.addProperty("features", AAFeatureProvider.BASIN_SEAL);
+        seal.addProperty("step", "top_layer_modification");
+        data(FOLDER, AlteredAether.id("basin_seal"), seal);
 
         // Landmarks, like basins, are built in every Aether chunk they reach, whatever its biome. The builder runs
         // before all other decoration; what dresses them runs with the surface structures.
@@ -81,10 +89,29 @@ public final class AABiomeModifierProvider extends JsonDataProvider {
         dressing.addProperty("step", "surface_structures");
         data(FOLDER, AlteredAether.id("landmark_decoration"), dressing);
 
+        // The atolls' lagoon life, in every biome an atoll stands in. Their spawn rules (see SpawnPlacementEvents) keep
+        // them to the lagoons, so the forests' other water stays as it was. Values follow vanilla's warm ocean; each
+        // mob's category is its own.
+        JsonObject lagoon = new JsonObject();
+        lagoon.addProperty("type", "neoforge:add_spawns");
+        JsonArray hosts = new JsonArray();
+        for (String biome : List.of("aether:skyroot_meadow", "aether:skyroot_forest", "aether:skyroot_grove",
+                "aether:skyroot_woodland", "altered_aether:aether_plateau")) {
+            hosts.add(biome);
+        }
+        lagoon.add("biomes", hosts);
+        JsonArray spawners = new JsonArray();
+        spawners.add(spawner("minecraft:tropical_fish", 25, 8, 8));
+        spawners.add(spawner("minecraft:glow_squid", 10, 2, 4));
+        lagoon.add("spawners", spawners);
+        data(FOLDER, AlteredAether.id("spawns/lagoon_life"), lagoon);
+
         // Breezes only spawn standing on cold aerclouds (see SpawnPlacementEvents); the spawn cost keeps them rare.
         // Most Aether biomes have nothing else in the monster category, so weight barely matters there.
         spawns("breeze", "breeze", List.of(IS_AETHER), "monster", 2, 2, 3);
         spawns("naga", "naga", List.of(IS_AETHER), "monster", 10, 1, 1, "mowziesmobs");
+        // Lanterns are ambient mobs; the category is otherwise empty there, so their spawn cost sets the density.
+        spawns("lantern", "lantern", List.of("#altered_aether:has_lanterns"), null, 5, 2, 4, "mowziesmobs");
 
         spawns("wilden_hunter_plateau", "wilden_hunter", List.of("altered_aether:aether_plateau"), "monster", 5, 1, 2,
                 "ars_nouveau");
@@ -146,6 +173,15 @@ public final class AABiomeModifierProvider extends JsonDataProvider {
                 "ars_nouveau", "ars_elemental");
         spawns("familiars/siren", "siren", List.of("altered_aether:cascading_archwood_grove"), null, 4, 1, 1,
                 "ars_nouveau", "ars_elemental");
+    }
+
+    private static JsonObject spawner(String type, int weight, int min, int max) {
+        JsonObject json = new JsonObject();
+        json.addProperty("type", type);
+        json.addProperty("weight", weight);
+        json.addProperty("minCount", min);
+        json.addProperty("maxCount", max);
+        return json;
     }
 
     /** {@code category} may be null to use the entity's own. */

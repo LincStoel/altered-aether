@@ -1,0 +1,24 @@
+{
+  "type": "neoforge:add_spawns",
+  "biomes": [
+    "aether:skyroot_meadow",
+    "aether:skyroot_forest",
+    "aether:skyroot_grove",
+    "aether:skyroot_woodland",
+    "altered_aether:aether_plateau"
+  ],
+  "spawners": [
+    {
+      "type": "minecraft:tropical_fish",
+      "maxCount": 8,
+      "minCount": 8,
+      "weight": 25
+    },
+    {
+      "type": "minecraft:glow_squid",
+      "maxCount": 4,
+      "minCount": 2,
+      "weight": 10
+    }
+  ]
+}

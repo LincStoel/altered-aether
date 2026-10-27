@@ -18,6 +18,7 @@ import com.linc.alteredaether.config.AACommonConfig;
 import com.linc.alteredaether.worldgen.basin.BasinField;
 import com.linc.alteredaether.worldgen.basin.BasinSite;
 import com.linc.alteredaether.worldgen.basin.BasinType;
+import com.linc.alteredaether.worldgen.grove.GrovePalette;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -65,7 +66,11 @@ public final class BasinFillFeature extends Feature<NoneFeatureConfiguration> {
     private static final TagKey<Block> AETHER_DIRT =
             TagKey.create(net.minecraft.core.registries.Registries.BLOCK, ResourceLocation.parse("aether:aether_dirt"));
     private static final long REEF_SALT = 0x7F4A7C15L, KIND_SALT = 0x632BE59BL, FLOOR_SALT = 0x1B873593L,
-            SNOW_SALT = 0x4CF5AD43L, GLOW_SALT = 0x2545F491L, COLONY_SALT = 0x3C6EF372L;
+            SNOW_SALT = 0x4CF5AD43L, GLOW_SALT = 0x2545F491L, COLONY_SALT = 0x3C6EF372L, SHORE_SALT = 0x5BE0CD19L;
+    /** A lagoon's unbroken beach reaches this many blocks past the water; its patches reach on to the shore's end. */
+    private static final int BEACH = 4;
+    /** How far above the water a lagoon's shore is looked for: the crest, and the land trimmed back beyond it. */
+    private static final int SHORE_RISE = 16;
     /** Coral colonies stand at most one per cell of this many blocks, and reach at most {@link #COLONY_REACH} out. */
     private static final int COLONY_CELL = 4, COLONY_REACH = 4;
     /** How far above the water bank snow is looked for. */
@@ -138,6 +143,10 @@ public final class BasinFillFeature extends Feature<NoneFeatureConfiguration> {
                 }
             }
         }
+        if (site.type() == BasinType.ATOLL_LAGOON) {
+            // A chunk may hold only shore, so this goes before the check for water.
+            placed |= shore(level, field, chunk, site, pos);
+        }
         if (!placed) {
             return false;
         }
@@ -203,6 +212,45 @@ public final class BasinFillFeature extends Feature<NoneFeatureConfiguration> {
                 }
             }
         }
+    }
+
+    /**
+     * Quicksoil shores round an atoll's lagoon, whatever biome it lies in: a beach running up from the water to the
+     * crest, breaking into patches further out and giving way to the land's own ground. The soil is turned a few
+     * blocks deep, so digging into the beach doesn't hit dirt at once; rock is left alone.
+     */
+    private static boolean shore(WorldGenLevel level, BasinField field, ChunkPos chunk, BasinSite site,
+                                 BlockPos.MutableBlockPos pos) {
+        BlockState quicksoil = GrovePalette.natural(block("aether:quicksoil", Blocks.SAND).defaultBlockState());
+        int water = site.waterLevel();
+        boolean placed = false;
+        for (int x = chunk.getMinBlockX(); x <= chunk.getMaxBlockX(); x++) {
+            for (int z = chunk.getMinBlockZ(); z <= chunk.getMaxBlockZ(); z++) {
+                double beyond = (site.reach(x, z) - 1) * site.radius();
+                if (beyond < 0 || beyond > BasinSite.SHORE_REACH) {
+                    continue;
+                }
+                if (beyond > BEACH && field.noise(SHORE_SALT, x, z, 5)
+                        < 0.1 + 0.8 * (beyond - BEACH) / (BasinSite.SHORE_REACH - BEACH)) {
+                    continue;
+                }
+                for (int y = water + SHORE_RISE; y >= water; y--) {
+                    if (level.getBlockState(pos.set(x, y, z)).isAir()) {
+                        continue;
+                    }
+                    for (int d = 0; d < 3 && soil(level.getBlockState(pos.set(x, y - d, z))); d++) {
+                        level.setBlock(pos, quicksoil, Block.UPDATE_CLIENTS);
+                        placed = true;
+                    }
+                    break;
+                }
+            }
+        }
+        return placed;
+    }
+
+    private static boolean soil(BlockState state) {
+        return state.is(BlockTags.DIRT) || state.is(AETHER_DIRT);
     }
 
     /**
@@ -292,7 +340,7 @@ public final class BasinFillFeature extends Feature<NoneFeatureConfiguration> {
         return Blocks.WATER.defaultBlockState();
     }
 
-    private static BlockState seal(BasinType type) {
+    static BlockState seal(BasinType type) {
         Block holystone = BuiltInRegistries.BLOCK.getOptional(ResourceLocation.parse("aether:holystone"))
                 .orElse(Blocks.STONE);
         return switch (type) {

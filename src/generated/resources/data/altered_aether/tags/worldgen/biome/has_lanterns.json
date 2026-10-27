@@ -1,0 +1,10 @@
+{
+  "replace": false,
+  "values": [
+    "altered_aether:skyroot_cathedral",
+    {
+      "id": "deep_aether:luminescent_forest",
+      "required": false
+    }
+  ]
+}

@@ -101,6 +101,9 @@ public final class AACommonConfig {
     public static final BooleanValue STORM_RESPECT_MOB_GRIEFING;
     public static final BooleanValue STORM_SCORCH;
     public static final BooleanValue STORM_LIGHTNING_RODS;
+    public static final DoubleValue STORM_METAL_STRIKE_CHANCE;
+    public static final BooleanValue STORM_COPPER_STRIKES;
+    public static final IntValue STORM_PLAYER_WARNING_TICKS;
 
     // [aerwhales]
     public static final BooleanValue AERWHALE_USE_DEEP_AETHER;
@@ -164,7 +167,7 @@ public final class AACommonConfig {
         DUNE_HEIGHT = b.comment("Windswept Dunes ridge height multiplier.").defineInRange("dune_height", 1.0, 0.0, 3.0);
         DUNE_WIND_DIRECTION = b.comment("Prevailing wind over the dunes, in degrees clockwise from north.")
                 .defineInRange("dune_wind_direction", 60.0, 0.0, 360.0);
-        ATOLL_SIZE = b.comment("Sunken Atoll and Frozen Lakes lake size multiplier.").defineInRange("atoll_size", 1.0, 0.5, 2.0);
+        ATOLL_SIZE = b.comment("Atoll and Frozen Lakes lake size multiplier.").defineInRange("atoll_size", 1.0, 0.5, 2.0);
         LANDMARK_RARITY = b.comment("Multiplier on how rare landmarks are. Higher is rarer, 0 disables them.")
                 .defineInRange("landmark_rarity", 1.0, 0.0, 10.0);
         b.pop();
@@ -238,7 +241,7 @@ public final class AACommonConfig {
         }
         WATERFALL_FREQUENCY = b.comment("Waterfall frequency multiplier. 0 disables waterfalls.")
                 .defineInRange("waterfall_frequency", 1.0, 0.0, 10.0);
-        CORAL_DENSITY = b.comment("Sunken Atoll reef density multiplier.").defineInRange("coral_density", 1.0, 0.0, 4.0);
+        CORAL_DENSITY = b.comment("Atoll lagoon reef density multiplier.").defineInRange("coral_density", 1.0, 0.0, 4.0);
         b.pop();
 
         b.comment("Density multipliers for decoration families. 0 disables a family, 2 doubles it.").push("features");
@@ -303,6 +306,16 @@ public final class AACommonConfig {
         STORM_SCORCH = b.comment("Leave gravel and blackstone scorch marks where lightning lands.").define("scorch", true);
         STORM_LIGHTNING_RODS = b.comment("Lightning rods near a strike attract it, as they do in vanilla.")
                 .define("lightning_rods", true);
+        STORM_METAL_STRIKE_CHANCE = b.comment("Chance per roll that a player wearing overworld-metal armour or carrying an",
+                        "overworld-metal tool in the hotbar (#altered_aether:attracts_lightning) is struck, storm or calm.",
+                        "Aether gear never draws lightning. 0 disables.")
+                .defineInRange("metal_strike_chance", 0.15, 0.0, 1.0);
+        STORM_COPPER_STRIKES = b.comment("Standing on copper (#altered_aether:charged_copper) in a storm biome without boots",
+                        "calls down a strike.")
+                .define("copper_strikes", true);
+        STORM_PLAYER_WARNING_TICKS = b.comment("Ticks between the warning crackle and a strike aimed at a player for their metal",
+                        "or for standing on copper.")
+                .defineInRange("player_warning_ticks", 20, 0, 200);
         b.pop();
 
         b.comment("Tamed aerwhales: tame a wild one with blue berries, saddle it and fly it. Sneak and use your own",

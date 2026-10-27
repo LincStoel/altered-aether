@@ -124,7 +124,10 @@ public final class RegionBinding {
         double vertical = carve != null ? carve.verticalScale() : atoll != null ? atoll.verticalScale() : 1;
         BasinField basins = null;
         if (carve != null || atoll != null) {
-            BasinField field = new BasinField(level.getSeed(), probe, vertical,
+            // The atolls read their height off the land as it is before any of them is laid over it.
+            TerrainProbe hosts = atoll == null ? null : new TerrainProbe(source, randomState.sampler(), atoll.argument(),
+                    atoll.weight(), noise.minY(), noise.minY() + noise.height());
+            BasinField field = new BasinField(level.getSeed(), probe, hosts, vertical,
                     atoll == null ? null : new BasinField.AtollSettings(atoll.surface(), atoll.frozenSurface(),
                             atoll.verticalScale()));
             carves.forEach(c -> c.binding().bind(field));

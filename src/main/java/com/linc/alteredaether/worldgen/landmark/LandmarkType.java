@@ -25,7 +25,8 @@ import java.util.stream.Collectors;
  * The rare landmarks, each one-in-many and found by exploring. Each grid type sits on its own jittered grid of
  * {@code cell} blocks: a cell holds at most one, kept {@code reach} blocks clear of the cell's edge so neighbours never
  * meet, and {@code chance} is the probability that a cell over its biomes holds one, before the config's rarity
- * multiplier. The double atoll is a kind of Sunken Atoll and comes from the atoll grid instead.
+ * multiplier. The double atoll is terrain, shaped by the atoll density function, so the basin field finds it, on a
+ * grid of its own among the skyroot islands.
  */
 public enum LandmarkType {
     /** A crown of storm-black needles far taller than the peaks, ringed by copper crystals. */
@@ -46,8 +47,8 @@ public enum LandmarkType {
      * of older stone houses round its foot.
      */
     VILLAGE_TREE(2048, 0.45, 120, "skyroot_cathedral"),
-    /** A Sunken Atoll with a second ring in its lagoon and an islet at its heart. */
-    DOUBLE_ATOLL(0, 0, 0, "sunken_atoll");
+    /** An atoll standing alone in open sky, with a second ring in its lagoon and an islet at its heart. */
+    DOUBLE_ATOLL(0, 0, 0);
 
     final int cell;
     final double chance;
@@ -70,7 +71,7 @@ public enum LandmarkType {
         return biomes.contains(biome);
     }
 
-    /** Placed on a grid of its own, rather than coming from the atolls. */
+    /** Placed on a grid of its own here, rather than coming from the basin field. */
     boolean gridded() {
         return this != DOUBLE_ATOLL;
     }

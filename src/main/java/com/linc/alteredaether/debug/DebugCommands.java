@@ -393,12 +393,13 @@ public final class DebugCommands {
                         origin.toShortString(), String.format("%.0f", site.extent()));
             } else if (biome != null && biome.startsWith("atoll:")) {
                 // The nearest atoll-grid site of a type (atoll_lagoon or frozen_lake), optionally "ring" or "double"
-                // (atolls only).
+                // (atolls only; doubles have a grid of their own).
                 String[] spec = biome.substring(6).split("/");
                 BasinType type = BasinType.valueOf(spec[0].toUpperCase(java.util.Locale.ROOT));
                 String shape = spec.length > 1 ? spec[1] : "";
                 BasinField field = BasinField.get(THE_AETHER);
-                int cell = field.atollCell(), ox = Math.floorDiv(origin.getX(), cell);
+                boolean twin = shape.equals("double");
+                int cell = twin ? field.doubleCell() : field.atollCell(), ox = Math.floorDiv(origin.getX(), cell);
                 AtollSite found = null;
                 for (int r = 0; r < 40 && found == null; r++) {
                     for (int cx = ox - r; cx <= ox + r && found == null; cx++) {
@@ -406,9 +407,9 @@ public final class DebugCommands {
                             if (Math.max(Math.abs(cx - ox), Math.abs(cz)) != r) {
                                 continue;
                             }
-                            found = field.atollInCell(cx, cz).filter(s -> s.type() == type
-                                    && (shape.isEmpty() || shape.equals("ring") == s.isRing()
-                                    && shape.equals("double") == s.isDouble())).orElse(null);
+                            found = twin ? field.doubleInCell(cx, cz).filter(s -> s.type() == type).orElse(null)
+                                    : field.atollInCell(cx, cz).filter(s -> s.type() == type
+                                    && (shape.isEmpty() || shape.equals("ring") == s.isRing())).orElse(null);
                         }
                     }
                 }
