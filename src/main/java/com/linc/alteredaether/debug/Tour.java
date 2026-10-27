@@ -141,12 +141,13 @@ public final class Tour {
                     continue;
                 }
                 if (stop.equals("fireflies")) {
-                    // The cathedral at midnight, from the ground, for the fireflies and the lamps.
+                    // A cathedral giant at midnight, for the fireflies and the lamps. A biome ground shot could land
+                    // outside the grove (the biome search samples one height), so the shot is the giant's own.
                     List<Shot> night = new ArrayList<>();
-                    biomeShots(aether, "skyroot_cathedral", spawn, night);
-                    night.stream().filter(shot -> shot.name().endsWith("_ground")).forEach(shot -> shots.add(
-                            new Shot("fireflies", shot.x(), shot.y(), shot.z(), shot.fx(), shot.fy(), shot.fz(), 18000,
-                                    false, false, true)));
+                    giantShots("hollow_elder", spawn, night);
+                    night.stream().filter(shot -> !shot.name().endsWith("_inside")).findFirst().ifPresent(shot ->
+                            shots.add(new Shot("fireflies", shot.x(), shot.y(), shot.z(), shot.fx(), shot.fy(),
+                                    shot.fz(), 18000, false, false)));
                     continue;
                 }
                 if (stop.startsWith("giant:")) {
@@ -174,7 +175,8 @@ public final class Tour {
                 boolean tall = type == LandmarkType.TEMPEST_SPIRES || type == LandmarkType.FROZEN_SPIRE
                         || type == LandmarkType.GRANDFATHER;
                 int top = site.visitY() == Integer.MIN_VALUE ? 70 : site.visitY();
-                double focus = tall ? top - 70 : top - 6;
+                // A spire's visit height is its tip; the Grandfather's is its foot, so look at its middle.
+                double focus = type == LandmarkType.GRANDFATHER ? top + 60 : tall ? top - 70 : top - 6;
                 double distance = tall ? Math.max(90, site.extent() * 2.2) : Mth.clamp(site.extent() * 0.9, 48, 110);
                 int views = storm ? 1 : 3;
                 for (int i = 0; i < views; i++) {
