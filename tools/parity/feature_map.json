@@ -67,10 +67,12 @@
     "world_traveler:dune_dried_ghast": "altered_aether:ghast/dune_field",
     "world_traveler:dune_skyjade_pillar": "altered_aether:ruin/skyjade_pillar",
     "world_traveler:dune_boulder": "altered_aether:boulder/dune",
-    "world_traveler:dune_dead_bush": "altered_aether:vegetation/dead_bush"
+    "world_traveler:dune_dead_bush": "altered_aether:vegetation/dead_bush",
+    "aether:cold_aercloud": "altered_aether:cloud/mass"
   },
   "dropped": {
-    "world_traveler:tempest_dried_ghast": "dried ghasts belong to the Windswept Dunes only (design decision 10)"
+    "world_traveler:tempest_dried_ghast": "dried ghasts belong to the Windswept Dunes only (design decision 10)",
+    "tempest_peaks/world_traveler:ambrosium_boulder": "ambrosium boulders moved out of the Tempest Peaks (terrain round 2)"
   },
   "dropped_spawns": {},
   "global": ["altered_aether:basin_fill", "altered_aether:cloud/mass", "altered_aether:landmark/build",

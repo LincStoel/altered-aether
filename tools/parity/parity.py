@@ -138,8 +138,10 @@ def report(name, old_root, mapping, aether, out):
     accounted = set()
     for step, old_step in enumerate(old["features"]):
         for feature in old_step:
-            if feature in mapping["dropped"]:
-                out.append(f"  dropped  {feature}: {mapping['dropped'][feature]}")
+            # a drop applies everywhere, or as "<biome>/<feature>" to one biome only
+            reason = mapping["dropped"].get(feature) or mapping["dropped"].get(f"{name}/{feature}")
+            if reason:
+                out.append(f"  dropped  {feature}: {reason}")
                 continue
             targets_here = mapped(feature, mapping)
             found = [t for t in targets_here if t in present]
