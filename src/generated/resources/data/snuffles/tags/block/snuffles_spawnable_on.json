@@ -8,6 +8,7 @@
     {
       "id": "deep_aether:aether_coarse_dirt",
       "required": false
-    }
+    },
+    "aether:aether_grass_block"
   ]
 }

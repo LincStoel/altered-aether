@@ -15,7 +15,9 @@
 package com.linc.alteredaether.data;
 
 import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonPrimitive;
 import com.linc.alteredaether.AlteredAether;
 import net.minecraft.data.PackOutput;
 
@@ -107,9 +109,21 @@ public final class AABiomeModifierProvider extends JsonDataProvider {
         data(FOLDER, AlteredAether.id("spawns/lagoon_life"), lagoon);
 
         // Breezes only spawn standing on cold aerclouds (see SpawnPlacementEvents); the spawn cost keeps them rare.
-        // Most Aether biomes have nothing else in the monster category, so weight barely matters there.
-        spawns("breeze", "breeze", List.of(IS_AETHER), "monster", 2, 2, 3);
-        spawns("naga", "naga", List.of(IS_AETHER), "monster", 10, 1, 1, "mowziesmobs");
+        // Most Aether biomes have nothing else in the monster category, so weight barely matters there. The Shattered
+        // Rift has its own entry: bigger groups and three times the crowding tolerance.
+        JsonObject notRift = new JsonObject();
+        notRift.addProperty("type", "neoforge:not");
+        notRift.addProperty("value", "altered_aether:shattered_rift");
+        JsonObject breezeBiomes = new JsonObject();
+        breezeBiomes.addProperty("type", "neoforge:and");
+        JsonArray breezeParts = new JsonArray();
+        breezeParts.add(IS_AETHER);
+        breezeParts.add(notRift);
+        breezeBiomes.add("values", breezeParts);
+        spawns("breeze", "breeze", breezeBiomes, "monster", 2, 2, 3, 1.0);
+        spawns("breeze_rift", "breeze", new JsonPrimitive("altered_aether:shattered_rift"), "monster", 2, 3, 4, 3.0);
+        spawns("naga_yagroot", "naga", List.of("deep_aether:yagroot_swamp"), "monster", 10, 1, 1, "mowziesmobs",
+                "deep_aether");
         // Lanterns are ambient mobs; the category is otherwise empty there, so their spawn cost sets the density.
         spawns("lantern", "lantern", List.of("#altered_aether:has_lanterns"), null, 5, 2, 4, "mowziesmobs");
 
@@ -125,7 +139,12 @@ public final class AABiomeModifierProvider extends JsonDataProvider {
                 2, 1, 1, "ars_nouveau");
         spawns("wilden_stalker_yagroot", "wilden_stalker", List.of("deep_aether:yagroot_swamp"), "monster", 2, 1, 1,
                 "ars_nouveau", "deep_aether");
+        spawns("wilden_stalker_tempest", "wilden_stalker", List.of("altered_aether:tempest_peaks"), "monster", 3, 1, 1,
+                "ars_nouveau");
         spawns("snuffle_crags", "snuffle", List.of("altered_aether:frozen_crags"), "creature", 14, 2, 4, "snuffles");
+        // A rare herd among the aerglows; aether grass is in snuffles:snuffles_spawnable_on for them.
+        spawns("snuffle_aerglow", "snuffle", List.of("deep_aether:aerglow_forest", "deep_aether:mystic_aerglow_forest"),
+                "creature", 3, 2, 3, "snuffles", "deep_aether");
 
         familiars();
 
@@ -187,15 +206,23 @@ public final class AABiomeModifierProvider extends JsonDataProvider {
     /** {@code category} may be null to use the entity's own. */
     private void spawns(String file, String mob, List<String> biomes, String category, int weight, int min, int max,
                         String... requiredMods) {
-        JsonObject json = new JsonObject();
-        json.addProperty("type", "altered_aether:configured_spawns");
+        JsonElement set;
         if (biomes.size() == 1) {
-            json.addProperty("biomes", biomes.getFirst());
+            set = new JsonPrimitive(biomes.getFirst());
         } else {
             JsonArray list = new JsonArray();
             biomes.forEach(list::add);
-            json.add("biomes", list);
+            set = list;
         }
+        spawns(file, mob, set, category, weight, min, max, 1.0, requiredMods);
+    }
+
+    /** As above, with any biome holder set and a multiplier on the configured energy budget. */
+    private void spawns(String file, String mob, JsonElement biomes, String category, int weight, int min, int max,
+                        double budgetScale, String... requiredMods) {
+        JsonObject json = new JsonObject();
+        json.addProperty("type", "altered_aether:configured_spawns");
+        json.add("biomes", biomes);
         json.addProperty("mob", mob);
         if (category != null) {
             json.addProperty("category", category);
@@ -203,6 +230,9 @@ public final class AABiomeModifierProvider extends JsonDataProvider {
         json.addProperty("weight", weight);
         json.addProperty("min_count", min);
         json.addProperty("max_count", max);
+        if (budgetScale != 1.0) {
+            json.addProperty("budget_scale", budgetScale);
+        }
         data(FOLDER, AlteredAether.id("spawns/" + file), json, requiredMods);
     }
 

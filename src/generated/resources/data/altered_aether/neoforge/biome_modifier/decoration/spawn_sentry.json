@@ -1,6 +1,12 @@
 {
+  "neoforge:conditions": [
+    {
+      "type": "altered_aether:mod_enabled",
+      "modid": "ars_nouveau"
+    }
+  ],
   "type": "neoforge:add_features",
-  "biomes": "#aether:is_aether",
+  "biomes": "altered_aether:cascading_archwood_grove",
   "features": "altered_aether:spawn/sentry",
   "step": "vegetal_decoration"
 }

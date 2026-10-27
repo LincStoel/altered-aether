@@ -1,0 +1,22 @@
+{
+  "neoforge:conditions": [
+    {
+      "type": "altered_aether:mod_enabled",
+      "modid": "snuffles"
+    },
+    {
+      "type": "altered_aether:mod_enabled",
+      "modid": "deep_aether"
+    }
+  ],
+  "type": "altered_aether:configured_spawns",
+  "biomes": [
+    "deep_aether:aerglow_forest",
+    "deep_aether:mystic_aerglow_forest"
+  ],
+  "category": "creature",
+  "max_count": 3,
+  "min_count": 2,
+  "mob": "snuffle",
+  "weight": 3
+}

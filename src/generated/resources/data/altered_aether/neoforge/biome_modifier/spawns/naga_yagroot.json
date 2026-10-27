@@ -1,0 +1,19 @@
+{
+  "neoforge:conditions": [
+    {
+      "type": "altered_aether:mod_enabled",
+      "modid": "mowziesmobs"
+    },
+    {
+      "type": "altered_aether:mod_enabled",
+      "modid": "deep_aether"
+    }
+  ],
+  "type": "altered_aether:configured_spawns",
+  "biomes": "deep_aether:yagroot_swamp",
+  "category": "monster",
+  "max_count": 1,
+  "min_count": 1,
+  "mob": "naga",
+  "weight": 10
+}

@@ -1,4 +1,10 @@
 {
+  "neoforge:conditions": [
+    {
+      "type": "altered_aether:mod_enabled",
+      "modid": "ars_nouveau"
+    }
+  ],
   "feature": "altered_aether:spawn/fire_minion",
   "placement": [
     {

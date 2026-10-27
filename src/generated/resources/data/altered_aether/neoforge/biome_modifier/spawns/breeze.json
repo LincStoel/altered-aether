@@ -1,6 +1,15 @@
 {
   "type": "altered_aether:configured_spawns",
-  "biomes": "#aether:is_aether",
+  "biomes": {
+    "type": "neoforge:and",
+    "values": [
+      "#aether:is_aether",
+      {
+        "type": "neoforge:not",
+        "value": "altered_aether:shattered_rift"
+      }
+    ]
+  },
   "category": "monster",
   "max_count": 3,
   "min_count": 2,

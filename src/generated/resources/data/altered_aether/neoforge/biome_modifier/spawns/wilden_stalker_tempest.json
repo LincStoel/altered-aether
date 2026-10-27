@@ -2,14 +2,14 @@
   "neoforge:conditions": [
     {
       "type": "altered_aether:mod_enabled",
-      "modid": "mowziesmobs"
+      "modid": "ars_nouveau"
     }
   ],
   "type": "altered_aether:configured_spawns",
-  "biomes": "#aether:is_aether",
+  "biomes": "altered_aether:tempest_peaks",
   "category": "monster",
   "max_count": 1,
   "min_count": 1,
-  "mob": "naga",
-  "weight": 10
+  "mob": "wilden_stalker",
+  "weight": 3
 }

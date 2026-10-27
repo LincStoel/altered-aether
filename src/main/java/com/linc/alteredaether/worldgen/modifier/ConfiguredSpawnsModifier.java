@@ -37,10 +37,12 @@ import java.util.Optional;
 /**
  * Adds one mob's spawn entry (and its spawn cost) to a set of biomes, scaled by that mob's entry in the common config.
  * The category defaults to the entity's own. The per-biome numbers live in data; the config can switch the mob off, scale its weight, override its group size
- * and retune its spawn cost without touching that data.
+ * and retune its spawn cost without touching that data. {@code budget_scale} multiplies the configured energy budget in
+ * these biomes, for a biome that should hold more (or fewer) of the mob than elsewhere.
  */
 public record ConfiguredSpawnsModifier(HolderSet<Biome> biomes, String mob, Optional<MobCategory> category, int weight,
-                                       int minCount, int maxCount, boolean applyCost) implements BiomeModifier {
+                                       int minCount, int maxCount, boolean applyCost, double budgetScale)
+        implements BiomeModifier {
 
     public static final MapCodec<ConfiguredSpawnsModifier> CODEC = RecordCodecBuilder.mapCodec(i -> i.group(
             Biome.LIST_CODEC.fieldOf("biomes").forGetter(ConfiguredSpawnsModifier::biomes),
@@ -49,7 +51,8 @@ public record ConfiguredSpawnsModifier(HolderSet<Biome> biomes, String mob, Opti
             Codec.INT.fieldOf("weight").forGetter(ConfiguredSpawnsModifier::weight),
             Codec.INT.fieldOf("min_count").forGetter(ConfiguredSpawnsModifier::minCount),
             Codec.INT.fieldOf("max_count").forGetter(ConfiguredSpawnsModifier::maxCount),
-            Codec.BOOL.optionalFieldOf("apply_cost", true).forGetter(ConfiguredSpawnsModifier::applyCost)
+            Codec.BOOL.optionalFieldOf("apply_cost", true).forGetter(ConfiguredSpawnsModifier::applyCost),
+            Codec.DOUBLE.optionalFieldOf("budget_scale", 1.0).forGetter(ConfiguredSpawnsModifier::budgetScale)
     ).apply(i, ConfiguredSpawnsModifier::new));
 
     @Override
@@ -72,7 +75,7 @@ public record ConfiguredSpawnsModifier(HolderSet<Biome> biomes, String mob, Opti
         }
         double charge = settings.charge().get();
         if (applyCost && charge > 0) {
-            spawns.addMobCharge(type.get(), charge, settings.energyBudget().get());
+            spawns.addMobCharge(type.get(), charge, settings.energyBudget().get() * budgetScale);
         }
     }
 

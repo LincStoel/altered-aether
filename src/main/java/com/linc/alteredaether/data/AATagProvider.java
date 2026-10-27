@@ -49,11 +49,11 @@ public final class AATagProvider extends JsonDataProvider {
                 "#minecraft:logs");
         tag("worldgen/biome", AlteredAether.id("has_lanterns"), "altered_aether:skyroot_cathedral",
                 "deep_aether:luminescent_forest");
-        // Snuffles key their spawning to this tag (plus a cold biome), not sea level, so the Frozen Crags' ground
-        // only needs adding to it.
+        // Snuffles key their spawning to this tag (and light), not sea level or the biome, so the Frozen Crags' ground
+        // and the aerglow forests' grass only need adding to it. They spawn only in the biomes we list.
         tag("block", ResourceLocation.fromNamespaceAndPath("snuffles", "snuffles_spawnable_on"),
                 "aether:icestone", "minecraft:snow_block", "minecraft:ice", "minecraft:packed_ice",
-                "deep_aether:aether_coarse_dirt");
+                "deep_aether:aether_coarse_dirt", "aether:aether_grass_block");
         // The ores that are holystone-only in the Aether have to be retargeted at the rock of the biomes that replace it.
         tag("block", AlteredAether.id("frozen_crag_ore_replaceables"), "aether:icestone", "deep_aether:clorite",
                 "aether:holystone");

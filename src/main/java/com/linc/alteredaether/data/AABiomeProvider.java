@@ -173,11 +173,17 @@ public final class AABiomeProvider extends JsonDataProvider {
                 .add(BiomeJson.ORES, AADecorationProvider.TEMPEST_COPPER_ORE, AADecorationProvider.TEMPEST_COPPER_ORE_UPPER,
                         AADecorationProvider.TEMPEST_COPPER_VEIN)
                 .add(BiomeJson.TOP, AADecorationProvider.TEMPEST_CLOUD)
+                // Only the storm's own: whirlwinds and zephyrs here, breezes and wilden stalkers from the spawn
+                // biome modifiers. No wildlife, swets, cockatrices or aerwhales.
+                .spawners("creature")
+                .spawners("aether:aether_aerwhale")
+                .spawners("aether:aether_darkness_monster")
                 .spawners("aether:aether_surface_monster",
-                        spawner("aether:blue_swet", 20, 1, 1),
-                        spawner("aether:whirlwind", 3, 1, 1),
-                        spawner("aether:evil_whirlwind", 1, 1, 1))
-                .dropCost("aether:aechor_plant", "aether:golden_swet");
+                        spawner("aether:whirlwind", 10, 1, 1),
+                        spawner("aether:evil_whirlwind", 4, 1, 1))
+                .spawners("aether:aether_sky_monster", spawner("aether:zephyr", 20, 1, 1))
+                .dropCost("aether:aechor_plant", "aether:golden_swet", "aether:blue_swet", "aether:cockatrice",
+                        "aether:aerwhale");
     }
 
     /** Bare broken holystone: no lakes, springs or stock vegetation, and aerwhales drift through the gaps. */
@@ -192,7 +198,18 @@ public final class AABiomeProvider extends JsonDataProvider {
                         AADecorationProvider.RIFT_SLAB_FRAGMENTS)
                 .add(BiomeJson.TOP, AADecorationProvider.RIFT_STRAND, AADecorationProvider.RIFT_BRIDGE)
                 .spawners("aether:aether_aerwhale", spawner("aether:aerwhale", 10, 1, 3))
-                .cost("aether:aerwhale", 0.3, 0.4);
+                // Wind through the gaps: whirlwinds lead the surface and zephyrs come in pairs. Aechor plants and
+                // golden swets need grass the rift doesn't have, so they are removed rather than left to fail.
+                .spawners("aether:aether_surface_monster",
+                        spawner("aether:whirlwind", 12, 1, 2),
+                        spawner("aether:evil_whirlwind", 4, 1, 1),
+                        spawner("aether:blue_swet", 6, 1, 1))
+                .spawners("aether:aether_sky_monster", spawner("aether:zephyr", 20, 1, 2))
+                .dropCost("aether:aechor_plant", "aether:golden_swet")
+                .cost("aether:aerwhale", 0.3, 0.4)
+                .cost("aether:whirlwind", 0.4, 0.15)
+                .cost("aether:evil_whirlwind", 0.4, 0.1)
+                .cost("aether:zephyr", 0.6, 0.2);
     }
 
     /** Arid quicksoil dunes: whirlwinds in numbers, hardly any wildlife. */
@@ -211,11 +228,14 @@ public final class AABiomeProvider extends JsonDataProvider {
                 .spawners("aether:aether_aerwhale")
                 .spawners("aether:aether_darkness_monster")
                 .spawners("aether:aether_sky_monster", spawner("aether:zephyr", 20, 1, 1))
-                .spawners("aether:aether_surface_monster", spawner("aether:whirlwind", 20, 2, 4))
+                .spawners("aether:aether_surface_monster",
+                        spawner("aether:whirlwind", 20, 2, 4),
+                        spawner("aether:evil_whirlwind", 4, 1, 1))
                 .spawners("creature", spawner("aether:aerbunny", 11, 3, 3));
         JsonObject costs = new JsonObject();
         biome.json.add("spawn_costs", costs);
-        return biome.cost("aether:whirlwind", 0.4, 0.1).cost("aether:zephyr", 0.6, 0.16);
+        return biome.cost("aether:whirlwind", 0.4, 0.1).cost("aether:evil_whirlwind", 0.4, 0.05)
+                .cost("aether:zephyr", 0.6, 0.16);
     }
 
     /**

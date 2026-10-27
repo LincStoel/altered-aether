@@ -374,16 +374,17 @@ public final class AADecorationProvider extends FeatureData {
 
     /**
      * Aether mobs the pack places at generation, so a visitor finds them standing in the world: a fire minion now and
-     * then, a sentry rarely. Both are the Aether's own, so they are always available.
+     * then in the Blazing Archwood Grove, a sentry rarely in the Cascading one. The mobs are the Aether's own, but the
+     * groves exist only with Ars Nouveau. Bronze dungeon sentries are the Aether's business and are left alone.
      */
     private void wanderers() {
-        spawner("fire_minion", "aether:fire_minion", 1, 1 / 30.0);
-        spawner("sentry", "aether:sentry", 1, 1 / 44.0);
-        addFeature("spawn/fire_minion", List.of(IS_AETHER), "vegetal_decoration");
-        addFeature("spawn/sentry", List.of(IS_AETHER), "vegetal_decoration");
+        spawner("fire_minion", "aether:fire_minion", 1, 1 / 30.0, "ars_nouveau");
+        spawner("sentry", "aether:sentry", 1, 1 / 44.0, "ars_nouveau");
+        addFeature("spawn/fire_minion", groves("blazing"), "vegetal_decoration", "ars_nouveau");
+        addFeature("spawn/sentry", groves("cascading"), "vegetal_decoration", "ars_nouveau");
     }
 
-    private void spawner(String name, String entity, int count, double chance) {
+    private void spawner(String name, String entity, int count, double chance, String... mods) {
         JsonObject config = new JsonObject();
         config.addProperty("entity", entity);
         config.addProperty("count", count);
@@ -392,9 +393,9 @@ public final class AADecorationProvider extends FeatureData {
         ground.addProperty("tag", "minecraft:dirt");
         config.add("ground", ground);
         config.addProperty("persistent", true);
-        configured("spawn/" + name, "spawn_entity", config);
+        configured("spawn/" + name, "spawn_entity", config, mods);
         placed("spawn/" + name, "spawn/" + name, Placement.list(Placement.rarity((int) Math.round(1 / chance)),
-                Placement.inSquare(), Placement.heightmap(SURFACE), Placement.biome()));
+                Placement.inSquare(), Placement.heightmap(SURFACE), Placement.biome()), mods);
     }
 
     // ---------------------------------------------------------------------------------------- helpers

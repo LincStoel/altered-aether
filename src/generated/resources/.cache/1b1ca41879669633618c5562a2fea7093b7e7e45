@@ -1,4 +1,4 @@
-// 1.21.1	2026-10-27T07:04:47.9299041	Altered Aether tags
+// 1.21.1	2026-10-27T13:53:35.0275622	Altered Aether tags
 b032a16350ca6010469714eb13672f97361123fc data/aether/tags/worldgen/biome/is_aether.json
 7ec09b2e18ab43d296e2d76cad7fe25c11cda07f data/altered_aether/tags/block/breeze_spawnable_on.json
 ced54e3c0345a29f08205713ce269209a192e5b8 data/altered_aether/tags/block/charged_copper.json
@@ -23,5 +23,5 @@ c6381fa8eec6c45ea083b0125723f175d95dfe99 data/minecraft/tags/block/dead_bush_may
 321ecb60c5b87a7ca940124f0881814faa6dca7d data/minecraft/tags/block/mineable/axe.json
 480983c81f5804ad1eae130e6c1491ba46ac6f17 data/minecraft/tags/block/sword_efficient.json
 a0bf1fc0c566444ccfdba18f668aa2501187ba7d data/minecraft/tags/item/fox_food.json
-92ece5ddf91e5c42de2cd425d54af7a0510c067f data/snuffles/tags/block/snuffles_spawnable_on.json
+c0bce12102bf355810d11f370b26eae472910a8d data/snuffles/tags/block/snuffles_spawnable_on.json
 a0bf1fc0c566444ccfdba18f668aa2501187ba7d data/supplementaries/tags/item/flower_box_tall_plantable.json

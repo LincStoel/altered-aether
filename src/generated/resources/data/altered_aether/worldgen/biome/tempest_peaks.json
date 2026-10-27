@@ -51,18 +51,6 @@
   ],
   "has_precipitation": true,
   "spawn_costs": {
-    "aether:aerwhale": {
-      "charge": 0.5,
-      "energy_budget": 0.11
-    },
-    "aether:blue_swet": {
-      "charge": 0.5,
-      "energy_budget": 0.1
-    },
-    "aether:cockatrice": {
-      "charge": 0.5,
-      "energy_budget": 0.15
-    },
     "aether:evil_whirlwind": {
       "charge": 0.4,
       "energy_budget": 0.1
@@ -77,22 +65,8 @@
     }
   },
   "spawners": {
-    "aether:aether_aerwhale": [
-      {
-        "type": "aether:aerwhale",
-        "maxCount": 1,
-        "minCount": 1,
-        "weight": 10
-      }
-    ],
-    "aether:aether_darkness_monster": [
-      {
-        "type": "aether:cockatrice",
-        "maxCount": 1,
-        "minCount": 1,
-        "weight": 8
-      }
-    ],
+    "aether:aether_aerwhale": [],
+    "aether:aether_darkness_monster": [],
     "aether:aether_sky_monster": [
       {
         "type": "aether:zephyr",
@@ -103,58 +77,21 @@
     ],
     "aether:aether_surface_monster": [
       {
-        "type": "aether:blue_swet",
-        "maxCount": 1,
-        "minCount": 1,
-        "weight": 20
-      },
-      {
         "type": "aether:whirlwind",
         "maxCount": 1,
         "minCount": 1,
-        "weight": 3
+        "weight": 10
       },
       {
         "type": "aether:evil_whirlwind",
         "maxCount": 1,
         "minCount": 1,
-        "weight": 1
+        "weight": 4
       }
     ],
     "ambient": [],
     "axolotls": [],
-    "creature": [
-      {
-        "type": "aether:phyg",
-        "maxCount": 4,
-        "minCount": 3,
-        "weight": 10
-      },
-      {
-        "type": "aether:sheepuff",
-        "maxCount": 4,
-        "minCount": 3,
-        "weight": 12
-      },
-      {
-        "type": "aether:flying_cow",
-        "maxCount": 5,
-        "minCount": 2,
-        "weight": 12
-      },
-      {
-        "type": "aether:aerbunny",
-        "maxCount": 3,
-        "minCount": 3,
-        "weight": 11
-      },
-      {
-        "type": "aether:moa",
-        "maxCount": 3,
-        "minCount": 1,
-        "weight": 8
-      }
-    ],
+    "creature": [],
     "misc": [],
     "monster": [],
     "underground_water_creature": [],

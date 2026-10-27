@@ -64,6 +64,10 @@
   ],
   "has_precipitation": false,
   "spawn_costs": {
+    "aether:evil_whirlwind": {
+      "charge": 0.4,
+      "energy_budget": 0.05
+    },
     "aether:whirlwind": {
       "charge": 0.4,
       "energy_budget": 0.1
@@ -90,6 +94,12 @@
         "maxCount": 4,
         "minCount": 2,
         "weight": 20
+      },
+      {
+        "type": "aether:evil_whirlwind",
+        "maxCount": 1,
+        "minCount": 1,
+        "weight": 4
       }
     ],
     "ambient": [],

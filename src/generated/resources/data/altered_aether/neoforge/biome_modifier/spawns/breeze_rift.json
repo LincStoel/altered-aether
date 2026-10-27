@@ -1,0 +1,10 @@
+{
+  "type": "altered_aether:configured_spawns",
+  "biomes": "altered_aether:shattered_rift",
+  "budget_scale": 3.0,
+  "category": "monster",
+  "max_count": 4,
+  "min_count": 3,
+  "mob": "breeze",
+  "weight": 2
+}
