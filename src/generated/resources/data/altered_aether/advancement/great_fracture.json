@@ -1,0 +1,31 @@
+{
+  "parent": "altered_aether:shattered_rift",
+  "criteria": {
+    "visit": {
+      "conditions": {
+        "landmark": "great_fracture"
+      },
+      "trigger": "altered_aether:visit_landmark"
+    }
+  },
+  "display": {
+    "description": {
+      "translate": "advancements.altered_aether.great_fracture.description"
+    },
+    "frame": "goal",
+    "icon": {
+      "id": "aether:mossy_holystone"
+    },
+    "title": {
+      "translate": "advancements.altered_aether.great_fracture.title"
+    }
+  },
+  "requirements": [
+    [
+      "visit"
+    ]
+  ],
+  "rewards": {
+    "experience": 50
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "parent": "altered_aether:tempest_peaks",
+  "criteria": {
+    "struck": {
+      "conditions": {},
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "display": {
+    "description": {
+      "translate": "advancements.altered_aether.thunderstruck.description"
+    },
+    "frame": "task",
+    "icon": {
+      "id": "minecraft:iron_chestplate"
+    },
+    "title": {
+      "translate": "advancements.altered_aether.thunderstruck.title"
+    }
+  },
+  "requirements": [
+    [
+      "struck"
+    ]
+  ]
+}

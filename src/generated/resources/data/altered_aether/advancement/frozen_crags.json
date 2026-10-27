@@ -1,0 +1,38 @@
+{
+  "parent": "altered_aether:root",
+  "criteria": {
+    "visit": {
+      "conditions": {
+        "player": [
+          {
+            "condition": "minecraft:entity_properties",
+            "entity": "this",
+            "predicate": {
+              "location": {
+                "biomes": "altered_aether:frozen_crags"
+              }
+            }
+          }
+        ]
+      },
+      "trigger": "minecraft:location"
+    }
+  },
+  "display": {
+    "description": {
+      "translate": "advancements.altered_aether.frozen_crags.description"
+    },
+    "frame": "task",
+    "icon": {
+      "id": "aether:icestone"
+    },
+    "title": {
+      "translate": "advancements.altered_aether.frozen_crags.title"
+    }
+  },
+  "requirements": [
+    [
+      "visit"
+    ]
+  ]
+}

@@ -37,6 +37,9 @@ import com.linc.alteredaether.worldgen.grove.GiantType;
 import com.linc.alteredaether.worldgen.grove.GroveField;
 import com.linc.alteredaether.worldgen.grove.Mire;
 import com.linc.alteredaether.worldgen.landmark.Landmark;
+import java.util.Optional;
+import net.minecraft.server.level.ServerPlayer;
+import com.linc.alteredaether.loot.RumourMapFunction;
 import com.linc.alteredaether.worldgen.landmark.LandmarkField;
 import com.linc.alteredaether.worldgen.landmark.LandmarkType;
 import com.mojang.brigadier.arguments.StringArgumentType;
@@ -94,6 +97,7 @@ public final class DebugCommands {
                                 .suggests((ctx, builder) -> SharedSuggestionProvider.suggest(
                                         java.util.Arrays.stream(LandmarkType.values()).map(LandmarkType::id), builder))
                                 .executes(DebugCommands::landmark)))
+                .then(Commands.literal("rumour").executes(DebugCommands::rumour))
                 .then(Commands.literal("ruin")
                         .then(Commands.argument("kind", StringArgumentType.word())
                                 .suggests((ctx, builder) -> SharedSuggestionProvider.suggest(
@@ -299,6 +303,35 @@ public final class DebugCommands {
                             Component.literal("[go]").withStyle(style -> style.withColor(ChatFormatting.GREEN)
                                     .withClickEvent(new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, tp)))), false);
                 }, source.getServer());
+        return 1;
+    }
+
+    /**
+     * {@code /altered_aether rumour}: a rumour map from where you stand, as a chest there would roll one. The search
+     * runs on the server thread, as it does for loot, and its time is reported.
+     */
+    private static int rumour(CommandContext<CommandSourceStack> ctx) {
+        CommandSourceStack source = ctx.getSource();
+        ServerLevel level = source.getLevel();
+        LandmarkField field = LandmarkField.get(level.dimension());
+        if (field == null) {
+            source.sendFailure(Component.literal("There are no landmarks here."));
+            return 0;
+        }
+        int x = (int) source.getPosition().x, z = (int) source.getPosition().z;
+        long start = System.nanoTime();
+        Optional<Landmark> site = RumourMapFunction.find(field, java.util.Arrays.asList(LandmarkType.values()), x, z,
+                6000, level.getRandom());
+        double ms = (System.nanoTime() - start) / 1e6;
+        if (site.isEmpty()) {
+            source.sendFailure(Component.literal(String.format("No landmark within 6000 blocks (%.1f ms).", ms)));
+            return 0;
+        }
+        if (source.getEntity() instanceof ServerPlayer player) {
+            player.getInventory().add(RumourMapFunction.create(level, site.get(), (byte) 2));
+        }
+        source.sendSuccess(() -> Component.literal(String.format("A rumour of a %s at %d, %d (%.1f ms).",
+                site.get().type().id(), site.get().x(), site.get().z(), ms)), false);
         return 1;
     }
 

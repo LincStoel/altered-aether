@@ -1,0 +1,85 @@
+{
+  "parent": "altered_aether:rumour",
+  "criteria": {
+    "double_atoll": {
+      "conditions": {
+        "landmark": "double_atoll"
+      },
+      "trigger": "altered_aether:visit_landmark"
+    },
+    "frozen_spire": {
+      "conditions": {
+        "landmark": "frozen_spire"
+      },
+      "trigger": "altered_aether:visit_landmark"
+    },
+    "grand_cascade": {
+      "conditions": {
+        "landmark": "grand_cascade"
+      },
+      "trigger": "altered_aether:visit_landmark"
+    },
+    "grandfather": {
+      "conditions": {
+        "landmark": "grandfather"
+      },
+      "trigger": "altered_aether:visit_landmark"
+    },
+    "great_fracture": {
+      "conditions": {
+        "landmark": "great_fracture"
+      },
+      "trigger": "altered_aether:visit_landmark"
+    },
+    "tempest_spires": {
+      "conditions": {
+        "landmark": "tempest_spires"
+      },
+      "trigger": "altered_aether:visit_landmark"
+    },
+    "village_tree": {
+      "conditions": {
+        "landmark": "village_tree"
+      },
+      "trigger": "altered_aether:visit_landmark"
+    }
+  },
+  "display": {
+    "description": {
+      "translate": "advancements.altered_aether.seven_wonders.description"
+    },
+    "frame": "challenge",
+    "icon": {
+      "id": "minecraft:spyglass"
+    },
+    "title": {
+      "translate": "advancements.altered_aether.seven_wonders.title"
+    }
+  },
+  "requirements": [
+    [
+      "tempest_spires"
+    ],
+    [
+      "frozen_spire"
+    ],
+    [
+      "grand_cascade"
+    ],
+    [
+      "great_fracture"
+    ],
+    [
+      "grandfather"
+    ],
+    [
+      "village_tree"
+    ],
+    [
+      "double_atoll"
+    ]
+  ],
+  "rewards": {
+    "experience": 250
+  }
+}

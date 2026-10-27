@@ -1,0 +1,28 @@
+{
+  "parent": "altered_aether:nurselog_hollow",
+  "criteria": {
+    "stump": {
+      "conditions": {
+        "loot_table": "altered_aether:chests/grove/stump"
+      },
+      "trigger": "minecraft:player_generates_container_loot"
+    }
+  },
+  "display": {
+    "description": {
+      "translate": "advancements.altered_aether.stump_cache.description"
+    },
+    "frame": "task",
+    "icon": {
+      "id": "aether:golden_amber"
+    },
+    "title": {
+      "translate": "advancements.altered_aether.stump_cache.title"
+    }
+  },
+  "requirements": [
+    [
+      "stump"
+    ]
+  ]
+}

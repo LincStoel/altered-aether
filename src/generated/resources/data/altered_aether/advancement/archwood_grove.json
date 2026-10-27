@@ -1,0 +1,95 @@
+{
+  "neoforge:conditions": [
+    {
+      "type": "altered_aether:mod_enabled",
+      "modid": "ars_nouveau"
+    }
+  ],
+  "parent": "altered_aether:root",
+  "criteria": {
+    "blazing_archwood_grove": {
+      "conditions": {
+        "player": [
+          {
+            "condition": "minecraft:entity_properties",
+            "entity": "this",
+            "predicate": {
+              "location": {
+                "biomes": "altered_aether:blazing_archwood_grove"
+              }
+            }
+          }
+        ]
+      },
+      "trigger": "minecraft:location"
+    },
+    "cascading_archwood_grove": {
+      "conditions": {
+        "player": [
+          {
+            "condition": "minecraft:entity_properties",
+            "entity": "this",
+            "predicate": {
+              "location": {
+                "biomes": "altered_aether:cascading_archwood_grove"
+              }
+            }
+          }
+        ]
+      },
+      "trigger": "minecraft:location"
+    },
+    "flourishing_archwood_grove": {
+      "conditions": {
+        "player": [
+          {
+            "condition": "minecraft:entity_properties",
+            "entity": "this",
+            "predicate": {
+              "location": {
+                "biomes": "altered_aether:flourishing_archwood_grove"
+              }
+            }
+          }
+        ]
+      },
+      "trigger": "minecraft:location"
+    },
+    "vexing_archwood_grove": {
+      "conditions": {
+        "player": [
+          {
+            "condition": "minecraft:entity_properties",
+            "entity": "this",
+            "predicate": {
+              "location": {
+                "biomes": "altered_aether:vexing_archwood_grove"
+              }
+            }
+          }
+        ]
+      },
+      "trigger": "minecraft:location"
+    }
+  },
+  "display": {
+    "description": {
+      "translate": "advancements.altered_aether.archwood_grove.description"
+    },
+    "frame": "task",
+    "icon": {
+      "id": "ars_nouveau:blue_archwood_sapling"
+    },
+    "title": {
+      "translate": "advancements.altered_aether.archwood_grove.title"
+    }
+  },
+  "requirements": [
+    [
+      "blazing_archwood_grove",
+      "cascading_archwood_grove",
+      "flourishing_archwood_grove",
+      "vexing_archwood_grove"
+    ]
+  ]
+}

@@ -1,0 +1,31 @@
+{
+  "parent": "altered_aether:root",
+  "criteria": {
+    "visit": {
+      "conditions": {
+        "landmark": "atoll"
+      },
+      "trigger": "altered_aether:visit_landmark"
+    }
+  },
+  "display": {
+    "description": {
+      "translate": "advancements.altered_aether.atoll.description"
+    },
+    "frame": "goal",
+    "icon": {
+      "id": "minecraft:brain_coral"
+    },
+    "title": {
+      "translate": "advancements.altered_aether.atoll.title"
+    }
+  },
+  "requirements": [
+    [
+      "visit"
+    ]
+  ],
+  "rewards": {
+    "experience": 50
+  }
+}

@@ -18,6 +18,7 @@ import com.linc.alteredaether.AATags;
 import com.linc.alteredaether.AlteredAether;
 import com.linc.alteredaether.config.AACommonConfig;
 import com.linc.alteredaether.registry.AARegistries;
+import net.minecraft.advancements.AdvancementHolder;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.core.registries.Registries;
@@ -42,6 +43,7 @@ import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.event.entity.EntityStruckByLightningEvent;
 import net.neoforged.neoforge.event.level.LevelEvent;
 import net.neoforged.neoforge.event.tick.LevelTickEvent;
 import net.neoforged.neoforge.network.PacketDistributor;
@@ -50,6 +52,8 @@ import org.jetbrains.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+import java.util.WeakHashMap;
 
 /**
  * Lightning storms over Tempest Peaks. Every {@code check_interval} ticks, each player standing in a
@@ -90,6 +94,9 @@ public final class TempestStorms {
     }
 
     private static final List<PendingStrike> PENDING = new ArrayList<>();
+    /** Bolts called down by a player's overworld metal, and that player; see {@link #onStruck}. */
+    private static final Map<LightningBolt, ServerPlayer> METAL_BOLTS = new WeakHashMap<>();
+    private static final ResourceLocation THUNDERSTRUCK = AlteredAether.id("thunderstruck");
     @Nullable
     private static StormField field;
     private static int errors;
@@ -206,7 +213,7 @@ public final class TempestStorms {
                 if (victim == null) {
                     land(level, strike);
                 } else if (holds(level, victim, strike.cause())) {
-                    strike(level, victim);
+                    strike(level, victim, strike.cause());
                 }
             }
         }
@@ -255,18 +262,32 @@ public final class TempestStorms {
                 SoundSource.WEATHER, 1.0f, 0.95f + random.nextFloat() * 0.1f);
         int ticks = AACommonConfig.STORM_PLAYER_WARNING_TICKS.get();
         if (ticks <= 0) {
-            strike(level, player);
+            strike(level, player, cause);
         } else {
             PENDING.add(new PendingStrike(player.blockPosition(), false, new int[]{ticks}, player, cause));
         }
     }
 
     /** A bolt straight down on the player, without the blast and scorch of a storm strike. */
-    private static void strike(ServerLevel level, ServerPlayer player) {
+    private static void strike(ServerLevel level, ServerPlayer player, Cause cause) {
         LightningBolt bolt = EntityType.LIGHTNING_BOLT.create(level);
         if (bolt != null) {
             bolt.moveTo(player.position());
+            if (cause == Cause.METAL) {
+                METAL_BOLTS.put(bolt, player);
+            }
             level.addFreshEntity(bolt);
+        }
+    }
+
+    /** A bolt drawn by a player's overworld metal that hits them earns the Thunderstruck! advancement. */
+    @SubscribeEvent
+    public static void onStruck(EntityStruckByLightningEvent event) {
+        if (event.getEntity() instanceof ServerPlayer player && METAL_BOLTS.get(event.getLightning()) == player) {
+            AdvancementHolder advancement = player.server.getAdvancements().get(THUNDERSTRUCK);
+            if (advancement != null) {
+                player.getAdvancements().award(advancement, "struck");
+            }
         }
     }
 

@@ -1,0 +1,31 @@
+{
+  "parent": "altered_aether:tempest_peaks",
+  "criteria": {
+    "visit": {
+      "conditions": {
+        "landmark": "tempest_spires"
+      },
+      "trigger": "altered_aether:visit_landmark"
+    }
+  },
+  "display": {
+    "description": {
+      "translate": "advancements.altered_aether.tempest_crown.description"
+    },
+    "frame": "goal",
+    "icon": {
+      "id": "minecraft:lightning_rod"
+    },
+    "title": {
+      "translate": "advancements.altered_aether.tempest_crown.title"
+    }
+  },
+  "requirements": [
+    [
+      "visit"
+    ]
+  ],
+  "rewards": {
+    "experience": 50
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "parent": "altered_aether:aether_plateau",
+  "criteria": {
+    "visit": {
+      "conditions": {
+        "landmark": "grand_cascade"
+      },
+      "trigger": "altered_aether:visit_landmark"
+    }
+  },
+  "display": {
+    "description": {
+      "translate": "advancements.altered_aether.grand_cascade.description"
+    },
+    "frame": "goal",
+    "icon": {
+      "id": "aether:skyroot_water_bucket"
+    },
+    "title": {
+      "translate": "advancements.altered_aether.grand_cascade.title"
+    }
+  },
+  "requirements": [
+    [
+      "visit"
+    ]
+  ],
+  "rewards": {
+    "experience": 50
+  }
+}

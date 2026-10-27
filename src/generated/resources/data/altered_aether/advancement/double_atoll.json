@@ -1,0 +1,31 @@
+{
+  "parent": "altered_aether:atoll",
+  "criteria": {
+    "visit": {
+      "conditions": {
+        "landmark": "double_atoll"
+      },
+      "trigger": "altered_aether:visit_landmark"
+    }
+  },
+  "display": {
+    "description": {
+      "translate": "advancements.altered_aether.double_atoll.description"
+    },
+    "frame": "goal",
+    "icon": {
+      "id": "minecraft:heart_of_the_sea"
+    },
+    "title": {
+      "translate": "advancements.altered_aether.double_atoll.title"
+    }
+  },
+  "requirements": [
+    [
+      "visit"
+    ]
+  ],
+  "rewards": {
+    "experience": 50
+  }
+}

@@ -15,11 +15,13 @@
 package com.linc.alteredaether.registry;
 
 import com.linc.alteredaether.AlteredAether;
+import com.linc.alteredaether.advancement.VisitLandmarkTrigger;
 import com.linc.alteredaether.block.AmbrosiumCampfireBlock;
 import com.linc.alteredaether.block.GleamVinesBlock;
 import com.linc.alteredaether.block.GleamVinesPlantBlock;
 import com.linc.alteredaether.compat.ModEnabled;
 import com.linc.alteredaether.entity.TamedAerwhale;
+import com.linc.alteredaether.loot.RumourMapFunction;
 import com.linc.alteredaether.menu.AerwhaleInventoryMenu;
 import com.linc.alteredaether.worldgen.density.Atoll;
 import com.linc.alteredaether.worldgen.density.BasinCarve;
@@ -64,7 +66,9 @@ import com.linc.alteredaether.worldgen.surface.Steep;
 import com.linc.alteredaether.worldgen.surface.Strata;
 import com.linc.alteredaether.worldgen.surface.SubstituteBlock;
 import com.mojang.serialization.MapCodec;
+import net.minecraft.advancements.CriterionTrigger;
 import net.minecraft.core.registries.Registries;
+import net.minecraft.world.level.storage.loot.functions.LootItemFunctionType;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.MobCategory;
@@ -128,6 +132,16 @@ public final class AARegistries {
             DeferredRegister.create(NeoForgeRegistries.Keys.CONDITION_CODECS, AlteredAether.MOD_ID);
     public static final DeferredHolder<MapCodec<? extends ICondition>, MapCodec<ModEnabled>> MOD_ENABLED =
             CONDITIONS.register("mod_enabled", () -> ModEnabled.CODEC);
+
+    public static final DeferredRegister<CriterionTrigger<?>> TRIGGERS =
+            DeferredRegister.create(Registries.TRIGGER_TYPE, AlteredAether.MOD_ID);
+    public static final DeferredHolder<CriterionTrigger<?>, VisitLandmarkTrigger> VISIT_LANDMARK =
+            TRIGGERS.register("visit_landmark", VisitLandmarkTrigger::new);
+
+    public static final DeferredRegister<LootItemFunctionType<?>> LOOT_FUNCTIONS =
+            DeferredRegister.create(Registries.LOOT_FUNCTION_TYPE, AlteredAether.MOD_ID);
+    public static final DeferredHolder<LootItemFunctionType<?>, LootItemFunctionType<RumourMapFunction>> RUMOUR_MAP =
+            LOOT_FUNCTIONS.register("rumour_map", () -> new LootItemFunctionType<>(RumourMapFunction.CODEC));
 
     public static final DeferredRegister<MapCodec<? extends BiomeModifier>> BIOME_MODIFIER_SERIALIZERS =
             DeferredRegister.create(NeoForgeRegistries.Keys.BIOME_MODIFIER_SERIALIZERS, AlteredAether.MOD_ID);
@@ -242,6 +256,8 @@ public final class AARegistries {
 
     public static void register(IEventBus modBus) {
         CONDITIONS.register(modBus);
+        TRIGGERS.register(modBus);
+        LOOT_FUNCTIONS.register(modBus);
         BLOCKS.register(modBus);
         ITEMS.register(modBus);
         ENTITY_TYPES.register(modBus);

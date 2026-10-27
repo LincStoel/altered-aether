@@ -18,6 +18,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.linc.alteredaether.AlteredAether;
 import net.minecraft.data.PackOutput;
+import net.minecraft.resources.ResourceLocation;
 
 /**
  * Chest loot for the groves. A pilgrims' camp holds supplies for the road; a secret spot holds what someone thought
@@ -25,22 +26,89 @@ import net.minecraft.data.PackOutput;
  * those hold no dungeon treasure: the groves reward exploring, not replace the dungeons.
  */
 public final class AALootProvider extends JsonDataProvider {
+    private static final String RUMOUR_MAP = AlteredAether.MOD_ID + ":chests/rumour_map";
+
     public AALootProvider(PackOutput output) {
         super(output, "loot tables");
     }
 
     @Override
     protected void generate() {
-        table("camp", pool(3, 5, camp()));
-        table("secret", pool(3, 5, camp()), pool(1, 2, secret()));
+        table("camp", pool(3, 5, camp()), rumour(0.05));
+        table("secret", pool(3, 5, camp()), pool(1, 2, secret()), rumour(0.15));
         table("heartwood", pool(2, 4, camp()), pool(2, 3, secret()), pool(1, 1, heartwood()),
-                pool(1, 1, entry("aether:golden_amber", 1, 8, 16)));
+                pool(1, 1, entry("aether:golden_amber", 1, 8, 16)), rumour(0.5));
         // A ruin's cellar or a head's cache: old odds and ends, a little better than a camp.
-        table("ruin", pool(2, 4, camp()), pool(0, 1, secret()));
-        // A deserted village's crates: mostly junk.
-        table("village_crate", pool(2, 5, junk()), pool(0, 1, camp()));
+        table("ruin", pool(2, 4, camp()), pool(0, 1, secret()), rumour(0.1));
+        // A deserted village's crates: mostly junk, but the villagers knew the country round them.
+        table("village_crate", pool(2, 5, junk()), pool(0, 1, camp()), rumour(0.1));
         table("stump", pool(2, 3, camp()), pool(2, 4, secret()), pool(2, 3, heartwood()), pool(1, 1, stump()),
-                pool(1, 1, entry("aether:golden_amber", 1, 12, 24)));
+                pool(1, 1, entry("aether:golden_amber", 1, 12, 24)), rumour(0.5));
+        rumourMaps();
+    }
+
+    /**
+     * The rumour map, an explorer's map to a landmark near the chest (see RumourMapFunction), and the Aether's
+     * bronze and silver dungeon chests, which hold one now and then through NeoForge's {@code add_table} loot modifier.
+     */
+    private void rumourMaps() {
+        JsonObject function = new JsonObject();
+        function.addProperty("function", AlteredAether.MOD_ID + ":rumour_map");
+        JsonArray functions = new JsonArray();
+        functions.add(function);
+        JsonObject map = entry("minecraft:map", 1, 1, 1);
+        map.remove("weight");
+        map.add("functions", functions);
+        JsonObject table = new JsonObject();
+        table.addProperty("type", "minecraft:chest");
+        JsonArray pools = new JsonArray();
+        pools.add(pool(1, 1, map));
+        table.add("pools", pools);
+        table.addProperty("random_sequence", RUMOUR_MAP);
+        data("loot_table", AlteredAether.id("chests/rumour_map"), table);
+
+        JsonArray modifiers = new JsonArray();
+        modifiers.add(dungeonRumour("bronze", 0.15));
+        modifiers.add(dungeonRumour("silver", 0.2));
+        JsonObject global = new JsonObject();
+        global.addProperty("replace", false);
+        global.add("entries", modifiers);
+        data("loot_modifiers", ResourceLocation.fromNamespaceAndPath("neoforge", "global_loot_modifiers"), global);
+    }
+
+    private String dungeonRumour(String dungeon, double chance) {
+        JsonObject tableId = new JsonObject();
+        tableId.addProperty("condition", "neoforge:loot_table_id");
+        tableId.addProperty("loot_table_id", "aether:chests/dungeon/" + dungeon + "/" + dungeon + "_dungeon");
+        JsonArray conditions = new JsonArray();
+        conditions.add(tableId);
+        conditions.add(chance(chance));
+        JsonObject modifier = new JsonObject();
+        modifier.addProperty("type", "neoforge:add_table");
+        modifier.add("conditions", conditions);
+        modifier.addProperty("table", RUMOUR_MAP);
+        String name = dungeon + "_dungeon_rumour_map";
+        data("loot_modifiers", AlteredAether.id(name), modifier);
+        return AlteredAether.MOD_ID + ":" + name;
+    }
+
+    /** A pool that holds a rumour map with the given chance. */
+    private static JsonObject rumour(double chance) {
+        JsonObject entry = new JsonObject();
+        entry.addProperty("type", "minecraft:loot_table");
+        entry.addProperty("value", RUMOUR_MAP);
+        JsonObject pool = pool(1, 1, entry);
+        JsonArray conditions = new JsonArray();
+        conditions.add(chance(chance));
+        pool.add("conditions", conditions);
+        return pool;
+    }
+
+    private static JsonObject chance(double chance) {
+        JsonObject condition = new JsonObject();
+        condition.addProperty("condition", "minecraft:random_chance");
+        condition.addProperty("chance", chance);
+        return condition;
     }
 
     private static JsonArray camp() {

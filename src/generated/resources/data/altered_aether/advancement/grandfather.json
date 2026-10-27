@@ -1,0 +1,31 @@
+{
+  "parent": "altered_aether:skyroot_cathedral",
+  "criteria": {
+    "visit": {
+      "conditions": {
+        "landmark": "grandfather"
+      },
+      "trigger": "altered_aether:visit_landmark"
+    }
+  },
+  "display": {
+    "description": {
+      "translate": "advancements.altered_aether.grandfather.description"
+    },
+    "frame": "goal",
+    "icon": {
+      "id": "aether:golden_oak_log"
+    },
+    "title": {
+      "translate": "advancements.altered_aether.grandfather.title"
+    }
+  },
+  "requirements": [
+    [
+      "visit"
+    ]
+  ],
+  "rewards": {
+    "experience": 50
+  }
+}

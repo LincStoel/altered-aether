@@ -1,0 +1,38 @@
+{
+  "parent": "altered_aether:root",
+  "criteria": {
+    "visit": {
+      "conditions": {
+        "player": [
+          {
+            "condition": "minecraft:entity_properties",
+            "entity": "this",
+            "predicate": {
+              "location": {
+                "biomes": "altered_aether:windswept_dunes"
+              }
+            }
+          }
+        ]
+      },
+      "trigger": "minecraft:location"
+    }
+  },
+  "display": {
+    "description": {
+      "translate": "advancements.altered_aether.windswept_dunes.description"
+    },
+    "frame": "task",
+    "icon": {
+      "id": "aether:quicksoil"
+    },
+    "title": {
+      "translate": "advancements.altered_aether.windswept_dunes.title"
+    }
+  },
+  "requirements": [
+    [
+      "visit"
+    ]
+  ]
+}

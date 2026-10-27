@@ -21,6 +21,8 @@ import com.linc.alteredaether.AATags;
 import com.linc.alteredaether.config.AACommonConfig;
 import com.linc.alteredaether.menu.AerwhaleInventoryMenu;
 import com.linc.alteredaether.registry.AARegistries;
+import net.minecraft.advancements.CriteriaTriggers;
+import net.minecraft.advancements.critereon.EntityPredicate;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.particles.ParticleOptions;
@@ -70,6 +72,7 @@ import net.minecraft.world.item.Items;
 import net.minecraft.world.level.GameRules;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.gameevent.GameEvent;
+import net.minecraft.world.level.storage.loot.LootContext;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.entity.PartEntity;
@@ -317,7 +320,16 @@ public class TamedAerwhale extends Aerwhale
         tamed.setHealth(health);
         tamed.setCommand(AerwhaleCommand.FOLLOW);
         tamed.particles(ParticleTypes.HEART, 7);
+        awardTaming(owner, tamed);
         return tamed;
+    }
+
+    /** Counts as taming an animal for vanilla's advancements (Best Friends Forever), which only see {@code Animal}s. */
+    private static void awardTaming(Player player, TamedAerwhale whale) {
+        if (player instanceof ServerPlayer serverPlayer) {
+            LootContext context = EntityPredicate.createContext(serverPlayer, whale);
+            CriteriaTriggers.TAME_ANIMAL.trigger(serverPlayer, instance -> instance.matches(context));
+        }
     }
 
     /**
@@ -544,6 +556,7 @@ public class TamedAerwhale extends Aerwhale
                     setOwnerUUID(player.getUUID());
                     setCommand(AerwhaleCommand.FOLLOW);
                     particles(ParticleTypes.HEART, 7);
+                    awardTaming(player, this);
                 } else {
                     particles(ParticleTypes.SMOKE, 7);
                 }

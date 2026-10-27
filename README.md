@@ -73,7 +73,7 @@ all gazing the same way.
 nearest swamp lake, and `giant break_edge` or `giant break_chasm` the nearest break. `/altered_aether ruin <kind>`
 builds a ruin (`cottage`, `keep`, `circle` or `head`) where you stand. All three are for operators only.
 
-**Rare landmarks**, each one-in-many:
+**Rare landmarks:**
 
 - **Tempest crown**: a cluster of storm-black needles rising far above Tempest Peaks, crowned with lightning rods
   and ringed with copper crystals. The storms strike it first.
@@ -136,19 +136,26 @@ With the tall pack, other mods' Aether structures and ores are moved to the matc
 
 ## Optional mods
 
+### Highly encouraged
+
 | Mod | What it brings |
 |---|---|
-| Ars Nouveau | the archwood groves, scattered archwood, familiars and wilden in the groves; archwood is taken out of the overworld (Ars Elemental's too) unless `disable_overworld_archwood` is off |
-| Ars Elemental | the Flashing Archwood Grove, flashjacks, sirens, sourcestone boulders |
 | Deep Aether | its stones, blocks and ground cover in our biomes (closest Aether or vanilla blocks stand in without it); totems, carved squash, tiki torches; poison pools; giant-tree colonies of its woods, skyjade lanterns, glowing vines and moss in the groves |
 | Aether Overworld Ores | its ores placed by biome; 42 enchanting recipes |
-| Create | zinc in Tempest Peaks |
-| Oreganized | silver in the crags and the rift |
-| Dried Ghast | dried ghast fields in the Windswept Dunes |
-| Snuffles | Snuffles in the Frozen Crags, and only in the Aether |
-| Mowzie's Mobs | nagas in the Aether; lanterns in the Skyroot Cathedral and Deep Aether's Luminescent Forest |
-| Integrated Villages | its airship village in the Aether, and no longer in the overworld |
-| Aether: Beyond Parity | its ambrosium campfire is swapped for ours |
+
+### Notable
+
+| Mod | What it brings                                                                                                                                                                                                                                        |
+|---|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Ars Nouveau | the archwood groves, scattered archwood, familiars and wilden in the groves; archwood is taken out of the overworld (Ars Elemental's too) unless `disable_overworld_archwood` is off                                                                  |
+| Ars Elemental | the Flashing Archwood Grove, flashjacks, sirens, sourcestone boulders                                                                                                                                                                                 |
+| Create | zinc in Tempest Peaks                                                                                                                                                                                                                                 |
+| Oreganized | silver in the crags and the rift                                                                                                                                                                                                                      |
+| Dried Ghast | dried ghast fields in the Windswept Dunes                                                                                                                                                                                                             |
+| Snuffles | Snuffles in the Frozen Crags, and only in the Aether (configurable)                                                                                                                                                                                   |
+| Mowzie's Mobs | nagas in the Aether; lanterns in the Skyroot Cathedral and Deep Aether's Luminescent Forest                                                                                                                                                           |
+| Integrated Villages | its airship village in the Aether, and no longer in the overworld (configurable)                                                                                                                                                                      |
+| Aether: Beyond Parity | its ambrosium campfire is replaced                                                                                                                                                                                                                    |
 
 Mobs added to the Aether from other mods spawn only in the Aether by default (each has an `aether_exclusive`
 switch). Breezes are the exception: they spawn in the Aether as well as anywhere vanilla puts them, and only standing

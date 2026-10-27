@@ -225,6 +225,14 @@ public final class AABlockProvider extends JsonDataProvider {
         lang.put("key." + AlteredAether.MOD_ID + ".aerwhale_eject", "Leap off Aerwhale");
         lang.put("key.categories." + AlteredAether.MOD_ID, "Altered Aether");
         lang.put("subtitles." + AlteredAether.MOD_ID + ".storm.incoming_lightning", "Lightning gathers");
+        lang.put("item." + AlteredAether.MOD_ID + ".rumour_map.tempest_spires", "Rumour of a Tempest Crown");
+        lang.put("item." + AlteredAether.MOD_ID + ".rumour_map.frozen_spire", "Rumour of a Frozen Spire");
+        lang.put("item." + AlteredAether.MOD_ID + ".rumour_map.grand_cascade", "Rumour of a Grand Cascade");
+        lang.put("item." + AlteredAether.MOD_ID + ".rumour_map.great_fracture", "Rumour of a Great Fracture");
+        lang.put("item." + AlteredAether.MOD_ID + ".rumour_map.grandfather", "Rumour of the Grandfather");
+        lang.put("item." + AlteredAether.MOD_ID + ".rumour_map.village_tree", "Rumour of a Village Tree");
+        lang.put("item." + AlteredAether.MOD_ID + ".rumour_map.double_atoll", "Rumour of a Double Atoll");
+        AAAdvancementProvider.language(lang);
         JsonObject json = new JsonObject();
         lang.forEach(json::addProperty);
         asset("lang", AlteredAether.id("en_us"), json);

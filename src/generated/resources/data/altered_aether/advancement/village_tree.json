@@ -1,0 +1,31 @@
+{
+  "parent": "altered_aether:skyroot_cathedral",
+  "criteria": {
+    "visit": {
+      "conditions": {
+        "landmark": "village_tree"
+      },
+      "trigger": "altered_aether:visit_landmark"
+    }
+  },
+  "display": {
+    "description": {
+      "translate": "advancements.altered_aether.village_tree.description"
+    },
+    "frame": "goal",
+    "icon": {
+      "id": "aether:skyroot_bed"
+    },
+    "title": {
+      "translate": "advancements.altered_aether.village_tree.title"
+    }
+  },
+  "requirements": [
+    [
+      "visit"
+    ]
+  ],
+  "rewards": {
+    "experience": 50
+  }
+}

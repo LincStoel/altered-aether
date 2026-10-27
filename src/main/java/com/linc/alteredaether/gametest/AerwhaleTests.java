@@ -24,12 +24,15 @@ import com.linc.alteredaether.entity.AerwhaleEject;
 import com.linc.alteredaether.entity.AerwhaleMode;
 import com.linc.alteredaether.entity.TamedAerwhale;
 import com.linc.alteredaether.registry.AARegistries;
+import net.minecraft.advancements.AdvancementHolder;
 import net.minecraft.core.NonNullList;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ClientInformation;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.Container;
 import net.minecraft.world.ContainerHelper;
 import net.minecraft.world.InteractionHand;
@@ -80,6 +83,23 @@ public final class AerwhaleTests {
         helper.assertTrue(tamed.getFirst().isOwnedBy(player), "the tamer should own it");
         helper.assertTrue(tamed.getFirst().command() == AerwhaleCommand.FOLLOW, "a new tame should follow its tamer");
         helper.assertTrue(player.getMainHandItem().getCount() < 64, "taming should use berries");
+        helper.succeed();
+    }
+
+    @GameTest(template = "arena")
+    public static void tamingCountsForBestFriendsForever(GameTestHelper helper) {
+        if (deepAetherWhales(helper)) {
+            return;
+        }
+        // a bare server player: NeoForge's fake players never earn advancements, and the mock one can't log in
+        ServerPlayer player = new ServerPlayer(helper.getLevel().getServer(), helper.getLevel(),
+                new GameProfile(UUID.randomUUID(), "aerwhale-tamer"), ClientInformation.createDefault());
+        AdvancementHolder advancement = helper.getLevel().getServer().getAdvancements()
+                .get(ResourceLocation.withDefaultNamespace("husbandry/tame_an_animal"));
+        helper.assertTrue(advancement != null, "vanilla's tame_an_animal advancement should exist");
+        tamed(helper, player);
+        helper.assertTrue(player.getAdvancements().getOrStartProgress(advancement).isDone(),
+                "taming an aerwhale should award Best Friends Forever");
         helper.succeed();
     }
 

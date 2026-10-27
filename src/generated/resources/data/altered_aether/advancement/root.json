@@ -1,0 +1,30 @@
+{
+  "criteria": {
+    "enter_aether": {
+      "conditions": {
+        "to": "aether:the_aether"
+      },
+      "trigger": "minecraft:changed_dimension"
+    }
+  },
+  "display": {
+    "announce_to_chat": false,
+    "background": "aether:textures/block/natural/holystone.png",
+    "description": {
+      "translate": "advancements.altered_aether.root.description"
+    },
+    "frame": "task",
+    "icon": {
+      "id": "altered_aether:ambrosium_campfire"
+    },
+    "show_toast": false,
+    "title": {
+      "translate": "advancements.altered_aether.root.title"
+    }
+  },
+  "requirements": [
+    [
+      "enter_aether"
+    ]
+  ]
+}

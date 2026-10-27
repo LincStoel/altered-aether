@@ -165,6 +165,26 @@
         "max": 5,
         "min": 3
       }
+    },
+    {
+      "bonus_rolls": 0.0,
+      "conditions": [
+        {
+          "chance": 0.05,
+          "condition": "minecraft:random_chance"
+        }
+      ],
+      "entries": [
+        {
+          "type": "minecraft:loot_table",
+          "value": "altered_aether:chests/rumour_map"
+        }
+      ],
+      "rolls": {
+        "type": "minecraft:uniform",
+        "max": 1,
+        "min": 1
+      }
     }
   ],
   "random_sequence": "altered_aether:chests/grove/camp"
