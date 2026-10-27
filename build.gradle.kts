@@ -41,6 +41,11 @@ neoForge {
             if (tour != null) {
                 programArguments.addAll("--quickPlaySingleplayer", "tour")
             }
+            // -PaaJoin=host:port joins that server on start, to check a dedicated server end to end.
+            val join = findProperty("aaJoin") as String?
+            if (join != null) {
+                programArguments.addAll("--quickPlayMultiplayer", join)
+            }
         }
         register("server") {
             server()
