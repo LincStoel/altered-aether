@@ -26,11 +26,15 @@ import org.spongepowered.asm.mixin.injection.ModifyArg;
  * below the world is harmless.
  *
  * <p>No data or event can reach this: the clamp is a literal inside the structure's piece generator.
+ *
+ * <p>The clamp sits in a compiler-named lambda ({@code lambda$generatePieces$7} in Aether 1.5.10). A regex matches any
+ * of the piece generator's lambdas, so a renumbering in a later Aether doesn't lose it, and {@code require = 0} means
+ * that if the Aether drops the clamp altogether the game still starts.
  */
 @Mixin(LargeAercloudStructure.class)
 public abstract class LargeAercloudStructureMixin {
-    @ModifyArg(method = "lambda$generatePieces$7", at = @At(value = "INVOKE", target = "Ljava/lang/Math;max(II)I"),
-            index = 1)
+    @ModifyArg(method = "/^lambda\\$generatePieces\\$\\d+$/", at = @At(value = "INVOKE",
+            target = "Ljava/lang/Math;max(II)I"), index = 1, require = 0)
     private static int altered_aether$unclampedFloor(int floor) {
         return Integer.MIN_VALUE;
     }
