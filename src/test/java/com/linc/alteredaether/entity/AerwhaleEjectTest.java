@@ -17,6 +17,7 @@ package com.linc.alteredaether.entity;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /** A leap throws the rider as high as it's charged, well within the time the whale coasts beneath them. */
@@ -36,6 +37,17 @@ class AerwhaleEjectTest {
             double speed = AerwhaleEject.launchSpeed(height, GRAVITY);
             assertEquals(height, AerwhaleEject.apex(speed, GRAVITY), 0.1, "apex for " + height);
         }
+    }
+
+    /** The gravity attribute can be 0 or negative; working out the throw must still finish. */
+    @Test
+    void weightlessRidersStillGetAThrow() {
+        for (double gravity : new double[]{0, -0.08}) {
+            double speed = assertTimeoutPreemptively(java.time.Duration.ofSeconds(2),
+                    () -> AerwhaleEject.launchSpeed(AerwhaleEject.MAX_HEIGHT, gravity));
+            assertTrue(Double.isFinite(speed) && speed > 0, "speed " + speed + " at gravity " + gravity);
+        }
+        assertEquals(AerwhaleEject.MIN_HEIGHT, AerwhaleEject.heightFor(Float.NaN), 1.0E-9);
     }
 
     @Test

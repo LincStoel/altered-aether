@@ -31,14 +31,20 @@ public final class AerwhaleEject {
     public static final double MAX_INHERITED_SPEED = 1.5;
     /** A player's vertical drag in the air, per tick. */
     private static final double DRAG = 0.98;
+    /**
+     * The least gravity the throw is worked out for. The gravity attribute can be set to 0 or below, under which a
+     * thrown player never comes down and the loops below would never end.
+     */
+    private static final double MIN_GRAVITY = 0.01;
 
     /** How high a charge of {@code charge} (0 to 1) throws the rider. */
     public static double heightFor(float charge) {
-        return MIN_HEIGHT + (MAX_HEIGHT - MIN_HEIGHT) * Math.clamp(charge, 0, 1);
+        return MIN_HEIGHT + (MAX_HEIGHT - MIN_HEIGHT) * (Float.isNaN(charge) ? 0 : Math.clamp(charge, 0, 1));
     }
 
     /** The upward speed that carries a player {@code height} blocks up under {@code gravity}, found by bisection. */
     public static double launchSpeed(double height, double gravity) {
+        gravity = Math.max(gravity, MIN_GRAVITY);
         double low = 0;
         double high = 5;
         for (int i = 0; i < 40; i++) {
@@ -54,6 +60,7 @@ public final class AerwhaleEject {
 
     /** How high a player thrown up at {@code speed} rises, moving then slowing each tick as a player does. */
     public static double apex(double speed, double gravity) {
+        gravity = Math.max(gravity, MIN_GRAVITY);
         double y = 0;
         double vy = speed;
         while (vy > 0) {
@@ -65,6 +72,7 @@ public final class AerwhaleEject {
 
     /** Ticks a player thrown up at {@code speed} takes to come back down to where they started. */
     public static int airtime(double speed, double gravity) {
+        gravity = Math.max(gravity, MIN_GRAVITY);
         double y = 0;
         double vy = speed;
         int ticks = 0;
