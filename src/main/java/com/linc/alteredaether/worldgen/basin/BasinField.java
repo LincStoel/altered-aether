@@ -81,7 +81,7 @@ public final class BasinField {
             MINOR_SALT = 0x9E3779B97F4A7C15L, DOUBLE_SALT = 0x6A09E667F3BCC909L;
     /** The chance a fine-grid cell holds a small atoll, as a share of the atoll lagoon's own chance. */
     private static final double MINOR_ATOLL_CHANCE = 0.3;
-    /** The share of atolls that are rings with a river round them. Frozen lakes are never rings. */
+    /** The share of atolls that are rings with a river round them. */
     private static final double RING_CHANCE = 0.3;
     /** Spots tried per atoll cell: the host biomes are big but patchy, and a miss leaves a whole cell empty. */
     private static final int ATOLL_ATTEMPTS = 24;
@@ -102,7 +102,7 @@ public final class BasinField {
     }
 
     /** The parameters of the atoll density function, when the terrain has one. */
-    public record AtollSettings(int surface, int frozenSurface, double vertical) {
+    public record AtollSettings(int surface, double vertical) {
     }
 
     private final long seed;
@@ -194,7 +194,7 @@ public final class BasinField {
         return found;
     }
 
-    /** The atoll or frozen lake in a cell of the atoll grid, if it has one. */
+    /** The atoll in a cell of the atoll grid, if it has one. */
     public Optional<AtollSite> atollInCell(int cx, int cz) {
         return atoll == null ? Optional.empty() : atoll(cx, cz);
     }
@@ -417,10 +417,9 @@ public final class BasinField {
     }
 
     /**
-     * The cell's atoll or frozen lake. Its shape is rolled once for the cell: a ring with a river round it, or a single
-     * ring of land around a lagoon. Each spot tried then takes whichever of the two types suits its biome. A frozen
-     * lake stands at its own height; an atoll takes the height of the land it is set into, which is read for only the
-     * first few spots that otherwise fit, as reading it is the expensive part.
+     * The cell's atoll. Its shape is rolled once for the cell: a ring with a river round it, or a single ring of land
+     * around a lagoon. It takes the height of the land it is set into, which is read for only the first few spots that
+     * otherwise fit, as reading it is the expensive part.
      */
     @Nullable
     private AtollSite findAtoll(int cx, int cz) {
@@ -430,68 +429,52 @@ public final class BasinField {
         }
         RandomSource random = random(cx, cz, ATOLL_SALT);
         double roll = random.nextDouble();
-        double r1 = random.nextDouble(), r2 = random.nextDouble(), r3 = random.nextDouble(), offset = random.nextDouble();
+        double r1 = random.nextDouble(), r2 = random.nextDouble(), r3 = random.nextDouble();
+        random.nextDouble(); // once a frozen lake's height; still drawn so each cell's later rolls are unchanged
         double phase1 = random.nextDouble() * Mth.TWO_PI, phase2 = random.nextDouble() * Mth.TWO_PI;
         double v = settings.vertical();
         boolean ring = random.nextDouble() < RING_CHANCE;
         RingPath path = ringPath(random);
 
-        AtollSite[] shapes = new AtollSite[BasinType.values().length];
-        double largest = 0;
-        for (BasinType type : new BasinType[]{BasinType.ATOLL_LAGOON, BasinType.FROZEN_LAKE}) {
-            if (roll >= chances[type.ordinal()]) {
-                continue;
-            }
-            boolean frozen = type == BasinType.FROZEN_LAKE;
-            int top = frozen ? settings.frozenSurface() + (int) Math.round((offset * 12 - 6) * v) : 0;
-            AtollSite shape;
-            if (ring && !frozen) {
-                // Half the ring's width: enough for a shore either side of the river. The line is shrunk if need be
-                // so the ring and the land it trims stay inside the cell.
-                double width = Mth.lerp(r2, 11, 16) * atollSize;
-                double room = atollCell / 2.0 - 2 - AtollSite.INFLUENCE - width;
-                RingPath line = path.furthest() > room ? path.scaled(room / path.furthest()) : path;
-                shape = new AtollSite(type, 0, 0, width, line.furthest() + width, top, Mth.lerp(r3, 6, 9) * v, v,
-                        phase1, phase2, null, line);
-            } else {
-                double lagoon = Mth.lerp(r1, type.minRadius, type.maxRadius) * atollSize;
-                // An atoll's ring is a narrow reef of land, so the lagoon takes most of it.
-                double outer = lagoon + (frozen ? Mth.lerp(r2, 12, 18) : Mth.lerp(r2, 9, 13)) * atollSize;
-                shape = new AtollSite(type, 0, 0, lagoon, outer, top, Mth.lerp(r3, type.minDepth, type.maxDepth) * v,
-                        v, phase1, phase2, null, null);
-            }
-            shapes[type.ordinal()] = shape;
-            largest = Math.max(largest, shape.extent());
-        }
-        if (largest == 0) {
+        BasinType type = BasinType.ATOLL_LAGOON;
+        if (roll >= chances[type.ordinal()]) {
             return null;
         }
-        // One jitter for both types, from the larger, so whichever is placed stays inside its cell.
-        int jitter = Math.max(0, (int) (atollCell / 2.0 - largest));
+        AtollSite shape;
+        if (ring) {
+            // Half the ring's width: enough for a shore either side of the river. The line is shrunk if need be so
+            // the ring and the land it trims stay inside the cell.
+            double width = Mth.lerp(r2, 11, 16) * atollSize;
+            double room = atollCell / 2.0 - 2 - AtollSite.INFLUENCE - width;
+            RingPath line = path.furthest() > room ? path.scaled(room / path.furthest()) : path;
+            shape = new AtollSite(type, 0, 0, width, line.furthest() + width, 0, Mth.lerp(r3, 6, 9) * v, v,
+                    phase1, phase2, null, line);
+        } else {
+            double lagoon = Mth.lerp(r1, type.minRadius, type.maxRadius) * atollSize;
+            // An atoll's ring is a narrow reef of land, so the lagoon takes most of it.
+            double outer = lagoon + Mth.lerp(r2, 9, 13) * atollSize;
+            shape = new AtollSite(type, 0, 0, lagoon, outer, 0, Mth.lerp(r3, type.minDepth, type.maxDepth) * v,
+                    v, phase1, phase2, null, null);
+        }
+        int jitter = Math.max(0, (int) (atollCell / 2.0 - shape.extent()));
         int checks = 0;
         for (int attempt = 0; attempt < ATOLL_ATTEMPTS; attempt++) {
             int x = cx * atollCell + atollCell / 2 + random.nextInt(2 * jitter + 1) - jitter;
             int z = cz * atollCell + atollCell / 2 + random.nextInt(2 * jitter + 1) - jitter;
-            String biome = biomeAt(x, z);
-            for (AtollSite shape : shapes) {
-                if (shape == null || !shape.type().suits(biome) || !atollFits(shape, x, z, shape.type()::suits)) {
-                    continue;
-                }
-                AtollSite site = shape.at(x, z, shape.top());
-                if (!clearOfDoubles(site)) {
-                    reject("atoll_double");
-                    continue;
-                }
-                if (!site.setIn()) {
-                    return site;
-                }
-                if (checks++ >= SET_IN_CHECKS) {
-                    return null;
-                }
-                int top = groundFor(site);
-                if (top != Integer.MIN_VALUE) {
-                    return site.at(x, z, top);
-                }
+            if (!type.suits(biomeAt(x, z)) || !atollFits(shape, x, z, type::suits)) {
+                continue;
+            }
+            AtollSite site = shape.at(x, z, shape.top());
+            if (!clearOfDoubles(site)) {
+                reject("atoll_double");
+                continue;
+            }
+            if (checks++ >= SET_IN_CHECKS) {
+                return null;
+            }
+            int top = groundFor(site);
+            if (top != Integer.MIN_VALUE) {
+                return site.at(x, z, top);
             }
         }
         return null;

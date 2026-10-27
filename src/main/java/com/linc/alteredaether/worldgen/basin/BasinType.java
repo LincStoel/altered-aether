@@ -34,9 +34,7 @@ public enum BasinType {
      * Double atolls are landmarks on a grid of their own, and stand anywhere in the skyroot biomes.
      */
     ATOLL_LAGOON("atoll_lagoon", 0.35, 30, 42, 9, 13, Fluid.WATER, "aether:skyroot_grove", "aether:skyroot_forest",
-            "aether:skyroot_woodland", "aether_plateau"),
-    /** A Frozen Lakes lake: a single atoll's ring and lagoon, built high and frozen over. */
-    FROZEN_LAKE("frozen_lake", 1.0, 26, 38, 7, 11, Fluid.FROZEN, "frozen_lakes");
+            "aether:skyroot_woodland", "aether_plateau");
 
     public enum Fluid {
         WATER,
@@ -71,7 +69,7 @@ public enum BasinType {
 
     /** Built by the atoll density function on the atoll grid, rather than carved into the terrain. */
     public boolean atollShaped() {
-        return this == ATOLL_LAGOON || this == FROZEN_LAKE;
+        return this == ATOLL_LAGOON;
     }
 
     boolean suits(String biome) {

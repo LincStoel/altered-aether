@@ -1,5 +1,5 @@
-// 1.21.1	2026-10-27T07:01:45.7558693	Altered Aether tags
-963f3bec27a385f2b84a064074c07dfcec208cb3 data/aether/tags/worldgen/biome/is_aether.json
+// 1.21.1	2026-10-27T07:04:47.9299041	Altered Aether tags
+b032a16350ca6010469714eb13672f97361123fc data/aether/tags/worldgen/biome/is_aether.json
 7ec09b2e18ab43d296e2d76cad7fe25c11cda07f data/altered_aether/tags/block/breeze_spawnable_on.json
 ced54e3c0345a29f08205713ce269209a192e5b8 data/altered_aether/tags/block/charged_copper.json
 dc18018d6883948531de73415dfcbb7e51ca20b8 data/altered_aether/tags/block/familiar_spawnable_on.json

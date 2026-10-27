@@ -34,7 +34,6 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.DoublePlantBlock;
 import net.minecraft.world.level.block.KelpBlock;
 import net.minecraft.world.level.block.SeaPickleBlock;
-import net.minecraft.world.level.block.SnowLayerBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.DoubleBlockHalf;
 import net.minecraft.world.level.levelgen.feature.Feature;
@@ -56,8 +55,7 @@ import java.util.Map;
  * Then any open block beside water that won't itself hold water (a cave mouth, a dip in the rim, a hole in the floor)
  * is sealed with stone, so nothing can leak when the water first ticks. Frozen basins freeze only at the surface: a
  * column that would be ice lying straight on the bed is dug one block deeper, so there is always water under the ice.
- * Frozen lakes also get a light dusting of snow along their banks, and the holystone under every basin's bed is
- * richer in zanite and gravitite.
+ * The holystone under every basin's bed is richer in zanite and gravitite.
  *
  * <p>Lagoons get a reef (see {@link #colonies}): branching coral colonies built from a seeded grid, each chunk placing
  * the blocks of every colony that reaches into it.
@@ -66,15 +64,13 @@ public final class BasinFillFeature extends Feature<NoneFeatureConfiguration> {
     private static final TagKey<Block> AETHER_DIRT =
             TagKey.create(net.minecraft.core.registries.Registries.BLOCK, ResourceLocation.parse("aether:aether_dirt"));
     private static final long REEF_SALT = 0x7F4A7C15L, KIND_SALT = 0x632BE59BL, FLOOR_SALT = 0x1B873593L,
-            SNOW_SALT = 0x4CF5AD43L, GLOW_SALT = 0x2545F491L, COLONY_SALT = 0x3C6EF372L, SHORE_SALT = 0x5BE0CD19L;
+            GLOW_SALT = 0x2545F491L, COLONY_SALT = 0x3C6EF372L, SHORE_SALT = 0x5BE0CD19L;
     /** A lagoon's unbroken beach reaches this many blocks past the water; its patches reach on to the shore's end. */
     private static final int BEACH = 4;
     /** How far above the water a lagoon's shore is looked for: the crest, and the land trimmed back beyond it. */
     private static final int SHORE_RISE = 16;
     /** Coral colonies stand at most one per cell of this many blocks, and reach at most {@link #COLONY_REACH} out. */
     private static final int COLONY_CELL = 4, COLONY_REACH = 4;
-    /** How far above the water bank snow is looked for. */
-    private static final int BANK_RISE = 8;
     /** Single ores tried under a basin's bed, per 256 columns of water in this chunk. */
     private static final int ORE_TRIES = 24;
     /** The share of those that are gravitite rather than zanite. */
@@ -150,9 +146,6 @@ public final class BasinFillFeature extends Feature<NoneFeatureConfiguration> {
         if (!placed) {
             return false;
         }
-        if (site.type() == BasinType.FROZEN_LAKE) {
-            bankSnow(level, field, chunk, site, random, pos);
-        }
         if (site.type() == BasinType.ATOLL_LAGOON) {
             colonies(level, field, chunk, site);
             seabed(level, field, chunk, site, bottom, random);
@@ -176,42 +169,6 @@ public final class BasinFillFeature extends Feature<NoneFeatureConfiguration> {
             }
         }
         return true;
-    }
-
-    /**
-     * Snow in drifts along a frozen lake's banks: on open ground just beyond the shore, in patches rather than a
-     * ring, and thinning out with distance from the water.
-     */
-    private static void bankSnow(WorldGenLevel level, BasinField field, ChunkPos chunk, BasinSite site,
-                                 RandomSource random, BlockPos.MutableBlockPos pos) {
-        int water = site.waterLevel();
-        for (int x = chunk.getMinBlockX(); x <= chunk.getMaxBlockX(); x++) {
-            for (int z = chunk.getMinBlockZ(); z <= chunk.getMaxBlockZ(); z++) {
-                double reach = site.reach(x, z);
-                // Distance past the shore, as a fraction of the radius, on whichever side of the water this is.
-                double beyond = reach - 1;
-                // A river's banks are narrow, so its drifts reach as far out in blocks as a lake's.
-                if (beyond < 0 || beyond > (site.isRiver() ? 1.2 : 0.3)) {
-                    continue;
-                }
-                double patch = field.noise(SNOW_SALT, x, z, 5);
-                if (patch < 0.1 + beyond * 2 || random.nextFloat() < 0.35f) {
-                    continue;
-                }
-                for (int y = water + BANK_RISE; y > water; y--) {
-                    BlockState ground = level.getBlockState(pos.set(x, y - 1, z));
-                    if (ground.isAir()) {
-                        continue;
-                    }
-                    if (level.getBlockState(pos.set(x, y, z)).isAir()
-                            && Blocks.SNOW.defaultBlockState().canSurvive(level, pos)) {
-                        level.setBlock(pos, Blocks.SNOW.defaultBlockState()
-                                .setValue(SnowLayerBlock.LAYERS, patch > 0.5 ? 2 : 1), Block.UPDATE_CLIENTS);
-                    }
-                    break;
-                }
-            }
-        }
     }
 
     /**
@@ -341,13 +298,8 @@ public final class BasinFillFeature extends Feature<NoneFeatureConfiguration> {
     }
 
     static BlockState seal(BasinType type) {
-        Block holystone = BuiltInRegistries.BLOCK.getOptional(ResourceLocation.parse("aether:holystone"))
-                .orElse(Blocks.STONE);
-        return switch (type) {
-            case ATOLL_LAGOON -> holystone.defaultBlockState();
-            case FROZEN_LAKE -> block("aether:icestone", Blocks.PACKED_ICE).defaultBlockState();
-            default -> holystone.defaultBlockState();
-        };
+        return BuiltInRegistries.BLOCK.getOptional(ResourceLocation.parse("aether:holystone")).orElse(Blocks.STONE)
+                .defaultBlockState();
     }
 
     /** The floor under the water: soil becomes lake bed, and lagoons get quicksoil and their glowing thickets. */
@@ -372,7 +324,6 @@ public final class BasinFillFeature extends Feature<NoneFeatureConfiguration> {
         double patch = field.noise(FLOOR_SALT, floor.getX(), floor.getZ(), 6);
         Block bed = switch (site.type()) {
             case FROZEN_POOL -> block("aether:holystone", Blocks.STONE);
-            case FROZEN_LAKE -> patch > 0.4 ? Blocks.CLAY : patch < -0.4 ? Blocks.GRAVEL : block("aether:icestone", Blocks.PACKED_ICE);
             default -> patch > 0.45 ? Blocks.CLAY : patch < -0.5 ? block("aether:mossy_holystone", Blocks.MOSSY_COBBLESTONE)
                     : block("aether:aether_dirt", Blocks.DIRT);
         };

@@ -128,8 +128,7 @@ public final class RegionBinding {
             TerrainProbe hosts = atoll == null ? null : new TerrainProbe(source, randomState.sampler(), atoll.argument(),
                     atoll.weight(), noise.minY(), noise.minY() + noise.height());
             BasinField field = new BasinField(level.getSeed(), probe, hosts, vertical,
-                    atoll == null ? null : new BasinField.AtollSettings(atoll.surface(), atoll.frozenSurface(),
-                            atoll.verticalScale()));
+                    atoll == null ? null : new BasinField.AtollSettings(atoll.surface(), atoll.verticalScale()));
             carves.forEach(c -> c.binding().bind(field));
             atolls.forEach(a -> a.binding().bind(field));
             BasinField.put(level.dimension(), field);

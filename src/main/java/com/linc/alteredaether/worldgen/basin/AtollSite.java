@@ -24,14 +24,14 @@ import org.jetbrains.annotations.Nullable;
  * <p>An atoll lagoon is set into the land it stands in (see {@link #setIn()}): the ground is trimmed down to the
  * atoll's surface, and the atoll's own body, a shell sagging deepest under the lagoon, is joined smoothly to the
  * island beneath, so where the bowl goes deeper than the island the two underneaths blend instead of meeting in a
- * seam. A double atoll and a frozen lake stand on their own instead, in a moat of open sky, with a cone of rock
+ * seam. A double atoll stands on its own instead, in a moat of open sky, with a cone of rock
  * hanging underneath.
  *
  * <p>A ring site is the other shape: a band of land following a {@link RingPath}, so it may be oval and twist as it
  * goes, with a walkable shore along both edges and a river running round its crown. Set into the land, the island
  * carries on inside and outside it.
  *
- * @param type   the lagoon's basin type: an atoll lagoon, or the Frozen Lakes' frozen one
+ * @param type   the lagoon's basin type, always an atoll lagoon
  * @param lagoon radius of the lagoon floor where it meets the beach; on a ring, the ring's half width
  * @param outer  radius where the outer shore ends; on a ring, the furthest its outer edge strays from the centre
  * @param top    height of the crest's base; the lagoon's water stands two blocks below it
@@ -42,7 +42,7 @@ import org.jetbrains.annotations.Nullable;
 public record AtollSite(BasinType type, int x, int z, double lagoon, double outer, int top, double depth,
                         double vertical, double phase1, double phase2, @Nullable Inner inner, @Nullable RingPath ring,
                         double influence) {
-    /** The open-sky gap kept between a frozen lake's shore and whatever island surrounds it. */
+    /** The gap kept between a small atoll's land and a big one's. */
     static final double MOAT = 6;
     /** A double atoll's wider gap, so it stands alone in open sky. */
     static final double DOUBLE_MOAT = 22;
@@ -132,7 +132,7 @@ public record AtollSite(BasinType type, int x, int z, double lagoon, double oute
         if (setIn && distance > out) {
             return setInDensity(top + (2 - fall) * vertical, distance - out, 0, py, terrain);
         }
-        double surrounding = Math.min(terrain, 0.1 * (distance - out - (inner != null ? DOUBLE_MOAT : MOAT)));
+        double surrounding = Math.min(terrain, 0.1 * (distance - out - DOUBLE_MOAT));
         if (distance > out) {
             return surrounding;
         }

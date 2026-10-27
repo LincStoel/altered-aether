@@ -1,6 +1,6 @@
 {
   "type": "altered_aether:choose",
   "high": "altered_aether:terrain/dune_sheet",
-  "low": "altered_aether:terrain/island_shifted",
+  "low": "altered_aether:terrain/island",
   "mask": "altered_aether:terrain/dune_weight"
 }

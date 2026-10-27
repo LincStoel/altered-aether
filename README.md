@@ -29,7 +29,6 @@ switch in the config's `[compat]` section is on).
 | Tempest Peaks | the crags' sharpest summits: needle spires, branching native copper crystals with spidery roots of greening copper spreading through the rock, strike craters, storms |
 | Shattered Rift | an island torn apart: a sparse field of tall, blocky columns standing apart, with clouds of rubble hanging in the gaps between them |
 | Windswept Dunes | thin sheets of quicksoil winding high through the sky, rippled by long wind ridges; ruins, dead bushes |
-| Frozen Lakes | high icestone islands under aether dirt holding lakes frozen over at the surface, with snow on the banks |
 | Skyroot Cathedral | broad forest islands of giant skyroots standing shoulder to shoulder, joined by roots, layering bows and canopy bridges: hollow elders you can build in, tunnel giants, Tule masses, bow colonies and cathedral rings; trails, lamps and camps |
 | Nurselog Hollow | the cathedral's fallen elders, round its edges and now and then alone: colossal fallen logs with walkable hollows and root plates over craters, some flooded into muddy ponds, snags, giant stumps, lattice skeletons and rings of regrowth |
 | Blazing, Cascading, Flourishing and Vexing Archwood Groves | Ars Nouveau's archwood forests (need Ars Nouveau) |

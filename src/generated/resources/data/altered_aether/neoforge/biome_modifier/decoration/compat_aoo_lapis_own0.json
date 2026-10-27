@@ -6,10 +6,7 @@
     }
   ],
   "type": "neoforge:add_features",
-  "biomes": [
-    "altered_aether:frozen_crags",
-    "altered_aether:frozen_lakes"
-  ],
+  "biomes": "altered_aether:frozen_crags",
   "features": "altered_aether:compat/aoo_lapis",
   "step": "underground_ores"
 }

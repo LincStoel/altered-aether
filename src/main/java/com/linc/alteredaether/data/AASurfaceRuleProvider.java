@@ -59,7 +59,6 @@ public final class AASurfaceRuleProvider extends JsonDataProvider {
     private static final String TEMPEST = biome("tempest_peaks");
     private static final String RIFT = biome("shattered_rift");
     private static final String DUNES = biome("windswept_dunes");
-    private static final String LAKES = biome("frozen_lakes");
     private static final String CATHEDRAL = biome("skyroot_cathedral");
     private static final String NURSELOG = biome("nurselog_hollow");
 
@@ -118,8 +117,6 @@ public final class AASurfaceRuleProvider extends JsonDataProvider {
                         when(noiseBand("minecraft:calcite", 0.26, BIG), block(MOSSY_HOLYSTONE)),
                         block(HOLYSTONE))),
                 when(inBiome(DUNES), block(QUICKSOIL)),
-                // Bare aether dirt over icestone; the snow on the lake banks comes with the lakes.
-                when(inBiome(LAKES), block(DIRT)),
                 // Root litter: coarse dirt patches in the cathedral's shade, and wide worn ground between the fallen
                 // logs, with bare aether dirt in bands.
                 when(inBiome(CATHEDRAL), when(noiseBand("minecraft:surface", 0.44, BIG), substitute(COARSE_DIRT))),
@@ -145,8 +142,7 @@ public final class AASurfaceRuleProvider extends JsonDataProvider {
                         when(inBiome(CRAGS), seq(when(noiseBand("minecraft:surface_secondary", 0.18, BIG),
                                 substitute(CLORITE)), block(ICESTONE))),
                         when(inBiome(TEMPEST), seq(when(noiseBand("minecraft:surface_secondary", 0.18, BIG),
-                                block(BLACKSTONE)), block(DEEPSLATE))),
-                        when(inBiome(LAKES), block(ICESTONE)))),
+                                block(BLACKSTONE)), block(DEEPSLATE))))),
                 // Forested and gentler islands only on true cliffs, so ordinary lumpy ground stays green.
                 when(steep(5), when(inBiome(RIFT, CATHEDRAL, NURSELOG, grove("blazing"), grove("cascading"), grove("flashing"),
                         grove("flourishing"), grove("vexing")), holystoneRock)));
@@ -188,11 +184,7 @@ public final class AASurfaceRuleProvider extends JsonDataProvider {
                         block(DEEPSLATE))),
                 when(inBiome(RIFT), seq(
                         when(noiseBand("minecraft:surface_secondary", 0.18, BIG), block(MOSSY_HOLYSTONE)),
-                        block(HOLYSTONE))),
-                // Icestone through and through, with the odd band of holystone.
-                when(inBiome(LAKES), seq(
-                        when(noiseBand("minecraft:calcite", 0.26, BIG), block(HOLYSTONE)),
-                        block(ICESTONE))));
+                        block(HOLYSTONE))));
     }
 
     /** Holystone layers with mossy and icy seams; the pattern repeats every 24 blocks. */

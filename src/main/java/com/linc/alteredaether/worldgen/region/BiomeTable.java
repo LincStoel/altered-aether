@@ -49,7 +49,6 @@ public final class BiomeTable {
     public static final String TEMPEST = "altered_aether:tempest_peaks";
     public static final String RIFT = "altered_aether:shattered_rift";
     public static final String DUNES = "altered_aether:windswept_dunes";
-    public static final String FROZEN_LAKES = "altered_aether:frozen_lakes";
     public static final String CATHEDRAL = "altered_aether:skyroot_cathedral";
     public static final String NURSELOG = "altered_aether:nurselog_hollow";
     public static final String BLAZING = "altered_aether:blazing_archwood_grove";
@@ -120,17 +119,13 @@ public final class BiomeTable {
             // Narrow on the slow temperature axis, wide on the fast humidity axis: bigger, more contiguous patches
             // than a balanced box of the same area. 4.8% of the region, all on the dry side.
             rect(0.21f, 0.41f, -0.68f, -0.08f, DUNES),
-            // The cold middle, between the flashing and cascading groves: high frozen lakes. Uncommon, but ahead of the
-            // crags, peaks and rift (the middle of the humidity range is far denser than its tails). Only big enough
-            // for a few lakes at a time; there are no rings to make room for.
-            rect(-0.45f, -0.29f, -0.13f, 0.13f, FROZEN_LAKES),
-            // Temperate and humid, in the open middle between the frozen lakes and the vexing grove.
+            // Temperate and humid, in the open middle below the vexing grove.
             rect(-0.44f, -0.04f, 0.24f, 0.56f, CATHEDRAL),
-            // The same box grown by 0.05 on every side. The cathedral above keeps its window, so what is left is a
+            // The same box grown by 0.07 on every side. The cathedral above keeps its window, so what is left is a
             // frame: walking out of the cathedral, the climate passes through its fallen elders first.
-            rect(-0.49f, 0.01f, 0.19f, 0.61f, NURSELOG),
+            rect(-0.51f, 0.03f, 0.17f, 0.63f, NURSELOG),
             // A cooler, drier solo window, for the occasional dead colony with no living one beside it.
-            rect(-0.58f, -0.46f, -0.42f, -0.22f, NURSELOG),
+            rect(-0.60f, -0.44f, -0.44f, -0.20f, NURSELOG),
             // The archwood groves hold the four corners and the humid middle. Humidity rarely passes +/-0.4 here (its
             // 5% tails), so each window reaches well inside that: about 2% of the island tier apiece. The flashing
             // grove gives up a corner to the solo nurselog, so it reaches a little further toward the middle.

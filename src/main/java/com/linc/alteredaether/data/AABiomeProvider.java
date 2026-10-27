@@ -59,7 +59,6 @@ public final class AABiomeProvider extends JsonDataProvider {
         biome("tempest_peaks", tempestPeaks());
         biome("shattered_rift", shatteredRift());
         biome("windswept_dunes", windsweptDunes());
-        biome("frozen_lakes", frozenLakes());
         biome("skyroot_cathedral", skyrootCathedral());
         biome("nurselog_hollow", nurselogHollow());
 
@@ -217,32 +216,6 @@ public final class AABiomeProvider extends JsonDataProvider {
         JsonObject costs = new JsonObject();
         biome.json.add("spawn_costs", costs);
         return biome.cost("aether:whirlwind", 0.4, 0.1).cost("aether:zephyr", 0.6, 0.16);
-    }
-
-    /**
-     * High, cold islands of icestone under aether dirt, holding frozen lakes built like the atolls' lagoons, with
-     * snow along their banks. The ground is bare dirt, so it keeps the crags' cold-hardy
-     * wildlife and their ores, which also replace icestone.
-     */
-    private BiomeJson frozenLakes() {
-        return base()
-                .climate(-0.3f, 0.6f)
-                .drop(BARREN).drop(FOREST_TREES)
-                .drop("aether:water_lake")
-                .effect("fog_color", 13363950).effect("foliage_color", 9418436).effect("grass_color", 10470345)
-                .sky(12376047).effect("water_color", 4025996).effect("water_fog_color", 1981520)
-                .particle(BiomeJson.particleType("minecraft:snowflake"), 0.0015f)
-                .add(BiomeJson.LOCAL, AADecorationProvider.CRAG_BOULDER, AADecorationProvider.ICESTONE_SHARD)
-                .add(BiomeJson.ORES, AADecorationProvider.CRAG_ORES + "aether_dirt", AADecorationProvider.CRAG_ORES + "ambrosium", AADecorationProvider.CRAG_ORES + "zanite",
-                        AADecorationProvider.CRAG_ORES + "gravitite", AADecorationProvider.CRAG_ORES + "gravitite_buried")
-                .add(BiomeJson.TOP, AADecorationProvider.CRAG_CLOUD)
-                .spawners("creature",
-                        spawner("aether:aerbunny", 12, 2, 3),
-                        spawner("aether:sheepuff", 10, 2, 3))
-                .spawners("aether:aether_surface_monster",
-                        spawner("aether:blue_swet", 20, 1, 1),
-                        spawner("aether:whirlwind", 3, 1, 1))
-                .dropCost("aether:aechor_plant", "aether:golden_swet");
     }
 
     /**

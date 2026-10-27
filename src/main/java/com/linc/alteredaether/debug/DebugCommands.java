@@ -412,7 +412,7 @@ public final class DebugCommands {
                 AlteredAether.LOGGER.info("Worldgen benchmark: centred on {} at {} (extent {})", type.id(),
                         origin.toShortString(), String.format("%.0f", site.extent()));
             } else if (biome != null && biome.startsWith("atoll:")) {
-                // The nearest atoll-grid site of a type (atoll_lagoon or frozen_lake), optionally "ring" or "double"
+                // The nearest atoll-grid site of a type (atoll_lagoon), optionally "ring" or "double"
                 // (atolls only; doubles have a grid of their own).
                 String[] spec = biome.substring(6).split("/");
                 BasinType type = BasinType.valueOf(spec[0].toUpperCase(java.util.Locale.ROOT));

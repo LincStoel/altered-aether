@@ -161,21 +161,6 @@
                           }
                         ]
                       }
-                    },
-                    {
-                      "type": "minecraft:condition",
-                      "if_true": {
-                        "type": "minecraft:biome",
-                        "biome_is": [
-                          "altered_aether:frozen_lakes"
-                        ]
-                      },
-                      "then_run": {
-                        "type": "minecraft:block",
-                        "result_state": {
-                          "Name": "aether:icestone"
-                        }
-                      }
                     }
                   ]
                 }
@@ -712,24 +697,6 @@
             "if_true": {
               "type": "minecraft:biome",
               "biome_is": [
-                "altered_aether:frozen_lakes"
-              ]
-            },
-            "then_run": {
-              "type": "minecraft:block",
-              "result_state": {
-                "Name": "aether:aether_dirt",
-                "Properties": {
-                  "double_drops": "true"
-                }
-              }
-            }
-          },
-          {
-            "type": "minecraft:condition",
-            "if_true": {
-              "type": "minecraft:biome",
-              "biome_is": [
                 "altered_aether:skyroot_cathedral"
               ]
             },
@@ -1173,44 +1140,6 @@
                   "Properties": {
                     "double_drops": "true"
                   }
-                }
-              }
-            ]
-          }
-        },
-        {
-          "type": "minecraft:condition",
-          "if_true": {
-            "type": "minecraft:biome",
-            "biome_is": [
-              "altered_aether:frozen_lakes"
-            ]
-          },
-          "then_run": {
-            "type": "minecraft:sequence",
-            "sequence": [
-              {
-                "type": "minecraft:condition",
-                "if_true": {
-                  "type": "minecraft:noise_threshold",
-                  "max_threshold": 4.0,
-                  "min_threshold": 0.26,
-                  "noise": "minecraft:calcite"
-                },
-                "then_run": {
-                  "type": "minecraft:block",
-                  "result_state": {
-                    "Name": "aether:holystone",
-                    "Properties": {
-                      "double_drops": "true"
-                    }
-                  }
-                }
-              },
-              {
-                "type": "minecraft:block",
-                "result_state": {
-                  "Name": "aether:icestone"
                 }
               }
             ]

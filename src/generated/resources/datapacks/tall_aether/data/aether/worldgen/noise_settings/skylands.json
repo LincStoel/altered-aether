@@ -51,7 +51,6 @@
                 },
                 "mask": "altered_aether:terrain/plateau_weight"
               },
-              "frozen_surface": 88,
               "surface": 40,
               "vertical_scale": 1.0,
               "weight": "altered_aether:terrain/region_mask"

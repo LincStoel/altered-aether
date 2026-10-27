@@ -122,8 +122,7 @@ public final class AACommonConfig {
     public static final BooleanValue DISABLE_OVERWORLD_ARCHWOOD;
 
     public static final List<String> BASIN_TYPES =
-            List.of("pool", "deep_lake", "cascading_lake", "frozen_pool", "poison_pool", "atoll_lagoon",
-                    "frozen_lake");
+            List.of("pool", "deep_lake", "cascading_lake", "frozen_pool", "poison_pool", "atoll_lagoon");
     public static final List<String> FEATURE_FAMILIES =
             List.of("boulders", "copper_spikes", "aerclouds", "rift_debris", "totems", "ruins", "craters",
                     "dried_ghast_fields", "snow_drifts", "hanging_chains", "vegetation");
@@ -167,7 +166,7 @@ public final class AACommonConfig {
         DUNE_HEIGHT = b.comment("Windswept Dunes ridge height multiplier.").defineInRange("dune_height", 1.0, 0.0, 3.0);
         DUNE_WIND_DIRECTION = b.comment("Prevailing wind over the dunes, in degrees clockwise from north.")
                 .defineInRange("dune_wind_direction", 60.0, 0.0, 360.0);
-        ATOLL_SIZE = b.comment("Atoll and Frozen Lakes lake size multiplier.").defineInRange("atoll_size", 1.0, 0.5, 2.0);
+        ATOLL_SIZE = b.comment("Atoll size multiplier.").defineInRange("atoll_size", 1.0, 0.5, 2.0);
         LANDMARK_RARITY = b.comment("Multiplier on how rare landmarks are. Higher is rarer, 0 disables them.")
                 .defineInRange("landmark_rarity", 1.0, 0.0, 10.0);
         b.pop();

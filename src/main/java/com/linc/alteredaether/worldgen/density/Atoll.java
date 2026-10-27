@@ -28,33 +28,28 @@ import net.minecraft.world.level.levelgen.DensityFunction;
  * double atoll stands alone in a moat of open sky (see {@link AtollSite}). Sites come from the world's
  * {@link BasinField}, which reads their height off {@code argument}; {@code weight} is the region mask, which the field
  * uses to keep every atoll wholly inside Altered Aether's region, and {@code surface} is the height a double atoll
- * stands at where there are no islands round it to match. The Frozen Lakes' lakes are built like double atolls,
- * around {@code frozen_surface}.
+ * stands at where there are no islands round it to match.
  */
 public final class Atoll implements DensityFunction {
     public static final MapCodec<Atoll> MAP_CODEC = RecordCodecBuilder.mapCodec(i -> i.group(
             DensityFunction.HOLDER_HELPER_CODEC.fieldOf("argument").forGetter(Atoll::argument),
             DensityFunction.HOLDER_HELPER_CODEC.fieldOf("weight").forGetter(Atoll::weight),
             Codec.INT.fieldOf("surface").forGetter(Atoll::surface),
-            Codec.INT.fieldOf("frozen_surface").forGetter(Atoll::frozenSurface),
             Codec.doubleRange(0.1, 4).optionalFieldOf("vertical_scale", 1.0).forGetter(Atoll::verticalScale)
-    ).apply(i, (argument, weight, surface, frozen, vertical) -> new Atoll(argument, weight, surface, frozen,
-            vertical, null)));
+    ).apply(i, (argument, weight, surface, vertical) -> new Atoll(argument, weight, surface, vertical, null)));
     public static final KeyDispatchDataCodec<Atoll> CODEC = KeyDispatchDataCodec.of(MAP_CODEC);
 
     private final DensityFunction argument;
     private final DensityFunction weight;
     private final int surface;
-    private final int frozenSurface;
     private final double verticalScale;
     private final BasinCarve.Binding binding;
 
-    private Atoll(DensityFunction argument, DensityFunction weight, int surface, int frozenSurface,
-                  double verticalScale, BasinCarve.Binding binding) {
+    private Atoll(DensityFunction argument, DensityFunction weight, int surface, double verticalScale,
+                  BasinCarve.Binding binding) {
         this.argument = argument;
         this.weight = weight;
         this.surface = surface;
-        this.frozenSurface = frozenSurface;
         this.verticalScale = verticalScale;
         this.binding = binding;
     }
@@ -69,10 +64,6 @@ public final class Atoll implements DensityFunction {
 
     public int surface() {
         return surface;
-    }
-
-    public int frozenSurface() {
-        return frozenSurface;
     }
 
     public double verticalScale() {
@@ -100,7 +91,7 @@ public final class Atoll implements DensityFunction {
 
     @Override
     public DensityFunction mapAll(Visitor visitor) {
-        return visitor.apply(new Atoll(argument.mapAll(visitor), weight.mapAll(visitor), surface, frozenSurface,
+        return visitor.apply(new Atoll(argument.mapAll(visitor), weight.mapAll(visitor), surface,
                 verticalScale, binding != null ? binding : new BasinCarve.Binding()));
     }
 

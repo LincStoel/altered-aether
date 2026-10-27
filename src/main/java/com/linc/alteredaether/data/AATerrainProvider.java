@@ -77,7 +77,7 @@ public final class AATerrainProvider extends JsonDataProvider {
     /** Density functions whose shape depends on height, and so are overridden by the tall pack. */
     private static final Set<String> HEIGHT_DEPENDENT =
             Set.of("crag_3d_noise", "jag", "crags", "tempest", "tempest_spires", "dune_ridges", "dune_centre", "dune_sheet",
-                    "plateau", "plateau_terraced", "island", "island_shift", "tall_base_3d_noise", "rift",
+                    "plateau", "plateau_terraced", "island", "tall_base_3d_noise", "rift",
                     "grove_land", "grove_land_broken");
 
     private final HeightMode mode;
@@ -241,15 +241,10 @@ public final class AATerrainProvider extends JsonDataProvider {
         df("dune_sheet", clamp(min(mul(0.125, add(summit, mul(-1.0, Df.y()))),
                 mul(1.0 / 6, add(Df.y(), mul(-1.0, underside)))), -1.0, 1.0));
 
-        // The Frozen Lakes' islands rise, on a box over its climate window.
-        df("frozen_lakes_mask", climateBox(-0.45, -0.29, -0.13, 0.13));
-        df("island_shift", flatCache(mul(terrain("region_mask"),
-                mul(mode.height(24), terrain("frozen_lakes_mask")))));
-
         // Skyroot Cathedral and Nurselog Hollow: broad, gentle forest islands for the giants to stand on, in place of
         // the Aether's scattered ones. The mask covers the nurselog frame (and so the cathedral inside it) and the
         // nurselog's own solo window.
-        df("grove_mask", max(climateBox(-0.49, 0.01, 0.19, 0.61), climateBox(-0.58, -0.46, -0.42, -0.22)));
+        df("grove_mask", max(climateBox(-0.51, 0.03, 0.17, 0.63), climateBox(-0.60, -0.44, -0.44, -0.20)));
         // Broad swells, and over them low mounds and hollows a few dozen blocks across, so the forest floor is never
         // a lawn.
         JsonObject groveSummit = add(add(mode.y(44), mul(mode.height(7), shiftedNoise(NS + "grove_roll", 1.0, 0.0))),
@@ -369,12 +364,8 @@ public final class AATerrainProvider extends JsonDataProvider {
         }
         // The island expression gets a file of its own, so every blend below refers to it rather than copying it.
         df("island", island);
-        // The island raised under the frozen lakes, then given over to the dune sheets.
-        JsonObject shifted = Df.type(NS + "shift_y");
-        shifted.add("argument", terrain("island"));
-        shifted.add("offset", terrain("island_shift"));
-        df("island_shifted", shifted);
-        df("island_dunes", Df.choose(terrain("dune_weight"), terrain("island_shifted"), terrain("dune_sheet")));
+        // The island given over to the dune sheets.
+        df("island_dunes", Df.choose(terrain("dune_weight"), terrain("island"), terrain("dune_sheet")));
         // The grove islands broken apart where the Nurselog Hollow's have drifted (see BreakField).
         JsonObject broken = Df.type(NS + "grove_break");
         broken.add("argument", terrain("grove_land"));
@@ -390,9 +381,8 @@ public final class AATerrainProvider extends JsonDataProvider {
         atoll.add("argument", Df.choose(terrain("plateau_weight"), withCrags, terrain("plateau_terraced")));
         atoll.add("weight", terrain("region_mask"));
         // Set-in atolls and double atolls take their height from the islands round them; this is a double atoll's
-        // where there are none. The frozen lakes stand high.
+        // where there are none.
         atoll.addProperty("surface", mode.y(40));
-        atoll.addProperty("frozen_surface", mode.y(88));
         atoll.addProperty("vertical_scale", vertical());
         blend.add("argument", atoll);
         // Basins are cut last, outside the interpolation, so their bowls and water lines are exact to the block.
