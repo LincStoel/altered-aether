@@ -3,6 +3,13 @@
   "config": {
     "burial": 0.0,
     "floating": true,
+    "ore": {
+      "type": "minecraft:simple_state_provider",
+      "state": {
+        "Name": "aether:gravitite_ore"
+      }
+    },
+    "ore_chance": 0.2,
     "radius": {
       "type": "minecraft:uniform",
       "max_inclusive": 3,

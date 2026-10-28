@@ -136,6 +136,15 @@ public final class AAOptionalDecorationProvider extends FeatureData {
                 Placement.biome()), "oreganized");
         addFeature("ore/silver", biomes("frozen_crags", "shattered_rift"), "underground_ores", "oreganized");
 
+        // Oreganized's lead, in the roots hanging under the crags (tall y -64 to -10).
+        configured("ore/crag_lead", "minecraft:ore", ore("oreganized:deepslate_lead_ore", 9, 0.0, CRAG_ROCK),
+                "oreganized");
+        placed("ore/crag_lead", "ore/crag_lead", Placement.list(Placement.count(10), Placement.inSquare(),
+                Placement.heightRange("uniform", Placement.aboveBottom(0), Placement.absolute(36)),
+                Placement.biome()), "oreganized");
+        addFeature("ore/crag_lead", biomes("frozen_crags"), "underground_ores", "oreganized");
+
+
         // Aether Overworld Ores' iron, as large veins in the dunes' ordinary holystone.
         configured("ore/dune_iron", "minecraft:ore", ore("aether_overworld_ores:holystone_iron_ore", 33, 0.0,
                 HOLYSTONE_ORES), "aether_overworld_ores");

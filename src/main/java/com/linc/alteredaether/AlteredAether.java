@@ -14,6 +14,7 @@
  */
 package com.linc.alteredaether;
 
+import com.linc.alteredaether.compat.CreateCompat;
 import com.linc.alteredaether.config.AAClientConfig;
 import com.linc.alteredaether.config.AACommonConfig;
 import com.linc.alteredaether.registry.AARegistries;
@@ -23,6 +24,7 @@ import com.mojang.logging.LogUtils;
 import net.minecraft.resources.ResourceLocation;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
+import net.neoforged.fml.ModList;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.config.ModConfig;
 import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
@@ -38,6 +40,9 @@ public final class AlteredAether {
         container.registerConfig(ModConfig.Type.COMMON, AACommonConfig.SPEC);
         container.registerConfig(ModConfig.Type.CLIENT, AAClientConfig.SPEC);
         AARegistries.register(modBus);
+        if (ModList.get().isLoaded(CreateCompat.MOD)) {
+            CreateCompat.register(modBus);
+        }
         modBus.addListener(this::commonSetup);
     }
 

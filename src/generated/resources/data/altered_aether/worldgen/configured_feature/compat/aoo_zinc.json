@@ -3,6 +3,10 @@
     {
       "type": "altered_aether:mod_enabled",
       "modid": "aether_overworld_ores"
+    },
+    {
+      "type": "altered_aether:mod_enabled",
+      "modid": "create"
     }
   ],
   "type": "minecraft:ore",

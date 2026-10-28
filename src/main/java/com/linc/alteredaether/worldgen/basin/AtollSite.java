@@ -103,6 +103,27 @@ public record AtollSite(BasinType type, int x, int z, double lagoon, double oute
      */
     static final double RIVER = 0.4;
 
+    /**
+     * Where a chest may lie on the bed, as {x, z}: the middle of a lagoon, where it is deepest; on a ring, a point
+     * along its river; on a double atoll, the water between the islet and the inner ring, the heart of the ring within
+     * a ring (or the outer lagoon, should that water be too narrow).
+     */
+    public int[] treasure() {
+        if (ring != null) {
+            double[] point = ring.pointAt(phase1 / Mth.TWO_PI);
+            return new int[]{x + Mth.floor(point[0]), z + Mth.floor(point[1])};
+        }
+        if (inner != null) {
+            double bearing = inner.channel() + inner.apart() / 2;
+            double in = lagoon * BasinSite.wobble(bearing, phase1, phase2);
+            double centre = in * inner.ring();
+            double gap = centre - inner.width() - inner.islet();
+            double r = gap >= 3 ? inner.islet() + gap / 2 : (centre + inner.width() + in) / 2;
+            return new int[]{x + Mth.floor(Math.cos(bearing) * r), z + Mth.floor(Math.sin(bearing) * r)};
+        }
+        return new int[]{x, z};
+    }
+
     /** The lagoon's water, or the ring's river, for the basin fill. */
     public BasinSite lagoonBasin() {
         if (ring != null) {

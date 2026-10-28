@@ -58,22 +58,12 @@
     "aether:whirlwind": {
       "charge": 0.4,
       "energy_budget": 0.1
-    },
-    "aether:zephyr": {
-      "charge": 0.6,
-      "energy_budget": 0.16
     }
   },
   "spawners": {
     "aether:aether_aerwhale": [],
     "aether:aether_darkness_monster": [],
     "aether:aether_sky_monster": [
-      {
-        "type": "aether:zephyr",
-        "maxCount": 1,
-        "minCount": 1,
-        "weight": 20
-      },
       {
         "type": "altered_aether:squall",
         "maxCount": 1,

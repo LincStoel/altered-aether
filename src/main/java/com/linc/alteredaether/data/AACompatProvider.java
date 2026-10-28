@@ -72,6 +72,8 @@ public final class AACompatProvider extends FeatureData {
      * lushest grove, gold and redstone under the golden light, lapis in the cold, zinc on the crags and plateau,
      * nickel in the dunes. The stock placements are removed from the skyroot biomes, and each curated ore is placed
      * again in its own biomes at the pack's own counts and heights (sized up where the vein is meant to be worth finding).
+     * The pack's non-vanilla ores are only for other mods' recipes, so each is placed only when a mod that uses it is
+     * installed (see ORE_USERS).
      */
     private void aetherOverworldOres() {
         List<String> all = List.of("coal", "copper", "diamond", "emerald", "gold", "iron", "lapis", "lead", "nickel",
@@ -118,6 +120,19 @@ public final class AACompatProvider extends FeatureData {
      * Writes one ore's features and adds it to its biomes: {@code own} lists need only the ore mod, {@code groves}
      * also Ars Nouveau, and {@code deepAether} also Deep Aether.
      */
+    /** Which mod a non-vanilla ore of the pack is placed for; the vanilla ones need no other mod. */
+    private static final Map<String, String> ORE_USERS = Map.of("zinc", "create", "nickel", "oritech");
+
+    /** The mods a curated ore's files need: the ore pack, the mod the ore is for, and any others given. */
+    private static String[] requires(Ore ore, String... more) {
+        List<String> mods = new ArrayList<>(List.of(AOO));
+        if (ORE_USERS.containsKey(ore.name())) {
+            mods.add(ORE_USERS.get(ore.name()));
+        }
+        mods.addAll(List.of(more));
+        return mods.toArray(String[]::new);
+    }
+
     private void curate(Ore ore, List<List<String>> own, List<List<String>> groves, List<List<String>> deepAether) {
         // Ores placed in the crags and peaks must also replace their rock, not only holystone. Both tags include
         // holystone, so the same ore still forms in the plateau and the groves.
@@ -127,21 +142,22 @@ public final class AACompatProvider extends FeatureData {
             default -> HOLYSTONE;
         };
         configured("compat/aoo_" + ore.name(), "minecraft:ore", FeatureData.ore(ore.state(), ore.size(), ore.discard(),
-                replaces), AOO);
+                replaces), requires(ore));
         placed("compat/aoo_" + ore.name(), "compat/aoo_" + ore.name(), Placement.list(Placement.count(ore.count()),
-                Placement.inSquare(), Placement.heightRange(ore.shape(), ore.min(), ore.max()), Placement.biome()), AOO);
+                Placement.inSquare(), Placement.heightRange(ore.shape(), ore.min(), ore.max()), Placement.biome()),
+                requires(ore));
         String name = "compat/aoo_" + ore.name();
         int n = 0;
         for (List<String> biomes : own) {
-            addFeature(name + "_own" + n++, name, biomes, "underground_ores", AOO);
+            addFeature(name + "_own" + n++, name, biomes, "underground_ores", requires(ore));
         }
         n = 0;
         for (List<String> biomes : groves) {
-            addFeature(name + "_grove" + n++, name, biomes, "underground_ores", AOO, ARS);
+            addFeature(name + "_grove" + n++, name, biomes, "underground_ores", requires(ore, ARS));
         }
         n = 0;
         for (List<String> biomes : deepAether) {
-            addFeature(name + "_deep" + n++, name, biomes, "underground_ores", AOO, DEEP);
+            addFeature(name + "_deep" + n++, name, biomes, "underground_ores", requires(ore, DEEP));
         }
     }
 

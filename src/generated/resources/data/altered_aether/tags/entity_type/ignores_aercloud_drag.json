@@ -1,0 +1,13 @@
+{
+  "replace": false,
+  "values": [
+    "aether:zephyr",
+    "altered_aether:squall",
+    "aether:aerwhale",
+    "altered_aether:tamed_aerwhale",
+    {
+      "id": "mowziesmobs:naga",
+      "required": false
+    }
+  ]
+}

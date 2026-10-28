@@ -225,6 +225,10 @@ public final class AABlockProvider extends JsonDataProvider {
         lang.put("message." + AlteredAether.MOD_ID + ".aerwhale.wander", "%s will roam freely");
         lang.put("message." + AlteredAether.MOD_ID + ".aerwhale.follow", "%s will follow you");
         lang.put("message." + AlteredAether.MOD_ID + ".aerwhale.not_owner", "This aerwhale answers to someone else");
+        lang.put("key." + AlteredAether.MOD_ID + ".aerwhale_dive", "Dive Aerwhale");
+        // Create's JEI page for bulk enchanting (see compat/jei); Create names the page's fan under its own namespace
+        lang.put(AlteredAether.MOD_ID + ".recipe.fan_enchanting", "Bulk Enchanting");
+        lang.put("create.recipe.fan_enchanting.fan", "Fan behind Ambrosium Campfire");
         lang.put("key." + AlteredAether.MOD_ID + ".aerwhale_eject", "Leap off Aerwhale");
         lang.put("key.categories." + AlteredAether.MOD_ID, "Altered Aether");
         lang.put("subtitles." + AlteredAether.MOD_ID + ".storm.incoming_lightning", "Lightning gathers");

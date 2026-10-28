@@ -74,10 +74,6 @@
       "charge": 0.4,
       "energy_budget": 0.1
     },
-    "aether:valkyrie": {
-      "charge": 0.9,
-      "energy_budget": 0.03
-    },
     "aether:whirlwind": {
       "charge": 0.4,
       "energy_budget": 0.1
@@ -149,14 +145,7 @@
       }
     ],
     "misc": [],
-    "monster": [
-      {
-        "type": "aether:valkyrie",
-        "maxCount": 3,
-        "minCount": 2,
-        "weight": 1
-      }
-    ],
+    "monster": [],
     "underground_water_creature": [],
     "water_ambient": [],
     "water_creature": []

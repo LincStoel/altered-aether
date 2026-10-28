@@ -59,7 +59,6 @@ import net.minecraft.world.entity.HasCustomInventoryScreen;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.MoverType;
 import net.minecraft.world.entity.OwnableEntity;
-import net.minecraft.world.entity.PlayerRideableJumping;
 import net.minecraft.world.entity.Pose;
 import net.minecraft.world.entity.Saddleable;
 import net.minecraft.world.entity.ai.attributes.Attributes;
@@ -109,7 +108,7 @@ import java.util.function.BooleanSupplier;
  * Aether's Aerwhale Saddle is just another saddle; with Deep Aether's, a tamed aerwhale turns back into a wild one.
  */
 public class TamedAerwhale extends Aerwhale
-        implements OwnableEntity, Saddleable, HasCustomInventoryScreen, PlayerRideableJumping, ContainerListener {
+        implements OwnableEntity, Saddleable, HasCustomInventoryScreen, ContainerListener {
     private static final EntityDataAccessor<Optional<UUID>> DATA_OWNER =
             SynchedEntityData.defineId(TamedAerwhale.class, EntityDataSerializers.OPTIONAL_UUID);
     private static final EntityDataAccessor<Boolean> DATA_SADDLED =
@@ -159,9 +158,17 @@ public class TamedAerwhale extends Aerwhale
      */
     private static final double FOLLOW_START = 12;
     private static final double FOLLOW_STOP = 6;
-    /** How long a hovering whale takes to bob up and back down, in ticks, and how fast it rises at most. */
-    private static final double BOB_PERIOD = 100;
-    private static final double BOB_SPEED = 0.012;
+    /**
+     * The slowest it swims, in blocks a tick (a block a second). Like a shark it never holds still: with nowhere to go
+     * it swims slowly on, and held back below this, by its rider or by something in the way, it sinks.
+     */
+    public static final double MIN_SWIM_SPEED = 0.05;
+    /** How fast it sinks at most when it's making no headway at all. */
+    private static final double SINK_SPEED = 0.08;
+    /** The tightest circle it turns in when it isn't ridden, in blocks: too big to pivot on the spot. */
+    public static final double MIN_TURN_RADIUS = 4;
+    /** How far beyond its body someone can be and still count as overhead: on its back, or about to land there. */
+    private static final double OVERHEAD_REACH = 3;
     /**
      * The saddle's seats, the pilot's first: on the broad back of the Aether's model, and higher on its b1.7.3 model,
      * which floats above its hitbox. They match the seat pads of {@code AerwhaleSaddleLayer}.
@@ -225,7 +232,9 @@ public class TamedAerwhale extends Aerwhale
     private double diveDistance;
     /** How fast it is going along the dive, gathering speed from what it was flying at. */
     private double diveSpeed;
-    /** Kept on both sides: the server to refuse a dive too soon, the client to grey out the jump bar. */
+    /** How fast it's sinking for want of headway, wherever it's flown from. */
+    private double sink;
+    /** Kept on both sides: the server to refuse a dive too soon, the client to refuse one in the dive key. */
     private int diveCooldown;
     /** How fast it's turning and pitching under the rider, in degrees a tick. */
     private float yawSpeed;
@@ -853,16 +862,34 @@ public class TamedAerwhale extends Aerwhale
             fly(rider, input);
         } else {
             if (isControlledByLocalInstance()) {
+                Vec3 from = position();
                 move(MoverType.SELF, getDeltaMovement());
                 setDeltaMovement(getDeltaMovement().scale(0.91));
+                sinkWithoutHeadway(from);
             }
             calculateEntityAnimation(false);
         }
     }
 
     /**
-     * Flight under a rider: forward speeds up toward the cruising speed, back brakes, letting go glides to a slow stop.
-     * The whale pitches toward where the rider looks, which is how it climbs and descends, and sidesteps with strafe.
+     * Like a shark it needs headway to stay up: when it moves less than it swims at its slowest, braked or held up
+     * against something, it sinks, gathering speed gently, though never below the floor above the void. Moving
+     * straight up or down is no headway.
+     */
+    private void sinkWithoutHeadway(Vec3 from) {
+        double headway = position().subtract(from).horizontalDistance();
+        double wanted = isNoAi() ? 0 : SINK_SPEED * Mth.clamp(1 - headway / (MIN_SWIM_SPEED * 0.75), 0, 1);
+        sink += (wanted - sink) * 0.05;
+        double drop = Math.min(sink, getY() - floorY());
+        if (drop > 1.0E-4) {
+            move(MoverType.SELF, new Vec3(0, -drop, 0));
+        }
+    }
+
+    /**
+     * Flight under a rider: forward speeds up toward the cruising speed, back brakes, letting go glides down to the
+     * slowest it swims. The whale pitches toward where the rider looks, which is how it climbs and descends, and
+     * sidesteps with strafe. Braked below its slowest it starts to sink.
      */
     private void fly(Player rider, Vec3 input) {
         if (dive != null) {
@@ -883,8 +910,10 @@ public class TamedAerwhale extends Aerwhale
             cruise += (top * input.z - cruise) * 0.04;
         } else if (input.z < 0) {
             cruise = Math.max(0, cruise - 0.03);
+        } else if (cruise > MIN_SWIM_SPEED) {
+            cruise = Math.max(MIN_SWIM_SPEED, cruise * 0.99);
         } else {
-            cruise *= 0.99;
+            cruise += (MIN_SWIM_SPEED - cruise) * 0.04;
         }
         if (cruise > top) {
             cruise = Math.max(top, cruise - 0.01);
@@ -899,10 +928,12 @@ public class TamedAerwhale extends Aerwhale
         }
         Vec3 motion = getDeltaMovement().lerp(target, 0.2);
         setDeltaMovement(motion);
+        Vec3 from = position();
         move(MoverType.SELF, motion);
         if (horizontalCollision) {
             cruise *= 0.5;
         }
+        sinkWithoutHeadway(from);
         setXRot(pilotPitch);
         calculateEntityAnimation(false);
     }
@@ -932,15 +963,16 @@ public class TamedAerwhale extends Aerwhale
     }
 
     /** A dive needs the reins, a clear deck and a breath between dives. */
-    @Override
-    public boolean canJump() {
+    public boolean canDive() {
         return isSaddled() && !deckLoaded && dive == null && diveCooldown == 0;
     }
 
-    /** The rider let go of a charged jump: the client that flies the whale starts the dive. */
-    @Override
-    public void onPlayerJump(int power) {
-        if (power <= 0 || !piloting() || !canJump()) {
+    /**
+     * The rider let go of a charged dive, {@code power} 0 to 100 as on a horse's jump bar: the client that flies the
+     * whale starts it.
+     */
+    public void startDive(int power) {
+        if (power <= 0 || !piloting() || !canDive()) {
             return;
         }
         // no deeper than the floor above the void
@@ -957,15 +989,13 @@ public class TamedAerwhale extends Aerwhale
         diveCooldown = DIVE_COOLDOWN;
     }
 
-    /** The server hears of the dive: a deep call, and no other dive until it's had a breath. */
-    @Override
-    public void handleStartJump(int power) {
+    /** The server hears of its pilot's dive: a deep call, and no other dive until it's had a breath. */
+    public void diveCalled(Player rider, int power) {
+        if (level().isClientSide || getControllingPassenger() != rider || power <= 0 || !canDive()) {
+            return;
+        }
         diveCooldown = DIVE_COOLDOWN;
         playSound(getAmbientSound(), getSoundVolume(), 0.6F);
-    }
-
-    @Override
-    public void handleStopJump() {
     }
 
     /**
@@ -1041,8 +1071,8 @@ public class TamedAerwhale extends Aerwhale
         return level().getMinBuildHeight() + FLOOR_HEIGHT;
     }
 
-    @Override
-    public int getJumpCooldown() {
+    /** Ticks until it can dive again. */
+    public int diveCooldown() {
         return diveCooldown;
     }
 
@@ -1384,14 +1414,34 @@ public class TamedAerwhale extends Aerwhale
         }
     }
 
-    /** Eases round to face {@code target} while hovering. */
-    private void turnToward(Entity target) {
-        float yawTarget = (float) (Mth.atan2(target.getZ() - getZ(), target.getX() - getX()) * Mth.RAD_TO_DEG) - 90.0F;
-        float yaw = Mth.approachDegrees(getYRot(), yawTarget, 2.0F);
-        setYRot(yaw);
-        setYRotData(yaw);
-        setYBodyRot(yaw);
-        setYHeadRot(yaw);
+    /**
+     * Swims about {@code target} at its slowest, {@code height} above it, circling lazily since it can't stop. With
+     * {@code target} overhead it holds its course instead, rather than spinning round underneath them.
+     */
+    private void loiter(Entity target, double height) {
+        if (overhead(this, target)) {
+            halt();
+        } else {
+            flyTo(target.getX(), target.getY() + height, target.getZ(), 0);
+        }
+    }
+
+    /** The most an aerwhale going at {@code speed} turns in a tick, in degrees, to circle no tighter than it can. */
+    public static float maxTurn(double speed) {
+        return (float) (Math.max(speed, MIN_SWIM_SPEED) / MIN_TURN_RADIUS * Mth.RAD_TO_DEG);
+    }
+
+    /**
+     * Whether {@code entity} is just above {@code whale}: on its back, or about to land there. A whale following them
+     * would only turn about under their feet, so it pays them no mind.
+     */
+    public static boolean overhead(Entity whale, Entity entity) {
+        AABB box = whale.getBoundingBox();
+        double dx = entity.getX() - whale.getX();
+        double dz = entity.getZ() - whale.getZ();
+        double reach = whale.getBbWidth() / 2 + OVERHEAD_REACH;
+        return entity.getY() > box.getCenter().y && entity.getY() < box.maxY + OVERHEAD_REACH
+                && dx * dx + dz * dz < reach * reach;
     }
 
     private boolean teleportNear(LivingEntity owner) {
@@ -1447,9 +1497,9 @@ public class TamedAerwhale extends Aerwhale
 
     /**
      * Flies toward its wanted position the way the Aether's aerwhale does, turning and pitching gradually, but at the
-     * speed it's asked for, easing off as it arrives, and stopping instead of cruising on forever. With nowhere to go
-     * it hovers, bobbing gently. While {@link #cruising} it steers exactly as a wild aerwhale does instead, through the
-     * Aether's own move control.
+     * speed it's asked for and easing off as it arrives. It never turns tighter than {@link #MIN_TURN_RADIUS}, and never
+     * goes slower than {@link #MIN_SWIM_SPEED}: with nowhere to go it swims slowly on, level. While {@link #cruising} it
+     * steers exactly as a wild aerwhale does instead, through the Aether's own move control.
      */
     private final class WhaleMoveControl extends MoveControl {
         private final MoveControl wild;
@@ -1478,8 +1528,17 @@ public class TamedAerwhale extends Aerwhale
         @Override
         public void tick() {
             TamedAerwhale whale = TamedAerwhale.this;
-            if (whale.getControllingPassenger() != null || coast > 0) {
-                // a coasting whale keeps going the way its pilot left it
+            if (whale.getControllingPassenger() != null) {
+                currentSpeed = whale.getDeltaMovement().length();
+                return;
+            }
+            if (coast > 0) {
+                // a coasting whale keeps going the way its pilot left it, slowing no further than it swims
+                Vec3 motion = whale.getDeltaMovement();
+                if (motion.length() < MIN_SWIM_SPEED) {
+                    whale.setDeltaMovement(heading(whale.getYRot(), whale.getXRotData()).scale(MIN_SWIM_SPEED));
+                }
+                currentSpeed = whale.getDeltaMovement().length();
                 return;
             }
             if (cruising && operation == Operation.MOVE_TO && !whale.isVehicle()) {
@@ -1489,9 +1548,9 @@ public class TamedAerwhale extends Aerwhale
                 }
                 if (deckLoaded) {
                     // the wild steering sets its speed afresh each tick, so this doesn't compound
-                    whale.setDeltaMovement(whale.getDeltaMovement().scale(DECK_SPEED));
-                }
-                if (deckLoaded) {
+                    Vec3 motion = whale.getDeltaMovement();
+                    double slowest = MIN_SWIM_SPEED / Math.max(motion.length(), 1.0E-4);
+                    whale.setDeltaMovement(motion.scale(Math.max(DECK_SPEED, slowest)));
                     float pitch = Mth.clamp(whale.getXRot(), -MAX_DECK_PITCH, MAX_DECK_PITCH);
                     whale.setXRot(pitch);
                     whale.setXRotData(pitch);
@@ -1499,46 +1558,46 @@ public class TamedAerwhale extends Aerwhale
                 currentSpeed = whale.getDeltaMovement().length();
                 return;
             }
-            if (operation != Operation.MOVE_TO) {
-                hover(whale);
-                return;
-            }
-            double dx = wantedX - whale.getX();
-            double dy = wantedY - whale.getY();
-            double dz = wantedZ - whale.getZ();
-            double horizontal = Math.sqrt(dx * dx + dz * dz);
-            double distance = Math.sqrt(horizontal * horizontal + dy * dy);
-            if (distance < 1.5) {
-                operation = Operation.WAIT;
-                hover(whale);
-                return;
-            }
-            Vec3 direction = new Vec3(dx, dy, dz).scale(1 / distance);
             float maxPitch = deckLoaded ? MAX_DECK_PITCH : MAX_WANDERING_PITCH;
-            float pitchTarget = Mth.clamp((float) (Mth.atan2(dy, horizontal) * Mth.RAD_TO_DEG), -maxPitch, maxPitch);
-            if (blocked(direction)) {
-                // rise over whatever is in the way, or give up if it's walled in above too
-                Vec3 over = new Vec3(direction.x, Math.max(direction.y, 0) + 1, direction.z).normalize();
-                if (blocked(over)) {
+            // with nowhere to go it swims straight on, levelling out, at its slowest
+            float yawTarget = whale.getYRot();
+            float pitchTarget = 0;
+            double wanted = MIN_SWIM_SPEED;
+            if (operation == Operation.MOVE_TO) {
+                double dx = wantedX - whale.getX();
+                double dy = wantedY - whale.getY();
+                double dz = wantedZ - whale.getZ();
+                double horizontal = Math.sqrt(dx * dx + dz * dz);
+                double distance = Math.sqrt(horizontal * horizontal + dy * dy);
+                if (distance < 1.5) {
                     operation = Operation.WAIT;
-                    hover(whale);
-                    return;
+                } else {
+                    yawTarget = (float) (Mth.atan2(dz, dx) * Mth.RAD_TO_DEG) - 90.0F;
+                    pitchTarget = Mth.clamp((float) (Mth.atan2(dy, horizontal) * Mth.RAD_TO_DEG), -maxPitch, maxPitch);
+                    // slowing down to arrive
+                    wanted = Math.max(MIN_SWIM_SPEED, whale.getAttributeValue(Attributes.FLYING_SPEED) * speedModifier
+                            * Mth.clamp(distance / 8, 0.25, 1) * (deckLoaded ? DECK_SPEED : 1));
                 }
-                pitchTarget = maxPitch;
             }
-            float yawTarget = (float) (Mth.atan2(dz, dx) * Mth.RAD_TO_DEG) - 90.0F;
-            float yaw = Mth.approachDegrees(whale.getYRot(), yawTarget, 3.0F);
-            float pitch = Mth.approach(whale.getXRotData(), pitchTarget, 1.5F);
-            // slow down to arrive, and to turn toward a target behind it rather than circling it
-            double facing = Math.max(0.3, Math.cos(Mth.degreesDifference(yaw, yawTarget) * Mth.DEG_TO_RAD));
-            double wanted = whale.getAttributeValue(Attributes.FLYING_SPEED) * speedModifier
-                    * Mth.clamp(distance / 8, 0.25, 1) * facing * (deckLoaded ? DECK_SPEED : 1);
             currentSpeed += Mth.clamp(wanted - currentSpeed, -0.02, 0.01);
+            currentSpeed = Math.max(currentSpeed, MIN_SWIM_SPEED);
+            float turn = Math.min(3.0F, maxTurn(currentSpeed));
+            Vec3 ahead = heading(whale.getYRot(), 0);
+            if (blocked(ahead)) {
+                // rise over whatever is in the way, or if it's walled in above too, slow right down and turn away
+                if (blocked(new Vec3(ahead.x, 1, ahead.z).normalize())) {
+                    float side = Mth.degreesDifference(whale.getYRot(), yawTarget) < 0 ? -1 : 1;
+                    yawTarget = whale.getYRot() + side * 90;
+                    currentSpeed = Math.max(MIN_SWIM_SPEED, currentSpeed - 0.02);
+                    turn = 3.0F;
+                } else {
+                    pitchTarget = maxPitch;
+                }
+            }
+            float yaw = Mth.approachDegrees(whale.getYRot(), yawTarget, turn);
+            float pitch = Mth.approach(whale.getXRotData(), pitchTarget, 1.5F);
 
-            double yawRad = yaw * Mth.DEG_TO_RAD;
-            double pitchRad = pitch * Mth.DEG_TO_RAD;
-            whale.setDeltaMovement(new Vec3(-Math.sin(yawRad) * Math.cos(pitchRad), Math.sin(pitchRad),
-                    Math.cos(yawRad) * Math.cos(pitchRad)).scale(currentSpeed));
+            whale.setDeltaMovement(heading(yaw, pitch).scale(currentSpeed));
             whale.setYRot(yaw);
             whale.setYRotData(yaw);
             whale.setYBodyRot(yaw);
@@ -1547,15 +1606,10 @@ public class TamedAerwhale extends Aerwhale
             whale.setXRotData(pitch);
         }
 
-        /** Coasts to a stop, levels out, and floats gently up and down. */
-        private void hover(TamedAerwhale whale) {
-            currentSpeed = 0;
-            Vec3 motion = whale.getDeltaMovement();
-            double bob = Math.sin(whale.tickCount * Math.PI * 2 / BOB_PERIOD) * BOB_SPEED;
-            whale.setDeltaMovement(motion.x * 0.85, motion.y + (bob - motion.y) * 0.2, motion.z * 0.85);
-            float pitch = Mth.approach(whale.getXRotData(), 0, 1.0F);
-            whale.setXRot(pitch);
-            whale.setXRotData(pitch);
+        private static Vec3 heading(float yaw, float pitch) {
+            double yawRad = yaw * Mth.DEG_TO_RAD;
+            double pitchRad = pitch * Mth.DEG_TO_RAD;
+            return new Vec3(-Math.sin(yawRad) * Math.cos(pitchRad), Math.sin(pitchRad), Math.cos(yawRad) * Math.cos(pitchRad));
         }
 
         /**
@@ -1627,8 +1681,8 @@ public class TamedAerwhale extends Aerwhale
         }
 
         /**
-         * As a wolf follows: sets off once its owner is far enough away, settles when close again, and catches up by
-         * teleporting when left far behind.
+         * As a wolf follows: sets off once its owner is far enough away, settles to circling about them when close
+         * again, and catches up by teleporting when left far behind. Its owner on its back is close enough.
          */
         private void follow() {
             LivingEntity owner = getOwner();
@@ -1648,9 +1702,8 @@ public class TamedAerwhale extends Aerwhale
             if (!following && distance > FOLLOW_START) {
                 following = true;
                 repath = 0;
-            } else if (following && distance < FOLLOW_STOP) {
+            } else if (following && (distance < FOLLOW_STOP || overhead(TamedAerwhale.this, owner))) {
                 following = false;
-                halt();
             }
             if (following) {
                 if (--repath <= 0) {
@@ -1658,19 +1711,19 @@ public class TamedAerwhale extends Aerwhale
                     flyTo(owner.getX(), owner.getY() + 3, owner.getZ(), Mth.clamp(distance / FOLLOW_START, 1, 2));
                 }
             } else {
-                turnToward(owner);
+                loiter(owner, 3);
             }
         }
     }
 
     /**
      * Comes to its owner from up to {@link #SWET_RANGE} away while they hold a gummy swet, whatever it was told to do,
-     * and hovers before them to be fed. Once the swet is put away it goes back to its orders.
+     * and circles slowly about them to be fed. Once the swet is put away it goes back to its orders.
      */
     private final class SwetTemptGoal extends Goal {
         @Nullable
         private Player owner;
-        /** Whether it has come close and is hovering, rather than on its way. */
+        /** Whether it has come close and is circling them, rather than on its way. */
         private boolean near;
         private int repath;
 
@@ -1718,12 +1771,11 @@ public class TamedAerwhale extends Aerwhale
             if (near && distance > FOLLOW_STOP + 3) {
                 near = false;
                 repath = 0;
-            } else if (!near && distance < FOLLOW_STOP) {
+            } else if (!near && (distance < FOLLOW_STOP || overhead(TamedAerwhale.this, owner))) {
                 near = true;
-                halt();
             }
             if (near) {
-                turnToward(owner);
+                loiter(owner, 3);
             } else if (--repath <= 0) {
                 repath = 10;
                 flyTo(owner.getX(), owner.getY() + 3, owner.getZ(), Mth.clamp(distance / FOLLOW_START, 1, 2));
@@ -1810,13 +1862,13 @@ public class TamedAerwhale extends Aerwhale
         }
     }
 
-    /** Two whales in love fly together, hover side by side for a few seconds, and a calf appears between them. */
+    /** Two whales in love fly together, circle each other for a few seconds, and a calf appears between them. */
     private final class BreedGoal extends Goal {
         @Nullable
         private TamedAerwhale partner;
         /** Ticks spent on this courtship, to give up on a partner it can't reach. */
         private int time;
-        /** Ticks spent hovering beside the partner. */
+        /** Ticks spent close to the partner. */
         private int together;
 
         BreedGoal() {
@@ -1859,7 +1911,7 @@ public class TamedAerwhale extends Aerwhale
                 flyTo(partner.getX(), partner.getY(), partner.getZ(), 1.0);
                 return;
             }
-            halt();
+            loiter(partner, 0);
             // both parents run this goal; whichever gets there first breeds and ends the other's courtship
             if (++together >= 60 && isInLove() && partner.isInLove()) {
                 breed(partner);

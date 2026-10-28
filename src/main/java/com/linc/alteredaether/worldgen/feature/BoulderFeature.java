@@ -17,6 +17,7 @@ package com.linc.alteredaether.worldgen.feature;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.util.RandomSource;
 import net.minecraft.util.valueproviders.IntProvider;
 import net.minecraft.world.level.WorldGenLevel;
@@ -38,8 +39,9 @@ import java.util.Optional;
  * at the origin, sunk into it by {@code burial}, squashed vertically by {@code squash}; when it hangs over a slope or
  * an edge, the open underside is filled down to the ground so it never floats. With {@code floating} it is debris
  * instead: nothing is filled below it and nothing needs to be under it, and {@code scatter} lone blocks hang in a
- * loose shell around it, the grit of the break. Its blocks only replace air and replaceable blocks, so it can't carve
- * into the ground it rests on.
+ * loose shell around it, the grit of the break. With {@code ore}, each block buried on all six sides by the boulder
+ * itself is that ore at {@code ore_chance}, so ores like gravitite that float off when exposed stay put until dug
+ * out. Its blocks only replace air and replaceable blocks, so it can't carve into the ground it rests on.
  *
  * <p>The radius is capped at 10 so a boulder stays within the area a feature may write to.
  */
@@ -48,7 +50,8 @@ public final class BoulderFeature extends Feature<BoulderFeature.Config> {
     private static final int MAX_FILL = 6;
 
     public record Config(BlockStateProvider state, IntProvider radius, float squash, float burial,
-                         Optional<BlockStateProvider> topCover, boolean floating, int scatter)
+                         Optional<BlockStateProvider> topCover, boolean floating, int scatter,
+                         Optional<BlockStateProvider> ore, float oreChance)
             implements FeatureConfiguration {
         public static final Codec<Config> CODEC = RecordCodecBuilder.create(i -> i.group(
                 BlockStateProvider.CODEC.fieldOf("state").forGetter(Config::state),
@@ -57,7 +60,9 @@ public final class BoulderFeature extends Feature<BoulderFeature.Config> {
                 Codec.floatRange(0, 0.8f).optionalFieldOf("burial", 0.25f).forGetter(Config::burial),
                 BlockStateProvider.CODEC.optionalFieldOf("top_cover").forGetter(Config::topCover),
                 Codec.BOOL.optionalFieldOf("floating", false).forGetter(Config::floating),
-                Codec.intRange(0, 64).optionalFieldOf("scatter", 0).forGetter(Config::scatter)
+                Codec.intRange(0, 64).optionalFieldOf("scatter", 0).forGetter(Config::scatter),
+                BlockStateProvider.CODEC.optionalFieldOf("ore").forGetter(Config::ore),
+                Codec.floatRange(0, 1).optionalFieldOf("ore_chance", 0f).forGetter(Config::oreChance)
         ).apply(i, Config::new));
     }
 
@@ -132,6 +137,10 @@ public final class BoulderFeature extends Feature<BoulderFeature.Config> {
             BlockState state = entry.getValue();
             if (cover && !shape.containsKey(entry.getKey().above()) && random.nextFloat() < 0.65f) {
                 state = config.topCover().get().getState(random, entry.getKey());
+            } else if (config.ore().isPresent() && random.nextFloat() < config.oreChance()
+                    && enclosed(shape, entry.getKey())) {
+                state = config.ore().get().getState(random, entry.getKey());
+                FeatureStats.placed("boulder_ore");
             }
             level.setBlock(entry.getKey(), state, Block.UPDATE_CLIENTS);
         }
@@ -182,6 +191,15 @@ public final class BoulderFeature extends Feature<BoulderFeature.Config> {
                 }
             }
         }
+    }
+
+    private static boolean enclosed(Map<BlockPos, BlockState> shape, BlockPos pos) {
+        for (Direction side : Direction.values()) {
+            if (!shape.containsKey(pos.relative(side))) {
+                return false;
+            }
+        }
+        return true;
     }
 
     private static boolean replaceable(WorldGenLevel level, BlockPos pos) {

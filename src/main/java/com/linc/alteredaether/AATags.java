@@ -16,6 +16,7 @@ package com.linc.alteredaether;
 
 import net.minecraft.core.registries.Registries;
 import net.minecraft.tags.TagKey;
+import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.block.Block;
@@ -40,6 +41,11 @@ public final class AATags {
 
     /** Biomes where Tempest storms gather and strike. */
     public static final TagKey<Biome> HAS_STORMS = TagKey.create(Registries.BIOME, AlteredAether.id("has_storms"));
+    /**
+     * Craggy biomes where zephyrs (and squalls, where the biome lists them) may spawn in midair, since their spires
+     * leave too little flat, sky-open ground for the stock rule.
+     */
+    public static final TagKey<Biome> MIDAIR_ZEPHYRS = TagKey.create(Registries.BIOME, AlteredAether.id("midair_zephyrs"));
     /** Ground a storm strike may scorch, besides dirt and sand. */
     public static final TagKey<Block> SCORCHABLE = TagKey.create(Registries.BLOCK, AlteredAether.id("scorchable"));
 
@@ -58,6 +64,10 @@ public final class AATags {
     /** Food that breeds tamed aerwhales and speeds up their calves' growth. */
     public static final TagKey<Item> AERWHALE_BREEDING_FOOD =
             TagKey.create(Registries.ITEM, AlteredAether.id("aerwhale_breeding_food"));
+
+    /** Fliers an aercloud doesn't slow or ground (see AercloudDragMixin); they can still stand on one. */
+    public static final TagKey<EntityType<?>> IGNORES_AERCLOUD_DRAG =
+            TagKey.create(Registries.ENTITY_TYPE, AlteredAether.id("ignores_aercloud_drag"));
 
     private AATags() {
     }

@@ -48,7 +48,7 @@ public final class AerwhaleEjectKey {
      * Only in play while riding an aerwhale, so it can share a key with something used on foot without showing as a
      * clash in the controls screen.
      */
-    private static final IKeyConflictContext RIDING_AERWHALE = new IKeyConflictContext() {
+    static final IKeyConflictContext RIDING_AERWHALE = new IKeyConflictContext() {
         @Override
         public boolean isActive() {
             Minecraft minecraft = Minecraft.getInstance();

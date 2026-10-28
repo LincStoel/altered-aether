@@ -194,6 +194,33 @@ public final class BasinField {
         return found;
     }
 
+    /** Every atoll, of any of the three grids, whose extent reaches into the given block rectangle. */
+    public List<AtollSite> atollsTouching(int minX, int minZ, int maxX, int maxZ) {
+        List<AtollSite> found = new ArrayList<>(1);
+        if (atoll == null) {
+            return found;
+        }
+        collect(found, atollCell, this::atoll, minX, minZ, maxX, maxZ);
+        collect(found, minorCell, this::minor, minX, minZ, maxX, maxZ);
+        collect(found, doubleCell, this::doubleAtoll, minX, minZ, maxX, maxZ);
+        return found;
+    }
+
+    private interface AtollGrid {
+        Optional<AtollSite> in(int cx, int cz);
+    }
+
+    private static void collect(List<AtollSite> found, int cell, AtollGrid grid, int minX, int minZ, int maxX,
+                                int maxZ) {
+        int reach = cell / 2;
+        for (int cx = Math.floorDiv(minX - reach, cell); cx <= Math.floorDiv(maxX + reach, cell); cx++) {
+            for (int cz = Math.floorDiv(minZ - reach, cell); cz <= Math.floorDiv(maxZ + reach, cell); cz++) {
+                grid.in(cx, cz).filter(site -> touches(site.x(), site.z(), site.extent(), minX, minZ, maxX, maxZ))
+                        .ifPresent(found::add);
+            }
+        }
+    }
+
     /** The atoll in a cell of the atoll grid, if it has one. */
     public Optional<AtollSite> atollInCell(int cx, int cz) {
         return atoll == null ? Optional.empty() : atoll(cx, cz);

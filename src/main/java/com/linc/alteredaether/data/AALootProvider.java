@@ -34,18 +34,47 @@ public final class AALootProvider extends JsonDataProvider {
 
     @Override
     protected void generate() {
-        table("camp", pool(3, 5, camp()), rumour(0.05));
-        table("secret", pool(3, 5, camp()), pool(1, 2, secret()), rumour(0.15));
+        table("camp", pool(3, 5, camp()), rumour(0.2));
+        table("secret", pool(3, 5, camp()), pool(1, 2, secret()), rumour(0.35));
         table("heartwood", pool(2, 4, camp()), pool(2, 3, secret()), pool(1, 1, heartwood()),
-                pool(1, 1, entry("aether:golden_amber", 1, 8, 16)), rumour(0.5));
+                pool(1, 1, entry("aether:golden_amber", 1, 8, 16)), rumour(0.9));
         // A ruin's cellar or a head's cache: old odds and ends, a little better than a camp.
-        table("ruin", pool(2, 4, camp()), pool(0, 1, secret()), rumour(0.1));
+        table("ruin", pool(2, 4, camp()), pool(0, 1, secret()), rumour(0.3));
         // A deserted village's crates: mostly junk, but the villagers knew the country round them.
-        table("village_crate", pool(2, 5, junk()), pool(0, 1, camp()), rumour(0.1));
+        table("village_crate", pool(2, 5, junk()), pool(0, 1, camp()), rumour(0.25));
+        // A colossal stump's cache: the full one, or what's left after someone dug there first.
         table("stump", pool(2, 3, camp()), pool(2, 4, secret()), pool(2, 3, heartwood()), pool(1, 1, stump()),
-                pool(1, 1, entry("aether:golden_amber", 1, 12, 24)), rumour(0.5));
+                pool(1, 1, entry("aether:golden_amber", 1, 12, 24)), rumour(0.75));
+        table("stump_poor", pool(2, 4, camp()), pool(1, 2, secret()), pool(1, 1, entry("aether:golden_amber", 1, 2, 6)),
+                rumour(0.35));
         rumourMaps();
+        doubleAtoll();
         squall();
+    }
+
+    /**
+     * The chest sunk in a double atoll's inner lagoon: a silver dungeon chest's roll, and as the atoll is rare, a good
+     * chance of a heart of the sea. An ordinary atoll's chest uses the bronze dungeon's table as it is.
+     */
+    private void doubleAtoll() {
+        JsonObject silver = new JsonObject();
+        silver.addProperty("type", "minecraft:loot_table");
+        silver.addProperty("value", "aether:chests/dungeon/silver/silver_dungeon");
+        JsonObject heart = entry("minecraft:heart_of_the_sea", 1, 1, 1);
+        heart.remove("weight");
+        JsonObject heartPool = pool(1, 1, heart);
+        JsonArray conditions = new JsonArray();
+        conditions.add(chance(0.6));
+        heartPool.add("conditions", conditions);
+        JsonObject table = new JsonObject();
+        table.addProperty("type", "minecraft:chest");
+        JsonArray pools = new JsonArray();
+        pools.add(pool(1, 1, silver));
+        pools.add(heartPool);
+        pools.add(rumour(0.5));
+        table.add("pools", pools);
+        table.addProperty("random_sequence", AlteredAether.MOD_ID + ":chests/double_atoll");
+        data("loot_table/chests", AlteredAether.id("double_atoll"), table);
     }
 
     /** The zephyr's drop: a cold aercloud or two, one more with looting. */
@@ -89,8 +118,8 @@ public final class AALootProvider extends JsonDataProvider {
         data("loot_table", AlteredAether.id("chests/rumour_map"), table);
 
         JsonArray modifiers = new JsonArray();
-        modifiers.add(dungeonRumour("bronze", 0.15));
-        modifiers.add(dungeonRumour("silver", 0.2));
+        modifiers.add(dungeonRumour("bronze", 0.35));
+        modifiers.add(dungeonRumour("silver", 0.5));
         JsonObject global = new JsonObject();
         global.addProperty("replace", false);
         global.add("entries", modifiers);

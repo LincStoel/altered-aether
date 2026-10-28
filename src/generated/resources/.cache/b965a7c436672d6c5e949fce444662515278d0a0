@@ -1,5 +1,6 @@
-// 1.21.1	2026-10-24T22:53:59.211347	Altered Aether optional decoration
+// 1.21.1	2026-10-27T22:16:03.1191656	Altered Aether optional decoration
 45603d9286d8b91df573f7e294c9342c8f156abb data/altered_aether/neoforge/biome_modifier/decoration/ghast_dune_field.json
+fb68aa76fb82ef28fe5036d51a8de7b37420547b data/altered_aether/neoforge/biome_modifier/decoration/ore_crag_lead.json
 9a9986d2290e7ecc26efc633b4fd2d3a7e3cd3df data/altered_aether/neoforge/biome_modifier/decoration/ore_dune_iron.json
 2038425b2d2f097128ed39bafd41b5df1b24ab9e data/altered_aether/neoforge/biome_modifier/decoration/ore_silver.json
 1ed7519276109d44f5de2127e4b1b06166439342 data/altered_aether/neoforge/biome_modifier/decoration/ore_tempest_zinc.json
@@ -27,6 +28,7 @@ a053db130eb5f547e7c4aacfa5c4fdec327985d7 data/altered_aether/neoforge/biome_modi
 59affc5eddc83f0a83fc93c83370404b436b2e79 data/altered_aether/neoforge/biome_modifier/decoration/totem_rift.json
 90087db069285861a08140a9b38e2c70734cbb4c data/altered_aether/neoforge/biome_modifier/decoration/tree_crag_roseroot.json
 2d8cf3e9bb77af97620671a9bf57a048c1142f9d data/altered_aether/worldgen/configured_feature/ghast/dune_field.json
+5f6fa5749ea26bcec72d64102943f3478ccd3da9 data/altered_aether/worldgen/configured_feature/ore/crag_lead.json
 32e6d1f8c321d73292db4243a4a92c6944503c84 data/altered_aether/worldgen/configured_feature/ore/dune_iron.json
 54cb6633999ad367b6b41c8d10a94303ae6a22c7 data/altered_aether/worldgen/configured_feature/ore/silver.json
 4d5de00daa379242d0d347a273667b4db73ce246 data/altered_aether/worldgen/configured_feature/ore/tempest_zinc.json
@@ -51,6 +53,7 @@ e92a1268a2b8e66cf4afce7985642c986edfddbc data/altered_aether/worldgen/configured
 ffee7373fbacdc8b0dcb10fdff9a8f0c61e1439c data/altered_aether/worldgen/configured_feature/torch/tiki.json
 81c90a9ae63af18b7cb39fbe5603a3ab8d5e6f84 data/altered_aether/worldgen/configured_feature/totem/grove.json
 74f7f2ce369ac87d65cd8ee296cd0f925319f815 data/altered_aether/worldgen/placed_feature/ghast/dune_field.json
+7306aa3f820c6048896e49104108ca610e57ff4a data/altered_aether/worldgen/placed_feature/ore/crag_lead.json
 432fcd9d55d294df8d2e1b71ae27b59452fed763 data/altered_aether/worldgen/placed_feature/ore/dune_iron.json
 ea808fcd72a20eecc8ddb6c62bc7225793523a6e data/altered_aether/worldgen/placed_feature/ore/silver.json
 60b5cf0324c429b6f1ca9e3d517cf5a16aeae50c data/altered_aether/worldgen/placed_feature/ore/tempest_zinc.json

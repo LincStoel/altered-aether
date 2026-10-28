@@ -38,7 +38,10 @@ neoForge {
             // -PaaTour=stop,stop,... quick-plays the world run/saves/tour and takes the camera tour in debug/Tour.
             val tour = findProperty("aaTour") as String?
             systemProperty("altered_aether.tour", tour ?: "")
-            if (tour != null) {
+            // -PaaJeiShot=<category id> quick-plays it too, opens that JEI page, screenshots it and quits (debug/JeiShot).
+            val jeiShot = findProperty("aaJeiShot") as String?
+            systemProperty("altered_aether.jei_shot", jeiShot ?: "")
+            if (tour != null || jeiShot != null) {
                 programArguments.addAll("--quickPlaySingleplayer", "tour")
             }
             // -PaaJoin=host:port joins that server on start, to check a dedicated server end to end.
@@ -105,6 +108,17 @@ repositories {
 
 dependencies {
     compileOnly(devMods)
+    // The one optional mod compiled against: Create, for the ambrosium campfire's fan processing (see CreateCompat).
+    // Only classes loaded when Create is present reference it. Its JEI page draws with Ponder's catnip library, which
+    // Create bundles as a jar-in-jar along with Flywheel (named in catnip's signatures), so both are taken out of
+    // Create's jar for compiling too.
+    val createJars = fileTree("libs/optional") { include("create-*.jar") }
+    compileOnly(createJars)
+    compileOnly(files(createJars.files.map { jar ->
+        zipTree(jar).matching { include("META-INF/jarjar/ponder-*.jar", "META-INF/jarjar/flywheel-*.jar") }
+    }))
+    // JEI, for that page (see compat/jei); it runs only in client runs, from libs/client.
+    compileOnly(fileTree("libs/client") { include("jei-*.jar") })
     // MixinSquared cancels Deep Aether's aerwhale mixins when our own aerwhales are in use (see AAMixinPlugin).
     compileOnly("com.github.bawnorton.mixinsquared:mixinsquared-common:0.3.7")
     jarJar(implementation("com.github.bawnorton.mixinsquared:mixinsquared-neoforge:0.3.7")!!)

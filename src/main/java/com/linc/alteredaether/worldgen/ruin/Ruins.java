@@ -15,6 +15,7 @@
 package com.linc.alteredaether.worldgen.ruin;
 
 import com.linc.alteredaether.AlteredAether;
+import com.linc.alteredaether.worldgen.LootChest;
 import net.minecraft.core.Direction;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
@@ -24,7 +25,6 @@ import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
-import net.minecraft.world.level.block.ChestBlock;
 import net.minecraft.world.level.block.SlabBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.SlabType;
@@ -462,7 +462,7 @@ public final class Ruins {
 
         void chest(int x, int dy, int z, int ax, int az, Direction facing) {
             pieces.add(new RuinPlan.Piece(x, dy, z, ax, az,
-                    Blocks.CHEST.defaultBlockState().setValue(ChestBlock.FACING, facing), LOOT));
+                    LootChest.facing(facing), LOOT));
         }
 
         double hash(int x, int y, int z) {

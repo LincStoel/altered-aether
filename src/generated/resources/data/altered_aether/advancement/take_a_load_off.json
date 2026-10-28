@@ -1,0 +1,26 @@
+{
+  "parent": "altered_aether:root",
+  "criteria": {
+    "unsaddled": {
+      "conditions": {},
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "display": {
+    "description": {
+      "translate": "advancements.altered_aether.take_a_load_off.description"
+    },
+    "frame": "task",
+    "icon": {
+      "id": "minecraft:saddle"
+    },
+    "title": {
+      "translate": "advancements.altered_aether.take_a_load_off.title"
+    }
+  },
+  "requirements": [
+    [
+      "unsaddled"
+    ]
+  ]
+}

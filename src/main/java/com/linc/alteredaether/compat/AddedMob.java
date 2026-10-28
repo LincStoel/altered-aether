@@ -46,7 +46,7 @@ public record AddedMob(String key, String entityId, Method method, boolean exclu
 
     public static final List<AddedMob> ALL = List.of(
             natural("naga", "mowziesmobs:naga", true, 0.5, 0.05),
-            natural("lantern", "mowziesmobs:lantern", true, 0.5, 0.05),
+            natural("lantern", "mowziesmobs:lantern", true, 0.5, 0.035),
             natural("wilden_hunter", "ars_nouveau:wilden_hunter", true, 0.7, 0.08),
             natural("wilden_guardian", "ars_nouveau:wilden_guardian", true, 0.7, 0.08),
             natural("wilden_stalker", "ars_nouveau:wilden_stalker", true, 0.7, 0.08),

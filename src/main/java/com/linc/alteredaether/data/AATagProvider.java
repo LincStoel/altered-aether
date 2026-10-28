@@ -60,16 +60,28 @@ public final class AATagProvider extends JsonDataProvider {
         tag("block", AlteredAether.id("tempest_peak_ore_replaceables"), "minecraft:cobbled_deepslate",
                 "minecraft:blackstone", "aether:holystone");
         tag("block", ResourceLocation.withDefaultNamespace("campfires"), "altered_aether:ambrosium_campfire");
+        // Create's fans enchant through a lit ambrosium campfire, ours or Beyond Parity's (see CreateCompat).
+        tag("block", AlteredAether.id("fan_processing_catalysts/enchanting"), "altered_aether:ambrosium_campfire",
+                "aether_beyond_parity:ambrosium_campfire");
         tag("block", ResourceLocation.withDefaultNamespace("mineable/axe"), "altered_aether:ambrosium_campfire",
                 "altered_aether:gleam_vines", "altered_aether:gleam_vines_plant");
         // dead bushes may stand on the dunes' quicksoil
         tag("block", ResourceLocation.withDefaultNamespace("dead_bush_may_place_on"), "aether:quicksoil");
         // Tempest storms (see TempestStorms) and the natural rock their strikes scorch.
         tag("worldgen/biome", AlteredAether.id("has_storms"), "altered_aether:tempest_peaks");
+        // Zephyrs and squalls may spawn in midair here (see SpawnPlacementEvents), where the biome lists them.
+        tag("worldgen/biome", AlteredAether.id("midair_zephyrs"), "altered_aether:tempest_peaks",
+                "altered_aether:frozen_crags");
         tag("block", AlteredAether.id("scorchable"), "aether:holystone", "aether:mossy_holystone", "aether:icestone",
                 "minecraft:cobbled_deepslate", "minecraft:deepslate", "minecraft:stone", "minecraft:snow_block",
                 "deep_aether:aseterite", "deep_aether:clorite");
         lightning();
+        tag("entity_type", AlteredAether.id("ignores_aercloud_drag"), "aether:zephyr", "altered_aether:squall",
+                "aether:aerwhale", "altered_aether:tamed_aerwhale", "mowziesmobs:naga");
+        // Deep Aether's sterling aerclouds call lightning on whatever passes through and turn cold; zephyrs are spared,
+        // and so are squalls.
+        tag("entity_type", ResourceLocation.fromNamespaceAndPath("deep_aether", "sterling_aercloud_blacklist"),
+                "altered_aether:squall");
         // Tamed aerwhales (see TamedAerwhale).
         tag("item", AlteredAether.id("aerwhale_taming_food"), "aether:blue_berry");
         tag("item", AlteredAether.id("aerwhale_breeding_food"), "aether:enchanted_berry");

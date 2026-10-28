@@ -14,7 +14,10 @@
  */
 package com.linc.alteredaether.worldgen.feature;
 
+import com.linc.alteredaether.AlteredAether;
 import com.linc.alteredaether.config.AACommonConfig;
+import com.linc.alteredaether.worldgen.LootChest;
+import com.linc.alteredaether.worldgen.basin.AtollSite;
 import com.linc.alteredaether.worldgen.basin.BasinField;
 import com.linc.alteredaether.worldgen.basin.BasinSite;
 import com.linc.alteredaether.worldgen.basin.BasinType;
@@ -22,10 +25,14 @@ import com.linc.alteredaether.worldgen.grove.GrovePalette;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.tags.TagKey;
+import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
+import net.minecraft.world.RandomizableContainer;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.WorldGenLevel;
 import net.minecraft.world.level.block.BaseCoralWallFanBlock;
@@ -35,10 +42,12 @@ import net.minecraft.world.level.block.DoublePlantBlock;
 import net.minecraft.world.level.block.KelpBlock;
 import net.minecraft.world.level.block.SeaPickleBlock;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.DoubleBlockHalf;
 import net.minecraft.world.level.levelgen.feature.Feature;
 import net.minecraft.world.level.levelgen.feature.FeaturePlaceContext;
 import net.minecraft.world.level.levelgen.feature.configurations.NoneFeatureConfiguration;
+import net.minecraft.world.level.storage.loot.LootTable;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -64,7 +73,11 @@ public final class BasinFillFeature extends Feature<NoneFeatureConfiguration> {
     private static final TagKey<Block> AETHER_DIRT =
             TagKey.create(net.minecraft.core.registries.Registries.BLOCK, ResourceLocation.parse("aether:aether_dirt"));
     private static final long REEF_SALT = 0x7F4A7C15L, KIND_SALT = 0x632BE59BL, FLOOR_SALT = 0x1B873593L,
-            GLOW_SALT = 0x2545F491L, COLONY_SALT = 0x3C6EF372L, SHORE_SALT = 0x5BE0CD19L;
+            GLOW_SALT = 0x2545F491L, COLONY_SALT = 0x3C6EF372L, SHORE_SALT = 0x5BE0CD19L, TREASURE_SALT = 0x510E527FL;
+    /** A sunken atoll chest's loot: the Aether's bronze dungeon chests', or our own for a double atoll's. */
+    private static final ResourceKey<LootTable> ATOLL_LOOT = ResourceKey.create(Registries.LOOT_TABLE,
+            ResourceLocation.fromNamespaceAndPath("aether", "chests/dungeon/bronze/bronze_dungeon")),
+            DOUBLE_ATOLL_LOOT = ResourceKey.create(Registries.LOOT_TABLE, AlteredAether.id("chests/double_atoll"));
     /** A lagoon's unbroken beach reaches this many blocks past the water; its patches reach on to the shore's end. */
     private static final int BEACH = 4;
     /** How far above the water a lagoon's shore is looked for: the crest, and the land trimmed back beyond it. */
@@ -101,6 +114,46 @@ public final class BasinFillFeature extends Feature<NoneFeatureConfiguration> {
         boolean placed = false;
         for (BasinSite site : sites) {
             placed |= fill(level, field, chunk, site, context.random());
+        }
+        placed |= treasure(level, field, chunk);
+        return placed;
+    }
+
+    /**
+     * The chest an atoll may hide on its lagoon's bed, at its {@link AtollSite#treasure() spot}, placed by the chunk
+     * the spot falls in once that chunk's water and reef are in: always on a double atoll, with silver dungeon loot and
+     * often a heart of the sea, and on other atolls by {@code atoll_chest_chance}, with bronze dungeon loot. A spot
+     * that turns out not to be under water (an odd shape of shore) is left alone.
+     */
+    private static boolean treasure(WorldGenLevel level, BasinField field, ChunkPos chunk) {
+        boolean placed = false;
+        for (AtollSite atoll : field.atollsTouching(chunk.getMinBlockX(), chunk.getMinBlockZ(), chunk.getMaxBlockX(),
+                chunk.getMaxBlockZ())) {
+            int[] spot = atoll.treasure();
+            if (spot[0] >> 4 != chunk.x || spot[1] >> 4 != chunk.z) {
+                continue;
+            }
+            RandomSource random = RandomSource.create(level.getSeed() ^ TREASURE_SALT ^ Mth.getSeed(spot[0], 0, spot[1]));
+            if (!atoll.isDouble() && random.nextDouble() >= AACommonConfig.ATOLL_CHEST_CHANCE.get()) {
+                continue;
+            }
+            BasinSite lagoon = atoll.lagoonBasin();
+            BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
+            int bed = reefFloor(level, lagoon, spot[0], spot[1], pos);
+            pos.set(spot[0], bed + 1, spot[1]);
+            if (bed <= lagoon.waterLevel() - lagoon.maxDepth() - 4 || pos.getY() > lagoon.waterLevel()
+                    || !reefOpen(level.getBlockState(pos))) {
+                continue;
+            }
+            BlockState chest = LootChest.facing(Direction.Plane.HORIZONTAL.getRandomDirection(random));
+            if (chest.hasProperty(BlockStateProperties.WATERLOGGED)) {
+                chest = chest.setValue(BlockStateProperties.WATERLOGGED, true);
+            }
+            level.setBlock(pos, chest, Block.UPDATE_CLIENTS);
+            RandomizableContainer.setBlockEntityLootTable(level, random, pos,
+                    atoll.isDouble() ? DOUBLE_ATOLL_LOOT : ATOLL_LOOT);
+            FeatureStats.placed(atoll.isDouble() ? "atoll_chest_double" : "atoll_chest");
+            placed = true;
         }
         return placed;
     }

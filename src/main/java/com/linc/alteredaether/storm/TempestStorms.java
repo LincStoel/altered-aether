@@ -20,6 +20,7 @@ import com.linc.alteredaether.config.AACommonConfig;
 import com.linc.alteredaether.registry.AARegistries;
 import net.minecraft.advancements.AdvancementHolder;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
@@ -31,6 +32,7 @@ import net.minecraft.sounds.SoundSource;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LightningBolt;
@@ -67,8 +69,9 @@ import java.util.WeakHashMap;
  * <p>Players also draw strikes on themselves, storm or calm: wearing overworld-metal armour or carrying an
  * overworld-metal tool in the hotbar ({@code #altered_aether:attracts_lightning}) is a good chance of a strike each roll,
  * and standing on copper ({@code #altered_aether:charged_copper}) without leather or gem boots ({@code #altered_aether:insulating_boots}) is a sure one. Either way a warning
- * crackles first, and the bolt follows the player a second later, unless they have dropped the cause by then; after
- * that the player is spared these strikes for a random few seconds. These strikes are the bolt alone: no blast or
+ * crackles first, sparks rise from the ground under the player, and the bolt lands there a second later, unless they
+ * have dropped the cause by then; it doesn't follow a player who moves off. After that the player is spared these
+ * strikes for a random few seconds. These strikes are the bolt alone: no blast or
  * scorch, and no rod takes them, since the copper spires all wear one.
  *
  * <p>Only loaded chunks are struck, strikes per tick are capped, and the whole system switches itself off after
@@ -79,7 +82,9 @@ public final class TempestStorms {
     private static final ResourceKey<Level> THE_AETHER =
             ResourceKey.create(Registries.DIMENSION, ResourceLocation.fromNamespaceAndPath("aether", "the_aether"));
     private static final int CANDIDATES = 6, ERROR_LIMIT = 8;
-    private static final int SPARK_BUILDUP_TICKS = 8, SPARK_COLUMN_HEIGHT = 4;
+    private static final int SPARK_MIN = 1, SPARK_MAX = 18, SPARK_COLUMN_HEIGHT = 4;
+    /** How far below an entity {@link #strikeSpot} looks for ground. */
+    private static final int GROUND_SEARCH = 24;
 
     /** Why a strike is aimed at a player, checked again as it lands. */
     private enum Cause {
@@ -88,11 +93,16 @@ public final class TempestStorms {
 
     /**
      * A strike on its way: sparks and rumbling at {@code target} until the countdown ends. One aimed at a
-     * {@code victim} follows them instead, and lands only if its {@code cause} still holds.
+     * {@code victim} lands only if its {@code cause} still holds. {@code total} is the full countdown, for the sparks'
+     * build-up.
      */
-    private record PendingStrike(BlockPos target, boolean rod, int[] ticks, @Nullable ServerPlayer victim,
+    private record PendingStrike(BlockPos target, boolean rod, int[] ticks, int total, @Nullable ServerPlayer victim,
                                  @Nullable Cause cause) {
-        PendingStrike(BlockPos target, boolean rod, int[] ticks) {
+        PendingStrike(BlockPos target, boolean rod, int ticks, @Nullable ServerPlayer victim, @Nullable Cause cause) {
+            this(target, rod, new int[]{ticks}, ticks, victim, cause);
+        }
+
+        PendingStrike(BlockPos target, boolean rod, int ticks) {
             this(target, rod, ticks, null, null);
         }
     }
@@ -208,37 +218,56 @@ public final class TempestStorms {
                 it.remove();
                 continue;
             }
-            BlockPos at = victim != null ? victim.blockPosition() : strike.target();
+            BlockPos at = strike.target();
             if (!level.isLoaded(at)) {
                 it.remove();
                 continue;
             }
-            warningSparks(level, victim != null ? victim.position() : Vec3.atBottomCenterOf(at), left);
+            warningSparks(level, Vec3.atBottomCenterOf(at), left, strike.total());
             if (left <= 0) {
                 it.remove();
                 if (victim == null) {
                     land(level, strike);
                 } else if (holds(level, victim, strike.cause())) {
-                    strike(level, victim, strike.cause());
+                    strike(level, victim, at, strike.cause());
                 }
             }
         }
     }
 
     /**
-     * The warning over a spot about to be struck, {@code left} ticks before the bolt: sparks crackle round it every
-     * tick, thickening over the last {@value #SPARK_BUILDUP_TICKS}, and every other tick a column of them rises
-     * {@value #SPARK_COLUMN_HEIGHT} blocks to mark it from a distance. Squalls use it too.
+     * The warning over a spot about to be struck, {@code left} of {@code total} ticks before the bolt: sparks crackle
+     * round it every tick, from a stray {@value #SPARK_MIN} at first to {@value #SPARK_MAX} at the end, and every other
+     * tick a column of them rises, growing to {@value #SPARK_COLUMN_HEIGHT} blocks, to mark it from a distance.
+     * {@code at} is the ground the bolt will hit, and the sparks rise from it. Squalls use it too.
      */
-    public static void warningSparks(ServerLevel level, Vec3 at, int left) {
-        int count = left <= SPARK_BUILDUP_TICKS ? 14 : 6;
-        level.sendParticles(ParticleTypes.ELECTRIC_SPARK, at.x, at.y + 0.3, at.z, count, 0.6, 0.6, 0.6, 0.08);
+    public static void warningSparks(ServerLevel level, Vec3 at, int left, int total) {
+        float progress = total <= 0 ? 1 : Mth.clamp(1 - (float) left / total, 0, 1);
+        int count = SPARK_MIN + Math.round((SPARK_MAX - SPARK_MIN) * progress * progress);
+        level.sendParticles(ParticleTypes.ELECTRIC_SPARK, at.x, at.y + 0.15, at.z, count, 0.6, 0.1, 0.6, 0.08);
         if (left % 2 == 0) {
-            for (int i = 0; i < SPARK_COLUMN_HEIGHT * 2; i++) {
-                level.sendParticles(ParticleTypes.ELECTRIC_SPARK, at.x, at.y + 0.5 + i * 0.5, at.z, 1, 0.1, 0.2, 0.1,
+            int rungs = Math.max(1, Mth.ceil(SPARK_COLUMN_HEIGHT * 2 * progress));
+            for (int i = 0; i < rungs; i++) {
+                level.sendParticles(ParticleTypes.ELECTRIC_SPARK, at.x, at.y + 0.2 + i * 0.5, at.z, 1, 0.1, 0.2, 0.1,
                         0.02);
             }
         }
+    }
+
+    /**
+     * Where a strike called on an entity lands: the space over the first solid block below it, within
+     * {@value #GROUND_SEARCH} blocks, or where the entity is if there is none. The strike stays there however the
+     * entity moves.
+     */
+    public static BlockPos strikeSpot(Level level, Entity entity) {
+        BlockPos.MutableBlockPos pos = entity.blockPosition().mutable();
+        int floor = Math.max(level.getMinBuildHeight(), pos.getY() - GROUND_SEARCH);
+        for (; pos.getY() >= floor; pos.move(Direction.DOWN)) {
+            if (!level.getBlockState(pos).getCollisionShape(level, pos).isEmpty()) {
+                return pos.above();
+            }
+        }
+        return entity.blockPosition();
     }
 
     /** Whether a strike is already on its way to this player. */
@@ -279,28 +308,32 @@ public final class TempestStorms {
     }
 
     /**
-     * The warning crackle at a player, then their strike a moment later. The player is then spared another for a
-     * random cooldown, counted from when this one lands.
+     * The warning crackle at a player, then their strike a moment later. Once it lands the player is spared another for
+     * a random cooldown; one they dodge by dropping the cause in time earns no cooldown.
      */
     private static void warn(ServerLevel level, ServerPlayer player, Cause cause, RandomSource random) {
         level.playSound(null, player.getX(), player.getY(), player.getZ(), AARegistries.INCOMING_LIGHTNING.get(),
                 SoundSource.WEATHER, 1.0f, 0.95f + random.nextFloat() * 0.1f);
         int ticks = AACommonConfig.STORM_PLAYER_WARNING_TICKS.get();
-        int min = AACommonConfig.STORM_PLAYER_COOLDOWN_MIN.get();
-        int max = Math.max(min, AACommonConfig.STORM_PLAYER_COOLDOWN_MAX.get());
-        SPARED_UNTIL.put(player.getUUID(), level.getGameTime() + ticks + min + random.nextInt(max - min + 1));
+        BlockPos spot = strikeSpot(level, player);
         if (ticks <= 0) {
-            strike(level, player, cause);
+            strike(level, player, spot, cause);
         } else {
-            PENDING.add(new PendingStrike(player.blockPosition(), false, new int[]{ticks}, player, cause));
+            PENDING.add(new PendingStrike(spot, false, ticks, player, cause));
         }
     }
 
-    /** A bolt straight down on the player, without the blast and scorch of a storm strike. */
-    private static void strike(ServerLevel level, ServerPlayer player, Cause cause) {
+    /**
+     * A bolt straight down on the spot the player was warned at, without the blast and scorch of a storm strike, after
+     * which they are spared another for a random cooldown.
+     */
+    private static void strike(ServerLevel level, ServerPlayer player, BlockPos at, Cause cause) {
+        int min = AACommonConfig.STORM_PLAYER_COOLDOWN_MIN.get();
+        int max = Math.max(min, AACommonConfig.STORM_PLAYER_COOLDOWN_MAX.get());
+        SPARED_UNTIL.put(player.getUUID(), level.getGameTime() + min + level.getRandom().nextInt(max - min + 1));
         LightningBolt bolt = EntityType.LIGHTNING_BOLT.create(level);
         if (bolt != null) {
-            bolt.moveTo(player.position());
+            bolt.moveTo(Vec3.atBottomCenterOf(at));
             if (cause == Cause.METAL) {
                 METAL_BOLTS.put(bolt, player);
             }
@@ -321,13 +354,13 @@ public final class TempestStorms {
 
     /**
      * Picks where a strike lands: usually the highest of a few spots in a ring round the player, so the peaks and the
-     * spires take most of them, and now and then the player. A rod in range wins over either.
+     * spires take most of them, and now and then the ground under the player. A rod in range wins over either.
      */
     @Nullable
     private static PendingStrike aim(ServerLevel level, ServerPlayer player, RandomSource random) {
         BlockPos target = null;
         if (random.nextDouble() < AACommonConfig.STORM_DIRECT_HIT_CHANCE.get()) {
-            target = player.blockPosition();
+            target = strikeSpot(level, player);
         } else {
             int min = AACommonConfig.STORM_MIN_RADIUS.get(), max = Math.max(min, AACommonConfig.STORM_MAX_RADIUS.get());
             for (int i = 0; i < CANDIDATES; i++) {
@@ -358,7 +391,7 @@ public final class TempestStorms {
                 rod = true;
             }
         }
-        return new PendingStrike(target, rod, new int[]{AACommonConfig.STORM_WARNING_TICKS.get()});
+        return new PendingStrike(target, rod, AACommonConfig.STORM_WARNING_TICKS.get());
     }
 
     private static void land(ServerLevel level, PendingStrike strike) {

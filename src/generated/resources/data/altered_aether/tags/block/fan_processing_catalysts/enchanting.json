@@ -1,0 +1,10 @@
+{
+  "replace": false,
+  "values": [
+    "altered_aether:ambrosium_campfire",
+    {
+      "id": "aether_beyond_parity:ambrosium_campfire",
+      "required": false
+    }
+  ]
+}

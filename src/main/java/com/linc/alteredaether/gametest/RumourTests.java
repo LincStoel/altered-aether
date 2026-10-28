@@ -48,7 +48,7 @@ public final class RumourTests {
     private static final List<String> ADVANCEMENTS = List.of("root", "frozen_crags", "frozen_spire",
             "tempest_peaks", "thunderstruck", "tempest_crown", "shattered_rift", "great_fracture", "windswept_dunes", "aether_plateau",
             "grand_cascade", "skyroot_cathedral", "grandfather", "village_tree", "nurselog_hollow", "stump_cache",
-            "atoll", "double_atoll", "sky_rider", "ride_the_storm", "rumour", "seven_wonders",
+            "atoll", "double_atoll", "sky_rider", "ride_the_storm", "take_a_load_off", "rumour", "seven_wonders",
             "altered_cartographer");
 
     @GameTest(template = "arena")
@@ -87,9 +87,47 @@ public final class RumourTests {
         helper.succeed();
     }
 
+    /**
+     * The chests a player actually opens hold rumour maps: the Aether's dungeon chests through the loot modifiers, and
+     * the groves' chests through their own pools. Each is rolled many times; at the odds set, none coming up would be
+     * all but impossible.
+     */
+    @GameTest(template = "arena", timeoutTicks = 400)
+    public static void chestsHoldRumourMaps(GameTestHelper helper) {
+        ServerLevel aether = helper.getLevel().getServer().getLevel(THE_AETHER);
+        if (aether == null) {
+            helper.succeed();
+            return;
+        }
+        Vec3 origin = new Vec3(20_000, 100, -15_000);
+        for (ResourceLocation table : List.of(
+                ResourceLocation.fromNamespaceAndPath("aether", "chests/dungeon/bronze/bronze_dungeon"),
+                ResourceLocation.fromNamespaceAndPath("aether", "chests/dungeon/silver/silver_dungeon"),
+                AlteredAether.id("chests/grove/camp"), AlteredAether.id("chests/grove/stump_poor"),
+                AlteredAether.id("chests/double_atoll"))) {
+            int maps = 0;
+            for (int i = 0; i < 60; i++) {
+                maps += (int) roll(aether, origin, table).stream().filter(RumourTests::isRumour).count();
+            }
+            if (maps == 0) {
+                helper.fail("No rumour map in 60 rolls of " + table);
+            }
+        }
+        helper.succeed();
+    }
+
+    private static boolean isRumour(ItemStack stack) {
+        return stack.is(Items.FILLED_MAP) && stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag()
+                .getCompound(RumourMapFunction.TAG).contains("rumour");
+    }
+
     private static List<ItemStack> roll(ServerLevel level, Vec3 origin) {
+        return roll(level, origin, AlteredAether.id("chests/rumour_map"));
+    }
+
+    private static List<ItemStack> roll(ServerLevel level, Vec3 origin, ResourceLocation id) {
         LootTable table = level.getServer().reloadableRegistries().getLootTable(
-                ResourceKey.create(Registries.LOOT_TABLE, AlteredAether.id("chests/rumour_map")));
+                ResourceKey.create(Registries.LOOT_TABLE, id));
         return table.getRandomItems(new LootParams.Builder(level).withParameter(LootContextParams.ORIGIN, origin)
                 .create(LootContextParamSets.CHEST));
     }

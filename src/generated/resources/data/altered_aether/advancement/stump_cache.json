@@ -6,6 +6,12 @@
         "loot_table": "altered_aether:chests/grove/stump"
       },
       "trigger": "minecraft:player_generates_container_loot"
+    },
+    "stump_poor": {
+      "conditions": {
+        "loot_table": "altered_aether:chests/grove/stump_poor"
+      },
+      "trigger": "minecraft:player_generates_container_loot"
     }
   },
   "display": {
@@ -22,7 +28,8 @@
   },
   "requirements": [
     [
-      "stump"
+      "stump",
+      "stump_poor"
     ]
   ]
 }

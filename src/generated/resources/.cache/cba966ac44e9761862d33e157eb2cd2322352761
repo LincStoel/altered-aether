@@ -1,4 +1,4 @@
-// 1.21.1	2026-10-27T09:15:35.6480761	Altered Aether advancements
+// 1.21.1	2026-10-28T10:54:42.7454986	Altered Aether advancements
 6b0bbdb4842ffb603caf7f8239d078d0bbdfd92b data/altered_aether/advancement/aether_plateau.json
 3ab50013a2ad5a4a75448d9f017ef245d5b1e340 data/altered_aether/advancement/altered_cartographer.json
 3031d3f5bebe79b13260a71ef8dfa19a40a9205f data/altered_aether/advancement/archwood_grove.json
@@ -17,7 +17,8 @@ c85bb7040168616ee3d6a3207d3bd897ef4910f3 data/altered_aether/advancement/rumour.
 17c30f0d36e7693c69bfc009ec9fbcd957947e9c data/altered_aether/advancement/shattered_rift.json
 63d1df2c2106d7dbbcab18fa5b560ae80695ca28 data/altered_aether/advancement/skyroot_cathedral.json
 486eea7fdf03871f6b978e43071abebf5c7b1c91 data/altered_aether/advancement/sky_rider.json
-fe9ea36959b374ba0bf37c20071c77c6143ea1b4 data/altered_aether/advancement/stump_cache.json
+028a46088990101dad4cdb38c612e649134673cf data/altered_aether/advancement/stump_cache.json
+777595eaf2b38057210f6634963454ef6a1c7525 data/altered_aether/advancement/take_a_load_off.json
 15ac93f9a840eaa6f2672668fc1dd05ce7fca706 data/altered_aether/advancement/tempest_crown.json
 7f4c1b979c90cb1a750f81e4d2c12496a0ad8595 data/altered_aether/advancement/tempest_peaks.json
 860a4c2cd303ac540001fce4fbb2a88b0360ab68 data/altered_aether/advancement/thunderstruck.json

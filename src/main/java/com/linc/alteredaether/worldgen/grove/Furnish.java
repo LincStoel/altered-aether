@@ -17,6 +17,7 @@ package com.linc.alteredaether.worldgen.grove;
 import com.linc.alteredaether.AlteredAether;
 import com.linc.alteredaether.config.AACommonConfig;
 import com.linc.alteredaether.registry.AARegistries;
+import com.linc.alteredaether.worldgen.LootChest;
 import net.minecraft.core.Direction;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
@@ -28,7 +29,6 @@ import net.minecraft.world.level.block.BedBlock;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.CampfireBlock;
-import net.minecraft.world.level.block.ChestBlock;
 import net.minecraft.world.level.block.CropBlock;
 import net.minecraft.world.level.block.LadderBlock;
 import net.minecraft.world.level.block.RotatedPillarBlock;
@@ -51,7 +51,7 @@ import java.util.Optional;
  */
 final class Furnish {
     static final ResourceKey<LootTable> CAMP = loot("camp"), SECRET = loot("secret"), HEARTWOOD = loot("heartwood"),
-            STUMP = loot("stump"), VILLAGE = loot("village_crate");
+            STUMP = loot("stump"), STUMP_POOR = loot("stump_poor"), VILLAGE = loot("village_crate");
 
     private static ResourceKey<LootTable> loot(String name) {
         return ResourceKey.create(Registries.LOOT_TABLE, AlteredAether.id("chests/grove/" + name));
@@ -151,7 +151,7 @@ final class Furnish {
     static void chest(Sketch s, double x, int y, double z, Direction facing, ResourceKey<LootTable> loot,
                       Prop.Anchor anchor) {
         s.prop(new Prop(Mth.floor(x), y, Mth.floor(z), anchor,
-                List.of(Blocks.CHEST.defaultBlockState().setValue(ChestBlock.FACING, facing)), loot));
+                List.of(LootChest.facing(facing)), loot));
         s.point("chest", x, y, z);
     }
 
@@ -218,7 +218,7 @@ final class Furnish {
     static void crate(Sketch s, double x, int floor, double z, double facing) {
         BlockState crate = s.random.nextDouble() < 0.75
                 ? Blocks.BARREL.defaultBlockState().setValue(BarrelBlock.FACING, Direction.UP)
-                : Blocks.CHEST.defaultBlockState().setValue(ChestBlock.FACING, horizontal(facing));
+                : LootChest.facing(horizontal(facing));
         s.prop(new Prop(Mth.floor(x), floor, Mth.floor(z), Prop.Anchor.AT, List.of(crate), VILLAGE));
     }
 

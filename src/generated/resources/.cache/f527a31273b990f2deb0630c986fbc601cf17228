@@ -1,4 +1,4 @@
-// 1.21.1	2026-10-27T12:51:12.8329707	Altered Aether decoration
+// 1.21.1	2026-10-28T10:54:42.7394321	Altered Aether decoration
 cb17e24b40f7ff98f99e1958e007f11b758825a6 data/altered_aether/neoforge/biome_modifier/decoration/cloud_mass.json
 e545b773bc39462e80ab3f12432d5d7954995abc data/altered_aether/neoforge/biome_modifier/decoration/cloud_stock_cold.json
 cbb37bb5d55898696c000232da1c789b783962f0 data/altered_aether/neoforge/biome_modifier/decoration/spawn_fire_minion.json
@@ -21,9 +21,9 @@ ba47e552032050d534e667423e192dcc58631b9e data/altered_aether/worldgen/configured
 5ac2ff060d3e7864789a63e7e9afe91ba4edb898 data/altered_aether/worldgen/configured_feature/copper_spike/lone.json
 820c66cc2da5db20ce9f260ef56bb0f8bf1d89df data/altered_aether/worldgen/configured_feature/copper_vein/tempest.json
 b5a3fa3f4f689d8d80c82354b14d838eb38574c5 data/altered_aether/worldgen/configured_feature/crater/strike.json
-65134ad80bcf06791e962d89522e26ae1398a8f5 data/altered_aether/worldgen/configured_feature/debris/rift.json
-492dab3740dc78703020f1cabdf6d540d5ce827c data/altered_aether/worldgen/configured_feature/debris/rift_cloud.json
-d008d30df21219350fe5ebd58d31f3edb87c38e5 data/altered_aether/worldgen/configured_feature/debris/rift_large.json
+74555cb8b1002d75d76ed23fadb4d660cc04cceb data/altered_aether/worldgen/configured_feature/debris/rift.json
+2a9fb14a80275d01ab6fecd956b8a0bda7886258 data/altered_aether/worldgen/configured_feature/debris/rift_cloud.json
+ad9b8b80babaa6bfff24d892ead75f60e325a321 data/altered_aether/worldgen/configured_feature/debris/rift_large.json
 76c3c82b2a3189524c87c0a55f7d2a40cb46132d data/altered_aether/worldgen/configured_feature/drift/snow.json
 1045f4df00614fccd44e126a4d00c1935ce33293 data/altered_aether/worldgen/configured_feature/hanging/chain.json
 01ed16bf0161031a58ca7a1422423dad0697852f data/altered_aether/worldgen/configured_feature/ore/crag_aether_dirt.json

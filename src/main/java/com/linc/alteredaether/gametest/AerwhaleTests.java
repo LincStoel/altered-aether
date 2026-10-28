@@ -373,7 +373,7 @@ public final class AerwhaleTests {
         Player second = helper.makeMockPlayer(GameType.SURVIVAL);
         second.interactOn(whale, InteractionHand.MAIN_HAND);
         helper.assertFalse(second.isPassenger(), "bareback, it carries only one");
-        helper.assertFalse(whale.canJump(), "nor dives");
+        helper.assertFalse(whale.canDive(), "nor dives");
         whale.inventory().setItem(TamedAerwhale.SADDLE_SLOT, new ItemStack(Items.SADDLE));
         helper.assertTrue(whale.getControllingPassenger() == owner, "a saddle gives the rider the reins");
         helper.succeed();

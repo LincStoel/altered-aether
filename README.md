@@ -116,15 +116,17 @@ The berries are eaten like glow berries, foxes pick them and bees grow the vines
 **Tamed aerwhales.** Feed a wild aerwhale blue berries and now and then it's yours (it follows anyone holding them).
 - Saddled, an adult seats four, and whoever climbs on first steers. Its back is a deck you can walk around on while
   it flies, and whatever stands there is carried along. Unsaddled it carries one rider and stays put.
-- Fly it by looking where you want to go. Jump charges a dive, and the leap key (J by default, under Altered Aether
-  in Controls) throws you off upward at the whale's speed. The whale coasts on long enough for you to land back on
-  it, then turns to follow you.
+- Fly it by looking where you want to go. The dive key (space by default) charges a dive, and the leap key (J by
+  default; both under Altered Aether in Controls) throws you off upward at the whale's speed. The whale coasts on
+  long enough for you to land back on it, then turns to follow you.
 - Sneak and use it to cycle stay, wander and follow. The inventory key, while riding, opens its saddle and
   saddlebag.
 - Blue and golden gummy swets heal it, and holding one draws it to you from far off. Enchanted berries breed two
   whales, and an Aether spawn egg used on any aerwhale makes a calf.
 - With Deep Aether installed its own aerwhales (saddle, chest, two seats) are used instead if you prefer them:
   `use_deep_aether_aerwhales` in the config's `[aerwhales]` section. Server and players must match.
+
+**Unsaddling**: sneak and use an empty hand on a saddled phyg or flying cow to take its saddle back.
 
 ## The tall Aether
 

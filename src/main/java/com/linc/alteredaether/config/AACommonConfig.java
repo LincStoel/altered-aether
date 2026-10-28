@@ -47,6 +47,7 @@ public final class AACommonConfig {
     public static final DoubleValue DUNE_HEIGHT;
     public static final DoubleValue DUNE_WIND_DIRECTION;
     public static final DoubleValue ATOLL_SIZE;
+    public static final DoubleValue ATOLL_CHEST_CHANCE;
     public static final DoubleValue LANDMARK_RARITY;
     public static final DoubleValue GIANT_SPACING;
     public static final DoubleValue GOLDEN_HEART_CHANCE;
@@ -130,7 +131,8 @@ public final class AACommonConfig {
                     "dried_ghast_fields", "snow_drifts", "hanging_chains", "vegetation");
     public static final List<String> COMPAT_MODS =
             List.of("ars_nouveau", "ars_elemental", "deep_aether", "aether_overworld_ores", "create", "oreganized",
-                    "dried_ghast", "snuffles", "mowziesmobs", "integrated_villages", "immersiveengineering");
+                    "dried_ghast", "snuffles", "mowziesmobs", "integrated_villages", "immersiveengineering",
+                    "aether_beyond_parity");
 
     /** Per-mob spawn settings. */
     public record MobSettings(BooleanValue enabled, BooleanValue aetherExclusive, DoubleValue weightMultiplier,
@@ -169,6 +171,9 @@ public final class AACommonConfig {
         DUNE_WIND_DIRECTION = b.comment("Prevailing wind over the dunes, in degrees clockwise from north.")
                 .defineInRange("dune_wind_direction", 60.0, 0.0, 360.0);
         ATOLL_SIZE = b.comment("Atoll size multiplier.").defineInRange("atoll_size", 1.0, 0.5, 2.0);
+        ATOLL_CHEST_CHANCE = b.comment("Chance an atoll hides a chest of bronze dungeon loot on its lagoon's bed. A double atoll",
+                        "always hides one, of silver dungeon loot and often a heart of the sea.")
+                .defineInRange("atoll_chest_chance", 0.35, 0.0, 1.0);
         LANDMARK_RARITY = b.comment("Multiplier on how rare landmarks are. Higher is rarer, 0 disables them.")
                 .defineInRange("landmark_rarity", 1.0, 0.0, 10.0);
         b.pop();
@@ -298,7 +303,7 @@ public final class AACommonConfig {
                 .defineInRange("direct_hit_chance", 1.0 / 30.0, 0.0, 1.0);
         STORM_MAX_STRIKES_PER_TICK = b.defineInRange("max_strikes_per_tick", 3, 1, 32);
         STORM_WARNING_TICKS = b.comment("Ticks of sparks and rumbling before a strike lands. 0 strikes without warning.")
-                .defineInRange("warning_ticks", 30, 0, 200);
+                .defineInRange("warning_ticks", 50, 0, 200);
         STORM_EXPLOSION_POWER = b.comment("Explosion power at each strike (TNT is 4.0). 0 disables explosions.")
                 .defineInRange("explosion_power", 3.5, 0.0, 10.0);
         STORM_EXPLOSION_FIRE = b.define("explosion_fire", false);
@@ -316,7 +321,7 @@ public final class AACommonConfig {
                 .define("copper_strikes", true);
         STORM_PLAYER_WARNING_TICKS = b.comment("Ticks between the warning crackle and a strike aimed at a player for their metal",
                         "or for standing on copper.")
-                .defineInRange("player_warning_ticks", 20, 0, 200);
+                .defineInRange("player_warning_ticks", 35, 0, 200);
         STORM_PLAYER_COOLDOWN_MIN = b.comment("After a strike aimed at a player for their metal or for standing on copper, that player",
                         "is spared such strikes for a random number of ticks between player_cooldown_min and",
                         "player_cooldown_max. Storm strikes are unaffected.")

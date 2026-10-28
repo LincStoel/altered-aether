@@ -121,15 +121,16 @@ public final class AADecorationProvider extends FeatureData {
      * The debris of the island's tearing, hanging in the gaps between the rift's columns rather than over them: clouds
      * of rubble, each a handful of small rocks trailing loose blocks, plus lone chunks among them and the odd big
      * piece that came away whole. Positions are picked at column heights and kept only where they hang in the open
-     * with rock to either side.
+     * with rock to either side. Gravitite is caught in their cores, so cracking debris open pays.
      */
     private void riftDebris() {
         JsonObject stone = weighted("aether:holystone[double_drops=true]", 4,
                 "aether:mossy_holystone[double_drops=true]", 3, "aether:icestone", 1);
-        boulder("debris/rift", stone, 1, 2, 0.8, 0.0, null, true, 5);
-        boulder("debris/rift_cloud", stone, 1, 3, 0.8, 0.0, null, true, 10);
+        JsonObject gravitite = simple("aether:gravitite_ore");
+        boulder("debris/rift", stone, 1, 2, 0.8, 0.0, null, true, 5, gravitite, 0.3);
+        boulder("debris/rift_cloud", stone, 1, 3, 0.8, 0.0, null, true, 10, gravitite, 0.2);
         boulder("debris/rift_large", stone, 3, 5, 0.6, 0.0, simple("aether:mossy_holystone[double_drops=true]"), true,
-                18);
+                18, gravitite, 0.06);
 
         JsonObject columns = Placement.heightRange("uniform", Placement.absolute(48), Placement.absolute(112));
         placed("debris/rift_cloud", "debris/rift_cloud", Placement.list(Placement.configCount(2.5, "rift_debris"),
@@ -428,6 +429,11 @@ public final class AADecorationProvider extends FeatureData {
 
     private void boulder(String name, JsonObject state, int minRadius, int maxRadius, double squash, double burial,
                          JsonObject topCover, boolean floating, int scatter) {
+        boulder(name, state, minRadius, maxRadius, squash, burial, topCover, floating, scatter, null, 0);
+    }
+
+    private void boulder(String name, JsonObject state, int minRadius, int maxRadius, double squash, double burial,
+                         JsonObject topCover, boolean floating, int scatter, JsonObject ore, double oreChance) {
         JsonObject config = new JsonObject();
         config.add("state", state);
         config.add("radius", uniform(minRadius, maxRadius));
@@ -439,6 +445,10 @@ public final class AADecorationProvider extends FeatureData {
         config.addProperty("floating", floating);
         if (scatter > 0) {
             config.addProperty("scatter", scatter);
+        }
+        if (ore != null) {
+            config.add("ore", ore);
+            config.addProperty("ore_chance", oreChance);
         }
         configured(name.contains("/") ? name : "boulder/" + name, "boulder", config);
     }

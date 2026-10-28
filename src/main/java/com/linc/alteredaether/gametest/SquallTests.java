@@ -59,6 +59,37 @@ public final class SquallTests {
         });
     }
 
+    @GameTest(template = "arena", timeoutTicks = 600)
+    public static void squallsBreakOffAfterStriking(GameTestHelper helper) {
+        FakePlayer player = FakePlayerFactory.get(helper.getLevel(), new GameProfile(UUID.randomUUID(), "squall-target"));
+        player.moveTo(helper.absoluteVec(new Vec3(24, 4, 24)));
+        helper.getLevel().addNewPlayer(player);
+        Squall squall = helper.spawn(AARegistries.SQUALL.get(), new Vec3(32, 6, 32));
+        squall.setPersistenceRequired();
+        squall.setTarget(player);
+        // where it was at the strike, then the furthest out and highest it got in the two seconds after
+        Vec3[] atStrike = {null};
+        int[] since = {0};
+        double[] best = {0, 0};
+        helper.onEachTick(() -> {
+            if (atStrike[0] == null) {
+                if (!helper.getLevel().getEntitiesOfClass(LightningBolt.class, player.getBoundingBox().inflate(1.5))
+                        .isEmpty()) {
+                    atStrike[0] = squall.position();
+                }
+            } else if (since[0]++ < 40) {
+                best[0] = Math.max(best[0], Math.hypot(squall.getX() - player.getX(), squall.getZ() - player.getZ()));
+                best[1] = Math.max(best[1], squall.getY() - atStrike[0].y);
+            }
+        });
+        helper.succeedWhen(() -> {
+            helper.assertTrue(atStrike[0] != null && since[0] >= 40, "no strike yet, or still retreating");
+            helper.assertTrue(best[0] >= 8, "only got " + best[0] + " out from the target");
+            helper.assertTrue(best[1] >= 4, "only climbed " + best[1]);
+            helper.getLevel().removePlayerImmediately(player, Entity.RemovalReason.DISCARDED);
+        });
+    }
+
     private SquallTests() {
     }
 }

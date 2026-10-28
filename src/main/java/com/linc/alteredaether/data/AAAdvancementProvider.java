@@ -96,10 +96,15 @@ public final class AAAdvancementProvider extends JsonDataProvider {
                 "Long Gone", "Find a village tree its people left behind");
         biome(all, "nurselog_hollow", AABiomes.NURSELOG_HOLLOW, "aether:skyroot_log", "Fallen Elders",
                 "Wander the Nurselog Hollow");
+        // either cache counts, the full one or the leftovers
         JsonObject cache = criterion("minecraft:player_generates_container_loot");
         cache.getAsJsonObject("conditions").addProperty("loot_table", AlteredAether.MOD_ID + ":chests/grove/stump");
+        JsonObject poorCache = criterion("minecraft:player_generates_container_loot");
+        poorCache.getAsJsonObject("conditions").addProperty("loot_table",
+                AlteredAether.MOD_ID + ":chests/grove/stump_poor");
         advancement(all, "stump_cache", "nurselog_hollow", "aether:golden_amber", "task", 0,
-                "Buried in the Stump", "Dig up the cache hidden in a colossal stump", Map.of("stump", cache));
+                "Buried in the Stump", "Dig up the cache hidden in a colossal stump",
+                Map.of("stump", cache, "stump_poor", poorCache));
         landmark(all, "atoll", ROOT, LandmarkVisits.ATOLL, "minecraft:brain_coral", "Lagoon in the Sky",
                 "Find an atoll and its lagoon");
         landmark(all, "double_atoll", "atoll", LandmarkType.DOUBLE_ATOLL.id(), "minecraft:heart_of_the_sea",
@@ -121,6 +126,10 @@ public final class AAAdvancementProvider extends JsonDataProvider {
                 Map.of("riding", location(riding)));
         advancement(all, "ride_the_storm", "sky_rider", "aether:lightning_knife", "goal", 50, "Ride the Storm",
                 "Ride an aerwhale through the Tempest Peaks", Map.of("riding", inBiome(AABiomes.TEMPEST_PEAKS, whale)));
+        // Awarded in code by MountUnsaddling.
+        advancement(all, "take_a_load_off", ROOT, "minecraft:saddle", "task", 0, "Take a Load Off",
+                "Sneak and take the saddle off a phyg or flying cow",
+                Map.of("unsaddled", criterion("minecraft:impossible")));
 
         JsonObject rumour = criterion("minecraft:inventory_changed");
         JsonObject map = new JsonObject();

@@ -20,6 +20,7 @@ import com.linc.alteredaether.worldgen.grove.shape.Trunk;
 import com.linc.alteredaether.worldgen.grove.shape.Tube;
 import net.minecraft.core.Direction;
 import net.minecraft.util.Mth;
+import net.minecraft.util.RandomSource;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -69,11 +70,23 @@ final class ColossalStump {
             double a = s.random.nextDouble() * Mth.TWO_PI, d = radius * s.range(0.1, 0.7);
             Furnish.growth(s, s.x + Math.cos(a) * d, top, s.z + Math.sin(a) * d);
         }
-        // Every stump keeps a treasure sealed in its heart, two blocks under the centre of the top: a cell just big
-        // enough for the chest, found only by digging down.
-        int cx = Mth.floor(s.x), cz = Mth.floor(s.z), cache = top - 2;
-        s.carve(Carve.chamber(cx, cache, cz, 0.6, 0.6, 0.6, cache));
-        Furnish.chest(s, cx, cache, cz, Direction.NORTH, Furnish.STUMP, Prop.Anchor.AT);
+        // Two blocks under the centre of the top, found only by digging down.
+        cache(s, top - 2);
+    }
+
+    /**
+     * The treasure a stump may keep sealed in its heart, in a cell just big enough for the chest: half hold none, a
+     * quarter a few leftovers and a quarter the full cache. The roll comes from the spot rather than the sketch's
+     * random, so the rest of the stump comes out as it would without it.
+     */
+    private static void cache(Sketch s, int y) {
+        double roll = RandomSource.create(Mth.getSeed(s.x, y, s.z)).nextDouble();
+        if (roll < 0.5) {
+            return;
+        }
+        s.carve(Carve.chamber(s.x, y, s.z, 0.6, 0.6, 0.6, y));
+        Furnish.chest(s, s.x, y, s.z, Direction.NORTH, roll < 0.75 ? Furnish.STUMP_POOR : Furnish.STUMP,
+                Prop.Anchor.AT);
     }
 
     /** The pool, the notches in its rim and the grooves down the flanks, and the growth round the rim. */
@@ -136,10 +149,8 @@ final class ColossalStump {
             s.twig(s.x + Math.cos(a) * d, top + 1, s.z + Math.sin(a) * d, s.range(-0.3, 0.3), 1, s.range(-0.3, 0.3),
                     s.range(3.0, 5.0));
         }
-        // The treasure is still there, sealed in the wood under the pool's floor.
-        int cx = Mth.floor(s.x), cz = Mth.floor(s.z), cache = bottom - 2;
-        s.carve(Carve.chamber(cx, cache, cz, 0.6, 0.6, 0.6, cache));
-        Furnish.chest(s, cx, cache, cz, Direction.NORTH, Furnish.STUMP, Prop.Anchor.AT);
+        // Any treasure is still there, sealed in the wood under the pool's floor.
+        cache(s, bottom - 2);
     }
 
     /**

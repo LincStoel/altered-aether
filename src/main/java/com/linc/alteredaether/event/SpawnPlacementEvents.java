@@ -14,6 +14,8 @@
  */
 package com.linc.alteredaether.event;
 
+import com.aetherteam.aether.entity.AetherEntityTypes;
+import com.aetherteam.aether.entity.EntityUtil;
 import com.aetherteam.aether.entity.monster.Zephyr;
 import com.linc.alteredaether.AATags;
 import com.linc.alteredaether.AlteredAether;
@@ -25,6 +27,7 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.FluidTags;
+import net.minecraft.world.Difficulty;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.MobSpawnType;
@@ -71,15 +74,12 @@ public final class SpawnPlacementEvents {
                         || level.getBlockState(pos.below()).is(AATags.BREEZE_SPAWNABLE_ON),
                 RegisterSpawnPlacementsEvent.Operation.REPLACE);
 
-        // Squalls spawn by the zephyr's own rule: open sky over the whole hitbox, and only one natural attempt in 11.
-        event.register(AARegistries.SQUALL.get(), SpawnPlacementTypes.ON_GROUND, Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,
-                Zephyr::checkZephyrSpawnRules, RegisterSpawnPlacementsEvent.Operation.REPLACE);
-
-        // The Aether registers no spawn placement for valkyries, so the ones Frozen Crags spawns could appear in
-        // mid-air or inside aerclouds. ON_GROUND holds them to a solid block with room to stand.
-        entity("aether:valkyrie").ifPresent(type -> event.register(type, SpawnPlacementTypes.ON_GROUND,
-                Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, (t, level, reason, pos, random) -> true,
-                RegisterSpawnPlacementsEvent.Operation.REPLACE));
+        // Zephyrs, and squalls by the zephyr's rule: standing room on the ground, open sky over the whole hitbox, and
+        // only one natural attempt in 11. Tempest Peaks is all spires, which almost never leave a flat, sky-open
+        // footprint that wide, so there and in the Frozen Crags they may also spawn in midair. The placement has to be
+        // NO_RESTRICTIONS for that, so the ground check moves into the predicate.
+        skySpawn(event, AetherEntityTypes.ZEPHYR.get());
+        skySpawn(event, AARegistries.SQUALL.get());
 
         // Lagoon life. The host biomes spawn it (see the lagoon_life biome modifier), but only an atoll's lagoon will
         // have it, so the forests' other water stays empty.
@@ -145,6 +145,18 @@ public final class SpawnPlacementEvents {
                     (t, level, reason, pos, random) -> !inAether(level) || rule.test(level, pos),
                     RegisterSpawnPlacementsEvent.Operation.REPLACE);
         }
+    }
+
+    /** The zephyr rule on the ground anywhere, or in open air under a clear sky in #altered_aether:midair_zephyrs. */
+    private static <T extends Zephyr> void skySpawn(RegisterSpawnPlacementsEvent event, EntityType<T> type) {
+        event.register(type, SpawnPlacementTypes.NO_RESTRICTIONS, Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,
+                (t, level, reason, pos, random) -> SpawnPlacementTypes.ON_GROUND.isSpawnPositionOk(level, pos, t)
+                        ? Zephyr.checkZephyrSpawnRules(t, level, reason, pos, random)
+                        : inAether(level) && level.getBiome(pos).is(AATags.MIDAIR_ZEPHYRS)
+                                && level.getDifficulty() != Difficulty.PEACEFUL
+                                && EntityUtil.wholeHitboxCanSeeSky(level, pos, 2)
+                                && (reason != MobSpawnType.NATURAL || random.nextInt(11) == 0),
+                RegisterSpawnPlacementsEvent.Operation.REPLACE);
     }
 
     private static boolean inAether(ServerLevelAccessor level) {

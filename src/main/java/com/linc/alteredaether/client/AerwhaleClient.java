@@ -60,11 +60,13 @@ public final class AerwhaleClient {
 
     @SubscribeEvent
     public static void registerKeys(RegisterKeyMappingsEvent event) {
+        event.register(AerwhaleDiveKey.KEY);
         event.register(AerwhaleEjectKey.KEY);
     }
 
     @SubscribeEvent
     public static void registerGuiLayers(RegisterGuiLayersEvent event) {
+        event.registerAbove(VanillaGuiLayers.JUMP_METER, AlteredAether.id("aerwhale_dive_bar"), AerwhaleDiveKey::renderBar);
         event.registerAbove(VanillaGuiLayers.JUMP_METER, AlteredAether.id("aerwhale_eject_bar"), AerwhaleEjectKey::renderBar);
     }
 

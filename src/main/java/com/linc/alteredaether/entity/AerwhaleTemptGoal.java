@@ -83,6 +83,10 @@ public final class AerwhaleTemptGoal extends Goal {
 
     @Override
     public void tick() {
+        if (TamedAerwhale.overhead(whale, player)) {
+            // right above it: turning toward them would only spin it round under their feet
+            return;
+        }
         double dx = whale.getX() - player.getX();
         double dz = whale.getZ() - player.getZ();
         double x = player.getX();
@@ -100,7 +104,9 @@ public final class AerwhaleTemptGoal extends Goal {
         double tx = x - whale.getX();
         double ty = y - whale.getY();
         double tz = z - whale.getZ();
-        float yaw = Mth.approachDegrees(whale.getYRot(), (float) (Mth.atan2(tz, tx) * Mth.RAD_TO_DEG) - 90.0F, TURN);
+        // no tighter than a tamed whale's circle, so it comes round in a sweep rather than on the spot
+        float turn = Math.min(TURN, TamedAerwhale.maxTurn(whale.getDeltaMovement().length()));
+        float yaw = Mth.approachDegrees(whale.getYRot(), (float) (Mth.atan2(tz, tx) * Mth.RAD_TO_DEG) - 90.0F, turn);
         float pitch = Mth.approachDegrees(whale.getXRot(), Mth.clamp(
                 (float) (Mth.atan2(ty, Math.sqrt(tx * tx + tz * tz)) * Mth.RAD_TO_DEG), -MAX_PITCH, MAX_PITCH), TURN / 2);
         whale.setYRot(yaw);

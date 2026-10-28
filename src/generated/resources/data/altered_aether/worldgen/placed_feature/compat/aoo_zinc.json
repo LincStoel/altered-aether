@@ -3,6 +3,10 @@
     {
       "type": "altered_aether:mod_enabled",
       "modid": "aether_overworld_ores"
+    },
+    {
+      "type": "altered_aether:mod_enabled",
+      "modid": "create"
     }
   ],
   "feature": "altered_aether:compat/aoo_zinc",
