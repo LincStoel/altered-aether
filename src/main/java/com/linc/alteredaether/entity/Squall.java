@@ -81,7 +81,8 @@ public class Squall extends Zephyr {
 
     /**
      * Steers to a point above the target. The zephyr's move control flies in short pushes and gives up on a point it
-     * can't reach in a straight line, so the point is set again every few ticks.
+     * can't reach in a straight line, so the point is set again every few ticks. The point stays below the build
+     * limit, where a zephyr is discarded, so a target flying near the top of the world doesn't make the squall vanish.
      */
     static final class HoverAboveTargetGoal extends Goal {
         private static final int RETARGET_TICKS = 10;
@@ -113,8 +114,9 @@ public class Squall extends Zephyr {
             retarget = RETARGET_TICKS;
             double dx = (squall.getRandom().nextDouble() * 2 - 1) * HOVER_JITTER;
             double dz = (squall.getRandom().nextDouble() * 2 - 1) * HOVER_JITTER;
-            squall.getMoveControl().setWantedPosition(target.getX() + dx, target.getY() + squall.hoverHeight,
-                    target.getZ() + dz, 1.0);
+            double ceiling = squall.level().getMaxBuildHeight() - squall.getBbHeight() - 2;
+            squall.getMoveControl().setWantedPosition(target.getX() + dx,
+                    Math.min(target.getY() + squall.hoverHeight, ceiling), target.getZ() + dz, 1.0);
         }
     }
 

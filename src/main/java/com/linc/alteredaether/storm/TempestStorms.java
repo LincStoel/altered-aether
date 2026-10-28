@@ -394,6 +394,11 @@ public final class TempestStorms {
                 if (dx * dx + dz * dz > 9 || random.nextFloat() > 0.55f) {
                     continue;
                 }
+                // a strike near the edge of the loaded area mustn't load the chunk next door
+                pos.set(at.getX() + dx, at.getY(), at.getZ() + dz);
+                if (!level.isLoaded(pos)) {
+                    continue;
+                }
                 int y = level.getHeight(Heightmap.Types.MOTION_BLOCKING, at.getX() + dx, at.getZ() + dz) - 1;
                 if (Math.abs(y - at.getY()) > 6) {
                     continue;

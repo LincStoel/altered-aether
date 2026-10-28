@@ -20,6 +20,7 @@ import com.linc.alteredaether.worldgen.landmark.Landmark;
 import com.linc.alteredaether.worldgen.landmark.LandmarkField;
 import com.linc.alteredaether.worldgen.landmark.LandmarkType;
 import com.mojang.serialization.Codec;
+import com.mojang.serialization.DataResult;
 import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.core.BlockPos;
@@ -27,6 +28,7 @@ import net.minecraft.core.component.DataComponents;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.MapItem;
@@ -55,10 +57,14 @@ import java.util.Optional;
 public final class RumourMapFunction extends LootItemConditionalFunction {
     /** The custom data key that marks a rumour map, holding the landmark type's id; the advancements look for it. */
     public static final String TAG = AlteredAether.MOD_ID;
+    /** A landmark type's id, checked as the loot table loads rather than failing each time a chest is opened. */
+    private static final Codec<String> LANDMARK_ID = Codec.STRING.validate(id ->
+            Arrays.stream(LandmarkType.values()).anyMatch(type -> type.id().equals(id))
+                    ? DataResult.success(id) : DataResult.error(() -> "Unknown landmark type: " + id));
 
     public static final MapCodec<RumourMapFunction> CODEC = RecordCodecBuilder.mapCodec(instance -> commonFields(instance)
             .and(instance.group(
-                    Codec.STRING.listOf().optionalFieldOf("landmarks", List.of()).forGetter(f -> f.landmarks),
+                    LANDMARK_ID.listOf().optionalFieldOf("landmarks", List.of()).forGetter(f -> f.landmarks),
                     Codec.INT.optionalFieldOf("search_radius", 6000).forGetter(f -> f.searchRadius),
                     Codec.BYTE.optionalFieldOf("zoom", (byte) 2).forGetter(f -> f.zoom)))
             .apply(instance, RumourMapFunction::new));
@@ -88,7 +94,7 @@ public final class RumourMapFunction extends LootItemConditionalFunction {
         if (origin == null || field == null) {
             return ItemStack.EMPTY;
         }
-        return find(field, types(), (int) origin.x, (int) origin.z, searchRadius, context.getRandom())
+        return find(field, types(), Mth.floor(origin.x), Mth.floor(origin.z), searchRadius, context.getRandom())
                 .map(site -> create(level, site, zoom))
                 .orElse(ItemStack.EMPTY);
     }
