@@ -78,8 +78,8 @@ public final class AATagProvider extends JsonDataProvider {
     }
 
     /**
-     * What draws Tempest lightning onto a player (see TempestStorms): overworld-metal armour and tools, and bare feet
-     * on copper. Aether gear (zanite, gravitite, the dungeon sets) is left out, so it is safe to wear in a storm.
+     * What draws Tempest lightning onto a player (see TempestStorms): overworld-metal armour and tools, and standing on
+     * copper without leather or gem boots. Aether gear (zanite, gravitite, the dungeon sets) is left out, so it is safe to wear in a storm.
      */
     private void lightning() {
         List<String> items = new ArrayList<>();
@@ -95,6 +95,9 @@ public final class AATagProvider extends JsonDataProvider {
         }
         items.addAll(List.of("minecraft:shears", "minecraft:flint_and_steel", "minecraft:mace"));
         tag("item", AlteredAether.id("attracts_lightning"), items.toArray(String[]::new));
+        // leather and gemstone soles keep a player off charged copper; any other boots still conduct
+        tag("item", AlteredAether.id("insulating_boots"), "minecraft:leather_boots", "minecraft:diamond_boots",
+                "aether:zanite_boots", "deep_aether:skyjade_boots");
 
         List<String> blocks = new ArrayList<>();
         for (String wax : new String[]{"", "waxed_"}) {

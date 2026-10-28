@@ -66,7 +66,7 @@ import java.util.WeakHashMap;
  *
  * <p>Players also draw strikes on themselves, storm or calm: wearing overworld-metal armour or carrying an
  * overworld-metal tool in the hotbar ({@code #altered_aether:attracts_lightning}) is a good chance of a strike each roll,
- * and standing on copper ({@code #altered_aether:charged_copper}) without boots is a sure one. Either way a warning
+ * and standing on copper ({@code #altered_aether:charged_copper}) without leather or gem boots ({@code #altered_aether:insulating_boots}) is a sure one. Either way a warning
  * crackles first, and the bolt follows the player a second later, unless they have dropped the cause by then; after
  * that the player is spared these strikes for a random few seconds. These strikes are the bolt alone: no blast or
  * scorch, and no rod takes them, since the copper spires all wear one.
@@ -255,7 +255,7 @@ public final class TempestStorms {
     private static boolean holds(ServerLevel level, ServerPlayer player, Cause cause) {
         return switch (cause) {
             case COPPER -> AACommonConfig.STORM_COPPER_STRIKES.get() && player.onGround()
-                    && player.getItemBySlot(EquipmentSlot.FEET).isEmpty()
+                    && !player.getItemBySlot(EquipmentSlot.FEET).is(AATags.INSULATING_BOOTS)
                     && level.getBlockState(player.getOnPos()).is(AATags.CHARGED_COPPER);
             case METAL -> AACommonConfig.STORM_METAL_STRIKE_CHANCE.get() > 0 && carriesMetal(player);
         };

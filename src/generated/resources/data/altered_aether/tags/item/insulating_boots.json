@@ -1,0 +1,12 @@
+{
+  "replace": false,
+  "values": [
+    "minecraft:leather_boots",
+    "minecraft:diamond_boots",
+    "aether:zanite_boots",
+    {
+      "id": "deep_aether:skyjade_boots",
+      "required": false
+    }
+  ]
+}

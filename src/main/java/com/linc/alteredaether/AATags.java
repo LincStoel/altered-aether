@@ -46,8 +46,11 @@ public final class AATags {
     /** Overworld-metal armour and tools that draw Tempest lightning when worn or carried in the hotbar. */
     public static final TagKey<Item> ATTRACTS_LIGHTNING =
             TagKey.create(Registries.ITEM, AlteredAether.id("attracts_lightning"));
-    /** Copper that calls a strike down on a player standing on it in a storm biome without boots. */
+    /** Copper that calls a strike down on a player standing on it in a storm biome without insulating boots. */
     public static final TagKey<Block> CHARGED_COPPER = TagKey.create(Registries.BLOCK, AlteredAether.id("charged_copper"));
+    /** Leather and gem boots, the only ones that keep charged copper from calling a strike. */
+    public static final TagKey<Item> INSULATING_BOOTS =
+            TagKey.create(Registries.ITEM, AlteredAether.id("insulating_boots"));
 
     /** Food that tames a wild aerwhale. */
     public static final TagKey<Item> AERWHALE_TAMING_FOOD =

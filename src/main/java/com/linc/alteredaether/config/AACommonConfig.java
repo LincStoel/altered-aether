@@ -311,8 +311,8 @@ public final class AACommonConfig {
                         "overworld-metal tool in the hotbar (#altered_aether:attracts_lightning) is struck, storm or calm.",
                         "Aether gear never draws lightning. 0 disables.")
                 .defineInRange("metal_strike_chance", 0.15, 0.0, 1.0);
-        STORM_COPPER_STRIKES = b.comment("Standing on copper (#altered_aether:charged_copper) in a storm biome without boots",
-                        "calls down a strike.")
+        STORM_COPPER_STRIKES = b.comment("Standing on copper (#altered_aether:charged_copper) in a storm biome without leather or",
+                        "gem boots (#altered_aether:insulating_boots) calls down a strike.")
                 .define("copper_strikes", true);
         STORM_PLAYER_WARNING_TICKS = b.comment("Ticks between the warning crackle and a strike aimed at a player for their metal",
                         "or for standing on copper.")
