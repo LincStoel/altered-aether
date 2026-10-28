@@ -1,4 +1,4 @@
-// 1.21.1	2026-10-27T13:53:35.0290664	Altered Aether biomes
+// 1.21.1	2026-10-27T16:37:30.5994751	Altered Aether biomes
 ee03d756e5a11cd58a889991b7ce4bd76530715a data/altered_aether/worldgen/biome/aether_plateau.json
 aba63211b0ba5f9263e49e91b3f2649f9649826e data/altered_aether/worldgen/biome/blazing_archwood_grove.json
 fd970882817ecd0af21b5570e63c66dbe3a2cfda data/altered_aether/worldgen/biome/cascading_archwood_grove.json
@@ -8,6 +8,6 @@ fd970882817ecd0af21b5570e63c66dbe3a2cfda data/altered_aether/worldgen/biome/casc
 bacac32450af727e93da83098de0e4b85ea1c0a9 data/altered_aether/worldgen/biome/nurselog_hollow.json
 c3b9c5873f27cd4770c418dba71fc9999a63d9d4 data/altered_aether/worldgen/biome/shattered_rift.json
 a84e0fd37d288f23989e9f6b04e83b25bcaee0b7 data/altered_aether/worldgen/biome/skyroot_cathedral.json
-14ef21dc888b9212e15061301a89f6322083f3c1 data/altered_aether/worldgen/biome/tempest_peaks.json
+7363f02995fc5f13710c6f89e3f6236c81a33ea9 data/altered_aether/worldgen/biome/tempest_peaks.json
 ab068f2f159c815017d7ef06fed7068fa97725f1 data/altered_aether/worldgen/biome/vexing_archwood_grove.json
 839b2c2b17f4fc54e0890461318a9241669bb4d7 data/altered_aether/worldgen/biome/windswept_dunes.json

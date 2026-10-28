@@ -1,4 +1,4 @@
-// 1.21.1	2026-10-27T07:55:27.2808643	Altered Aether loot tables
+// 1.21.1	2026-10-27T16:37:30.5974757	Altered Aether loot tables
 fe6f6b74b087fc6b4932ceb86b79bec04f986ba6 data/altered_aether/loot_modifiers/bronze_dungeon_rumour_map.json
 4a7e797cff411f906ea263fc82b94440a70efa75 data/altered_aether/loot_modifiers/silver_dungeon_rumour_map.json
 5ad7efb2148e820c25154e8a6cf4fe9cd2956b86 data/altered_aether/loot_table/chests/grove/camp.json
@@ -8,4 +8,5 @@ b8d977d5ef2ce7faf08bf19e0a71340abbea083c data/altered_aether/loot_table/chests/g
 9d679335ff5e7fa58f2e790e2287d9df712b302c data/altered_aether/loot_table/chests/grove/stump.json
 e8d2a48977593b1adbbfff31b1b4a6ee23cc8395 data/altered_aether/loot_table/chests/grove/village_crate.json
 986d48d01e3cb00c664a2ae8bfbafa4a7e08b2b2 data/altered_aether/loot_table/chests/rumour_map.json
+a19cc1e74747563fecc7f580d602668c8060f6ef data/altered_aether/loot_table/entities/squall.json
 3d72c927283a489d0315b3d0b95650e79f940882 data/neoforge/loot_modifiers/global_loot_modifiers.json

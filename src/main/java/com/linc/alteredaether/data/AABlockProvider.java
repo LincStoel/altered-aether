@@ -55,6 +55,7 @@ public final class AABlockProvider extends JsonDataProvider {
         loot();
         recipe();
         gleamVines();
+        asset("models/item", AlteredAether.id("squall_spawn_egg"), model("minecraft:item/template_spawn_egg", Map.of()));
         language();
     }
 
@@ -218,6 +219,8 @@ public final class AABlockProvider extends JsonDataProvider {
             lang.put("biome." + AlteredAether.MOD_ID + "." + biome.name(), title(biome.name()));
         }
         lang.put("entity." + AlteredAether.MOD_ID + ".tamed_aerwhale", "Aerwhale");
+        lang.put("entity." + AlteredAether.MOD_ID + ".squall", "Squall");
+        lang.put("item." + AlteredAether.MOD_ID + ".squall_spawn_egg", "Squall Spawn Egg");
         lang.put("message." + AlteredAether.MOD_ID + ".aerwhale.stay", "%s will circle here");
         lang.put("message." + AlteredAether.MOD_ID + ".aerwhale.wander", "%s will roam freely");
         lang.put("message." + AlteredAether.MOD_ID + ".aerwhale.follow", "%s will follow you");

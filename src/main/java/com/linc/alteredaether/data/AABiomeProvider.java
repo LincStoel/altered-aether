@@ -173,15 +173,16 @@ public final class AABiomeProvider extends JsonDataProvider {
                 .add(BiomeJson.ORES, AADecorationProvider.TEMPEST_COPPER_ORE, AADecorationProvider.TEMPEST_COPPER_ORE_UPPER,
                         AADecorationProvider.TEMPEST_COPPER_VEIN)
                 .add(BiomeJson.TOP, AADecorationProvider.TEMPEST_CLOUD)
-                // Only the storm's own: whirlwinds and zephyrs here, breezes and wilden stalkers from the spawn
-                // biome modifiers. No wildlife, swets, cockatrices or aerwhales.
+                // Only the storm's own: whirlwinds, zephyrs and squalls here, breezes and wilden stalkers from the
+                // spawn biome modifiers. No wildlife, swets, cockatrices or aerwhales.
                 .spawners("creature")
                 .spawners("aether:aether_aerwhale")
                 .spawners("aether:aether_darkness_monster")
                 .spawners("aether:aether_surface_monster",
                         spawner("aether:whirlwind", 10, 1, 1),
                         spawner("aether:evil_whirlwind", 4, 1, 1))
-                .spawners("aether:aether_sky_monster", spawner("aether:zephyr", 20, 1, 1))
+                .spawners("aether:aether_sky_monster", spawner("aether:zephyr", 20, 1, 1),
+                        spawner(AlteredAether.MOD_ID + ":squall", 20, 1, 1))
                 .dropCost("aether:aechor_plant", "aether:golden_swet", "aether:blue_swet", "aether:cockatrice",
                         "aether:aerwhale");
     }

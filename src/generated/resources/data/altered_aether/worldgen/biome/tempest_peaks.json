@@ -73,6 +73,12 @@
         "maxCount": 1,
         "minCount": 1,
         "weight": 20
+      },
+      {
+        "type": "altered_aether:squall",
+        "maxCount": 1,
+        "minCount": 1,
+        "weight": 20
       }
     ],
     "aether:aether_surface_monster": [

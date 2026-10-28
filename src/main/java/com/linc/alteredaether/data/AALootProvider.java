@@ -23,7 +23,7 @@ import net.minecraft.resources.ResourceLocation;
 /**
  * Chest loot for the groves. A pilgrims' camp holds supplies for the road; a secret spot holds what someone thought
  * worth hiding; the Grandfather's heartwood room and the caches buried in colossal stumps hold the best of it. Even
- * those hold no dungeon treasure: the groves reward exploring, not replace the dungeons.
+ * those hold no dungeon treasure: the groves reward exploring, not replace the dungeons. Also the squall's drops.
  */
 public final class AALootProvider extends JsonDataProvider {
     private static final String RUMOUR_MAP = AlteredAether.MOD_ID + ":chests/rumour_map";
@@ -45,6 +45,27 @@ public final class AALootProvider extends JsonDataProvider {
         table("stump", pool(2, 3, camp()), pool(2, 4, secret()), pool(2, 3, heartwood()), pool(1, 1, stump()),
                 pool(1, 1, entry("aether:golden_amber", 1, 12, 24)), rumour(0.5));
         rumourMaps();
+        squall();
+    }
+
+    /** The zephyr's drop: a cold aercloud or two, one more with looting. */
+    private void squall() {
+        JsonObject entry = entry("aether:cold_aercloud", 1, 0, 2);
+        entry.remove("weight");
+        JsonObject looting = new JsonObject();
+        looting.addProperty("function", "minecraft:enchanted_count_increase");
+        looting.addProperty("enchantment", "minecraft:looting");
+        looting.add("count", uniform(0, 1));
+        entry.getAsJsonArray("functions").add(looting);
+        JsonObject pool = new JsonObject();
+        pool.addProperty("rolls", 1.0);
+        pool.addProperty("bonus_rolls", 0.0);
+        pool.add("entries", entries(entry));
+        JsonObject table = new JsonObject();
+        table.addProperty("type", "minecraft:entity");
+        table.add("pools", entries(pool));
+        table.addProperty("random_sequence", AlteredAether.MOD_ID + ":entities/squall");
+        data("loot_table/entities", AlteredAether.id("squall"), table);
     }
 
     /**

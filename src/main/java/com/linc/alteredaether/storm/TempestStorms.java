@@ -50,9 +50,11 @@ import net.neoforged.neoforge.network.PacketDistributor;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.WeakHashMap;
 
 /**
@@ -65,8 +67,9 @@ import java.util.WeakHashMap;
  * <p>Players also draw strikes on themselves, storm or calm: wearing overworld-metal armour or carrying an
  * overworld-metal tool in the hotbar ({@code #altered_aether:attracts_lightning}) is a good chance of a strike each roll,
  * and standing on copper ({@code #altered_aether:charged_copper}) without boots is a sure one. Either way a warning
- * crackles first, and the bolt follows the player a second later, unless they have dropped the cause by then. These
- * strikes are the bolt alone: no blast or scorch, and no rod takes them, since the copper spires all wear one.
+ * crackles first, and the bolt follows the player a second later, unless they have dropped the cause by then; after
+ * that the player is spared these strikes for a random few seconds. These strikes are the bolt alone: no blast or
+ * scorch, and no rod takes them, since the copper spires all wear one.
  *
  * <p>Only loaded chunks are struck, strikes per tick are capped, and the whole system switches itself off after
  * repeated errors rather than risk the world.
@@ -76,6 +79,7 @@ public final class TempestStorms {
     private static final ResourceKey<Level> THE_AETHER =
             ResourceKey.create(Registries.DIMENSION, ResourceLocation.fromNamespaceAndPath("aether", "the_aether"));
     private static final int CANDIDATES = 6, ERROR_LIMIT = 8;
+    private static final int SPARK_BUILDUP_TICKS = 8, SPARK_COLUMN_HEIGHT = 4;
 
     /** Why a strike is aimed at a player, checked again as it lands. */
     private enum Cause {
@@ -96,6 +100,8 @@ public final class TempestStorms {
     private static final List<PendingStrike> PENDING = new ArrayList<>();
     /** Bolts called down by a player's overworld metal, and that player; see {@link #onStruck}. */
     private static final Map<LightningBolt, ServerPlayer> METAL_BOLTS = new WeakHashMap<>();
+    /** Game time before which each player is spared metal and copper strikes; see {@link #warn}. */
+    private static final Map<UUID, Long> SPARED_UNTIL = new HashMap<>();
     private static final ResourceLocation THUNDERSTRUCK = AlteredAether.id("thunderstruck");
     @Nullable
     private static StormField field;
@@ -118,6 +124,7 @@ public final class TempestStorms {
         if (event.getLevel() instanceof ServerLevel level && level.dimension().equals(THE_AETHER)) {
             field = new StormField(level.getSeed());
             PENDING.clear();
+            SPARED_UNTIL.clear();
             errors = 0;
             disabled = false;
         }
@@ -128,6 +135,7 @@ public final class TempestStorms {
         if (event.getLevel() instanceof ServerLevel level && level.dimension().equals(THE_AETHER)) {
             field = null;
             PENDING.clear();
+            SPARED_UNTIL.clear();
         }
     }
 
@@ -160,7 +168,8 @@ public final class TempestStorms {
                 PacketDistributor.sendToPlayer(player, new StormPayload((float) intensity));
             }
             if (enabled && budget > 0 && !player.isSpectator() && !player.isCreative()
-                    && level.getBiome(player.blockPosition()).is(AATags.HAS_STORMS) && !targeted(player)) {
+                    && level.getBiome(player.blockPosition()).is(AATags.HAS_STORMS) && !targeted(player)
+                    && time >= SPARED_UNTIL.getOrDefault(player.getUUID(), Long.MIN_VALUE)) {
                 Cause cause = holds(level, player, Cause.COPPER) ? Cause.COPPER
                         : (time + player.getId()) % interval == 0 && holds(level, player, Cause.METAL)
                         && random.nextDouble() < AACommonConfig.STORM_METAL_STRIKE_CHANCE.get() ? Cause.METAL : null;
@@ -204,10 +213,7 @@ public final class TempestStorms {
                 it.remove();
                 continue;
             }
-            if (left % 3 == 0) {
-                level.sendParticles(ParticleTypes.ELECTRIC_SPARK, at.getX() + 0.5, at.getY() + 0.3, at.getZ() + 0.5,
-                        5, 0.5, 0.8, 0.5, 0.05);
-            }
+            warningSparks(level, victim != null ? victim.position() : Vec3.atBottomCenterOf(at), left);
             if (left <= 0) {
                 it.remove();
                 if (victim == null) {
@@ -215,6 +221,22 @@ public final class TempestStorms {
                 } else if (holds(level, victim, strike.cause())) {
                     strike(level, victim, strike.cause());
                 }
+            }
+        }
+    }
+
+    /**
+     * The warning over a spot about to be struck, {@code left} ticks before the bolt: sparks crackle round it every
+     * tick, thickening over the last {@value #SPARK_BUILDUP_TICKS}, and every other tick a column of them rises
+     * {@value #SPARK_COLUMN_HEIGHT} blocks to mark it from a distance. Squalls use it too.
+     */
+    public static void warningSparks(ServerLevel level, Vec3 at, int left) {
+        int count = left <= SPARK_BUILDUP_TICKS ? 14 : 6;
+        level.sendParticles(ParticleTypes.ELECTRIC_SPARK, at.x, at.y + 0.3, at.z, count, 0.6, 0.6, 0.6, 0.08);
+        if (left % 2 == 0) {
+            for (int i = 0; i < SPARK_COLUMN_HEIGHT * 2; i++) {
+                level.sendParticles(ParticleTypes.ELECTRIC_SPARK, at.x, at.y + 0.5 + i * 0.5, at.z, 1, 0.1, 0.2, 0.1,
+                        0.02);
             }
         }
     }
@@ -256,11 +278,17 @@ public final class TempestStorms {
         return false;
     }
 
-    /** The warning crackle at a player, then their strike a moment later. */
+    /**
+     * The warning crackle at a player, then their strike a moment later. The player is then spared another for a
+     * random cooldown, counted from when this one lands.
+     */
     private static void warn(ServerLevel level, ServerPlayer player, Cause cause, RandomSource random) {
         level.playSound(null, player.getX(), player.getY(), player.getZ(), AARegistries.INCOMING_LIGHTNING.get(),
                 SoundSource.WEATHER, 1.0f, 0.95f + random.nextFloat() * 0.1f);
         int ticks = AACommonConfig.STORM_PLAYER_WARNING_TICKS.get();
+        int min = AACommonConfig.STORM_PLAYER_COOLDOWN_MIN.get();
+        int max = Math.max(min, AACommonConfig.STORM_PLAYER_COOLDOWN_MAX.get());
+        SPARED_UNTIL.put(player.getUUID(), level.getGameTime() + ticks + min + random.nextInt(max - min + 1));
         if (ticks <= 0) {
             strike(level, player, cause);
         } else {

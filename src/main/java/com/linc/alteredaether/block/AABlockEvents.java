@@ -33,7 +33,10 @@ public final class AABlockEvents {
         event.modify(BlockEntityType.CAMPFIRE, AARegistries.AMBROSIUM_CAMPFIRE.get());
     }
 
-    /** The campfire right after the soul campfire, and gleamberries after glow berries wherever those are listed. */
+    /**
+     * The campfire right after the soul campfire, gleamberries after glow berries wherever those are listed, and the
+     * squall's spawn egg with the others.
+     */
     @SubscribeEvent
     public static void onCreativeTab(BuildCreativeModeTabContentsEvent event) {
         if (event.getTabKey().equals(CreativeModeTabs.FUNCTIONAL_BLOCKS)) {
@@ -44,6 +47,9 @@ public final class AABlockEvents {
         if (event.getTabKey().equals(CreativeModeTabs.NATURAL_BLOCKS) || event.getTabKey().equals(CreativeModeTabs.FOOD_AND_DRINKS)) {
             event.insertAfter(Items.GLOW_BERRIES.getDefaultInstance(), AARegistries.GLEAMBERRIES.get().getDefaultInstance(),
                     net.minecraft.world.item.CreativeModeTab.TabVisibility.PARENT_AND_SEARCH_TABS);
+        }
+        if (event.getTabKey().equals(CreativeModeTabs.SPAWN_EGGS)) {
+            event.accept(AARegistries.SQUALL_SPAWN_EGG.get());
         }
     }
 

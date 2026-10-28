@@ -20,6 +20,7 @@ import com.linc.alteredaether.block.AmbrosiumCampfireBlock;
 import com.linc.alteredaether.block.GleamVinesBlock;
 import com.linc.alteredaether.block.GleamVinesPlantBlock;
 import com.linc.alteredaether.compat.ModEnabled;
+import com.linc.alteredaether.entity.Squall;
 import com.linc.alteredaether.entity.TamedAerwhale;
 import com.linc.alteredaether.loot.RumourMapFunction;
 import com.linc.alteredaether.menu.AerwhaleInventoryMenu;
@@ -65,6 +66,7 @@ import com.linc.alteredaether.worldgen.surface.IslandPosition;
 import com.linc.alteredaether.worldgen.surface.Steep;
 import com.linc.alteredaether.worldgen.surface.Strata;
 import com.linc.alteredaether.worldgen.surface.SubstituteBlock;
+import com.aetherteam.aether.data.resources.AetherMobCategory;
 import com.mojang.serialization.MapCodec;
 import net.minecraft.advancements.CriterionTrigger;
 import net.minecraft.core.registries.Registries;
@@ -85,6 +87,7 @@ import net.minecraft.world.level.levelgen.feature.Feature;
 import net.minecraft.world.level.levelgen.placement.PlacementModifierType;
 import net.minecraft.world.level.levelgen.feature.stateproviders.BlockStateProviderType;
 import net.neoforged.bus.api.IEventBus;
+import net.neoforged.neoforge.common.DeferredSpawnEggItem;
 import net.neoforged.neoforge.common.conditions.ICondition;
 import net.neoforged.neoforge.common.extensions.IMenuTypeExtension;
 import net.neoforged.neoforge.common.world.BiomeModifier;
@@ -121,6 +124,13 @@ public final class AARegistries {
                     .fireImmune().sized(3.0F, 3.0F).clientTrackingRange(10)
                     // every tick, so a whale players stand on turns smoothly for them
                     .updateInterval(1).build("tamed_aerwhale"));
+
+    /** A zephyr in storm colours, so sized and tracked like one; see entity/Squall. */
+    public static final DeferredHolder<EntityType<?>, EntityType<Squall>> SQUALL = ENTITY_TYPES.register(
+            "squall", () -> EntityType.Builder.<Squall>of(Squall::new, AetherMobCategory.AETHER_SKY_MONSTER)
+                    .sized(4.5F, 3.5F).clientTrackingRange(10).build("squall"));
+    public static final DeferredItem<DeferredSpawnEggItem> SQUALL_SPAWN_EGG = ITEMS.register("squall_spawn_egg",
+            () -> new DeferredSpawnEggItem(SQUALL, 0x463C47, 0x9C838B, new Item.Properties()));
 
     public static final DeferredRegister<MenuType<?>> MENUS = DeferredRegister.create(Registries.MENU, AlteredAether.MOD_ID);
 

@@ -14,9 +14,11 @@
  */
 package com.linc.alteredaether.event;
 
+import com.aetherteam.aether.entity.monster.Zephyr;
 import com.linc.alteredaether.AATags;
 import com.linc.alteredaether.AlteredAether;
 import com.linc.alteredaether.compat.AddedMob;
+import com.linc.alteredaether.registry.AARegistries;
 import com.linc.alteredaether.worldgen.basin.BasinField;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -68,6 +70,10 @@ public final class SpawnPlacementEvents {
                 (type, level, reason, pos, random) -> !isWorldSpawn(reason)
                         || level.getBlockState(pos.below()).is(AATags.BREEZE_SPAWNABLE_ON),
                 RegisterSpawnPlacementsEvent.Operation.REPLACE);
+
+        // Squalls spawn by the zephyr's own rule: open sky over the whole hitbox, and only one natural attempt in 11.
+        event.register(AARegistries.SQUALL.get(), SpawnPlacementTypes.ON_GROUND, Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,
+                Zephyr::checkZephyrSpawnRules, RegisterSpawnPlacementsEvent.Operation.REPLACE);
 
         // The Aether registers no spawn placement for valkyries, so the ones Frozen Crags spawns could appear in
         // mid-air or inside aerclouds. ON_GROUND holds them to a solid block with room to stand.

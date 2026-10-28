@@ -1,8 +1,8 @@
-// 1.21.1	2026-10-27T09:15:35.646565	Altered Aether blocks and language
+// 1.21.1	2026-10-27T16:37:30.5984752	Altered Aether blocks and language
 cc4a268c9d003718a9458f1257ad3d879abd35d6 assets/altered_aether/blockstates/ambrosium_campfire.json
 9279ad634d42135691b2587520af886dfe5ee4b5 assets/altered_aether/blockstates/gleam_vines.json
 7109808a35c46e4977768327eb3866d2740067cc assets/altered_aether/blockstates/gleam_vines_plant.json
-5cebbaa61d5658defd1d4dc1a6c10887b9257e8e assets/altered_aether/lang/en_us.json
+00087df93d06fef5ca81a7ab305be945ea22c06c assets/altered_aether/lang/en_us.json
 d9ba4bf337d6633fefcee7a328069e422cf6437f assets/altered_aether/models/block/ambrosium_campfire.json
 755e85dd5983a1e575c7421ae51c5c5af233d89c assets/altered_aether/models/block/ambrosium_campfire_off.json
 9a99356ed19bb896e24c620d7b7f0250b928fea0 assets/altered_aether/models/block/gleam_vines.json
@@ -11,6 +11,7 @@ d9ba4bf337d6633fefcee7a328069e422cf6437f assets/altered_aether/models/block/ambr
 45be47d4483ec80803397d498e9d3e8c9f6644d6 assets/altered_aether/models/block/gleam_vines_plant_lit.json
 0188ed25dc9149716f6936197c95d314e92ded44 assets/altered_aether/models/item/ambrosium_campfire.json
 aafd61bac6c10d313e631dd350aa6c236f54bb89 assets/altered_aether/models/item/gleamberries.json
+63ec6c618a3a23eab4cab9c52d7d3250de9b516e assets/altered_aether/models/item/squall_spawn_egg.json
 511cd1f9a809a31402fd40da695600518d042263 data/altered_aether/loot_table/blocks/ambrosium_campfire.json
 469ec4f02c0878a4556aae9bd4a52717fe7e3bd5 data/altered_aether/loot_table/blocks/gleam_vines.json
 8ef6858bad2558ac53114f8577ac2cab1d8c550d data/altered_aether/loot_table/blocks/gleam_vines_plant.json

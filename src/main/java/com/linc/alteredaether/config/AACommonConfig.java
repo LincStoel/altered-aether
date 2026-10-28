@@ -104,6 +104,8 @@ public final class AACommonConfig {
     public static final DoubleValue STORM_METAL_STRIKE_CHANCE;
     public static final BooleanValue STORM_COPPER_STRIKES;
     public static final IntValue STORM_PLAYER_WARNING_TICKS;
+    public static final IntValue STORM_PLAYER_COOLDOWN_MIN;
+    public static final IntValue STORM_PLAYER_COOLDOWN_MAX;
 
     // [aerwhales]
     public static final BooleanValue AERWHALE_USE_DEEP_AETHER;
@@ -315,6 +317,11 @@ public final class AACommonConfig {
         STORM_PLAYER_WARNING_TICKS = b.comment("Ticks between the warning crackle and a strike aimed at a player for their metal",
                         "or for standing on copper.")
                 .defineInRange("player_warning_ticks", 20, 0, 200);
+        STORM_PLAYER_COOLDOWN_MIN = b.comment("After a strike aimed at a player for their metal or for standing on copper, that player",
+                        "is spared such strikes for a random number of ticks between player_cooldown_min and",
+                        "player_cooldown_max. Storm strikes are unaffected.")
+                .defineInRange("player_cooldown_min", 100, 0, 24000);
+        STORM_PLAYER_COOLDOWN_MAX = b.defineInRange("player_cooldown_max", 400, 0, 24000);
         b.pop();
 
         b.comment("Tamed aerwhales: tame a wild one with blue berries, saddle it and fly it. Sneak and use your own",
