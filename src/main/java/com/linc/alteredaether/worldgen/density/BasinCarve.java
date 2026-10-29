@@ -22,6 +22,7 @@ import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.util.KeyDispatchDataCodec;
 import net.minecraft.world.level.levelgen.DensityFunction;
+import net.minecraft.world.level.levelgen.DensityFunctions;
 
 import java.util.List;
 
@@ -31,11 +32,11 @@ import java.util.List;
  * {@link BasinField} that says where the bowls are is bound per world by {@link RegionBinding}, and validates each site
  * against this function's own argument: the terrain as it is before anything is carved.
  */
-public final class BasinCarve implements DensityFunction {
+public final class BasinCarve implements DensityFunctions.TwoArgumentSimpleFunction {
     public static final MapCodec<BasinCarve> MAP_CODEC = RecordCodecBuilder.mapCodec(i -> i.group(
             DensityFunction.HOLDER_HELPER_CODEC.fieldOf("argument").forGetter(BasinCarve::argument),
             Codec.doubleRange(0.1, 4).optionalFieldOf("vertical_scale", 1.0).forGetter(BasinCarve::verticalScale)
-    ).apply(i, (argument, vertical) -> new BasinCarve(argument, vertical, null)));
+    ).apply(i, (argument, vertical) -> new BasinCarve(argument, vertical, null, null)));
     public static final KeyDispatchDataCodec<BasinCarve> CODEC = KeyDispatchDataCodec.of(MAP_CODEC);
 
     private static final BasinSite[] NONE = new BasinSite[0];
@@ -66,14 +67,89 @@ public final class BasinCarve implements DensityFunction {
 
     private static final ThreadLocal<Column> COLUMN = ThreadLocal.withInitial(Column::new);
 
+    /**
+     * The carve as a density of its own: -1 inside a bowl, effectively infinite elsewhere. {@code min(argument, cut)}
+     * is the carve, and expressing it that way lets ByePregen's column evaluator read it as an ordinary minimum. As one
+     * opaque function wrapping the interpolated final density it could not bind it, and fell back to the slow path
+     * for every noise chunk.
+     */
+    private static final class Cut implements DensityFunction {
+        private static final MapCodec<Cut> MAP_CODEC = MapCodec.unit(() -> new Cut(null));
+        private static final KeyDispatchDataCodec<Cut> CODEC = KeyDispatchDataCodec.of(MAP_CODEC);
+
+        private final Binding binding;
+
+        private Cut(Binding binding) {
+            this.binding = binding;
+        }
+
+        @Override
+        public double compute(FunctionContext context) {
+            BasinField field = binding == null ? null : binding.field;
+            if (field == null) {
+                return Double.MAX_VALUE;
+            }
+            int x = context.blockX(), y = context.blockY(), z = context.blockZ();
+            for (BasinSite site : sitesAt(field, x, z)) {
+                if (site.carves(x, y, z)) {
+                    return -1;
+                }
+            }
+            return Double.MAX_VALUE;
+        }
+
+        @Override
+        public void fillArray(double[] array, ContextProvider provider) {
+            provider.fillAllDirectly(array, this);
+        }
+
+        /** Leaf, so the visitor sees this very instance: ByePregen finds it again by identity. */
+        @Override
+        public DensityFunction mapAll(Visitor visitor) {
+            return visitor.apply(this);
+        }
+
+        @Override
+        public double minValue() {
+            return -1;
+        }
+
+        @Override
+        public double maxValue() {
+            return Double.MAX_VALUE;
+        }
+
+        @Override
+        public KeyDispatchDataCodec<? extends DensityFunction> codec() {
+            return CODEC;
+        }
+    }
+
     private final DensityFunction argument;
     private final double verticalScale;
     private final Binding binding;
+    private final DensityFunction cut;
 
-    private BasinCarve(DensityFunction argument, double verticalScale, Binding binding) {
+    private BasinCarve(DensityFunction argument, double verticalScale, Binding binding, DensityFunction cut) {
         this.argument = argument;
         this.verticalScale = verticalScale;
         this.binding = binding;
+        this.cut = cut;
+    }
+
+    @Override
+    public Type type() {
+        return Type.MIN;
+    }
+
+    @Override
+    public DensityFunction argument1() {
+        return argument;
+    }
+
+    @Override
+    public DensityFunction argument2() {
+        return cut;
     }
 
     public DensityFunction argument() {
@@ -129,8 +205,9 @@ public final class BasinCarve implements DensityFunction {
 
     @Override
     public DensityFunction mapAll(Visitor visitor) {
-        return visitor.apply(new BasinCarve(argument.mapAll(visitor), verticalScale,
-                binding != null ? binding : new Binding()));
+        Binding bound = binding != null ? binding : new Binding();
+        DensityFunction carve = cut != null ? cut : new Cut(bound);
+        return visitor.apply(new BasinCarve(argument.mapAll(visitor), verticalScale, bound, carve.mapAll(visitor)));
     }
 
     @Override
