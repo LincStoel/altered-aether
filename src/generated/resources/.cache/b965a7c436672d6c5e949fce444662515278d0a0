@@ -1,5 +1,6 @@
-// 1.21.1	2026-10-27T22:16:03.1191656	Altered Aether optional decoration
+// 1.21.1	2026-10-31T11:57:45.0245315	Altered Aether optional decoration
 45603d9286d8b91df573f7e294c9342c8f156abb data/altered_aether/neoforge/biome_modifier/decoration/ghast_dune_field.json
+c95bf3afa33922293b6ad922dc3724b087db3ae7 data/altered_aether/neoforge/biome_modifier/decoration/mushroom_nurselog_lightcap.json
 fb68aa76fb82ef28fe5036d51a8de7b37420547b data/altered_aether/neoforge/biome_modifier/decoration/ore_crag_lead.json
 9a9986d2290e7ecc26efc633b4fd2d3a7e3cd3df data/altered_aether/neoforge/biome_modifier/decoration/ore_dune_iron.json
 2038425b2d2f097128ed39bafd41b5df1b24ab9e data/altered_aether/neoforge/biome_modifier/decoration/ore_silver.json
@@ -53,6 +54,7 @@ e92a1268a2b8e66cf4afce7985642c986edfddbc data/altered_aether/worldgen/configured
 ffee7373fbacdc8b0dcb10fdff9a8f0c61e1439c data/altered_aether/worldgen/configured_feature/torch/tiki.json
 81c90a9ae63af18b7cb39fbe5603a3ab8d5e6f84 data/altered_aether/worldgen/configured_feature/totem/grove.json
 74f7f2ce369ac87d65cd8ee296cd0f925319f815 data/altered_aether/worldgen/placed_feature/ghast/dune_field.json
+d8a547cd60a229dc7be21ca5a336f52fb30329b3 data/altered_aether/worldgen/placed_feature/mushroom/nurselog_lightcap.json
 7306aa3f820c6048896e49104108ca610e57ff4a data/altered_aether/worldgen/placed_feature/ore/crag_lead.json
 432fcd9d55d294df8d2e1b71ae27b59452fed763 data/altered_aether/worldgen/placed_feature/ore/dune_iron.json
 ea808fcd72a20eecc8ddb6c62bc7225793523a6e data/altered_aether/worldgen/placed_feature/ore/silver.json

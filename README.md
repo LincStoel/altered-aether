@@ -48,6 +48,13 @@ hollows and secret places: sealed in burls, fallen logs and stumps, or in a nest
 lit by fire, which goes out in the Aether: the lamps are ambrosium torches, and with Deep Aether skyjade lanterns and
 tiki torches.
 
+Hand-built **camps and farms** are scattered thinly across the Aether: wayfarers' camps on any level ground, blue berry
+farms in the skyroot meadows and forests and on the plateau, and a gleamberry farm in the groves. Some giants have a
+**burrow** set into their side: a furnished room, entered by a doorway on the ground. Their blocks from Ascended Quark,
+Aether: Beyond Parity, Deep Aether and Visual Workbench are used when those mods are present and give way to Aether or
+vanilla blocks (stools become skyroot slabs) when they are not. They live in `data/altered_aether/structure/camp/`;
+`camp_site_chance` and `tree_burrow_chance` tune them.
+
 Now and then a Cathedral giant stands in a shallow swamp lake on an islet of its own, its prop roots arching out
 through the water into a muddy bed. The lake has lily pads, seagrass and stands of waterlogged yagroot roots
 (mangrove roots without Deep Aether), and cattails grow on its shores. Neighbouring lakes may join, and every
@@ -110,7 +117,7 @@ of sparks and thunder first. Lightning rods take strikes as in vanilla. Explosio
 **Ambrosium campfire**: a campfire of skyroot and ambrosium that burns in the Aether. Aether: Beyond Parity's
 campfire is replaced by it when that mod is installed.
 
-**Gleam vines**: cave vines in Aether colours that hang from the giants' bows and canopies, lit by gleamberries.
+**Gleam vines**: cave vines in Aether colours that hang from the giants' bows and canopies, lit by gleamberries. Hung from leaves, they take on those leaves' colour (client config `gleam_vine_leaf_tint`).
 The berries are eaten like glow berries, foxes pick them and bees grow the vines.
 
 **Tamed aerwhales.** Feed a wild aerwhale blue berries and now and then it's yours (it follows anyone holding them).

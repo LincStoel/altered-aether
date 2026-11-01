@@ -53,6 +53,8 @@ public final class AACommonConfig {
     public static final DoubleValue GOLDEN_HEART_CHANCE;
     public static final DoubleValue DEEP_AETHER_WOOD_CHANCE;
     public static final DoubleValue CAMP_CHANCE;
+    public static final DoubleValue CAMP_SITE_CHANCE;
+    public static final DoubleValue TREE_BURROW_CHANCE;
     public static final DoubleValue SECRET_CHANCE;
     public static final DoubleValue TENDED_FRACTION;
     public static final DoubleValue UNDER_ROOT_CHANCE;
@@ -122,6 +124,7 @@ public final class AACommonConfig {
     public static final Map<String, BooleanValue> COMPAT_ENABLED = new LinkedHashMap<>();
     public static final BooleanValue DISABLE_BEYOND_PARITY_CAMPFIRE;
     public static final BooleanValue DEEP_AETHER_FALLBACKS;
+    public static final BooleanValue DISABLE_COCKATRICE_REBALANCE;
     public static final BooleanValue DISABLE_OVERWORLD_ARCHWOOD;
 
     public static final List<String> BASIN_TYPES =
@@ -185,11 +188,16 @@ public final class AACommonConfig {
         GOLDEN_HEART_CHANCE = b.comment("Chance a fallen colossus or colossal stump hides golden oak heartwood.")
                 .defineInRange("golden_heart_chance", 0.08, 0.0, 1.0);
         DEEP_AETHER_WOOD_CHANCE = b.comment("With Deep Aether, the share of grove colonies grown from its woods",
-                        "(roseroot and sunroot in the cathedral; cruderoot, yagroot, conberry and roseroot among the",
-                        "fallen) instead of skyroot.")
+                        "(roseroot, blue roseroot, cruderoot, conberry and sunroot, in both biomes) instead of skyroot.")
                 .defineInRange("deep_aether_wood_chance", 0.35, 0.0, 1.0);
         CAMP_CHANCE = b.comment("Chance a hollow, alcove or clearing holds a pilgrims' camp round an ambrosium campfire.")
                 .defineInRange("camp_chance", 0.15, 0.0, 1.0);
+        CAMP_SITE_CHANCE = b.comment("Share of the sites chosen for the hand-built camps and farms (wayfarers' camps, blue berry",
+                        "farms, the gleamberry farm) that are used. They are few and far between already; 0 turns them off.")
+                .defineInRange("camp_site_chance", 1.0, 0.0, 1.0);
+        TREE_BURROW_CHANCE = b.comment("Chance a giant whose trunk is thick enough has a burrow set into its side: a",
+                        "furnished room, entered from the ground. 0 turns them off.")
+                .defineInRange("tree_burrow_chance", 0.1, 0.0, 1.0);
         SECRET_CHANCE = b.comment("Chance a giant hides a chest in a secret spot: a sealed log section, a burl, a stump,",
                         "a nest at the top of a trunk.")
                 .defineInRange("secret_chance", 0.10, 0.0, 1.0);
@@ -341,7 +349,7 @@ public final class AACommonConfig {
                 .gameRestart()
                 .define(AerwhaleMode.CONFIG_KEY, false);
         AERWHALE_TAME_CHANCE = b.comment("Chance that each blue berry tames a wild aerwhale. 0 disables taming.")
-                .defineInRange("tame_chance", 1.0 / 3.0, 0.0, 1.0);
+                .defineInRange("tame_chance", 1.0 / 8.0, 0.0, 1.0);
         AERWHALE_BREEDING_COOLDOWN = b.comment("Ticks before a parent can breed again.")
                 .defineInRange("breeding_cooldown", 6000, 0, 240000);
         AERWHALE_GROWTH_TIME = b.comment("Ticks a calf takes to grow up. Each enchanted berry fed to it takes a tenth off.")
@@ -373,6 +381,10 @@ public final class AACommonConfig {
                         "next world load, forests after a restart; only newly generated chunks change.")
                 .gameRestart()
                 .define("disable_overworld_archwood", true);
+        DISABLE_COCKATRICE_REBALANCE = b.comment("With Deep Aether loaded, cockatrices are rarer across the Aether and more common in",
+                        "yagroot swamps. Set true to leave their spawn density as the mods have it. Takes effect on the",
+                        "next world load.")
+                .define("disable_cockatrice_rebalance", false);
         b.pop();
 
         SPEC = b.build();

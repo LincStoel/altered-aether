@@ -1,4 +1,4 @@
-// 1.21.1	2026-10-28T10:38:38.562298	Altered Aether tags
+// 1.21.1	2026-10-30T22:28:45.3676868	Altered Aether tags
 b032a16350ca6010469714eb13672f97361123fc data/aether/tags/worldgen/biome/is_aether.json
 7ec09b2e18ab43d296e2d76cad7fe25c11cda07f data/altered_aether/tags/block/breeze_spawnable_on.json
 ced54e3c0345a29f08205713ce269209a192e5b8 data/altered_aether/tags/block/charged_copper.json
@@ -16,7 +16,7 @@ bbf0d0c17212568adf6c02381fe81bf1670bf7ff data/altered_aether/tags/item/aerwhale_
 558650699ee11b9f0bb9350e42d7433200b1339d data/altered_aether/tags/item/insulating_boots.json
 b9cb72fb4859bb228260166a46afc3921c7f737b data/altered_aether/tags/worldgen/biome/has_lanterns.json
 8cf8a4cb0dc6acc9f95a83ab65901cc331d98695 data/altered_aether/tags/worldgen/biome/has_storms.json
-1aefd0b6cc15e68be0ea28ad4b87994eba88175f data/altered_aether/tags/worldgen/biome/midair_zephyrs.json
+10a0a888f22292e5dc436f96a92e8168c8b006fd data/altered_aether/tags/worldgen/biome/midair_zephyrs.json
 56ec7456c37fbf5edbd08d84896d3455ded5c0cd data/ars_nouveau/tags/block/harvest/foliage.json
 a0bf1fc0c566444ccfdba18f668aa2501187ba7d data/c/tags/item/foods/berry.json
 166856e80f89d38661a6b7029b50e09f67ca042d data/deep_aether/tags/entity_type/sterling_aercloud_blacklist.json

@@ -37,16 +37,27 @@ public record GrovePalette(String name, Block log, Block wood, Block strippedLog
     public static final GrovePalette SKYROOT = of("skyroot", "aether:skyroot_log", "aether:skyroot_wood",
             "aether:stripped_skyroot_log", "aether:stripped_skyroot_wood", "aether:skyroot_leaves");
 
-    /** Deep Aether's woods for each grove biome; empty without Deep Aether. */
-    static final List<GrovePalette> DEEP_CATHEDRAL = present(deep("roseroot"), deep("sunroot"));
-    static final List<GrovePalette> DEEP_NURSELOG = present(deep("cruderoot"), deep("yagroot"), deep("conberry"),
-            deep("roseroot"));
+    /** Skyroot under crystal leaves, a rare colony of the cathedral. */
+    public static final GrovePalette CRYSTAL = of("crystal", "aether:skyroot_log", "aether:skyroot_wood",
+            "aether:stripped_skyroot_log", "aether:stripped_skyroot_wood", "aether:crystal_leaves");
+
+    /** Deep Aether's woods, the same in both grove biomes; empty without Deep Aether. */
+    static final List<GrovePalette> DEEP = present(deep("roseroot"), blueRoseroot(), deep("cruderoot"),
+            deep("conberry"), deep("sunroot"));
 
     @Nullable
     private static GrovePalette deep(String wood) {
         return of(wood, "deep_aether:" + wood + "_log", "deep_aether:" + wood + "_wood",
                 "deep_aether:stripped_" + wood + "_log", "deep_aether:stripped_" + wood + "_wood",
                 "deep_aether:" + wood + "_leaves");
+    }
+
+    /** Blue roseroot is roseroot wood under blue leaves. */
+    @Nullable
+    private static GrovePalette blueRoseroot() {
+        return of("blue_roseroot", "deep_aether:roseroot_log", "deep_aether:roseroot_wood",
+                "deep_aether:stripped_roseroot_log", "deep_aether:stripped_roseroot_wood",
+                "deep_aether:blue_roseroot_leaves");
     }
 
     private static List<GrovePalette> present(GrovePalette... palettes) {

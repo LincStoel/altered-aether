@@ -55,6 +55,15 @@ public class SquallRenderer extends ZephyrRenderer {
         return getDefaultModel();
     }
 
+    /**
+     * Ascended Quark overwrites this in ZephyrRenderer to pick a colour-variant texture; overriding it here keeps the
+     * squall's own texture whatever the variant or legacy-model setting.
+     */
+    @Override
+    public ResourceLocation getTextureLocation(Zephyr squall) {
+        return TEXTURE;
+    }
+
     @Override
     public ResourceLocation getDefaultTexture() {
         return TEXTURE;

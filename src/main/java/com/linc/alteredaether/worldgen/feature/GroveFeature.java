@@ -63,6 +63,11 @@ public final class GroveFeature extends Feature<NoneFeatureConfiguration> {
         }
         for (Giant giant : giants) {
             GroveBuilder.furnish(context.level(), x0, z0, x1, z1, giant);
+            for (net.minecraft.core.BlockPos burrow : giant.points("burrow")) {
+                if (burrow.getX() >= x0 && burrow.getX() <= x1 && burrow.getZ() >= z0 && burrow.getZ() <= z1) {
+                    FeatureStats.placed("grove/burrow");
+                }
+            }
             GroveBuilder.hangVines(context.level(), x0, z0, x1, z1, giant);
         }
         long built = System.nanoTime();

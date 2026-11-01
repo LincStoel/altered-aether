@@ -1,0 +1,21 @@
+{
+  "feature": "altered_aether:camp/aether_camp",
+  "placement": [
+    {
+      "type": "altered_aether:jittered_grid",
+      "cell_chunks": 14,
+      "chance": 0.800000011920929,
+      "salt": 71
+    },
+    {
+      "type": "minecraft:in_square"
+    },
+    {
+      "type": "minecraft:heightmap",
+      "heightmap": "WORLD_SURFACE_WG"
+    },
+    {
+      "type": "minecraft:biome"
+    }
+  ]
+}

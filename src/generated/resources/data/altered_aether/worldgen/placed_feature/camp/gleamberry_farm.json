@@ -1,0 +1,21 @@
+{
+  "feature": "altered_aether:camp/gleamberry_farm",
+  "placement": [
+    {
+      "type": "altered_aether:jittered_grid",
+      "cell_chunks": 7,
+      "chance": 0.6000000238418579,
+      "salt": 73
+    },
+    {
+      "type": "minecraft:in_square"
+    },
+    {
+      "type": "minecraft:heightmap",
+      "heightmap": "WORLD_SURFACE_WG"
+    },
+    {
+      "type": "minecraft:biome"
+    }
+  ]
+}

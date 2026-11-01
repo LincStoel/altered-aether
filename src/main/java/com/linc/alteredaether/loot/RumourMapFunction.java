@@ -23,7 +23,12 @@ import com.mojang.serialization.Codec;
 import com.mojang.serialization.DataResult;
 import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
+import com.mojang.datafixers.util.Pair;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Holder;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.level.biome.Biome;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
@@ -44,6 +49,7 @@ import net.minecraft.world.phys.Vec3;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
@@ -52,7 +58,9 @@ import java.util.Optional;
  * {@code altered_aether:rumour_map}: turns the item into an explorer's map of a landmark near the chest, centred on
  * it and marked with a red X, like the vanilla treasure maps. The landmark types are tried in a random order and the
  * first with a site within {@code search_radius} blocks wins; with none, the item is dropped rather than left a blank
- * map. Outside the Aether there are no landmarks, so nothing is ever found there.
+ * map. The listed biomes (the archwood groves) are candidates too, found by a biome search and marked at the nearest
+ * spot of them; ones whose mod is absent aren't registered and are skipped. Outside the Aether there are no
+ * landmarks, so nothing is ever found there.
  */
 public final class RumourMapFunction extends LootItemConditionalFunction {
     /** The custom data key that marks a rumour map, holding the landmark type's id; the advancements look for it. */
@@ -65,18 +73,21 @@ public final class RumourMapFunction extends LootItemConditionalFunction {
     public static final MapCodec<RumourMapFunction> CODEC = RecordCodecBuilder.mapCodec(instance -> commonFields(instance)
             .and(instance.group(
                     LANDMARK_ID.listOf().optionalFieldOf("landmarks", List.of()).forGetter(f -> f.landmarks),
+                    ResourceLocation.CODEC.listOf().optionalFieldOf("biomes", List.of()).forGetter(f -> f.biomes),
                     Codec.INT.optionalFieldOf("search_radius", 6000).forGetter(f -> f.searchRadius),
                     Codec.BYTE.optionalFieldOf("zoom", (byte) 2).forGetter(f -> f.zoom)))
             .apply(instance, RumourMapFunction::new));
 
     private final List<String> landmarks;
+    private final List<ResourceLocation> biomes;
     private final int searchRadius;
     private final byte zoom;
 
-    private RumourMapFunction(List<LootItemCondition> conditions, List<String> landmarks, int searchRadius,
-                              byte zoom) {
+    private RumourMapFunction(List<LootItemCondition> conditions, List<String> landmarks,
+                              List<ResourceLocation> biomes, int searchRadius, byte zoom) {
         super(conditions);
         this.landmarks = landmarks;
+        this.biomes = biomes;
         this.searchRadius = searchRadius;
         this.zoom = zoom;
     }
@@ -94,9 +105,39 @@ public final class RumourMapFunction extends LootItemConditionalFunction {
         if (origin == null || field == null) {
             return ItemStack.EMPTY;
         }
-        return find(field, types(), Mth.floor(origin.x), Mth.floor(origin.z), searchRadius, context.getRandom())
-                .map(site -> create(level, site, zoom))
-                .orElse(ItemStack.EMPTY);
+        int x = Mth.floor(origin.x), z = Mth.floor(origin.z);
+        RandomSource random = context.getRandom();
+        // Landmarks and biomes are tried together in a random order, so a grove is as likely a rumour as a landmark
+        List<Object> order = new ArrayList<>(types());
+        for (ResourceLocation biome : biomes) {
+            if (level.registryAccess().registryOrThrow(Registries.BIOME).containsKey(biome)) {
+                order.add(biome);
+            }
+        }
+        shuffle(order, random);
+        for (Object kind : order) {
+            if (kind instanceof LandmarkType type) {
+                Optional<Landmark> site = find(field, List.of(type), x, z, searchRadius, random);
+                if (site.isPresent()) {
+                    return create(level, site.get(), zoom);
+                }
+            } else {
+                ResourceLocation biome = (ResourceLocation) kind;
+                if (level.getBiome(BlockPos.containing(origin)).is(biome)) {
+                    continue;
+                }
+                Pair<BlockPos, Holder<Biome>> found = level.findClosestBiome3d(
+                        holder -> holder.is(biome), new BlockPos(x, level.getSeaLevel(), z), searchRadius / 2, 64, 96);
+                if (found != null) {
+                    return create(level, biome.getPath(), found.getFirst().getX(), found.getFirst().getZ(), zoom);
+                }
+            }
+        }
+        return ItemStack.EMPTY;
+    }
+
+    private static void shuffle(List<?> list, RandomSource random) {
+        Collections.shuffle(list, new java.util.Random(random.nextLong()));
     }
 
     private List<LandmarkType> types() {
@@ -110,11 +151,11 @@ public final class RumourMapFunction extends LootItemConditionalFunction {
     public static Optional<Landmark> find(LandmarkField field, List<LandmarkType> types, int x, int z, int radius,
                                           RandomSource random) {
         List<LandmarkType> order = new ArrayList<>(types);
-        for (int i = order.size() - 1; i > 0; i--) {
-            order.set(i, order.set(random.nextInt(i + 1), order.get(i)));
-        }
+        shuffle(order, random);
         for (LandmarkType type : order) {
-            Optional<Landmark> site = field.nearest(type, x, z, radius)
+            // The landmark the chest is in doesn't count, or it would always be the nearest
+            Optional<Landmark> site = field.nearest(type, x, z, radius,
+                            here -> Math.hypot(here.x() - x, here.z() - z) > here.extent())
                     .filter(found -> Math.hypot(found.x() - x, found.z() - z) <= radius);
             if (site.isPresent()) {
                 return site;
@@ -125,9 +166,13 @@ public final class RumourMapFunction extends LootItemConditionalFunction {
 
     /** A filled map centred on the landmark, with a red X on it and the landmark's name. */
     public static ItemStack create(ServerLevel level, Landmark site, byte zoom) {
-        ItemStack map = MapItem.create(level, site.x(), site.z(), zoom, true, true);
-        MapItemSavedData.addTargetDecoration(map, new BlockPos(site.x(), 0, site.z()), "+", MapDecorationTypes.RED_X);
-        String id = site.type().id();
+        return create(level, site.type().id(), site.x(), site.z(), zoom);
+    }
+
+    /** A filled map centred on a place, with a red X on it and the name that goes with the id. */
+    public static ItemStack create(ServerLevel level, String id, int x, int z, byte zoom) {
+        ItemStack map = MapItem.create(level, x, z, zoom, true, true);
+        MapItemSavedData.addTargetDecoration(map, new BlockPos(x, 0, z), "+", MapDecorationTypes.RED_X);
         map.set(DataComponents.ITEM_NAME, Component.translatable("item." + AlteredAether.MOD_ID + ".rumour_map." + id));
         CompoundTag tag = new CompoundTag();
         CompoundTag rumour = new CompoundTag();

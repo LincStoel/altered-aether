@@ -73,9 +73,12 @@ public final class AerwhaleTests {
         wild.setNoAi(true);
         Player player = helper.makeMockPlayer(GameType.SURVIVAL);
         player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(AetherItems.BLUE_BERRY.get(), 64));
-        // a third of the berries tame, so 64 tries all failing is a one in 10^11 chance
-        while (wild.isAlive() && !player.getMainHandItem().isEmpty()) {
-            player.interactOn(wild, InteractionHand.MAIN_HAND);
+        // an eighth of the berries tame, so 64 tries all failing is a one in 5000 chance, so the stack is topped up a few times for safety
+        for (int refills = 0; wild.isAlive() && refills < 4; refills++) {
+            player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(AetherItems.BLUE_BERRY.get(), 64));
+            while (wild.isAlive() && !player.getMainHandItem().isEmpty()) {
+                player.interactOn(wild, InteractionHand.MAIN_HAND);
+            }
         }
         List<TamedAerwhale> tamed = tamedNear(helper);
         helper.assertTrue(!wild.isAlive(), "the wild aerwhale should have been replaced");

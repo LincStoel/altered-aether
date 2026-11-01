@@ -148,6 +148,32 @@ public final class GleamVinesTests {
         helper.succeed();
     }
 
+    @GameTest(template = "arena")
+    public static void gleamVinesBreakWithoutSupport(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        for (int run = 0; run < 2; run++) {
+            BlockPos support = helper.absolutePos(new BlockPos(20 + run * 4, 12, 20));
+            level.setBlockAndUpdate(support, run == 0 ? Blocks.STONE.defaultBlockState()
+                    : Blocks.OAK_LEAVES.defaultBlockState().setValue(LeavesBlock.PERSISTENT, true));
+            level.setBlockAndUpdate(support.below(1), AARegistries.GLEAM_VINES_PLANT.get().defaultBlockState());
+            level.setBlockAndUpdate(support.below(2), AARegistries.GLEAM_VINES_PLANT.get().defaultBlockState());
+            level.setBlockAndUpdate(support.below(3), AARegistries.GLEAM_VINES.get().defaultBlockState());
+            level.setBlockAndUpdate(support, Blocks.AIR.defaultBlockState());
+        }
+        helper.runAfterDelay(10, () -> {
+            for (int run = 0; run < 2; run++) {
+                BlockPos support = helper.absolutePos(new BlockPos(20 + run * 4, 12, 20));
+                for (int i = 1; i <= 3; i++) {
+                    if (GleamVines.is(level.getBlockState(support.below(i)))) {
+                        helper.fail("Gleam vine " + i + " below a removed " + (run == 0 ? "stone" : "leaves") + " should have broken");
+                        return;
+                    }
+                }
+            }
+            helper.succeed();
+        });
+    }
+
     private static int countBerries(ServerLevel level, BlockPos pos) {
         return level.getEntitiesOfClass(ItemEntity.class, new AABB(pos).inflate(3),
                 item -> item.getItem().is(AARegistries.GLEAMBERRIES.get())).stream()

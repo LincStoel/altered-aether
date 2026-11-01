@@ -27,7 +27,7 @@ import java.util.List;
 /**
  * The Tule mass, after the cypress of Santa María del Tule: wider than it is tall, a knot of stout lobes grown into one
  * another, bulging with burls, folded into alcoves at the ground. Above, great limbs sprawl out sideways to hold up a
- * broad flat crown.
+ * broad crown, with a domed crown of its own on each lobe.
  */
 final class TuleMass {
     static void sketch(Sketch s) {
@@ -42,9 +42,14 @@ final class TuleMass {
             double radius = s.range(6.0, 8.5);
             int top = s.rise(base, s.range(38, 55));
             trunks.add(s.trunk(new Trunk(s.x + Math.cos(angle) * d, s.z + Math.sin(angle) * d, base, top, radius,
-                    0.55, 1.0, Math.cos(angle) * 0.04, Math.sin(angle) * 0.04, 4, 0.15,
+                    0.3, 1.3, Math.cos(angle) * 0.04, Math.sin(angle) * 0.04, 4, 0.15,
                     s.random.nextDouble() * Mth.TWO_PI, s.range(-0.5, 0.5), 0.6, 0.15, 16, Part.Role.LOG)));
             spread = Math.max(spread, d + radius);
+        }
+        // Each lobe tapers to a narrow tip and wears a domed crown of its own, so no lobe ends in a bare flat cut.
+        for (Trunk lobe : trunks) {
+            s.crown(lobe.centreX(lobe.top()), lobe.top(), lobe.centreZ(lobe.top()), s.range(10, 14),
+                    Math.max(1.4, lobe.radius() * 0.25), 0, 0);
         }
         s.footRadius = spread;
 

@@ -53,6 +53,13 @@ public final class Ruins {
     public static final ResourceKey<LootTable> LOOT = ResourceKey.create(Registries.LOOT_TABLE,
             AlteredAether.id("chests/grove/ruin"));
 
+    /** What a cottage or keep's floor chest holds: junk, and now and then a saddle. */
+    public static final ResourceKey<LootTable> JUNK = ResourceKey.create(Registries.LOOT_TABLE,
+            AlteredAether.id("chests/grove/ruin_junk"));
+
+    /** The odds a cottage or keep has a chest of leftovers standing in it. */
+    private static final double JUNK_CHANCE = 0.3;
+
     /** The furthest any ruin reaches from its centre, sideways. */
     public static final int REACH = 14;
 
@@ -161,6 +168,12 @@ public final class Ruins {
             int x = alongX ? cx - l / 2 + j : cx - w / 2 + i, z = alongX ? cz - w / 2 + i : cz - l / 2 + j;
             d.chest(x, -1, z, x, z, Direction.Plane.HORIZONTAL.getRandomDirection(random));
         }
+        // A chest of leftovers against a long wall, clear of the posts and the hearth.
+        int side = random.nextBoolean() ? 1 : w - 2, along = 1 + random.nextInt(l - 3);
+        int x = alongX ? cx - l / 2 + along : cx - w / 2 + side, z = alongX ? cz - w / 2 + side : cz - l / 2 + along;
+        Direction in = alongX ? (side == 1 ? Direction.SOUTH : Direction.NORTH)
+                : (side == 1 ? Direction.EAST : Direction.WEST);
+        d.junkChest(x, z, in);
         return d.done("cottage");
     }
 
@@ -249,6 +262,9 @@ public final class Ruins {
             int z = cz + out.getStepZ() * reach + (out.getStepZ() == 0 ? side : 0);
             d.put(x, 1, z, random.nextDouble() < 0.4 ? d.slab(x, 1, z) : d.wallStone(x, 1, z));
         }
+        // A chest of leftovers inside the tower.
+        d.junkChest(x0 + 1 + random.nextInt(s - 2), z0 + 1 + random.nextInt(s - 2),
+                Direction.Plane.HORIZONTAL.getRandomDirection(random));
         return d.done("keep");
     }
 
@@ -463,6 +479,23 @@ public final class Ruins {
         void chest(int x, int dy, int z, int ax, int az, Direction facing) {
             pieces.add(new RuinPlan.Piece(x, dy, z, ax, az,
                     LootChest.facing(facing), LOOT));
+        }
+
+        /** Whether something is already drawn at a spot, so a later piece there would be lost. */
+        boolean taken(int x, int dy, int z) {
+            for (RuinPlan.Piece piece : pieces) {
+                if (piece.x() == x && piece.dy() == dy && piece.z() == z) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        /** A chest of leftovers standing on the floor, at {@link #JUNK_CHANCE}, if the spot is free. */
+        void junkChest(int x, int z, Direction facing) {
+            if (random.nextDouble() < JUNK_CHANCE && !taken(x, 1, z)) {
+                pieces.add(new RuinPlan.Piece(x, 1, z, x, z, LootChest.facing(facing), JUNK));
+            }
         }
 
         double hash(int x, int y, int z) {

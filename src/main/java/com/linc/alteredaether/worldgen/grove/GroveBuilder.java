@@ -36,6 +36,8 @@ import net.minecraft.world.level.block.CaveVines;
 import net.minecraft.world.level.block.GrowingPlantHeadBlock;
 import net.minecraft.world.level.block.LeavesBlock;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.properties.BlockStateProperties;
+import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.material.Fluids;
 
@@ -117,6 +119,12 @@ public final class GroveBuilder {
                             RandomSource.create(giant.salt() ^ pos.asLong()), pos, prop.loot());
                 }
             }
+            if (prop.entity() != null) {
+                net.minecraft.world.entity.EntityType.create(prop.entity(), level.getLevel()).ifPresent(entity -> {
+                    entity.moveTo(prop.x() + 0.5, y, prop.z() + 0.5, entity.getYRot(), entity.getXRot());
+                    level.addFreshEntityWithPassengers(entity);
+                });
+            }
         }
     }
 
@@ -135,6 +143,10 @@ public final class GroveBuilder {
             canopy = canopy.union(cluster.bounds());
         }
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
+        // A sunroot giant hangs its own hangers in place of gleam vines.
+        Block hanger = giant.palette().name().equals("sunroot")
+                ? BuiltInRegistries.BLOCK.getOptional(ResourceLocation.parse("deep_aether:sunroot_hanger")).orElse(null)
+                : null;
         for (int x = Math.max(minX, canopy.minX()); x <= Math.min(maxX, canopy.maxX()); x++) {
             for (int z = Math.max(minZ, canopy.minZ()); z <= Math.min(maxZ, canopy.maxZ()); z++) {
                 if (hash(giant.salt(), x, 7, z) >= chance) {
@@ -157,6 +169,10 @@ public final class GroveBuilder {
                     continue;
                 }
                 double r = hash(giant.salt(), x, 8, z);
+                if (hanger != null) {
+                    hangSunroot(level, pos, hanger, x, y, z, 2 + (int) (r * r * 3));
+                    continue;
+                }
                 int length = 1 + (int) (r * r * 7);
                 for (int i = 1; i <= length; i++) {
                     pos.set(x, y - i, z);
@@ -171,6 +187,23 @@ public final class GroveBuilder {
                         break;
                     }
                 }
+            }
+        }
+    }
+
+    /** A sunroot hanger {@code length} blocks long under the leaf at (x, y, z), ending in its tip. */
+    private static void hangSunroot(WorldGenLevel level, BlockPos.MutableBlockPos pos, Block hanger, int x, int y,
+                                    int z, int length) {
+        BooleanProperty bottom = BlockStateProperties.BOTTOM;
+        for (int i = 1; i <= length; i++) {
+            pos.set(x, y - i, z);
+            if (!level.getBlockState(pos).isAir()) {
+                return;
+            }
+            boolean tip = i == length || !level.getBlockState(pos.below()).isAir();
+            level.setBlock(pos, hanger.defaultBlockState().trySetValue(bottom, tip), 2);
+            if (tip) {
+                return;
             }
         }
     }

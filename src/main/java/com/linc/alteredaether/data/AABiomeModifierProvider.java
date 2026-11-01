@@ -91,6 +91,14 @@ public final class AABiomeModifierProvider extends JsonDataProvider {
         dressing.addProperty("step", "surface_structures");
         data(FOLDER, AlteredAether.id("landmark_decoration"), dressing);
 
+        // The hand-built camps and farms. They go in at the surface structures step, before the trees, so the young
+        // trees grow round them; each group keeps to the biomes it belongs in.
+        campModifier("aether_camp", AAFeatureProvider.CAMP, new JsonPrimitive(IS_AETHER));
+        campModifier("blue_berry_farm", AAFeatureProvider.BERRY_FARM, strings("aether:skyroot_meadow",
+                "aether:skyroot_forest", "altered_aether:aether_plateau"));
+        campModifier("gleamberry_farm", AAFeatureProvider.GLEAMBERRY_FARM, strings("altered_aether:skyroot_cathedral",
+                "altered_aether:nurselog_hollow"));
+
         // The atolls' lagoon life, in every biome an atoll stands in. Their spawn rules (see SpawnPlacementEvents) keep
         // them to the lagoons, so the forests' other water stays as it was. Values follow vanilla's warm ocean; each
         // mob's category is its own.
@@ -124,6 +132,21 @@ public final class AABiomeModifierProvider extends JsonDataProvider {
         spawns("breeze_rift", "breeze", new JsonPrimitive("altered_aether:shattered_rift"), "monster", 2, 3, 4, 3.0);
         spawns("naga_yagroot", "naga", List.of("deep_aether:yagroot_swamp"), "monster", 10, 1, 1, "mowziesmobs",
                 "deep_aether");
+        // With Deep Aether, cockatrices thin out across the Aether and gather in the yagroot swamps. They hold the
+        // darkness category alone, so their spawn cost budget (a third of stock, two and a half times in the swamp) is
+        // what sets the density.
+        JsonObject notSwamp = new JsonObject();
+        notSwamp.addProperty("type", "neoforge:not");
+        notSwamp.addProperty("value", "deep_aether:yagroot_swamp");
+        JsonObject elsewhere = new JsonObject();
+        elsewhere.addProperty("type", "neoforge:and");
+        JsonArray elsewhereParts = new JsonArray();
+        elsewhereParts.add(IS_AETHER);
+        elsewhereParts.add(notSwamp);
+        elsewhere.add("values", elsewhereParts);
+        scaleCost("cockatrice_rare", elsewhere, "aether:cockatrice", 0.35);
+        scaleCost("cockatrice_yagroot", new JsonPrimitive("deep_aether:yagroot_swamp"), "aether:cockatrice", 2.5);
+
         // Lanterns are ambient mobs; the category is otherwise empty there, so their spawn cost sets the density.
         spawns("lantern", "lantern", List.of("#altered_aether:has_lanterns"), null, 5, 2, 4, "mowziesmobs");
 
@@ -192,6 +215,33 @@ public final class AABiomeModifierProvider extends JsonDataProvider {
                 "ars_nouveau", "ars_elemental");
         spawns("familiars/siren", "siren", List.of("altered_aether:cascading_archwood_grove"), null, 4, 1, 1,
                 "ars_nouveau", "ars_elemental");
+    }
+
+    /** Scales a mob's spawn cost budget in the given biomes; Deep Aether only. */
+    private void scaleCost(String file, JsonElement biomes, String mob, double multiplier) {
+        JsonObject json = new JsonObject();
+        json.addProperty("type", "altered_aether:scale_spawn_cost");
+        json.add("biomes", biomes);
+        json.addProperty("mob", mob);
+        json.addProperty("budget_multiplier", multiplier);
+        data(FOLDER, AlteredAether.id("spawns/" + file), json, "deep_aether");
+    }
+
+    private void campModifier(String name, String feature, JsonElement biomes) {
+        JsonObject json = new JsonObject();
+        json.addProperty("type", "neoforge:add_features");
+        json.add("biomes", biomes);
+        json.addProperty("features", feature);
+        json.addProperty("step", "surface_structures");
+        data(FOLDER, AlteredAether.id("camps/" + name), json);
+    }
+
+    private static JsonArray strings(String... values) {
+        JsonArray array = new JsonArray();
+        for (String value : values) {
+            array.add(value);
+        }
+        return array;
     }
 
     private static JsonObject spawner(String type, int weight, int min, int max) {

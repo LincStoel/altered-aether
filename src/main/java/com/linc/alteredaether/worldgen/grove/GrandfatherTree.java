@@ -50,7 +50,7 @@ public final class GrandfatherTree {
             double angle = phase + i * Mth.TWO_PI / lobes + s.range(-0.2, 0.2);
             double d = s.range(8, 12), radius = s.range(8, 10);
             s.trunk(new Trunk(x + Math.cos(angle) * d, z + Math.sin(angle) * d, base, s.rise(base, s.range(50, 65)),
-                    radius, 0.55, 1.0, Math.cos(angle) * 0.03, Math.sin(angle) * 0.03, 4, 0.14,
+                    radius, 0.08, 1.35, Math.cos(angle) * 0.03, Math.sin(angle) * 0.03, 4, 0.14,
                     random.nextDouble() * Mth.TWO_PI, s.range(-0.5, 0.5), 0.55, 0.15, 24, Part.Role.LOG));
             spread = Math.max(spread, d + radius);
         }
@@ -59,6 +59,10 @@ public final class GrandfatherTree {
                 random.nextDouble() * Mth.TWO_PI, 0.4, 0.2, 0.1, 24, Part.Role.LOG));
         s.footRadius = spread;
         s.crown(x, top, z, s.range(30, 36), 3.5, 0, 0);
+        // The best of it kept at the very top, in a small clearing in the crown, for whoever climbs all the way.
+        s.carve(Carve.chamber(x, top + 3, z, 2.5, 2.5, 2.5, top + 1));
+        Furnish.chest(s, x, top + 1, z, Direction.NORTH, Furnish.CROWN, Prop.Anchor.AT);
+        s.point("crown", x, top + 1, z);
         for (int i = 0; i < 3; i++) {
             int y = (int) Mth.lerp(s.range(0.6, 0.8), base, top);
             s.crown(column.centreX(y), y, column.centreZ(y), s.range(18, 22), 2.6, 0, 0);
@@ -132,8 +136,11 @@ public final class GrandfatherTree {
         for (double[] c : children) {
             double cy = c[1];
             double tx = column.centreX(cy), tz = column.centreZ(cy);
-            s.tube(Tube.bezier(c, new double[]{Mth.lerp(0.33, c[0], tx), cy - 3 * vertical, Mth.lerp(0.33, c[2], tz)},
-                    new double[]{Mth.lerp(0.66, c[0], tx), cy - 3 * vertical, Mth.lerp(0.66, c[2], tz)},
+            // Slung low between the two, a good tenth of the span at the middle (a cubic only drops 3/4 of its handles).
+            double span = Math.hypot(tx - c[0], tz - c[2]);
+            double sag = Math.max(3, span * s.range(0.12, 0.16)) * Math.max(vertical, 0.7) * 4 / 3;
+            s.tube(Tube.bezier(c, new double[]{Mth.lerp(0.33, c[0], tx), cy - sag, Mth.lerp(0.33, c[2], tz)},
+                    new double[]{Mth.lerp(0.66, c[0], tx), cy - sag, Mth.lerp(0.66, c[2], tz)},
                     new double[]{tx, cy + 4, tz}, 1.8, 2.4, 10, Part.Role.LOG));
         }
         for (int i = 0; i < lobes; i++) {

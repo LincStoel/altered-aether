@@ -75,12 +75,33 @@ final class Link {
 
         if (random.nextDouble() < bridgeChance && a.crown() != Integer.MIN_VALUE && b.crown() != Integer.MIN_VALUE
                 && Math.abs(a.crown() - b.crown()) < 30 * vertical) {
-            double y = Math.min(a.crown(), b.crown()) - s.range(8, 14) * vertical;
-            double sag = s.range(2, 5) * vertical;
-            double ax = a.x() + ux * 3, az = a.z() + uz * 3, bx = b.x() - ux * 3, bz = b.z() - uz * 3;
+            double y0 = Math.min(a.crown(), b.crown()) - s.range(8, 14) * vertical;
+            // Each end is anchored in the wood itself: the bridge's height is nudged until both giants have wood
+            // there, and each end sits just inside the wood's surface along the line to the other giant.
+            double y = Double.NaN, reachA = 0, reachB = 0;
+            for (int off = 0; off <= 12 && Double.isNaN(y); off = off > 0 ? -off : 1 - off) {
+                double ty = y0 + off;
+                double ra = woodReach(a, ty, ux, uz), rb = woodReach(b, ty, -ux, -uz);
+                if (ra > 0 && rb > 0) {
+                    y = ty;
+                    reachA = ra;
+                    reachB = rb;
+                }
+            }
+            if (Double.isNaN(y)) {
+                return s.wood.isEmpty() && s.paths.isEmpty() ? null : s.done(GiantType.LINK, random.nextLong());
+            }
+            double ax = a.x() + ux * (reachA - 1.5), az = a.z() + uz * (reachA - 1.5);
+            double bx = b.x() - ux * (reachB - 1.5), bz = b.z() - uz * (reachB - 1.5);
+            // The bridge hangs a tenth of its span at the middle; a cubic only drops three quarters of the way its
+            // control points are pulled, so they are pulled a third further. It also bows a little sideways, the two
+            // controls opposite ways, so it is a gentle S rather than a line.
+            double span = Math.hypot(bx - ax, bz - az);
+            double sag = span * s.range(0.08, 0.10) * 4 / 3;
+            double wander = s.range(0.8, 1.8) * (s.random.nextBoolean() ? 1 : -1);
             Tube bridge = s.tube(Tube.bezier(new double[]{ax, y, az},
-                    new double[]{Mth.lerp(0.33, ax, bx), y - sag, Mth.lerp(0.33, az, bz)},
-                    new double[]{Mth.lerp(0.66, ax, bx), y - sag, Mth.lerp(0.66, az, bz)},
+                    new double[]{Mth.lerp(0.33, ax, bx) + px * wander, y - sag, Mth.lerp(0.33, az, bz) + pz * wander},
+                    new double[]{Mth.lerp(0.66, ax, bx) - px * wander, y - sag, Mth.lerp(0.66, az, bz) - pz * wander},
                     new double[]{bx, y, bz}, s.range(1.6, 2.2), s.range(1.6, 2.2), 10, Part.Role.LOG));
             int twigs = s.range(3, 6);
             for (int i = 0; i < twigs; i++) {
@@ -154,6 +175,34 @@ final class Link {
             }
             walked += segment;
         }
+    }
+
+    /**
+     * How far from the giant's centre its wood reaches at a height, along a direction: the outer edge of the first
+     * unbroken run of wood met walking out, or 0 where there is none within reach.
+     */
+    private static double woodReach(Giant g, double y, double ux, double uz) {
+        double limit = g.extent();
+        double reach = 0;
+        boolean inside = false;
+        for (double d = 0; d <= limit; d += 0.5) {
+            double x = g.x() + 0.5 + ux * d, z = g.z() + 0.5 + uz * d;
+            boolean solid = false;
+            for (Part part : g.wood()) {
+                if (part.role() != Part.Role.SOIL && part.bounds().column(Mth.floor(x), Mth.floor(z))
+                        && part.bounds().height(Mth.floor(y)) && part.margin(x, y, z) > 0) {
+                    solid = true;
+                    break;
+                }
+            }
+            if (solid) {
+                inside = true;
+                reach = d;
+            } else if (inside) {
+                break;
+            }
+        }
+        return reach;
     }
 
     /** Within a giant's foot, where no lamp should stand. */

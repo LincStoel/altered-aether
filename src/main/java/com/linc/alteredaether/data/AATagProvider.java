@@ -71,7 +71,7 @@ public final class AATagProvider extends JsonDataProvider {
         tag("worldgen/biome", AlteredAether.id("has_storms"), "altered_aether:tempest_peaks");
         // Zephyrs and squalls may spawn in midair here (see SpawnPlacementEvents), where the biome lists them.
         tag("worldgen/biome", AlteredAether.id("midair_zephyrs"), "altered_aether:tempest_peaks",
-                "altered_aether:frozen_crags");
+                "altered_aether:frozen_crags", "altered_aether:shattered_rift");
         tag("block", AlteredAether.id("scorchable"), "aether:holystone", "aether:mossy_holystone", "aether:icestone",
                 "minecraft:cobbled_deepslate", "minecraft:deepslate", "minecraft:stone", "minecraft:snow_block",
                 "deep_aether:aseterite", "deep_aether:clorite");

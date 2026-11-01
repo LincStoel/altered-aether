@@ -27,13 +27,15 @@ import java.util.TreeMap;
 /**
  * The ambrosium campfire's and gleam vines' models, loot and recipe, and the language file. The campfire's logs are the
  * Aether's skyroot log textures, by reference; the flame is our own strip (tools/textures/ambrosium_campfire_fire.py).
- * The gleam vines are vanilla's cave vines recolored (tools/textures/gleam_vines.py).
+ * The gleam vines are vanilla's cave vines recolored and split into a tintable leaves layer and an untinted stem and
+ * berry overlay (tools/textures/gleam_vines.py).
  */
 public final class AABlockProvider extends JsonDataProvider {
     private static final String CAMPFIRE = "ambrosium_campfire";
     private static final String LOG = "aether:block/natural/skyroot_log";
     private static final String LIT_LOG = "aether:block/natural/stripped_skyroot_log";
     private static final String FIRE = AlteredAether.MOD_ID + ":block/ambrosium_campfire_fire";
+    private static final String TINTED_CROSS = "tinted_cross_overlay";
     private static final String GLEAM_VINES = "gleam_vines";
     private static final String GLEAM_VINES_PLANT = "gleam_vines_plant";
     private static final String GLEAMBERRIES = "gleamberries";
@@ -59,15 +61,21 @@ public final class AABlockProvider extends JsonDataProvider {
         language();
     }
 
-    /** Vanilla's cave vines, block for block: a crossed sprite with and without berries, dropping a berry if it has one. */
+    /**
+     * Vanilla's cave vines, block for block: a crossed sprite with and without berries, dropping a berry if it has one.
+     * The sprite is two crosses in one place: the leaves in greyscale, tinted by client/GleamVineColors to the leaves
+     * the vine hangs from, and the untinted stem and berries over them.
+     */
     private void gleamVines() {
+        asset("models/block", AlteredAether.id(TINTED_CROSS), tintedCross());
         for (String vine : new String[]{GLEAM_VINES, GLEAM_VINES_PLANT}) {
             JsonObject variants = new JsonObject();
             for (boolean berries : new boolean[]{false, true}) {
                 String model = vine + (berries ? "_lit" : "");
                 // vanilla sets cave vines' cutout layer in code, as it does the campfire's
-                asset("models/block", AlteredAether.id(model), cutout(model("minecraft:block/cross",
-                        Map.of("cross", AlteredAether.MOD_ID + ":block/" + model))));
+                asset("models/block", AlteredAether.id(model), cutout(model(AlteredAether.MOD_ID + ":block/" + TINTED_CROSS,
+                        Map.of("leaves", AlteredAether.MOD_ID + ":block/" + model + "_leaves",
+                                "overlay", AlteredAether.MOD_ID + ":block/" + model + "_overlay"))));
                 JsonObject variant = new JsonObject();
                 variant.addProperty("model", AlteredAether.MOD_ID + ":block/" + model);
                 variants.add("berries=" + berries, variant);
@@ -127,6 +135,55 @@ public final class AABlockProvider extends JsonDataProvider {
         JsonObject json = new JsonObject();
         json.add("variants", variants);
         asset("blockstates", AlteredAether.id(CAMPFIRE), json);
+    }
+
+    /**
+     * Vanilla's cross, twice over: #leaves with tint index 0, then #overlay untinted. The layers share no opaque pixels,
+     * so the coplanar quads don't fight. Particles come from #leaves, so they take the tint too.
+     */
+    private static JsonObject tintedCross() {
+        JsonObject json = new JsonObject();
+        json.addProperty("ambientocclusion", false);
+        JsonObject textures = new JsonObject();
+        textures.addProperty("particle", "#leaves");
+        json.add("textures", textures);
+        JsonArray elements = new JsonArray();
+        for (String texture : new String[]{"#leaves", "#overlay"}) {
+            for (boolean northSouth : new boolean[]{true, false}) {
+                JsonObject element = new JsonObject();
+                element.add("from", numbers(northSouth ? 0.8 : 8, 0, northSouth ? 8 : 0.8));
+                element.add("to", numbers(northSouth ? 15.2 : 8, 16, northSouth ? 8 : 15.2));
+                JsonObject rotation = new JsonObject();
+                rotation.add("origin", numbers(8, 8, 8));
+                rotation.addProperty("axis", "y");
+                rotation.addProperty("angle", 45);
+                rotation.addProperty("rescale", true);
+                element.add("rotation", rotation);
+                element.addProperty("shade", false);
+                JsonObject faces = new JsonObject();
+                for (String side : northSouth ? new String[]{"north", "south"} : new String[]{"west", "east"}) {
+                    JsonObject face = new JsonObject();
+                    face.add("uv", numbers(0, 0, 16, 16));
+                    face.addProperty("texture", texture);
+                    if (texture.equals("#leaves")) {
+                        face.addProperty("tintindex", 0);
+                    }
+                    faces.add(side, face);
+                }
+                element.add("faces", faces);
+                elements.add(element);
+            }
+        }
+        json.add("elements", elements);
+        return json;
+    }
+
+    private static JsonArray numbers(double... values) {
+        JsonArray array = new JsonArray();
+        for (double value : values) {
+            array.add(value);
+        }
+        return array;
     }
 
     private static JsonObject cutout(JsonObject model) {
@@ -239,6 +296,11 @@ public final class AABlockProvider extends JsonDataProvider {
         lang.put("item." + AlteredAether.MOD_ID + ".rumour_map.grandfather", "Rumour of the Grandfather");
         lang.put("item." + AlteredAether.MOD_ID + ".rumour_map.village_tree", "Rumour of a Village Tree");
         lang.put("item." + AlteredAether.MOD_ID + ".rumour_map.double_atoll", "Rumour of a Double Atoll");
+        lang.put("item." + AlteredAether.MOD_ID + ".rumour_map.blazing_archwood_grove", "Rumour of a Blazing Archwood Grove");
+        lang.put("item." + AlteredAether.MOD_ID + ".rumour_map.cascading_archwood_grove", "Rumour of a Cascading Archwood Grove");
+        lang.put("item." + AlteredAether.MOD_ID + ".rumour_map.flashing_archwood_grove", "Rumour of a Flashing Archwood Grove");
+        lang.put("item." + AlteredAether.MOD_ID + ".rumour_map.flourishing_archwood_grove", "Rumour of a Flourishing Archwood Grove");
+        lang.put("item." + AlteredAether.MOD_ID + ".rumour_map.vexing_archwood_grove", "Rumour of a Vexing Archwood Grove");
         AAAdvancementProvider.language(lang);
         JsonObject json = new JsonObject();
         lang.forEach(json::addProperty);

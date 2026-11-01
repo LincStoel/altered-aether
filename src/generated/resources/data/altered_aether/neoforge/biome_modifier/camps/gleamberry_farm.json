@@ -1,0 +1,9 @@
+{
+  "type": "neoforge:add_features",
+  "biomes": [
+    "altered_aether:skyroot_cathedral",
+    "altered_aether:nurselog_hollow"
+  ],
+  "features": "altered_aether:camp/gleamberry_farm",
+  "step": "surface_structures"
+}

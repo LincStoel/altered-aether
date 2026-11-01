@@ -42,7 +42,7 @@ Altered Aether's biomes live in their own region, so Deep Aether and other Aethe
 - **Tamed aerwhales**: feed a wild aerwhale blue berries to tame it, and enchanted berries to breed. Saddled, an adult seats four players, and its back is a deck you can walk on while it flies. Add chests for saddlebags. Steer by looking, dive with space, and leap off with J. Sneak and use it to make it stay, wander or follow.
 - **Unsaddling**: sneak and use an empty hand on a saddled phyg or flying cow to take its saddle back.
 - **Ambrosium campfire**: a campfire of skyroot and ambrosium that burns in the Aether.
-- **Gleam vines**: glowing cave vines in Aether colours, hanging from the giant trees.
+- **Gleam vines**: glowing cave vines in Aether colours, hanging from the giant trees, in the colour of the leaves they hang from.
 - **Advancements**: an Altered Aether advancement tab for every biome and landmark.
 
 # New Mobs

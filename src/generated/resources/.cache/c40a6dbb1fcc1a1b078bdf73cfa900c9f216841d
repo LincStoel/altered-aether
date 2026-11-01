@@ -1,6 +1,9 @@
-// 1.21.1	2026-10-26T21:19:02.2159103	Altered Aether features
+// 1.21.1	2026-11-01T13:06:56.1473025	Altered Aether features
 59ea928160ba488ba3a41b9357860d56bb169e7a data/altered_aether/worldgen/configured_feature/basin_fill.json
 35786d5f2b4993f3ca204f022d3eaf408b02496b data/altered_aether/worldgen/configured_feature/basin_seal.json
+048bcac4965ec415488e729b151895ef9c9538e1 data/altered_aether/worldgen/configured_feature/camp/aether_camp.json
+400287c05b2a00951b4f844ddb08e5de0e88c6b1 data/altered_aether/worldgen/configured_feature/camp/blue_berry_farm.json
+db24e2935d3e989b09c51b81fa7ab120ed81ce25 data/altered_aether/worldgen/configured_feature/camp/gleamberry_farm.json
 e73aaba044310485fc1356945f37b1f2a3895357 data/altered_aether/worldgen/configured_feature/grove/build.json
 9ba8399e55243b8c81e58859d8dc0feaa9bcd4dc data/altered_aether/worldgen/configured_feature/grove/hanging_roots.json
 0278b4cc2856624fc65fe15684c3b2f63ea3f3b5 data/altered_aether/worldgen/configured_feature/grove/ruin.json
@@ -12,6 +15,9 @@ a0739b2aa09adab4d3fee0458709df930b0f72a0 data/altered_aether/worldgen/configured
 1e0bcb4258d0a5090d6804a2b3f91b99a14a4de4 data/altered_aether/worldgen/configured_feature/waterfall/water.json
 db9519f6292b265f64c32572dcfbb637f05bf0d0 data/altered_aether/worldgen/placed_feature/basin_fill.json
 26287a30dea391bba0efa7aae3383f345cbb31cd data/altered_aether/worldgen/placed_feature/basin_seal.json
+582c7f29f0d743ef75d9ba201fa8fe60f7c98f57 data/altered_aether/worldgen/placed_feature/camp/aether_camp.json
+5405c445655b8115ad88ba9ee56b42187580b34f data/altered_aether/worldgen/placed_feature/camp/blue_berry_farm.json
+9a04a1a2077aa614b369356e38397c326ef5d470 data/altered_aether/worldgen/placed_feature/camp/gleamberry_farm.json
 f06a876d24818c96e53d85efe339871f5b18e0fe data/altered_aether/worldgen/placed_feature/grove/build.json
 d33c7c1f3629c930a086b6bcdd9ba7626414c358 data/altered_aether/worldgen/placed_feature/grove/hanging_roots.json
 b5dd053efb9f06e8b4d96113369b49a8f58404af data/altered_aether/worldgen/placed_feature/grove/ruin.json

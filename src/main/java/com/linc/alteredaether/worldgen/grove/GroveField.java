@@ -16,6 +16,8 @@ package com.linc.alteredaether.worldgen.grove;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
 import com.linc.alteredaether.config.AACommonConfig;
 import com.linc.alteredaether.worldgen.TerrainProbe;
 import com.linc.alteredaether.worldgen.basin.BasinField;
@@ -58,6 +60,10 @@ public final class GroveField {
     private static final double CHANCE = 0.92, BRIDGE_CHANCE = 0.35, NURSELOG_SHARE = 0.7;
     /** The odds a Cathedral cell holds a fallen colossus among the living, rather than a living giant. */
     private static final double CATHEDRAL_FALLEN = 0.06;
+    /** The share of Cathedral colonies grown with crystal leaves. */
+    private static final double CRYSTAL_SHARE = 0.03;
+    /** Wood and archwood are chosen by region, a jittered grid of cells this many blocks wide. */
+    private static final int REGION = 800;
     private static final Map<ResourceKey<Level>, GroveField> FIELDS = new ConcurrentHashMap<>();
 
     public static void put(ResourceKey<Level> dimension, @Nullable GroveField field) {
@@ -84,6 +90,12 @@ public final class GroveField {
     private final int cell;
     private final double maxLink;
     // A giant's plan is a few hundred shapes, so only the cells around the chunks being generated are kept.
+    private final LoadingCache<Long, double[]> regionPoints = CacheBuilder.newBuilder().maximumSize(256)
+            .build(CacheLoader.from(key -> {
+                RandomSource random = random(key, 11);
+                return new double[]{(cellX(key) + 0.15 + random.nextDouble() * 0.7) * REGION,
+                        (cellZ(key) + 0.15 + random.nextDouble() * 0.7) * REGION};
+            }));
     private final Cache<Long, Optional<Giant>> sites = CacheBuilder.newBuilder().maximumSize(1 << 10).build();
     private final Cache<Long, List<Long>> neighbours = CacheBuilder.newBuilder().maximumSize(1 << 12).build();
     private final Cache<Long, List<Giant>> links = CacheBuilder.newBuilder().maximumSize(1 << 10).build();
@@ -188,6 +200,15 @@ public final class GroveField {
 
     /** The nearest giant of a type to a point, searching out ring by ring of cells. */
     public Optional<Giant> nearest(GiantType type, int x, int z, int maxDistance) {
+        return nearest(g -> g.type() == type, x, z, maxDistance);
+    }
+
+    /** The nearest giant with a decoration point of a kind (a burrow's door, say). */
+    public Optional<Giant> nearestWithPoint(String kind, int x, int z, int maxDistance) {
+        return nearest(g -> !g.points(kind).isEmpty(), x, z, maxDistance);
+    }
+
+    private Optional<Giant> nearest(java.util.function.Predicate<Giant> wanted, int x, int z, int maxDistance) {
         int ox = Math.floorDiv(x, cell), oz = Math.floorDiv(z, cell);
         Giant best = null;
         double bestDistance = Double.MAX_VALUE;
@@ -197,7 +218,7 @@ public final class GroveField {
                     if (Math.max(Math.abs(cx - ox), Math.abs(cz - oz)) != ring) {
                         continue;
                     }
-                    Optional<Giant> site = site(cx, cz).filter(g -> g.type() == type);
+                    Optional<Giant> site = site(cx, cz).filter(wanted);
                     if (site.isPresent()) {
                         double d = Math.hypot(site.get().x() - x, site.get().z() - z);
                         if (d < bestDistance) {
@@ -299,7 +320,7 @@ public final class GroveField {
     private Sketch draw(GiantType type, int cx, int cz, int attempt, int x, int z, int ground, String biome,
                         RandomSource random) {
         Sketch sketch = new Sketch(probe, random, vertical, buildTop, x, z, ground);
-        sketch.palette = palette(cx, cz, biome);
+        sketch.palette = palette(x, z, biome);
         sketch.arching = type.crowned();
         sketch.tended = random.nextDouble() < AACommonConfig.TENDED_FRACTION.get();
         sketch.campChance = AACommonConfig.CAMP_CHANCE.get();
@@ -335,6 +356,14 @@ public final class GroveField {
                 ColossalStump.runoff(sketch, sketch.mire);
             }
         }
+        // A burrow set into the trunk's side, on a stream of its own too. Not for a giant standing in a lake or at a
+        // spring, whose ground is wet.
+        if (sketch.mire == null && !type.biome.isEmpty() && type != GiantType.SPRING_STUMP) {
+            RandomSource burrow = random(key(cx, cz) * 4 + attempt, 8);
+            if (burrow.nextDouble() < AACommonConfig.TREE_BURROW_CHANCE.get()) {
+                Burrow.sketch(sketch, burrow);
+            }
+        }
         // Roots under the island draw on a stream of their own, so turning them off changes nothing else.
         RandomSource roots = random(key(cx, cz) * 4 + attempt, 3);
         if (roots.nextDouble() < AACommonConfig.UNDER_ROOT_CHANCE.get()) {
@@ -347,25 +376,54 @@ public final class GroveField {
         return vertical;
     }
 
-    /** The wood the giants of the colony round a block are made of, so the young growing among them match. */
+    /** The wood the giants of the region round a block are made of, so the young growing among them match. */
     GrovePalette paletteAt(int x, int z, String biome) {
-        return palette(Math.floorDiv(x, cell), Math.floorDiv(z, cell), biome);
+        return palette(x, z, biome);
     }
 
     /**
-     * The wood a giant is made of. Colonies share it: a block of four by four cells all draw the same palette, so a
-     * stand of Deep Aether wood reads as one clone among the skyroot.
+     * The wood a region is made of. A region is a Voronoi cell some {@value #REGION} blocks across, so a stretch of
+     * forest keeps one wood and changes only where a region ends.
      */
-    private GrovePalette palette(int cx, int cz, String biome) {
-        if (!ModList.get().isLoaded("deep_aether") || !AACommonConfig.compat("deep_aether")) {
+    private GrovePalette palette(int x, int z, String biome) {
+        RandomSource random = random(regionAt(x, z), 2);
+        double roll = random.nextDouble();
+        // About one region in thirty-three of the Cathedral is crystal, taken out of the skyroot share.
+        if (biome.equals(CATHEDRAL) && roll < CRYSTAL_SHARE && GrovePalette.CRYSTAL != null) {
+            return GrovePalette.CRYSTAL;
+        }
+        if (!ModList.get().isLoaded("deep_aether") || !AACommonConfig.compat("deep_aether")
+                || GrovePalette.DEEP.isEmpty() || roll < 1 - AACommonConfig.DEEP_AETHER_WOOD_CHANCE.get()) {
             return GrovePalette.SKYROOT;
         }
-        List<GrovePalette> woods = biome.equals(CATHEDRAL) ? GrovePalette.DEEP_CATHEDRAL : GrovePalette.DEEP_NURSELOG;
-        RandomSource random = random(key(Math.floorDiv(cx, 4), Math.floorDiv(cz, 4)), 2);
-        if (woods.isEmpty() || random.nextDouble() >= AACommonConfig.DEEP_AETHER_WOOD_CHANCE.get()) {
-            return GrovePalette.SKYROOT;
+        return GrovePalette.DEEP.get(random.nextInt(GrovePalette.DEEP.size()));
+    }
+
+    /** The colour of archwood that grows in the region round a block, among those whose mods are present. */
+    public String archwoodAt(int x, int z) {
+        List<String> colours = ModList.get().isLoaded("ars_elemental")
+                ? List.of("blazing", "cascading", "flourishing", "vexing", "flashing")
+                : List.of("blazing", "cascading", "flourishing", "vexing");
+        return colours.get(random(regionAt(x, z), 10).nextInt(colours.size()));
+    }
+
+    /** The key of the region a block is in: the nearest of the jittered points of the cells round it. */
+    private long regionAt(int x, int z) {
+        int rx = Math.floorDiv(x, REGION), rz = Math.floorDiv(z, REGION);
+        long best = 0;
+        double nearest = Double.MAX_VALUE;
+        for (int dx = -1; dx <= 1; dx++) {
+            for (int dz = -1; dz <= 1; dz++) {
+                long key = key(rx + dx, rz + dz);
+                double[] point = regionPoints.getUnchecked(key);
+                double d = Math.hypot(point[0] - x, point[1] - z);
+                if (d < nearest) {
+                    nearest = d;
+                    best = key;
+                }
+            }
         }
-        return woods.get(random.nextInt(woods.size()));
+        return best;
     }
 
     @Nullable

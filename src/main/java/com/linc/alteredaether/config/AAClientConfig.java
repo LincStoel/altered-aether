@@ -29,6 +29,7 @@ public final class AAClientConfig {
     public static final BooleanValue LOCAL_RAIN;
     public static final DoubleValue PARTICLE_DENSITY;
     public static final EnumValue<ShaderMode> SHADER_MODE;
+    public static final BooleanValue GLEAM_VINE_LEAF_TINT;
 
     public enum ShaderMode {
         /** Detect an active Iris shaderpack. */
@@ -52,6 +53,11 @@ public final class AAClientConfig {
                 .defineInRange("particle_density", 1.0, 0.0, 4.0);
         SHADER_MODE = b.comment("How atmospheric effects adapt to shaderpacks. AUTO detects Iris.")
                 .defineEnum("shader_mode", ShaderMode.AUTO);
+        b.pop();
+        b.push("blocks");
+        GLEAM_VINE_LEAF_TINT = b.comment("Tint gleam vines to match the leaves they hang from. Off, they are always the",
+                        "Aether's blue-green.")
+                .define("gleam_vine_leaf_tint", true);
         b.pop();
         SPEC = b.build();
     }

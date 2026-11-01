@@ -33,6 +33,33 @@ public final class GroveSamples {
         return sketch.done(GiantType.SPRING_STUMP, random.nextLong());
     }
 
+    /**
+     * A giant of a type on level ground, as the grid draws it but with no lake and no roots under the island, and
+     * with a burrow cut into it if it will take one (null when the type has none to draw, or it will not).
+     */
+    public static Giant burrowed(GiantType type, RandomSource random, int x, int ground, int z) {
+        Sketch sketch = new Sketch(null, random, 1, Integer.MAX_VALUE, x, z, ground);
+        sketch.arching = type.crowned();
+        switch (type) {
+            case HOLLOW_ELDER -> HollowElder.sketch(sketch);
+            case TUNNEL_GIANT -> TunnelGiant.sketch(sketch);
+            case TULE_MASS -> TuleMass.sketch(sketch);
+            case BOW_COLONY -> BowColony.sketch(sketch);
+            case CATHEDRAL_RING -> CathedralRing.sketch(sketch);
+            case FALLEN_COLOSSUS -> FallenColossus.sketch(sketch, 0);
+            case SNAG -> Snag.sketch(sketch);
+            case COLOSSAL_STUMP -> ColossalStump.sketch(sketch, 0, false);
+            case LATTICE_SKELETON -> LatticeSkeleton.sketch(sketch);
+            case REGROWTH_RING -> RegrowthRing.sketch(sketch);
+            default -> {
+                return null;
+            }
+        }
+        Burrow.sketch(sketch, random);
+        Giant giant = sketch.done(type, random.nextLong());
+        return giant.points("burrow").isEmpty() ? null : giant;
+    }
+
     private GroveSamples() {
     }
 }

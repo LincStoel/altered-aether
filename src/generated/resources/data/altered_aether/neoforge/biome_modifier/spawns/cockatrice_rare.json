@@ -1,0 +1,21 @@
+{
+  "neoforge:conditions": [
+    {
+      "type": "altered_aether:mod_enabled",
+      "modid": "deep_aether"
+    }
+  ],
+  "type": "altered_aether:scale_spawn_cost",
+  "biomes": {
+    "type": "neoforge:and",
+    "values": [
+      "#aether:is_aether",
+      {
+        "type": "neoforge:not",
+        "value": "deep_aether:yagroot_swamp"
+      }
+    ]
+  },
+  "budget_multiplier": 0.35,
+  "mob": "aether:cockatrice"
+}

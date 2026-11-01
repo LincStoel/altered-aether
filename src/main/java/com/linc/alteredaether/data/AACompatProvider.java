@@ -187,6 +187,29 @@ public final class AACompatProvider extends FeatureData {
                 DEEP, ELEMENTAL);
         scatter("flashing_peaks", "ars_elemental:random_simple_flashing", "ars_elemental:yellow_archwood_sapling",
                 biomes("tempest_peaks"), null, ELEMENTAL);
+
+        List<String> cathedral = biomes("skyroot_cathedral");
+        cluster("blazing", "ars_nouveau:natural_blazing_tree", "ars_nouveau:red_archwood_sapling", cathedral);
+        cluster("cascading", "ars_nouveau:natural_cascading_tree", "ars_nouveau:blue_archwood_sapling", cathedral);
+        cluster("flourishing", "ars_nouveau:natural_flourishing_tree", "ars_nouveau:green_archwood_sapling",
+                cathedral);
+        cluster("vexing", "ars_nouveau:natural_vexing_tree", "ars_nouveau:purple_archwood_sapling", cathedral);
+        cluster("flashing", "ars_elemental:random_simple_flashing", "ars_elemental:yellow_archwood_sapling",
+                cathedral, ELEMENTAL);
+    }
+
+    /** A clump of one to five archwoods, scattered over a few blocks, at one in 120 chunks. Only the colour the grove region
+     * grows is placed, so each stretch of forest has archwood of a single colour. */
+    private void cluster(String name, String tree, String sapling, List<String> biomes, String... more) {
+        List<String> mods = new ArrayList<>(List.of(ARS));
+        mods.addAll(List.of(more));
+        String[] required = mods.toArray(String[]::new);
+        placed("cluster/" + name, tree, Placement.list(Placement.rarity(120), Placement.inSquare(),
+                Placement.archwoodRegion(name), Placement.countBetween(1, 5), Placement.randomOffset(7, 0, 0),
+                Placement.surfaceWaterDepth(0),
+                Placement.heightmap("OCEAN_FLOOR"), Placement.biome(),
+                Placement.wouldSurvive(sapling, Map.of("stage", "0"))), required);
+        addFeature("cluster/" + name, biomes, "vegetal_decoration", required);
     }
 
     private void scatter(String name, String tree, String sapling, List<String> biomes,

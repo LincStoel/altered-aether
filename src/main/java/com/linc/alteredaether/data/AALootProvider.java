@@ -42,11 +42,23 @@ public final class AALootProvider extends JsonDataProvider {
         table("ruin", pool(2, 4, camp()), pool(0, 1, secret()), rumour(0.3));
         // A deserted village's crates: mostly junk, but the villagers knew the country round them.
         table("village_crate", pool(2, 5, junk()), pool(0, 1, camp()), rumour(0.25));
+        // A chest of leftovers standing in a ruined cottage or keep: junk, and half the time a saddle.
+        JsonObject saddle = pool(1, 1, entry("minecraft:saddle", 1, 1, 1));
+        JsonArray saddleConditions = new JsonArray();
+        saddleConditions.add(chance(0.5));
+        saddle.add("conditions", saddleConditions);
+        table("ruin_junk", pool(2, 4, junk()), saddle);
         // A colossal stump's cache: the full one, or what's left after someone dug there first.
         table("stump", pool(2, 3, camp()), pool(2, 4, secret()), pool(2, 3, heartwood()), pool(1, 1, stump()),
                 pool(1, 1, entry("aether:golden_amber", 1, 12, 24)), rumour(0.75));
         table("stump_poor", pool(2, 4, camp()), pool(1, 2, secret()), pool(1, 1, entry("aether:golden_amber", 1, 2, 6)),
                 rumour(0.35));
+        // The Grandfather's crown, a climb from anything: a gold dungeon chest's roll on top of the heartwood room's.
+        JsonObject gold = new JsonObject();
+        gold.addProperty("type", "minecraft:loot_table");
+        gold.addProperty("value", "aether:chests/dungeon/gold/gold_dungeon");
+        table("crown", pool(1, 1, gold), pool(2, 3, heartwood()), pool(1, 1, entry("aether:golden_amber", 1, 16, 32)),
+                rumour(1.0));
         rumourMaps();
         doubleAtoll();
         squall();
@@ -104,6 +116,11 @@ public final class AALootProvider extends JsonDataProvider {
     private void rumourMaps() {
         JsonObject function = new JsonObject();
         function.addProperty("function", AlteredAether.MOD_ID + ":rumour_map");
+        JsonArray groves = new JsonArray();
+        for (String grove : java.util.List.of("blazing", "cascading", "flashing", "flourishing", "vexing")) {
+            groves.add(AlteredAether.MOD_ID + ":" + grove + "_archwood_grove");
+        }
+        function.add("biomes", groves);
         JsonArray functions = new JsonArray();
         functions.add(function);
         JsonObject map = entry("minecraft:map", 1, 1, 1);

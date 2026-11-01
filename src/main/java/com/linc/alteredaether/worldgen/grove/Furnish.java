@@ -51,7 +51,8 @@ import java.util.Optional;
  */
 final class Furnish {
     static final ResourceKey<LootTable> CAMP = loot("camp"), SECRET = loot("secret"), HEARTWOOD = loot("heartwood"),
-            STUMP = loot("stump"), STUMP_POOR = loot("stump_poor"), VILLAGE = loot("village_crate");
+            STUMP = loot("stump"), STUMP_POOR = loot("stump_poor"), VILLAGE = loot("village_crate"),
+            CROWN = loot("crown");
 
     private static ResourceKey<LootTable> loot(String name) {
         return ResourceKey.create(Registries.LOOT_TABLE, AlteredAether.id("chests/grove/" + name));

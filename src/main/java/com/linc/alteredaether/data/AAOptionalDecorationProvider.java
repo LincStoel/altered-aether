@@ -98,6 +98,13 @@ public final class AAOptionalDecorationProvider extends FeatureData {
                 Placement.biome()), "deep_aether");
         addFeature("tree/crag_roseroot", biomes("frozen_crags"), "vegetal_decoration", "deep_aether");
 
+        // Sparse lightcap mushrooms among the fallen giants, Deep Aether's own huge shapes, on the soil between the
+        // logs. The feature itself refuses ground that isn't soil and caps that don't fit.
+        placed("mushroom/nurselog_lightcap", "deep_aether:huge_lightcap_mushroom", Placement.list(Placement.rarity(3),
+                Placement.inSquare(), Placement.surfaceWaterDepth(0),
+                Placement.heightmap("MOTION_BLOCKING_NO_LEAVES"), Placement.biome()), "deep_aether");
+        addFeature("mushroom/nurselog_lightcap", biomes("nurselog_hollow"), "vegetal_decoration", "deep_aether");
+
         // A tiki torch is a two-block door-style block, so it is a two-layer column.
         JsonObject torch = column("up", 1, 1, simple("deep_aether:ambrosium_tiki_torch[half=lower]"));
         JsonObject upper = new JsonObject();

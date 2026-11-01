@@ -43,7 +43,7 @@ public final class AATags {
     public static final TagKey<Biome> HAS_STORMS = TagKey.create(Registries.BIOME, AlteredAether.id("has_storms"));
     /**
      * Craggy biomes where zephyrs (and squalls, where the biome lists them) may spawn in midair, since their spires
-     * leave too little flat, sky-open ground for the stock rule.
+     * and rifts leave too little flat, sky-open ground for the stock rule.
      */
     public static final TagKey<Biome> MIDAIR_ZEPHYRS = TagKey.create(Registries.BIOME, AlteredAether.id("midair_zephyrs"));
     /** Ground a storm strike may scorch, besides dirt and sand. */

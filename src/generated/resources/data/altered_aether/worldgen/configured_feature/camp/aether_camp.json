@@ -1,0 +1,8 @@
+{
+  "type": "altered_aether:camp",
+  "config": {
+    "farm": false,
+    "group": "aether_camp",
+    "slope": 2
+  }
+}

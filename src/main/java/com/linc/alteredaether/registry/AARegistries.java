@@ -32,6 +32,7 @@ import com.linc.alteredaether.worldgen.feature.BasinSealFeature;
 import com.linc.alteredaether.worldgen.feature.GroveFeature;
 import com.linc.alteredaether.worldgen.feature.HangingRootsFeature;
 import com.linc.alteredaether.worldgen.feature.UnderstoryFeature;
+import com.linc.alteredaether.worldgen.feature.CampFeature;
 import com.linc.alteredaether.worldgen.feature.RuinFeature;
 import com.linc.alteredaether.worldgen.feature.AercloudFeature;
 import com.linc.alteredaether.worldgen.feature.AercloudBridgeFeature;
@@ -46,6 +47,7 @@ import com.linc.alteredaether.worldgen.feature.CopperSpikeFeature;
 import com.linc.alteredaether.worldgen.feature.CopperVeinFeature;
 import com.linc.alteredaether.worldgen.feature.EdgeSpringFeature;
 import com.linc.alteredaether.worldgen.placement.ConfigCount;
+import com.linc.alteredaether.worldgen.placement.ArchwoodRegion;
 import com.linc.alteredaether.worldgen.placement.BiomeEdgeFalloff;
 import com.linc.alteredaether.worldgen.placement.IslandEdge;
 import com.linc.alteredaether.worldgen.placement.JitteredGrid;
@@ -61,6 +63,7 @@ import com.linc.alteredaether.worldgen.modifier.AetherExclusiveModifier;
 import com.linc.alteredaether.worldgen.modifier.ClimateModifier;
 import com.linc.alteredaether.worldgen.modifier.ConfiguredSpawnsModifier;
 import com.linc.alteredaether.worldgen.modifier.OverworldArchwoodModifier;
+import com.linc.alteredaether.worldgen.modifier.ScaleSpawnCostModifier;
 import com.linc.alteredaether.worldgen.provider.SubstituteStateProvider;
 import com.linc.alteredaether.worldgen.surface.IslandPosition;
 import com.linc.alteredaether.worldgen.surface.Steep;
@@ -158,6 +161,8 @@ public final class AARegistries {
 
     public static final DeferredHolder<MapCodec<? extends BiomeModifier>, MapCodec<ConfiguredSpawnsModifier>> CONFIGURED_SPAWNS =
             BIOME_MODIFIER_SERIALIZERS.register("configured_spawns", () -> ConfiguredSpawnsModifier.CODEC);
+    public static final DeferredHolder<MapCodec<? extends BiomeModifier>, MapCodec<ScaleSpawnCostModifier>> SCALE_SPAWN_COST =
+            BIOME_MODIFIER_SERIALIZERS.register("scale_spawn_cost", () -> ScaleSpawnCostModifier.CODEC);
     public static final DeferredHolder<MapCodec<? extends BiomeModifier>, MapCodec<AetherExclusiveModifier>> AETHER_EXCLUSIVE =
             BIOME_MODIFIER_SERIALIZERS.register("aether_exclusive", () -> AetherExclusiveModifier.CODEC);
     public static final DeferredHolder<MapCodec<? extends BiomeModifier>, MapCodec<ClimateModifier>> CLIMATE =
@@ -205,6 +210,8 @@ public final class AARegistries {
             FEATURES.register("grove", GroveFeature::new);
     public static final DeferredHolder<Feature<?>, HangingRootsFeature> HANGING_ROOTS =
             FEATURES.register("hanging_roots", HangingRootsFeature::new);
+    public static final DeferredHolder<Feature<?>, CampFeature> CAMP =
+            FEATURES.register("camp", CampFeature::new);
     public static final DeferredHolder<Feature<?>, RuinFeature> RUIN =
             FEATURES.register("ruin", RuinFeature::new);
     public static final DeferredHolder<Feature<?>, UnderstoryFeature> UNDERSTORY =
@@ -249,6 +256,8 @@ public final class AARegistries {
             PLACEMENT_MODIFIERS.register("overhang", () -> () -> Overhang.CODEC);
     public static final DeferredHolder<PlacementModifierType<?>, PlacementModifierType<LandmarkPoints>> LANDMARK_POINTS =
             PLACEMENT_MODIFIERS.register("landmark_points", () -> () -> LandmarkPoints.CODEC);
+    public static final DeferredHolder<PlacementModifierType<?>, PlacementModifierType<ArchwoodRegion>> ARCHWOOD_REGION =
+            PLACEMENT_MODIFIERS.register("archwood_region", () -> () -> ArchwoodRegion.CODEC);
     public static final DeferredHolder<PlacementModifierType<?>, PlacementModifierType<RiftGap>> RIFT_GAP =
             PLACEMENT_MODIFIERS.register("rift_gap", () -> () -> RiftGap.CODEC);
 

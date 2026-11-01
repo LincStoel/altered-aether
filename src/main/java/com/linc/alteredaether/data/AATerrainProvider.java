@@ -25,6 +25,7 @@ import net.minecraft.resources.ResourceLocation;
 import java.util.Map;
 import java.util.Set;
 
+import static com.linc.alteredaether.data.Df.abs;
 import static com.linc.alteredaether.data.Df.add;
 import static com.linc.alteredaether.data.Df.clamp;
 import static com.linc.alteredaether.data.Df.flatCache;
@@ -138,6 +139,8 @@ public final class AATerrainProvider extends JsonDataProvider {
         noise("grove_footprint", -8, 1.0, 0.5);
         noise("grove_roll", -7, 1.0, 0.5);
         noise("grove_hummock", -5, 1.0, 0.4);
+        noise("grove_level", -8, 1.0, 0.5);
+        noise("grove_gap", -7, 1.0, 0.5);
         noise("grove_root", -6, 1.0, 0.5);
         noise("mesa_height", -6, 1.0);
         noise("plateau_relief", -6, 1.0, 0.5);
@@ -247,13 +250,29 @@ public final class AATerrainProvider extends JsonDataProvider {
         df("grove_mask", max(climateBox(-0.51, 0.03, 0.17, 0.63), climateBox(-0.60, -0.44, -0.44, -0.20)));
         // Broad swells, and over them low mounds and hollows a few dozen blocks across, so the forest floor is never
         // a lawn.
-        JsonObject groveSummit = add(add(mode.y(44), mul(mode.height(7), shiftedNoise(NS + "grove_roll", 1.0, 0.0))),
+        // The whole island is lifted or dropped by a level that sits flat over large tracts: a 256-block noise, held at
+        // its middle band (the old height, y 44) and eased up to y 58 or down to y 18 either side of it, with short
+        // steep ramps between, so the forest floor is a patchwork of broad shelves at different heights.
+        JsonObject levelNoise = flatCache(shiftedNoise(NS + "grove_level", 1.0, 0.0));
+        JsonObject groveLevel = flatCache(add(
+                mul(mode.height(14), clamp(mul(8.0, add(levelNoise, -0.15)), 0.0, 1.0)),
+                mul(-mode.height(26), clamp(mul(-8.0, add(levelNoise, 0.15)), 0.0, 1.0))));
+        // Here and there a step is no ramp at all: the island is cut clean through along the middle of it, so the
+        // shelves read as separate landmasses with sky between. The seam is the band of the level noise where a ramp
+        // sits (|n| = 0.2125); the gap noise picks which seams open.
+        JsonObject groveSeam = flatCache(clamp(add(1.0,
+                mul(-14.0, abs(add(abs(levelNoise), -0.2125)))), 0.0, 1.0));
+        JsonObject groveGap = flatCache(clamp(mul(6.0, add(shiftedNoise(NS + "grove_gap", 1.0, 0.0), -0.12)),
+                0.0, 1.0));
+        JsonObject groveSummit = add(add(add(mode.y(44), groveLevel),
+                        mul(mode.height(7), shiftedNoise(NS + "grove_roll", 1.0, 0.0))),
                 mul(mode.height(3), shiftedNoise(NS + "grove_hummock", 1.0, 0.0)));
-        JsonObject groveUnderside = add(mode.y(22), mul(-mode.height(26),
+        JsonObject groveUnderside = add(add(mode.y(22), groveLevel), mul(-mode.height(26),
                 clamp(add(shiftedNoise(NS + "grove_root", 1.0, 0.0), 0.2), 0.0, 1.0)));
         df("grove_land", min(min(mul(0.125, add(groveSummit, mul(-1.0, Df.y()))),
                         mul(1.0 / 6, add(Df.y(), mul(-1.0, groveUnderside)))),
-                mul(6.0, add(flatCache(shiftedNoise(NS + "grove_footprint", 1.0, 0.0)), 0.3))));
+                add(mul(6.0, add(flatCache(shiftedNoise(NS + "grove_footprint", 1.0, 0.0)), 0.3)),
+                        mul(-14.0, mul(groveSeam, groveGap)))));
 
         // Each landform's weight, confined to our region.
         df("plateau_weight", mul(terrain("region_mask"), terrain("plateau_mask")));

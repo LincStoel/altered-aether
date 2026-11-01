@@ -35,6 +35,20 @@ final class Placement {
         return json;
     }
 
+    /** Between {@code min} and {@code max} copies of the position, uniformly. */
+    static JsonObject countBetween(int min, int max) {
+        JsonObject json = type("minecraft:count");
+        json.add("count", uniform(min, max));
+        return json;
+    }
+
+    /** Only where the grove region grows archwood of this colour. */
+    static JsonObject archwoodRegion(String colour) {
+        JsonObject json = type("altered_aether:archwood_region");
+        json.addProperty("colour", colour);
+        return json;
+    }
+
     static JsonObject rarity(int chance) {
         JsonObject json = type("minecraft:rarity_filter");
         json.addProperty("chance", chance);

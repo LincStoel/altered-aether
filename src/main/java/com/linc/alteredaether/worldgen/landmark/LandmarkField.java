@@ -159,6 +159,12 @@ public final class LandmarkField {
 
     /** The nearest landmark of a type to a point, searching out ring by ring of grid cells. */
     public Optional<Landmark> nearest(LandmarkType type, int x, int z, int maxDistance) {
+        return nearest(type, x, z, maxDistance, site -> true);
+    }
+
+    /** The nearest landmark of a type to a point that the filter accepts. */
+    public Optional<Landmark> nearest(LandmarkType type, int x, int z, int maxDistance,
+                                      java.util.function.Predicate<Landmark> accept) {
         int cell = type.gridded() ? cell(type) : basins == null ? 0 : basins.doubleCell();
         if (cell == 0 || rarity() <= 0) {
             return Optional.empty();
@@ -175,7 +181,7 @@ public final class LandmarkField {
                     }
                     Optional<Landmark> site = type.gridded() ? in(type, cx, cz)
                             : basins.doubleInCell(cx, cz).map(DoubleAtoll::new);
-                    if (site.isPresent()) {
+                    if (site.isPresent() && accept.test(site.get())) {
                         double d = Math.hypot(site.get().x() - x, site.get().z() - z);
                         if (d < bestDistance) {
                             bestDistance = d;

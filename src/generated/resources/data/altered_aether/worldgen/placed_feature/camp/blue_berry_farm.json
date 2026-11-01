@@ -1,0 +1,21 @@
+{
+  "feature": "altered_aether:camp/blue_berry_farm",
+  "placement": [
+    {
+      "type": "altered_aether:jittered_grid",
+      "cell_chunks": 10,
+      "chance": 0.699999988079071,
+      "salt": 72
+    },
+    {
+      "type": "minecraft:in_square"
+    },
+    {
+      "type": "minecraft:heightmap",
+      "heightmap": "WORLD_SURFACE_WG"
+    },
+    {
+      "type": "minecraft:biome"
+    }
+  ]
+}

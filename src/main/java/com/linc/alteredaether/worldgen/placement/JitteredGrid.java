@@ -55,14 +55,19 @@ public class JitteredGrid extends PlacementModifier {
     public Stream<BlockPos> getPositions(PlacementContext context, RandomSource random, BlockPos pos) {
         int chunkX = pos.getX() >> 4, chunkZ = pos.getZ() >> 4;
         int cellX = Math.floorDiv(chunkX, cellChunks), cellZ = Math.floorDiv(chunkZ, cellChunks);
-        long hash = mix(context.level.getSeed() ^ mix(salt * 0x632BE59BD9B4E019L)
+        long[] site = site(context.level.getSeed(), cellChunks, salt, chance, cellX, cellZ);
+        return site != null && site[0] == chunkX && site[1] == chunkZ ? Stream.of(pos) : Stream.empty();
+    }
+
+    /** The chunk {x, z} a grid cell holds its site in, or null if the cell holds none. */
+    public static long[] site(long seed, int cellChunks, int salt, float chance, int cellX, int cellZ) {
+        long hash = mix(seed ^ mix(salt * 0x632BE59BD9B4E019L)
                 ^ mix(cellX * 0x9E3779B97F4A7C15L + cellZ * 0xC2B2AE3D27D4EB4FL));
         if (chance < 1 && ((hash >>> 40) & 0xFFFFFF) / (double) 0x1000000 >= chance) {
-            return Stream.empty();
+            return null;
         }
-        int siteX = cellX * cellChunks + (int) Math.floorMod(hash, (long) cellChunks);
-        int siteZ = cellZ * cellChunks + (int) Math.floorMod(hash >>> 20, (long) cellChunks);
-        return siteX == chunkX && siteZ == chunkZ ? Stream.of(pos) : Stream.empty();
+        return new long[]{cellX * (long) cellChunks + Math.floorMod(hash, (long) cellChunks),
+                cellZ * (long) cellChunks + Math.floorMod(hash >>> 20, (long) cellChunks)};
     }
 
     private static long mix(long z) {

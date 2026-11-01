@@ -8,6 +8,13 @@
           "type": "minecraft:item",
           "functions": [
             {
+              "biomes": [
+                "altered_aether:blazing_archwood_grove",
+                "altered_aether:cascading_archwood_grove",
+                "altered_aether:flashing_archwood_grove",
+                "altered_aether:flourishing_archwood_grove",
+                "altered_aether:vexing_archwood_grove"
+              ],
               "function": "altered_aether:rumour_map"
             }
           ],

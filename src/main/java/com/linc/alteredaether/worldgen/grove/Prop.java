@@ -14,6 +14,7 @@
  */
 package com.linc.alteredaether.worldgen.grove;
 
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.storage.loot.LootTable;
@@ -27,9 +28,14 @@ import java.util.List;
  *
  * @param blocks bottom first for {@link Anchor#GROUND} and {@link Anchor#AT}, top first for {@link Anchor#HANG}
  * @param loot   the loot table of a container prop's first block, if it has one
+ * @param entity a creature standing in the column (its saved data, with its facing), spawned after the blocks
  */
 public record Prop(int x, int y, int z, Anchor anchor, List<BlockState> blocks,
-                   @Nullable ResourceKey<LootTable> loot) {
+                   @Nullable ResourceKey<LootTable> loot, @Nullable CompoundTag entity) {
+    public Prop(int x, int y, int z, Anchor anchor, List<BlockState> blocks, @Nullable ResourceKey<LootTable> loot) {
+        this(x, y, z, anchor, blocks, loot, null);
+    }
+
     public enum Anchor {
         /** Exactly at y, into air or anything replaceable. */
         AT,

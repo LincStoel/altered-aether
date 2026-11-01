@@ -21,6 +21,7 @@ import com.linc.alteredaether.worldgen.grove.shape.Tube;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.util.Mth;
@@ -33,6 +34,7 @@ import net.minecraft.world.level.block.DoublePlantBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.levelgen.LegacyRandomSource;
+import net.minecraft.world.level.levelgen.feature.ConfiguredFeature;
 import net.minecraft.world.level.levelgen.WorldgenRandom;
 import net.minecraft.world.level.levelgen.synth.SimplexNoise;
 import net.neoforged.fml.ModList;
@@ -57,6 +59,10 @@ public final class Understory {
     /** The Nurselog Hollow's share of the Cathedral's growth. */
     private static final double NURSELOG_SHARE = 0.4;
     private static final double MIN_SPACING = 6.5;
+    /** Standard sapling-grown trees fill the ground between the young giants, tried on a finer grid. */
+    private static final int STANDARD_CELL = 4;
+    private static final double STANDARD_CHANCE = 0.4;
+    private static final double STANDARD_SPACING = 4.0;
 
     private record Noises(long seed, SimplexNoise clumps, SimplexNoise patches) {
     }
@@ -97,6 +103,24 @@ public final class Understory {
                     continue;
                 }
                 if (tree(level, random, field, pos, x, z)) {
+                    trees.add(new int[]{x, z});
+                    grown++;
+                }
+            }
+        }
+        for (int cx = 0; cx < 16; cx += STANDARD_CELL) {
+            for (int cz = 0; cz < 16; cz += STANDARD_CELL) {
+                int x = minX + cx + 1 + random.nextInt(STANDARD_CELL - 2);
+                int z = minZ + cz + 1 + random.nextInt(STANDARD_CELL - 2);
+                double share = share(level, pos.set(x, level.getSeaLevel(), z)) * density;
+                double thick = Mth.clamp((clump(n, x, z) - GLADE) / 0.7, 0, 1);
+                if (share <= 0 || random.nextDouble() >= STANDARD_CHANCE * share * thick) {
+                    continue;
+                }
+                if (trees.stream().anyMatch(t -> Math.hypot(t[0] - x, t[1] - z) < STANDARD_SPACING)) {
+                    continue;
+                }
+                if (standardTree(level, random, field, pos, x, z)) {
                     trees.add(new int[]{x, z});
                     grown++;
                 }
@@ -229,6 +253,42 @@ public final class Understory {
         int chunkX = Math.floorDiv(x, 16) * 16, chunkZ = Math.floorDiv(z, 16) * 16;
         GroveBuilder.build(level, chunkX - 16, chunkZ - 16, chunkX + 31, chunkZ + 31, young);
         return true;
+    }
+
+    /**
+     * An ordinary sapling-grown tree of the wood the nearby giants are made of: the Aether's own skyroot, or the Deep
+     * Aether tree that wood comes from. The feature checks its own room, so it fails quietly among logs and leaves.
+     */
+    private static boolean standardTree(WorldGenLevel level, RandomSource random, GroveField field,
+                                        BlockPos.MutableBlockPos pos, int x, int z) {
+        boolean[] shade = new boolean[1];
+        int ground = ground(level, pos, x, z, shade);
+        if (ground == Integer.MIN_VALUE) {
+            return false;
+        }
+        String biome = level.getBiome(pos.set(x, ground, z)).is(AABiomes.SKYROOT_CATHEDRAL) ? GroveField.CATHEDRAL
+                : GroveField.NURSELOG;
+        String id = standardId(field.paletteAt(x, z, biome).name(), random);
+        if (id == null) {
+            return false;
+        }
+        ConfiguredFeature<?, ?> tree = level.registryAccess().registryOrThrow(Registries.CONFIGURED_FEATURE)
+                .getOptional(ResourceLocation.parse(id)).orElse(null);
+        return tree != null && tree.place(level, level.getLevel().getChunkSource().getGenerator(), random,
+                new BlockPos(x, ground + 1, z));
+    }
+
+    /** The configured tree a colony's wood grows as when planted from a sapling. */
+    @Nullable
+    private static String standardId(String wood, RandomSource random) {
+        return switch (wood) {
+            case "skyroot" -> "aether:skyroot_tree";
+            case "crystal" -> "aether:crystal_tree";
+            case "roseroot", "blue_roseroot" -> "deep_aether:" + wood + (random.nextFloat() < 0.3 ? "_tree_large"
+                    : "_tree_small");
+            case "sunroot", "cruderoot", "conberry" -> "deep_aether:" + wood + "_tree";
+            default -> null;
+        };
     }
 
     // ------------------------------------------------------------------------------------------------- cover --

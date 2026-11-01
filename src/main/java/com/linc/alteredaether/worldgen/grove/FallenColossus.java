@@ -33,6 +33,14 @@ final class FallenColossus {
         double radius = s.range(5.0, 8.0);
         // Within 25 degrees of a compass axis, so the log's grain lies along it rather than turning to bark.
         double heading = s.random.nextInt(4) * Mth.HALF_PI + s.range(-0.43, 0.43);
+        // Where it fell near an island's edge, a step or a gap, it may have come down across it, its crown resting on
+        // the far side: a sloped bridge. Headings are tried in a fixed order from a hash of the site, so the log that
+        // would have fallen the other way is left as it was where there is nothing to cross.
+        double[] across = bridging(s);
+        if (across != null) {
+            heading = across[0];
+            length = across[1];
+        }
         double hx = Math.cos(heading), hz = Math.sin(heading);
         // The root end, with its plate and crater, sits nearer the centre than the tapering crown end.
         double rootX = s.x - hx * length * 0.4, rootZ = s.z - hz * length * 0.4;
@@ -186,6 +194,50 @@ final class FallenColossus {
             }
         }
         return water >= ground - 2 ? water : Integer.MIN_VALUE;
+    }
+
+    /**
+     * A heading and length at which the log would lie across an edge, or null. The log must start on ground, cross a
+     * gap or a drop of more than eight blocks, and end on ground no more than twelve blocks above its root or
+     * forty-five below, its last fifth all on that far ground, so the crown rests there rather than hanging.
+     */
+    private static double[] bridging(Sketch s) {
+        if (s.groundAt(s.x, s.z) == Integer.MIN_VALUE) {
+            return null;
+        }
+        double start = GroveBuilder.hash(0x51ED270B3L, s.x, s.ground, s.z) * Mth.TWO_PI;
+        for (int k = 0; k < 16; k++) {
+            double heading = start + k * Mth.TWO_PI / 16;
+            // Within 25 degrees of a compass axis, so the grain lies along it.
+            double axis = Math.round(heading / Mth.HALF_PI) * Mth.HALF_PI;
+            if (Math.abs(heading - axis) > 0.43) {
+                continue;
+            }
+            double hx = Math.cos(heading), hz = Math.sin(heading);
+            for (double len = 85; len >= 50; len -= 7.5) {
+                double l = len;
+                double rx = s.x - hx * l * 0.4, rz = s.z - hz * l * 0.4;
+                int root = s.groundAt(rx, rz);
+                if (root == Integer.MIN_VALUE) {
+                    continue;
+                }
+                boolean edge = false, landed = true;
+                for (int i = 1; i <= 20; i++) {
+                    double t = i / 20.0;
+                    int g = s.groundAt(rx + hx * l * t, rz + hz * l * t);
+                    if (g == Integer.MIN_VALUE || Math.abs(g - root) > 8) {
+                        edge = true;
+                    }
+                    if (t >= 0.8 && (g == Integer.MIN_VALUE || g > root + 12 || g < root - 45)) {
+                        landed = false;
+                    }
+                }
+                if (edge && landed) {
+                    return new double[]{heading, l};
+                }
+            }
+        }
+        return null;
     }
 
     private static int groundOr(Sketch s, double px, double pz) {

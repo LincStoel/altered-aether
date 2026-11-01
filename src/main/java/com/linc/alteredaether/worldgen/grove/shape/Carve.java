@@ -244,4 +244,37 @@ public abstract class Carve {
             }
         };
     }
+
+    /**
+     * Exactly these blocks, never below {@code floor}: a room whose shape was built by hand. The wood against its
+     * walls is laid bare as in any hollow; nothing farther off is touched.
+     */
+    public static Carve cells(java.util.Set<net.minecraft.core.BlockPos> inside, int floor) {
+        java.util.Set<Long> packed = new java.util.HashSet<>();
+        Bounds bounds = Bounds.EMPTY;
+        for (net.minecraft.core.BlockPos pos : inside) {
+            packed.add(pos.asLong());
+            bounds = bounds.union(new Bounds(pos.getX() - 1, pos.getY() - 1, pos.getZ() - 1, pos.getX() + 1,
+                    pos.getY() + 1, pos.getZ() + 1));
+        }
+        return new Carve(floor, bounds) {
+            @Override
+            public double margin(double px, double py, double pz) {
+                int x = (int) Math.floor(px), y = (int) Math.floor(py), z = (int) Math.floor(pz);
+                if (y < floor) {
+                    return -Double.MAX_VALUE;
+                }
+                if (packed.contains(net.minecraft.core.BlockPos.asLong(x, y, z))) {
+                    return 1;
+                }
+                for (net.minecraft.core.Direction side : net.minecraft.core.Direction.values()) {
+                    if (packed.contains(net.minecraft.core.BlockPos.asLong(x + side.getStepX(), y + side.getStepY(),
+                            z + side.getStepZ()))) {
+                        return -0.5;
+                    }
+                }
+                return -3;
+            }
+        };
+    }
 }

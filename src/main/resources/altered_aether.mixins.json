@@ -10,6 +10,7 @@
     "AercloudDragMixin",
     "AerwhaleDeckFloatingMixin",
     "AirshipVillageSetMixin",
+    "AirshipVillageSpawnExclusionMixin",
     "DeepAetherHeightChecksMixin",
     "DeepAetherWhaleCargoMixin",
     "GleamVinesMixins$BeeGrow",

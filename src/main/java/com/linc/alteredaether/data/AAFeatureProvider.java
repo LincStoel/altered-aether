@@ -40,6 +40,9 @@ public final class AAFeatureProvider extends JsonDataProvider {
     static final String UNDERSTORY = NS + "grove/understory";
     /** The ruins in the groves, and the rare stone heads of the plateau. */
     static final String RUIN = NS + "grove/ruin", STONE_HEAD = NS + "plateau/stone_heads";
+    /** The hand-built camps and farms, which the biome modifiers add at the surface structures step. */
+    static final String CAMP = NS + "camp/aether_camp", BERRY_FARM = NS + "camp/blue_berry_farm",
+            GLEAMBERRY_FARM = NS + "camp/gleamberry_farm";
     static final String[] LANDMARK_DECORATION = {NS + "landmark/tempest_ring", NS + "landmark/spire_drifts",
             NS + "landmark/fracture_debris", NS + "landmark/fracture_slabs", NS + "landmark/fracture_bridges",
             NS + "landmark/islet_meadow", NS + "landmark/islet_oak"};
@@ -61,6 +64,28 @@ public final class AAFeatureProvider extends JsonDataProvider {
         configured("grove/understory", NS + "understory", new JsonObject());
         placed("grove/understory", UNDERSTORY, new JsonArray());
         ruins();
+        camps();
+    }
+
+    /**
+     * The hand-built camps and farms, one site to a large cell of chunks, so each group is far from the next of its
+     * kind: wayfarers' camps on any level ground, blue berry farms in the meadows, forests and on the plateau, and
+     * the gleamberry farm in the groves, where gleamberries hang. Each is kept only where the ground suits it.
+     */
+    private void camps() {
+        for (com.linc.alteredaether.worldgen.camp.CampSites site : com.linc.alteredaether.worldgen.camp.CampSites.values()) {
+            camp(site.id(), site.group, site.farm, site.slope, site.cellChunks, site.salt, site.chance);
+        }
+    }
+
+    private void camp(String name, String group, boolean farm, int slope, int cellChunks, int salt, double chance) {
+        JsonObject config = new JsonObject();
+        config.addProperty("group", group);
+        config.addProperty("farm", farm);
+        config.addProperty("slope", slope);
+        configured("camp/" + name, NS + "camp", config);
+        placed("camp/" + name, NS + "camp/" + name, Placement.list(Placement.jitteredGrid(cellChunks, salt, chance),
+                Placement.inSquare(), Placement.heightmap("WORLD_SURFACE_WG"), Placement.biome()));
     }
 
     /**

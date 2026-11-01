@@ -81,7 +81,7 @@ public final class AAAdvancementProvider extends JsonDataProvider {
         biome(all, "shattered_rift", AABiomes.SHATTERED_RIFT, "aether:holystone", "Mind the Gap",
                 "Cross into the Shattered Rift");
         landmark(all, "great_fracture", "shattered_rift", LandmarkType.GREAT_FRACTURE.id(), "aether:mossy_holystone",
-                "The Great Fracture", "Find the canyon where the rift heaved one side over the other");
+                "The Great Fracture", "Find a rift of tectonic proportions");
         biome(all, "windswept_dunes", AABiomes.WINDSWEPT_DUNES, "aether:quicksoil", "Sky Sands",
                 "Walk the Windswept Dunes");
         biome(all, "aether_plateau", AABiomes.AETHER_PLATEAU, "aether:aether_grass_block", "High Ground",
