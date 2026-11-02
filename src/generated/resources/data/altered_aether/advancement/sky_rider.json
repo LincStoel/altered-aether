@@ -9,7 +9,10 @@
             "entity": "this",
             "predicate": {
               "vehicle": {
-                "type": "altered_aether:tamed_aerwhale"
+                "type": "altered_aether:tamed_aerwhale",
+                "type_specific": {
+                  "type": "altered_aether:owned_aerwhale"
+                }
               }
             }
           }

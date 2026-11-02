@@ -12,7 +12,10 @@
                 "biomes": "altered_aether:tempest_peaks"
               },
               "vehicle": {
-                "type": "altered_aether:tamed_aerwhale"
+                "type": "altered_aether:tamed_aerwhale",
+                "type_specific": {
+                  "type": "altered_aether:owned_aerwhale"
+                }
               }
             }
           }

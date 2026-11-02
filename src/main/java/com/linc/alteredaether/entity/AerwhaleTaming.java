@@ -21,6 +21,7 @@ import com.linc.alteredaether.config.AACommonConfig;
 import com.linc.alteredaether.registry.AARegistries;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.player.Player;
@@ -32,8 +33,10 @@ import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 
 /**
- * The wild aerwhale's side of taming: it follows a player holding blue berries, and feeding it them tames it now and
- * then, turning it into a {@link TamedAerwhale}. A spawn egg used on any aerwhale, wild or tamed, makes a calf. The
+ * The wild aerwhale's side of taming, as a horse's: it follows a player holding blue berries, and feeding it them
+ * raises its {@link AerwhaleTemper temper}. Climbing on bare-handed turns it into an unbroken {@link TamedAerwhale},
+ * which flies its rider about until it either accepts them or throws them off. A spawn egg used on any aerwhale, wild
+ * or tamed, makes a calf. The
  * Aether's aerwhale has no interaction of its own to hook, so this listens for the player's interaction instead. Off
  * while Deep Aether's aerwhales are in play (see {@link AerwhaleMode}).
  */
@@ -57,22 +60,41 @@ public final class AerwhaleTaming {
         if (whale.getType() != AetherEntityTypes.AERWHALE.get() || whale.isVehicle()) {
             return;
         }
-        double chance = AACommonConfig.AERWHALE_TAME_CHANCE.get();
-        if (!TamedAerwhale.isTamingFood(stack) || chance <= 0) {
-            return;
-        }
-        event.setCanceled(true);
-        event.setCancellationResult(InteractionResult.sidedSuccess(event.getLevel().isClientSide));
-        if (!(event.getLevel() instanceof ServerLevel level)) {
+        if (!AACommonConfig.AERWHALE_TAMING.get()) {
             return;
         }
         Player player = event.getEntity();
-        stack.consume(1, player);
-        if (level.random.nextDouble() < chance) {
-            TamedAerwhale.tame(whale, player);
-        } else {
-            level.sendParticles(ParticleTypes.SMOKE, whale.getX(), whale.getY() + whale.getBbHeight() * 0.9, whale.getZ(),
-                    7, whale.getBbWidth() * 0.5, whale.getBbHeight() * 0.25, whale.getBbWidth() * 0.5, 0.02);
+        boolean client = event.getLevel().isClientSide;
+        int temper = AerwhaleTemper.forFood(stack);
+        if (temper > 0) {
+            // berries calm it; only the server knows how calm it already is, so the client can't tell if it will eat
+            if (client) {
+                event.setCanceled(true);
+                event.setCancellationResult(InteractionResult.CONSUME);
+                return;
+            }
+            if (AerwhaleTemper.get(whale) >= AerwhaleTemper.MAX) {
+                return;
+            }
+            event.setCanceled(true);
+            event.setCancellationResult(InteractionResult.SUCCESS);
+            stack.consume(1, player);
+            AerwhaleTemper.add(whale, temper);
+            if (event.getLevel() instanceof ServerLevel level) {
+                level.sendParticles(ParticleTypes.HAPPY_VILLAGER, whale.getX(), whale.getY() + whale.getBbHeight() * 0.9,
+                        whale.getZ(), 5, whale.getBbWidth() * 0.5, whale.getBbHeight() * 0.25, whale.getBbWidth() * 0.5,
+                        0.02);
+            }
+            return;
+        }
+        // climbing on bare-handed, as onto a horse, to ride it out until it accepts you or throws you off
+        if (event.getHand() == InteractionHand.MAIN_HAND && stack.isEmpty() && !player.isSecondaryUseActive()
+                && !player.isPassenger()) {
+            event.setCanceled(true);
+            event.setCancellationResult(InteractionResult.sidedSuccess(client));
+            if (!client) {
+                TamedAerwhale.startBreaking(whale, player);
+            }
         }
     }
 

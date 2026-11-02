@@ -32,13 +32,13 @@ import net.neoforged.neoforge.network.PacketDistributor;
 import org.lwjgl.glfw.GLFW;
 
 /**
- * The key that dives a ridden aerwhale, space unless rebound. Holding it charges the dive as jump charges a horse's
+ * The key that dives a ridden aerwhale, J unless rebound. Holding it charges the dive as jump charges a horse's
  * leap, shown on the jump bar's place in the HUD; letting go sends the whale down its arc. Only the pilot dives.
  */
 @EventBusSubscriber(modid = AlteredAether.MOD_ID, value = Dist.CLIENT)
 public final class AerwhaleDiveKey {
     public static final KeyMapping KEY = new KeyMapping("key.altered_aether.aerwhale_dive",
-            AerwhaleEjectKey.RIDING_AERWHALE, InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_SPACE,
+            AerwhaleEjectKey.RIDING_AERWHALE, InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_J,
             AerwhaleEjectKey.CATEGORY);
 
     /** Ticks to a full charge, about as long as a horse's jump bar takes to fill. */

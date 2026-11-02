@@ -39,7 +39,7 @@ Altered Aether's biomes live in their own region, so Deep Aether and other Aethe
 
 - **A taller Aether**: the Aether is built -64 to 319 like the Overworld, with deeper islands and room for the tallest landmarks. Turn off the "Tall Aether" datapack when creating a world to keep the stock height.
 - **Tempest storms**: storm cells drift over the Tempest Peaks and strike the high ground, with a warning of sparks and thunder first. Overworld-metal armour and tools attract lightning, and standing on copper in a storm calls down a strike unless you wear leather or gem boots.
-- **Tamed aerwhales**: feed a wild aerwhale blue berries to tame it, and enchanted berries to breed. Saddled, an adult seats four players, and its back is a deck you can walk on while it flies. Add chests for saddlebags. Steer by looking, dive with space, and leap off with J. Sneak and use it to make it stay, wander or follow.
+- **Tamed aerwhales**: calm a wild aerwhale with blue berries, then climb on and ride it out like a horse until it accepts you, or throws you off. Breed them with enchanted berries. Saddled, an adult seats four players, and its back is a deck you can walk on while it flies. Add chests for saddlebags. Steer by looking, dive with J, and leap off with space. Sneak and use it to make it stay, wander or follow.
 - **Unsaddling**: sneak and use an empty hand on a saddled phyg or flying cow to take its saddle back.
 - **Ambrosium campfire**: a campfire of skyroot and ambrosium that burns in the Aether.
 - **Gleam vines**: glowing cave vines in Aether colours, hanging from the giant trees, in the colour of the leaves they hang from.

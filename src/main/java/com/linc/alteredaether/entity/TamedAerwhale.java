@@ -85,8 +85,11 @@ import java.util.UUID;
 import java.util.function.BooleanSupplier;
 
 /**
- * An aerwhale that belongs to a player, or a calf that may yet. A wild Aether aerwhale turns into one when blue berries
- * tame it (see {@link AerwhaleTaming}). It extends the Aether's own aerwhale, so it keeps that mob's model, textures,
+ * An aerwhale that belongs to a player, or a calf that may yet, or a wild adult someone is riding to break it in. A wild
+ * Aether aerwhale turns into one when a player climbs on bare-handed (see {@link AerwhaleTaming}): unbroken, it has no
+ * owner and takes no orders, and flies its rider about, diving where there's room, until it either accepts them as its
+ * owner or throws them off, by a roll on its {@link AerwhaleTemper temper}. Left without a rider for a few seconds it
+ * turns back into a wild aerwhale. It extends the Aether's own aerwhale, so it keeps that mob's model, textures,
  * sounds and synced pitch, and adds what a horse has: an owner, a saddle and a saddlebag in an inventory screen, riding
  * with or without the saddle, a charged dive in place of a jump, the stay/wander/follow commands, and calves that grow
  * up, bred with enchanted berries or spawned from a spawn egg.
@@ -100,8 +103,8 @@ import java.util.function.BooleanSupplier;
  * <p>The rider's client flies it, the way vanilla mounts move: the server takes its position from the rider's vehicle
  * packets. It has no gravity, so riding it doesn't trip the server's "floating a vehicle" kick.
  *
- * <p>A calf from a wild parent has no owner. It can be tamed with blue berries like its parents; if it grows up wild, it
- * turns into the Aether's wild aerwhale.
+ * <p>A calf from a wild parent has no owner. It can't be ridden, so blue berries tame it instead: each raises its temper
+ * and then rolls on it. If it grows up wild, it turns into the Aether's wild aerwhale.
  *
  * <p>Deep Aether has aerwhales of its own: a patch to the Aether's aerwhale that adds a saddle, a chest and two seats.
  * Only one of the two is ever in play (see {@link AerwhaleMode}). With ours, that patch is switched off and Deep
@@ -142,7 +145,7 @@ public class TamedAerwhale extends Aerwhale
     /** The pitch it climbs at when it's down at the floor. */
     private static final float FLOOR_CLIMB_PITCH = 20;
     /** How far its owner must fall onto its back to be taken aboard: more than a jump on the deck. */
-    private static final float LANDING_FALL = 1.5F;
+    static final float LANDING_FALL = 1.5F;
     /** How far a gummy swet draws a whale to its owner. */
     private static final double SWET_RANGE = 32;
     private static final float MAX_RIDDEN_PITCH = 60;
@@ -152,6 +155,8 @@ public class TamedAerwhale extends Aerwhale
     /** How far a staying whale circles from where it was told to stay, and how far ahead on the circle it aims. */
     private static final double STAY_RADIUS = 10;
     private static final double STAY_LEAD = Math.toRadians(50);
+    /** The speed it circles at, as a multiple of its flying speed: half. */
+    private static final double STAY_SPEED = 0.5;
     /**
      * When a following whale sets off after its owner and when it settles, in blocks: a wolf's 10 and 2, widened for
      * a body three blocks across.
@@ -169,6 +174,34 @@ public class TamedAerwhale extends Aerwhale
     public static final double MIN_TURN_RADIUS = 4;
     /** How far beyond its body someone can be and still count as overhead: on its back, or about to land there. */
     private static final double OVERHEAD_REACH = 3;
+    /**
+     * Breaking one in: how long it thrashes about with a rider before deciding whether to keep them (at least the
+     * first, plus up to the second, in ticks), how fast it goes meanwhile (times its flying speed, about a wild
+     * aerwhale's pace and then some), and how hard it turns, in degrees a tick.
+     */
+    private static final int THRASH_TICKS = 60;
+    private static final int THRASH_SPREAD = 60;
+    private static final double THRASH_SPEED = 2.4;
+    /** Where the blowhole sits: blocks ahead of the whale's centre, and as a fraction of its height. */
+    private static final double BLOWHOLE_AHEAD = 2.6;
+    private static final double BLOWHOLE_HEIGHT = 0.95;
+    private static final float THRASH_TURN = 6;
+    /** One in this many ticks of thrashing, when it can, it dives this deep, in blocks. */
+    private static final int THRASH_DIVE_CHANCE = 60;
+    private static final double THRASH_DIVE_MIN = 6;
+    private static final double THRASH_DIVE_MAX = 12;
+    /** How deep it dives to throw off a rider it won't have, where there's room; without room it rears up. */
+    private static final double BUCK_DIVE_MIN = 8;
+    private static final double BUCK_DIVE_MAX = 14;
+    private static final int REAR_TICKS = 15;
+    /** How far ahead it looks for open sky when it bolts from a rider it threw off. */
+    private static final double BOLT_RANGE = 48;
+    /** Ticks after a rider gets off in which landing does not take them straight back aboard. */
+    private static final int DISMOUNT_GRACE = 10;
+    /** How far above the deck a rider who gets off is put, to settle onto it. */
+    private static final double DISMOUNT_LIFT = 0.5;
+    /** Ticks an unbroken whale goes without a rider before it turns back into a wild one. */
+    public static final int RETURN_TICKS = 100;
     /**
      * The saddle's seats, the pilot's first: on the broad back of the Aether's model, and higher on its b1.7.3 model,
      * which floats above its hitbox. They match the seat pads of {@code AerwhaleSaddleLayer}.
@@ -251,6 +284,24 @@ public class TamedAerwhale extends Aerwhale
     /** Ticks left coasting on after its pilot leapt off, before it turns to follow its owner. */
     private int coast;
 
+    // Breaking in, on the server.
+    /** Whether the dive under way is the server's, flown by an unbroken whale, rather than a pilot's. */
+    private boolean serverDive;
+    /** Whether it's thrashing about under a rider, which lets it turn and pitch harder than it otherwise does. */
+    private boolean thrashing;
+    /** Ticks an unbroken whale has gone without a rider. */
+    private int riderless;
+    /** Ticks left of an unbroken whale bolting for open sky after it threw its rider. */
+    private int bolt;
+    /** The player who just got off, and ticks left in which landing doesn't take them back aboard. */
+    @Nullable
+    private UUID justOff;
+    private int justOffTicks;
+    /** Whoever just stepped onto the deck from their seat, who it carries before they've touched down. Both sides. */
+    @Nullable
+    private Entity steppedOnDeck;
+    private int steppedOnDeckTicks;
+
     // On a client that isn't flying it, its pitch and yaw eased toward what the server last sent, so the turns of a
     // whale someone stands on are as smooth as its movement.
     private boolean smoothed;
@@ -287,6 +338,8 @@ public class TamedAerwhale extends Aerwhale
     @Override
     public void registerGoals() {
         // replaces the Aether's endless random cruising, which only wanderers and calves keep
+        goalSelector.addGoal(0, new BreakInGoal());
+        goalSelector.addGoal(0, new BoltGoal());
         goalSelector.addGoal(0, new SwetTemptGoal());
         goalSelector.addGoal(1, new BreedGoal());
         goalSelector.addGoal(2, new FollowAdultGoal());
@@ -315,22 +368,57 @@ public class TamedAerwhale extends Aerwhale
     /** Turns a wild aerwhale into a tamed one owned by {@code owner}, keeping its place, heading and health. */
     @Nullable
     public static TamedAerwhale tame(Aerwhale wild, Player owner) {
+        TamedAerwhale tamed = fromWild(wild);
+        if (tamed != null) {
+            tamed.acceptOwner(owner);
+        }
+        return tamed;
+    }
+
+    /**
+     * {@code rider} climbs onto a wild aerwhale, which turns into an unbroken one to carry them: ownerless, flying
+     * where it likes, until it accepts them or throws them off.
+     */
+    @Nullable
+    public static TamedAerwhale startBreaking(Aerwhale wild, Player rider) {
+        TamedAerwhale unbroken = fromWild(wild);
+        if (unbroken != null) {
+            rider.setYRot(unbroken.getYRot());
+            rider.startRiding(unbroken);
+        }
+        return unbroken;
+    }
+
+    /** Turns a wild aerwhale into one of ours, ownerless, keeping its place, heading, health and temper. */
+    @Nullable
+    private static TamedAerwhale fromWild(Aerwhale wild) {
         float pitch = wild.getXRotData();
         float yaw = wild.getYRotData();
         float health = wild.getHealth();
-        TamedAerwhale tamed = wild.convertTo(AARegistries.TAMED_AERWHALE.get(), false);
-        if (tamed == null) {
+        TamedAerwhale whale = wild.convertTo(AARegistries.TAMED_AERWHALE.get(), false);
+        if (whale == null) {
             return null;
         }
-        tamed.setOwnerUUID(owner.getUUID());
-        tamed.setXRotData(pitch);
-        tamed.setXRotOData(pitch);
-        tamed.setYRotData(yaw);
-        tamed.setHealth(health);
-        tamed.setCommand(AerwhaleCommand.FOLLOW);
-        tamed.particles(ParticleTypes.HEART, 7);
-        awardTaming(owner, tamed);
-        return tamed;
+        whale.setXRotData(pitch);
+        whale.setXRotOData(pitch);
+        whale.setYRotData(yaw);
+        whale.setHealth(health);
+        AerwhaleTemper.copy(wild, whale);
+        return whale;
+    }
+
+    /** Takes {@code owner} as its owner, to follow them from now on. */
+    private void acceptOwner(Player owner) {
+        setOwnerUUID(owner.getUUID());
+        setCommand(AerwhaleCommand.FOLLOW);
+        headParticles(ParticleTypes.HEART, 3);
+        playSound(getAmbientSound(), getSoundVolume(), 1.3F);
+        awardTaming(owner, this);
+    }
+
+    /** Whether it's a wild adult someone is breaking in: ownerless, and too big to be a calf. */
+    public boolean unbroken() {
+        return getOwnerUUID() == null && !isBaby();
     }
 
     /** Counts as taming an animal for vanilla's advancements (Best Friends Forever), which only see {@code Animal}s. */
@@ -463,12 +551,17 @@ public class TamedAerwhale extends Aerwhale
         }
     }
 
-    /** An ownerless calf that grows up becomes the Aether's wild aerwhale. */
-    private void growUpWild() {
+    /**
+     * Turns back into the Aether's wild aerwhale, keeping its temper: what an ownerless calf does when it grows up, and
+     * an unbroken whale when it's left without a rider.
+     */
+    private void returnToWild() {
         Aerwhale wild = convertTo(AetherEntityTypes.AERWHALE.get(), false);
         if (wild != null) {
             wild.setXRotData(getXRotData());
             wild.setYRotData(getYRotData());
+            wild.setHealth(getHealth());
+            AerwhaleTemper.copy(this, wild);
         }
     }
 
@@ -555,17 +648,21 @@ public class TamedAerwhale extends Aerwhale
         ItemStack stack = player.getItemInHand(hand);
         boolean client = level().isClientSide;
         if (getOwnerUUID() == null) {
-            // a wild calf: tamed like its parents, and nothing else until then
-            if (!isTamingFood(stack)) {
+            if (!isBaby()) {
+                // one being broken in: whoever it threw off can climb back on, bare-handed, before it goes wild again
+                return stack.isEmpty() && !player.isSecondaryUseActive() && hand == InteractionHand.MAIN_HAND
+                        ? board(player) : InteractionResult.PASS;
+            }
+            // a wild calf can't be ridden, so berries tame it: each calms it, then it may take to its feeder
+            int temper = AerwhaleTemper.forFood(stack);
+            if (temper <= 0 || !AACommonConfig.AERWHALE_TAMING.get()) {
                 return super.mobInteract(player, hand);
             }
             if (!client) {
                 stack.consume(1, player);
-                if (random.nextDouble() < AACommonConfig.AERWHALE_TAME_CHANCE.get()) {
-                    setOwnerUUID(player.getUUID());
-                    setCommand(AerwhaleCommand.FOLLOW);
-                    particles(ParticleTypes.HEART, 7);
-                    awardTaming(player, this);
+                AerwhaleTemper.add(this, temper);
+                if (AerwhaleTemper.rolls(this, random)) {
+                    acceptOwner(player);
                 } else {
                     particles(ParticleTypes.SMOKE, 7);
                 }
@@ -708,12 +805,15 @@ public class TamedAerwhale extends Aerwhale
         if (level().isClientSide) {
             smoothRotation(piloting);
         }
-        if (!piloting) {
+        if (!piloting && !serverDive) {
             dive = null;
         }
         wasPiloting = piloting;
         pilotPitchO = pilotPitch;
         super.tick();
+        if (steppedOnDeckTicks > 0 && --steppedOnDeckTicks == 0) {
+            steppedOnDeck = null;
+        }
         moveDeck();
     }
 
@@ -738,11 +838,22 @@ public class TamedAerwhale extends Aerwhale
             if (age < 0) {
                 setAge(age + 1);
                 if (age == 0 && getOwnerUUID() == null) {
-                    growUpWild();
+                    returnToWild();
                     return;
                 }
             } else if (age > 0) {
                 age--;
+            }
+            if (unbroken()) {
+                // nobody came back aboard: it's a wild aerwhale again, though no wilder than it was
+                riderless = isVehicle() ? 0 : riderless + 1;
+                if (riderless >= RETURN_TICKS) {
+                    returnToWild();
+                    return;
+                }
+            }
+            if (justOffTicks > 0 && --justOffTicks == 0) {
+                justOff = null;
             }
             if (loveTicks > 0 && --loveTicks % 10 == 0) {
                 particles(ParticleTypes.HEART, 1);
@@ -822,11 +933,14 @@ public class TamedAerwhale extends Aerwhale
 
     // ---- riding ----
 
-    /** Only a saddle gives the rider the reins; bareback, they're just along for the ride. */
+    /**
+     * Only a saddle gives the rider the reins; bareback, they're just along for the ride. An unbroken whale never takes
+     * the reins from anyone: it flies itself.
+     */
     @Nullable
     @Override
     public LivingEntity getControllingPassenger() {
-        if (isSaddled() && getFirstPassenger() instanceof Player rider) {
+        if (getOwnerUUID() != null && isSaddled() && getFirstPassenger() instanceof Player rider) {
             return rider;
         }
         return super.getControllingPassenger();
@@ -860,6 +974,8 @@ public class TamedAerwhale extends Aerwhale
     public void travel(Vec3 input) {
         if (getControllingPassenger() instanceof Player rider && isControlledByLocalInstance()) {
             fly(rider, input);
+        } else if (serverDive && dive != null && isControlledByLocalInstance()) {
+            diveStep();
         } else {
             if (isControlledByLocalInstance()) {
                 Vec3 from = position();
@@ -953,13 +1069,84 @@ public class TamedAerwhale extends Aerwhale
         move(MoverType.SELF, motion);
         pilotPitch = Mth.clamp(dive.pitch(diveDistance), -MAX_RIDDEN_PITCH, MAX_RIDDEN_PITCH);
         setXRot(pilotPitch);
+        if (serverDive) {
+            // nobody's client flies it: the synced rotation is what everyone sees, and what the Aether copies back
+            setXRotData(pilotPitch);
+            setYRot(diveYaw);
+            setYRotData(diveYaw);
+            setYBodyRot(diveYaw);
+            setYHeadRot(diveYaw);
+        }
         if (dive.done(diveDistance) || horizontalCollision || verticalCollision) {
             dive = null;
-            cruise = RIDDEN_SPEED;
-            yawSpeed = 0;
-            pitchSpeed = 0;
+            if (serverDive) {
+                serverDive = false;
+                // it swims on at the speed it came out of the dive with
+                control().currentSpeed = motion.length();
+            } else {
+                cruise = RIDDEN_SPEED;
+                yawSpeed = 0;
+                pitchSpeed = 0;
+            }
         }
         calculateEntityAnimation(false);
+    }
+
+    /** Whether it's in the middle of a dive it flies itself, unbroken under a rider. */
+    public boolean diving() {
+        return serverDive && dive != null;
+    }
+
+    /**
+     * An unbroken whale dives of its own accord, somewhere from {@code min} to {@code max} deep, as deep as it has room
+     * for, or not at all if it hasn't room for even {@code min}. Returns whether it set off.
+     */
+    public boolean tryServerDive(double min, double max) {
+        if (level().isClientSide || dive != null) {
+            return false;
+        }
+        double room = getY() - floorY();
+        for (double depth : new double[] {min + random.nextDouble() * (max - min), min}) {
+            if (depth > room) {
+                continue;
+            }
+            AerwhaleDive arc = AerwhaleDive.of(depth, getXRotData());
+            if (clearAlong(arc, getYRot())) {
+                dive = arc;
+                serverDive = true;
+                diveSpeed = Math.max(getDeltaMovement().length(), MIN_SWIM_SPEED);
+                diveStart = position();
+                diveYaw = getYRot();
+                diveDistance = 0;
+                diveCooldown = DIVE_COOLDOWN;
+                playSound(getAmbientSound(), getSoundVolume(), 0.6F);
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Whether the whale could fly all of {@code arc}, heading {@code yaw}, and a little beyond its end, without hitting
+     * anything: open air below and ahead. Unloaded ground doesn't count as open.
+     */
+    private boolean clearAlong(AerwhaleDive arc, float yaw) {
+        double yawRad = yaw * Mth.DEG_TO_RAD;
+        double dx = -Math.sin(yawRad);
+        double dz = Math.cos(yawRad);
+        AABB box = getBoundingBox().deflate(0.25);
+        double end = arc.length() + 3;
+        for (double s = 1; ; s = Math.min(s + 1.5, end)) {
+            // past the end it carries on level with where the arc came out
+            Vec3 offset = new Vec3(dx * s, arc.height(Math.min(s, arc.length())), dz * s);
+            AABB moved = box.move(offset);
+            if (!level().hasChunkAt(BlockPos.containing(moved.getCenter())) || !level().noCollision(this, moved)) {
+                return false;
+            }
+            if (s >= end) {
+                return true;
+            }
+        }
     }
 
     /** A dive needs the reins, a clear deck and a breath between dives. */
@@ -1005,7 +1192,7 @@ public class TamedAerwhale extends Aerwhale
      * again, then turns to follow its owner.
      */
     public void eject(Player rider, float charge, Vec3 velocity) {
-        if (level().isClientSide || !hasPassenger(rider)) {
+        if (level().isClientSide || !hasPassenger(rider) || !isSaddled()) {
             return;
         }
         if (!Double.isFinite(velocity.lengthSqr())) {
@@ -1014,22 +1201,8 @@ public class TamedAerwhale extends Aerwhale
             velocity = velocity.normalize().scale(AerwhaleEject.MAX_INHERITED_SPEED);
         }
         boolean pilot = getControllingPassenger() == rider;
-        ejecting = rider;
-        try {
-            rider.stopRiding();
-        } finally {
-            ejecting = null;
-        }
         double launch = AerwhaleEject.launchSpeed(AerwhaleEject.heightFor(charge), rider.getGravity());
-        rider.setDeltaMovement(velocity.add(0, launch, 0));
-        rider.resetFallDistance();
-        if (rider instanceof ServerPlayer player) {
-            // A player's client places them, so the throw has to reach it. Not yet, though: the tracker sends the
-            // dismount at the start of the next tick along with a teleport to where the server has them, which stops
-            // them dead on their client, so the throw goes out after it, from this whale's next tick.
-            thrown = player;
-            throwMotion = rider.getDeltaMovement();
-        }
+        throwRider(rider, velocity.add(0, launch, 0));
         if (pilot) {
             // whoever takes the reins next carries on at this speed
             setDeltaMovement(velocity);
@@ -1039,6 +1212,106 @@ public class TamedAerwhale extends Aerwhale
             }
         }
         playSound(getAmbientSound(), getSoundVolume() * 0.5F, 1.4F);
+    }
+
+    /**
+     * An unbroken whale throws off a rider it won't have: higher than any leap, flung to one side, carrying on with the
+     * whale's speed across but none of its fall. It's a little calmer for it, and bolts for open sky.
+     */
+    public void buck(Player rider) {
+        if (level().isClientSide || !hasPassenger(rider)) {
+            return;
+        }
+        Vec3 velocity = getDeltaMovement();
+        Vec3 across = new Vec3(velocity.x, 0, velocity.z);
+        if (across.length() > AerwhaleEject.MAX_INHERITED_SPEED) {
+            across = across.normalize().scale(AerwhaleEject.MAX_INHERITED_SPEED);
+        }
+        double yaw = getYRot() * Mth.DEG_TO_RAD;
+        Vec3 shove = new Vec3(Math.cos(yaw), 0, Math.sin(yaw)).scale((random.nextBoolean() ? 1 : -1) * AerwhaleEject.BUCK_SHOVE);
+        double launch = AerwhaleEject.launchSpeed(AerwhaleEject.BUCK_HEIGHT, rider.getGravity()) + Math.max(0, velocity.y);
+        throwRider(rider, across.add(shove).add(0, launch, 0));
+        AerwhaleTemper.add(this, AACommonConfig.AERWHALE_TEMPER_PER_BUCK.get());
+        thrashing = false;
+        particles(ParticleTypes.ANGRY_VILLAGER, 5);
+        playSound(getHurtSound(damageSources().generic()), getSoundVolume(), 0.6F);
+        // out over open air, away from land
+        bolt = RETURN_TICKS;
+        boltForOpenAir();
+    }
+
+    /** Whether entities tick at {@code pos}: a whale bolting past that would freeze, still ownerless, out of sight. */
+    private boolean ticking(BlockPos pos) {
+        return level() instanceof ServerLevel server ? server.isPositionEntityTicking(pos) : level().hasChunkAt(pos);
+    }
+
+    private void boltForOpenAir() {
+        Vec3 target = openAirHeading();
+        flyTo(target.x, target.y, target.z, THRASH_SPEED);
+    }
+
+    /**
+     * The point it flies to for open sky: the heading, of sixteen around and a few pitches, with the longest clear run
+     * and the most empty air beneath where it ends. Ties go to the one nearest its current heading.
+     */
+    private Vec3 openAirHeading() {
+        AABB box = getBoundingBox().deflate(0.25);
+        double floor = floorY();
+        Vec3 best = position().add(WhaleMoveControl.heading(getYRot(), 0).scale(BOLT_RANGE));
+        double bestScore = Double.NEGATIVE_INFINITY;
+        for (int i = 0; i < 16; i++) {
+            float yaw = getYRot() + i * 22.5F;
+            double turn = Math.abs(Mth.wrapDegrees(i * 22.5F));
+            for (float pitch : new float[] {-15, 0, 10}) {
+                Vec3 step = WhaleMoveControl.heading(yaw, pitch).scale(2);
+                Vec3 offset = Vec3.ZERO;
+                double run = 0;
+                while (run < BOLT_RANGE) {
+                    Vec3 next = offset.add(step);
+                    AABB moved = box.move(next);
+                    if (getY() + next.y < floor || !ticking(BlockPos.containing(moved.getCenter()))
+                            || !level().noCollision(this, moved)) {
+                        break;
+                    }
+                    offset = next;
+                    run += 2;
+                }
+                BlockPos end = BlockPos.containing(position().add(offset));
+                int clearance = 0;
+                while (clearance < 32 && end.getY() - clearance > level().getMinBuildHeight()
+                        && level().getBlockState(end.below(clearance)).isAir()) {
+                    clearance++;
+                }
+                double score = run + 0.5 * clearance - turn * 0.01;
+                if (score > bestScore) {
+                    bestScore = score;
+                    best = position().add(offset.lengthSqr() < 1 ? step.scale(BOLT_RANGE / 2) : offset);
+                }
+            }
+        }
+        return new Vec3(best.x, Math.max(best.y, floor + 1), best.z);
+    }
+
+    /**
+     * Takes {@code rider} off its back with {@code motion}, from where they sat rather than onto the deck. A player's
+     * client places them, so the throw has to reach it. Not yet, though: the tracker sends the dismount at the start of
+     * the next tick along with a teleport to where the server has them, which stops them dead on their client, so the
+     * throw goes out after it, from this whale's next tick.
+     */
+    private void throwRider(Player rider, Vec3 motion) {
+        ejecting = rider;
+        try {
+            rider.stopRiding();
+        } finally {
+            ejecting = null;
+        }
+        rider.setDeltaMovement(motion);
+        rider.resetFallDistance();
+        blowholePuff();
+        if (rider instanceof ServerPlayer player) {
+            thrown = player;
+            throwMotion = motion;
+        }
     }
 
     /** Whether it's coasting on after its pilot leapt off. */
@@ -1051,7 +1324,7 @@ public class TamedAerwhale extends Aerwhale
      * on after leaping off. Returns whether they're now riding.
      */
     public boolean tryLandingMount(Player player, float fallDistance) {
-        if (level().isClientSide || !hasDeck() || !isOwnedBy(player) || player.isPassenger() || player.isShiftKeyDown()
+        if (level().isClientSide || !hasDeck() || !mayLandAboard(player) || player.isPassenger() || player.isShiftKeyDown()
                 || player.isSpectator() || fallDistance < LANDING_FALL || !canAddPassenger(player)) {
             return false;
         }
@@ -1062,6 +1335,29 @@ public class TamedAerwhale extends Aerwhale
             if (slab.getBoundingBox().inflate(1.0, 0, 1.0).intersects(feet)) {
                 return player.startRiding(this);
             }
+        }
+        return false;
+    }
+
+    /** Whether landing on it takes {@code player} aboard: its owner, or anyone if it has none. */
+    public boolean mayLandAboard(Player player) {
+        return getOwnerUUID() == null || isOwnedBy(player);
+    }
+
+    /**
+     * Takes {@code player} aboard when they come down on a whale with no deck to stand on: the way back on after being
+     * bucked off or leaping off bareback. Returns whether they're now riding.
+     */
+    public boolean tryBackLanding(Player player) {
+        if (level().isClientSide || hasDeck() || isBaby() || !isAlive() || !mayLandAboard(player) || player.isPassenger()
+                || player.isSpectator() || !canAddPassenger(player)
+                || justOffTicks > 0 && player.getUUID().equals(justOff)) {
+            return false;
+        }
+        player.setYRot(getYRot());
+        if (player.startRiding(this)) {
+            player.resetFallDistance();
+            return true;
         }
         return false;
     }
@@ -1098,8 +1394,9 @@ public class TamedAerwhale extends Aerwhale
             Vec3 best = null;
             for (AerwhaleDeck slab : deck) {
                 AABB top = slab.getBoundingBox();
-                // a hair above the slab, or the slab itself counts as being in the way
-                Vec3 spot = new Vec3(Mth.clamp(passenger.getX(), top.minX + 0.4, top.maxX - 0.4), top.maxY + 0.01,
+                // well above the slab, since the whale moves on before the rider is placed, and a rider put level
+                // with it ends up inside it and falls through
+                Vec3 spot = new Vec3(Mth.clamp(passenger.getX(), top.minX + 0.4, top.maxX - 0.4), top.maxY + DISMOUNT_LIFT,
                         Mth.clamp(passenger.getZ(), top.minZ + 0.4, top.maxZ - 0.4));
                 if ((best == null || passenger.distanceToSqr(spot) < passenger.distanceToSqr(best))
                         && level().noCollision(passenger, passenger.getDimensions(Pose.STANDING).makeBoundingBox(spot))) {
@@ -1233,7 +1530,7 @@ public class TamedAerwhale extends Aerwhale
         }
         return level().getEntities(this, area.inflate(0, 0.2, 0), entity -> {
             if (entity instanceof PartEntity<?> || entity instanceof TamedAerwhale || entity.isPassenger()
-                    || entity.noPhysics || !entity.onGround()) {
+                    || entity.noPhysics || !entity.onGround() && entity != steppedOnDeck) {
                 return false;
             }
             AABB box = entity.getBoundingBox();
@@ -1278,6 +1575,7 @@ public class TamedAerwhale extends Aerwhale
         if (!level().isClientSide) {
             // whatever it was doing, it stops to carry someone
             coast = 0;
+            bolt = 0;
             halt();
         }
     }
@@ -1285,8 +1583,15 @@ public class TamedAerwhale extends Aerwhale
     @Override
     protected void removePassenger(Entity passenger) {
         super.removePassenger(passenger);
+        if (hasDeck() && passenger != ejecting) {
+            // stepping onto the deck mid-flight: it mustn't fly out from under them before they've landed on it
+            steppedOnDeck = passenger;
+            steppedOnDeckTicks = DISMOUNT_GRACE;
+        }
         if (!level().isClientSide) {
             // a whale left in midair stays where its rider got off, not back where it was first told
+            justOff = passenger.getUUID();
+            justOffTicks = DISMOUNT_GRACE;
             home = blockPosition();
             halt();
         }
@@ -1396,6 +1701,33 @@ public class TamedAerwhale extends Aerwhale
         if (level() instanceof ServerLevel level) {
             level.sendParticles(type, getX(), getY() + getBbHeight() * 0.9, getZ(), count,
                     getBbWidth() * 0.5, getBbHeight() * 0.25, getBbWidth() * 0.5, 0.02);
+        }
+    }
+
+    /** Particles at the head, ahead of the seat, where a rider on its back can see them. */
+    private void headParticles(ParticleOptions type, int count) {
+        if (level() instanceof ServerLevel level) {
+            double yaw = getYRot() * Mth.DEG_TO_RAD;
+            level.sendParticles(type, getX() - Math.sin(yaw) * 3.2, getY() + getBbHeight() * 0.8,
+                    getZ() + Math.cos(yaw) * 3.2, count, 0.6, 0.3, 0.6, 0.02);
+        }
+    }
+
+    /** A spout of air from the blowhole on top of its head, as it throws a rider off. */
+    private void blowholePuff() {
+        if (level() instanceof ServerLevel level) {
+            double yaw = getYRot() * Mth.DEG_TO_RAD;
+            double x = getX() - Math.sin(yaw) * BLOWHOLE_AHEAD;
+            double y = getY() + getBbHeight() * BLOWHOLE_HEIGHT;
+            double z = getZ() + Math.cos(yaw) * BLOWHOLE_AHEAD;
+            // count 0: the offsets are the velocity, so the puffs jet upward rather than scatter
+            for (int i = 0; i < 12; i++) {
+                level.sendParticles(ParticleTypes.CLOUD, x + (random.nextDouble() - 0.5) * 0.3, y,
+                        z + (random.nextDouble() - 0.5) * 0.3, 0,
+                        (random.nextDouble() - 0.5) * 0.12, 0.25 + random.nextDouble() * 0.2,
+                        (random.nextDouble() - 0.5) * 0.12, 1.0);
+            }
+            level.sendParticles(ParticleTypes.POOF, x, y + 0.2, z, 4, 0.15, 0.1, 0.15, 0.04);
         }
     }
 
@@ -1528,7 +1860,7 @@ public class TamedAerwhale extends Aerwhale
         @Override
         public void tick() {
             TamedAerwhale whale = TamedAerwhale.this;
-            if (whale.getControllingPassenger() != null) {
+            if (whale.getControllingPassenger() != null || diving()) {
                 currentSpeed = whale.getDeltaMovement().length();
                 return;
             }
@@ -1581,7 +1913,8 @@ public class TamedAerwhale extends Aerwhale
             }
             currentSpeed += Mth.clamp(wanted - currentSpeed, -0.02, 0.01);
             currentSpeed = Math.max(currentSpeed, MIN_SWIM_SPEED);
-            float turn = Math.min(3.0F, maxTurn(currentSpeed));
+            // thrashing under a rider it hasn't accepted, it throws itself about harder than it ever turns otherwise
+            float turn = thrashing ? THRASH_TURN : Math.min(3.0F, maxTurn(currentSpeed));
             Vec3 ahead = heading(whale.getYRot(), 0);
             if (blocked(ahead)) {
                 // rise over whatever is in the way, or if it's walled in above too, slow right down and turn away
@@ -1595,7 +1928,7 @@ public class TamedAerwhale extends Aerwhale
                 }
             }
             float yaw = Mth.approachDegrees(whale.getYRot(), yawTarget, turn);
-            float pitch = Mth.approach(whale.getXRotData(), pitchTarget, 1.5F);
+            float pitch = Mth.approach(whale.getXRotData(), pitchTarget, thrashing ? 3.0F : 1.5F);
 
             whale.setDeltaMovement(heading(yaw, pitch).scale(currentSpeed));
             whale.setYRot(yaw);
@@ -1640,7 +1973,7 @@ public class TamedAerwhale extends Aerwhale
 
         @Override
         public boolean canUse() {
-            return !isVehicle() && !isBaby() && command() != AerwhaleCommand.WANDER;
+            return !isVehicle() && !isBaby() && getOwnerUUID() != null && command() != AerwhaleCommand.WANDER;
         }
 
         @Override
@@ -1677,7 +2010,7 @@ public class TamedAerwhale extends Aerwhale
                 return;
             }
             double angle = Math.atan2(dz, dx) + STAY_LEAD;
-            flyTo(centre.x + Math.cos(angle) * STAY_RADIUS, centre.y, centre.z + Math.sin(angle) * STAY_RADIUS, 1.0);
+            flyTo(centre.x + Math.cos(angle) * STAY_RADIUS, centre.y, centre.z + Math.sin(angle) * STAY_RADIUS, STAY_SPEED);
         }
 
         /**
@@ -1712,6 +2045,138 @@ public class TamedAerwhale extends Aerwhale
                 }
             } else {
                 loiter(owner, 3);
+            }
+        }
+    }
+
+    /**
+     * Breaking in, as a horse's: an unbroken whale carrying a player thrashes about for a few seconds, flying hard at
+     * random and now and then diving where there's room below, then decides on its temper. It either accepts them as
+     * its owner, or throws them off, at the bottom of a dive if it has room for one and otherwise rearing up.
+     */
+    private final class BreakInGoal extends Goal {
+        @Nullable
+        private Player rider;
+        /** Ticks of thrashing left before it decides. */
+        private int thrash;
+        private int repath;
+        /** Ticks left rearing up before it throws them, or 0 if it isn't. */
+        private int rear;
+        /** Whether it has decided against them and is diving to throw them at the bottom. */
+        private boolean buckDive;
+
+        BreakInGoal() {
+            setFlags(EnumSet.of(Flag.MOVE, Flag.LOOK));
+        }
+
+        @Override
+        public boolean canUse() {
+            return unbroken() && getFirstPassenger() instanceof Player;
+        }
+
+        @Override
+        public boolean canContinueToUse() {
+            return rider != null && unbroken() && hasPassenger(rider);
+        }
+
+        @Override
+        public boolean requiresUpdateEveryTick() {
+            return true;
+        }
+
+        @Override
+        public void start() {
+            rider = (Player) getFirstPassenger();
+            thrash = THRASH_TICKS + random.nextInt(THRASH_SPREAD + 1);
+            repath = 0;
+            rear = 0;
+            buckDive = false;
+            thrashing = true;
+        }
+
+        @Override
+        public void stop() {
+            rider = null;
+            thrashing = false;
+        }
+
+        @Override
+        public void tick() {
+            if (buckDive) {
+                if (!diving()) {
+                    buck(rider);
+                }
+                return;
+            }
+            if (rear > 0) {
+                if (--rear == 0) {
+                    buck(rider);
+                }
+                return;
+            }
+            if (diving()) {
+                return;
+            }
+            if (--thrash <= 0) {
+                decide();
+                return;
+            }
+            if (diveCooldown == 0 && random.nextInt(THRASH_DIVE_CHANCE) == 0
+                    && tryServerDive(THRASH_DIVE_MIN, THRASH_DIVE_MAX)) {
+                return;
+            }
+            if (--repath <= 0 || !moveControl.hasWanted()) {
+                repath = 30 + random.nextInt(21);
+                double angle = random.nextDouble() * Math.PI * 2;
+                double distance = 12 + random.nextDouble() * 12;
+                flyTo(getX() + Math.cos(angle) * distance, getY() + random.nextDouble() * 12 - 6,
+                        getZ() + Math.sin(angle) * distance, THRASH_SPEED);
+            }
+        }
+
+        private void decide() {
+            if (AerwhaleTemper.rolls(TamedAerwhale.this, random)) {
+                acceptOwner(rider);
+            } else if (tryServerDive(BUCK_DIVE_MIN, BUCK_DIVE_MAX)) {
+                buckDive = true;
+            } else {
+                // no room to dive: it rears up, nose high, and throws them
+                rear = REAR_TICKS;
+                Vec3 ahead = WhaleMoveControl.heading(getYRot(), 0).scale(8);
+                flyTo(getX() + ahead.x, getY() + 8, getZ() + ahead.z, THRASH_SPEED);
+            }
+        }
+    }
+
+    /** Having thrown its rider, an unbroken whale flies for open sky until it's wild again or someone climbs back on. */
+    private final class BoltGoal extends Goal {
+        private int repath;
+
+        BoltGoal() {
+            setFlags(EnumSet.of(Flag.MOVE, Flag.LOOK));
+        }
+
+        @Override
+        public boolean canUse() {
+            return unbroken() && !isVehicle() && bolt > 0;
+        }
+
+        @Override
+        public boolean requiresUpdateEveryTick() {
+            return true;
+        }
+
+        @Override
+        public void start() {
+            repath = 20;
+        }
+
+        @Override
+        public void tick() {
+            bolt--;
+            if (--repath <= 0 || !moveControl.hasWanted()) {
+                repath = 20;
+                boltForOpenAir();
             }
         }
     }

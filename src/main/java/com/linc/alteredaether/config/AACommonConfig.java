@@ -112,7 +112,10 @@ public final class AACommonConfig {
 
     // [aerwhales]
     public static final BooleanValue AERWHALE_USE_DEEP_AETHER;
-    public static final DoubleValue AERWHALE_TAME_CHANCE;
+    public static final BooleanValue AERWHALE_TAMING;
+    public static final IntValue AERWHALE_TEMPER_PER_BERRY;
+    public static final IntValue AERWHALE_TEMPER_PER_ENCHANTED_BERRY;
+    public static final IntValue AERWHALE_TEMPER_PER_BUCK;
     public static final IntValue AERWHALE_BREEDING_COOLDOWN;
     public static final IntValue AERWHALE_GROWTH_TIME;
     public static final IntValue AERWHALE_FOLLOW_TELEPORT;
@@ -337,9 +340,11 @@ public final class AACommonConfig {
         STORM_PLAYER_COOLDOWN_MAX = b.defineInRange("player_cooldown_max", 400, 0, 24000);
         b.pop();
 
-        b.comment("Tamed aerwhales: tame a wild one with blue berries, saddle it and fly it. Sneak and use your own",
-                        "aerwhale to tell it to stay, wander or follow; open its saddle and saddlebag with the inventory key",
-                        "while riding it.")
+        b.comment("Tamed aerwhales: calm a wild one with blue berries, then climb on with an empty hand and ride it out",
+                        "until it accepts you, as with a horse. Saddle it and fly it. Sneak and use your own aerwhale to tell",
+                        "it to stay, wander or follow; open its saddle and saddlebag with the inventory key while riding it.",
+                        "Temper runs from 0 to 100: each time a wild aerwhale decides whether to keep its rider, it does",
+                        "with a chance of its temper in 100.")
                 .push("aerwhales");
         AERWHALE_USE_DEEP_AETHER = b.comment("With Deep Aether loaded, use its aerwhales (saddle, chest, two seats) instead of",
                         "ours: taming is off and tamed aerwhales turn back into wild ones, keeping any saddle. When false,",
@@ -348,8 +353,15 @@ public final class AACommonConfig {
                         "use the same setting, or clients can't join.")
                 .gameRestart()
                 .define(AerwhaleMode.CONFIG_KEY, false);
-        AERWHALE_TAME_CHANCE = b.comment("Chance that each blue berry tames a wild aerwhale. 0 disables taming.")
-                .defineInRange("tame_chance", 1.0 / 8.0, 0.0, 1.0);
+        AERWHALE_TAMING = b.comment("Whether wild aerwhales can be tamed at all.")
+                .define("taming", true);
+        AERWHALE_TEMPER_PER_BERRY = b.comment("Temper a blue berry adds to a wild aerwhale. A wild calf, which can't be",
+                        "ridden, then rolls for taming at once.")
+                .defineInRange("temper_per_berry", 10, 0, 100);
+        AERWHALE_TEMPER_PER_ENCHANTED_BERRY = b.comment("Temper an enchanted berry adds to a wild aerwhale.")
+                .defineInRange("temper_per_enchanted_berry", 20, 0, 100);
+        AERWHALE_TEMPER_PER_BUCK = b.comment("Temper a wild aerwhale gains each time it throws its rider off.")
+                .defineInRange("temper_per_buck", 15, 0, 100);
         AERWHALE_BREEDING_COOLDOWN = b.comment("Ticks before a parent can breed again.")
                 .defineInRange("breeding_cooldown", 6000, 0, 240000);
         AERWHALE_GROWTH_TIME = b.comment("Ticks a calf takes to grow up. Each enchanted berry fed to it takes a tenth off.")
