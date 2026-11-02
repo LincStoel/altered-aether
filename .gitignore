@@ -51,3 +51,7 @@ run-gametest/
 
 ### Dependency mods, copied from the CurseForge instance ###
 libs/
+
+### Python bytecode ###
+__pycache__/
+*.pyc

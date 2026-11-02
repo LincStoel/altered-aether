@@ -28,8 +28,8 @@
   },
   "requirements": [
     [
-      "stump_poor",
-      "stump"
+      "stump",
+      "stump_poor"
     ]
   ]
 }

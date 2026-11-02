@@ -34,7 +34,8 @@ public final class AALootProvider extends JsonDataProvider {
 
     @Override
     protected void generate() {
-        table("camp", pool(3, 5, camp()), rumour(0.2));
+        // the camps are where the pilgrims leave their maps: nearly every chest has one
+        table("camp", pool(3, 5, camp()), rumour(0.8));
         table("secret", pool(3, 5, camp()), pool(1, 2, secret()), rumour(0.35));
         table("heartwood", pool(2, 4, camp()), pool(2, 3, secret()), pool(1, 1, heartwood()),
                 pool(1, 1, entry("aether:golden_amber", 1, 8, 16)), rumour(0.9));

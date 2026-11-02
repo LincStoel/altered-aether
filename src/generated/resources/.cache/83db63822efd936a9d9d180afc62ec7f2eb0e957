@@ -1,8 +1,8 @@
-// 1.21.1	2026-10-30T22:54:23.6014764	Altered Aether loot tables
+// 1.21.1	2026-11-01T18:35:32.0651204	Altered Aether loot tables
 da7d952bd2602ab84a5bbbc60811f7f8d93992c1 data/altered_aether/loot_modifiers/bronze_dungeon_rumour_map.json
 6d7b90c78b7fcb70d68629dc918a2819472bad9b data/altered_aether/loot_modifiers/silver_dungeon_rumour_map.json
 df7232e8dfacb22d52716fb06abbd4f7642949d0 data/altered_aether/loot_table/chests/double_atoll.json
-3f02c627d7f2402cbf23762264c6a2afeb36cd21 data/altered_aether/loot_table/chests/grove/camp.json
+6c74b39b859af5035aecf27c580812131ed378d0 data/altered_aether/loot_table/chests/grove/camp.json
 c703de4f65198eec76283edc5e0780e649ef7da1 data/altered_aether/loot_table/chests/grove/crown.json
 59a7a5596f3e3342947a689e79943b40b98935bb data/altered_aether/loot_table/chests/grove/heartwood.json
 7b0f5d8579eee52c0e397b80a37c1535fb45d20c data/altered_aether/loot_table/chests/grove/ruin.json

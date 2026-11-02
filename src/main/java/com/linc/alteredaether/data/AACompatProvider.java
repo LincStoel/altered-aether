@@ -164,6 +164,8 @@ public final class AACompatProvider extends FeatureData {
     // --------------------------------------------------------------------------------------- archwood
 
     private static final int SCATTER_RARITY = 300;
+    /** The cathedral is small and each chunk only suits one colour in five, so this is far denser than the scatter. */
+    private static final int CLUSTER_RARITY = 16;
 
     /**
      * Archwood scattered outside the groves, each colour in the biomes that suit it and nowhere else, at one in 300
@@ -198,16 +200,17 @@ public final class AACompatProvider extends FeatureData {
                 cathedral, ELEMENTAL);
     }
 
-    /** A clump of one to five archwoods, scattered over a few blocks, at one in 120 chunks. Only the colour the grove region
+    /** A clump of one to five archwoods, scattered over a few blocks, at one in sixteen chunks. Only the colour the grove region
      * grows is placed, so each stretch of forest has archwood of a single colour. */
     private void cluster(String name, String tree, String sapling, List<String> biomes, String... more) {
         List<String> mods = new ArrayList<>(List.of(ARS));
         mods.addAll(List.of(more));
         String[] required = mods.toArray(String[]::new);
-        placed("cluster/" + name, tree, Placement.list(Placement.rarity(120), Placement.inSquare(),
+        placed("cluster/" + name, tree, Placement.list(Placement.rarity(CLUSTER_RARITY), Placement.inSquare(),
                 Placement.archwoodRegion(name), Placement.countBetween(1, 5), Placement.randomOffset(7, 0, 0),
                 Placement.surfaceWaterDepth(0),
-                Placement.heightmap("OCEAN_FLOOR"), Placement.biome(),
+                // the terrain surface, not the canopy: the cathedral roofs its floor over
+                Placement.heightmap("OCEAN_FLOOR_WG"), Placement.biome(),
                 Placement.wouldSurvive(sapling, Map.of("stage", "0"))), required);
         addFeature("cluster/" + name, biomes, "vegetal_decoration", required);
     }

@@ -14,6 +14,8 @@
  */
 package com.linc.alteredaether.client;
 
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
 import com.linc.alteredaether.AlteredAether;
 import com.linc.alteredaether.block.GleamVines;
 import com.linc.alteredaether.config.AAClientConfig;
@@ -57,6 +59,12 @@ public final class GleamVineColors {
     // meshing runs on several threads
     private static final Map<BlockState, Leaf> LEAVES = new ConcurrentHashMap<>();
 
+    /**
+     * The colour each vine position last had, kept so a vine that breaks for want of support (its neighbour above is
+     * already gone, so there is nothing to climb to) still sprays the colour it was drawn in.
+     */
+    private static final Cache<Long, Integer> SEEN = CacheBuilder.newBuilder().maximumSize(16384).build();
+
     @SubscribeEvent
     public static void registerColors(RegisterColorHandlersEvent.Block event) {
         event.register(GleamVineColors::color, AARegistries.GLEAM_VINES.get(), AARegistries.GLEAM_VINES_PLANT.get());
@@ -67,6 +75,7 @@ public final class GleamVineColors {
     public static void atlasStitched(TextureAtlasStitchedEvent event) {
         if (event.getAtlas().location().equals(InventoryMenu.BLOCK_ATLAS)) {
             LEAVES.clear();
+            SEEN.invalidateAll();
         }
     }
 
@@ -77,6 +86,7 @@ public final class GleamVineColors {
             Minecraft minecraft = Minecraft.getInstance();
             minecraft.execute(() -> {
                 if (minecraft.levelRenderer != null && minecraft.level != null) {
+                    SEEN.invalidateAll();
                     minecraft.levelRenderer.allChanged();
                 }
             });
@@ -97,6 +107,12 @@ public final class GleamVineColors {
             holder.set(pos);
             support = climb(seen, holder);
         }
+        if (support.isAir()) {
+            Integer remembered = SEEN.getIfPresent(pos.asLong());
+            if (remembered != null) {
+                return remembered;
+            }
+        }
         if (!support.is(BlockTags.LEAVES)) {
             return GleamVineTint.DEFAULT;
         }
@@ -108,7 +124,9 @@ public final class GleamVineColors {
                 average = GleamVineTint.multiply(average, biome);
             }
         }
-        return GleamVineTint.fromLeaf(average);
+        int result = GleamVineTint.fromLeaf(average);
+        SEEN.put(pos.asLong(), result);
+        return result;
     }
 
     /** Moves {@code pos} up the column of vines it is in, to what they hang from, and returns that. */
