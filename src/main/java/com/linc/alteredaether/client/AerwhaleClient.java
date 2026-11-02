@@ -66,8 +66,10 @@ public final class AerwhaleClient {
 
     @SubscribeEvent
     public static void registerGuiLayers(RegisterGuiLayersEvent event) {
-        event.registerAbove(VanillaGuiLayers.JUMP_METER, AlteredAether.id("aerwhale_dive_bar"), AerwhaleDiveKey::renderBar);
-        event.registerAbove(VanillaGuiLayers.JUMP_METER, AlteredAether.id("aerwhale_eject_bar"), AerwhaleEjectKey::renderBar);
+        // above the experience bar, which shares their place and would hide them in survival (an aerwhale isn't a
+        // jumping mount, so the experience bar stays up while riding one)
+        event.registerAbove(VanillaGuiLayers.EXPERIENCE_BAR, AlteredAether.id("aerwhale_dive_bar"), AerwhaleDiveKey::renderBar);
+        event.registerAbove(VanillaGuiLayers.EXPERIENCE_BAR, AlteredAether.id("aerwhale_eject_bar"), AerwhaleEjectKey::renderBar);
     }
 
     @SubscribeEvent

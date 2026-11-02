@@ -17,6 +17,7 @@ package com.linc.alteredaether.gametest;
 import com.linc.alteredaether.AlteredAether;
 import com.linc.alteredaether.entity.Squall;
 import com.linc.alteredaether.registry.AARegistries;
+import com.linc.alteredaether.storm.TempestStorms;
 import com.mojang.authlib.GameProfile;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
@@ -36,10 +37,7 @@ import java.util.UUID;
 public final class SquallTests {
     @GameTest(template = "arena", timeoutTicks = 600)
     public static void squallsStrikeFromAbove(GameTestHelper helper) {
-        // a fake player isn't ticked, so it stays where it is put
-        FakePlayer player = FakePlayerFactory.get(helper.getLevel(), new GameProfile(UUID.randomUUID(), "squall-target"));
-        player.moveTo(helper.absoluteVec(new Vec3(24, 4, 24)));
-        helper.getLevel().addNewPlayer(player);
+        FakePlayer player = targetOnGround(helper);
         Squall squall = helper.spawn(AARegistries.SQUALL.get(), new Vec3(32, 6, 32));
         squall.setPersistenceRequired();
         squall.setTarget(player);
@@ -61,9 +59,7 @@ public final class SquallTests {
 
     @GameTest(template = "arena", timeoutTicks = 600)
     public static void squallsBreakOffAfterStriking(GameTestHelper helper) {
-        FakePlayer player = FakePlayerFactory.get(helper.getLevel(), new GameProfile(UUID.randomUUID(), "squall-target"));
-        player.moveTo(helper.absoluteVec(new Vec3(24, 4, 24)));
-        helper.getLevel().addNewPlayer(player);
+        FakePlayer player = targetOnGround(helper);
         Squall squall = helper.spawn(AARegistries.SQUALL.get(), new Vec3(32, 6, 32));
         squall.setPersistenceRequired();
         squall.setTarget(player);
@@ -88,6 +84,18 @@ public final class SquallTests {
             helper.assertTrue(best[1] >= 4, "only climbed " + best[1]);
             helper.getLevel().removePlayerImmediately(player, Entity.RemovalReason.DISCARDED);
         });
+    }
+
+    /**
+     * A target standing on the arena floor. A fake player isn't ticked, so it never falls from where it is put, and a
+     * squall's bolt lands on the ground under its target, so a target left hanging in the air is never hit.
+     */
+    private static FakePlayer targetOnGround(GameTestHelper helper) {
+        FakePlayer player = FakePlayerFactory.get(helper.getLevel(), new GameProfile(UUID.randomUUID(), "squall-target"));
+        player.moveTo(helper.absoluteVec(new Vec3(24, 4, 24)));
+        player.moveTo(Vec3.atBottomCenterOf(TempestStorms.strikeSpot(helper.getLevel(), player)));
+        helper.getLevel().addNewPlayer(player);
+        return player;
     }
 
     private SquallTests() {

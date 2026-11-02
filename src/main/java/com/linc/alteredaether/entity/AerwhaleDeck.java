@@ -14,6 +14,8 @@
  */
 package com.linc.alteredaether.entity;
 
+import java.util.ArrayList;
+import java.util.List;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.world.damagesource.DamageSource;
@@ -21,6 +23,8 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityDimensions;
 import net.minecraft.world.entity.Pose;
 import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.shapes.Shapes;
+import net.minecraft.world.phys.shapes.VoxelShape;
 import net.neoforged.neoforge.entity.PartEntity;
 
 /**
@@ -44,6 +48,27 @@ public final class AerwhaleDeck extends PartEntity<TamedAerwhale> {
     public static boolean anyUnder(Entity entity, AABB box) {
         return !entity.level().getEntities(entity, box,
                 other -> other instanceof AerwhaleDeck deck && deck.canBeCollidedWith()).isEmpty();
+    }
+
+    /**
+     * {@code collisions} plus the slabs {@code entity} would hit within {@code box}, chosen as vanilla's entity
+     * collision lookup would choose them. Returns {@code collisions} itself when there are none.
+     */
+    public static List<VoxelShape> addCollisions(Entity entity, AABB box, List<VoxelShape> collisions) {
+        if (entity instanceof PartEntity<?> || box.getSize() < 1.0E-7) {
+            return collisions;
+        }
+        List<VoxelShape> withDecks = null;
+        for (PartEntity<?> part : entity.level().getPartEntities()) {
+            if (part instanceof AerwhaleDeck slab && slab.getParent() != entity
+                    && slab.getBoundingBox().intersects(box) && entity.canCollideWith(slab)) {
+                if (withDecks == null) {
+                    withDecks = new ArrayList<>(collisions);
+                }
+                withDecks.add(Shapes.create(slab.getBoundingBox()));
+            }
+        }
+        return withDecks != null ? withDecks : collisions;
     }
 
     @Override

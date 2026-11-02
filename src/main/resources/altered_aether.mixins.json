@@ -8,6 +8,7 @@
     "ArsArchwoodRegionMixins$ArsElemental",
     "ArsArchwoodRegionMixins$ArsNouveau",
     "AercloudDragMixin",
+    "AerwhaleDeckCollisionMixin",
     "AerwhaleDeckFloatingMixin",
     "AirshipVillageSetMixin",
     "AirshipVillageSpawnExclusionMixin",
