@@ -120,10 +120,13 @@ campfire is replaced by it when that mod is installed.
 **Gleam vines**: cave vines in Aether colours that hang from the giants' bows and canopies, lit by gleamberries. Hung from leaves, they take on those leaves' colour (client config `gleam_vine_leaf_tint`).
 The berries are eaten like glow berries, foxes pick them and bees grow the vines.
 
-**Tamed aerwhales.** Feed a wild aerwhale blue berries and now and then it's yours (it follows anyone holding them).
+**Tamed aerwhales.** Break one in like a horse. Blue berries calm a wild aerwhale (it follows anyone holding them).
+Then climb on with an empty hand and hold on: it flies you about and dives where there's room, until it either
+accepts you or throws you off, higher than you'd ever leap. The calmer it is, the likelier it keeps you, and each
+rider it throws calms it a little more. A wild calf can't be ridden, so berries alone tame it.
 - Saddled, an adult seats four, and whoever climbs on first steers. Its back is a deck you can walk around on while
   it flies, and whatever stands there is carried along. Unsaddled it carries one rider and stays put.
-- Fly it by looking where you want to go. The dive key (space by default) charges a dive, and the leap key (J by
+- Fly it by looking where you want to go. The dive key (J by default) charges a dive, and the leap key (space by
   default; both under Altered Aether in Controls) throws you off upward at the whale's speed. The whale coasts on
   long enough for you to land back on it, then turns to follow you.
 - Sneak and use it to cycle stay, wander and follow. The inventory key, while riding, opens its saddle and

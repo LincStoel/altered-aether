@@ -23,6 +23,10 @@ public final class AerwhaleEject {
     public static final double MIN_HEIGHT = 2;
     /** How high a full charge throws the rider, in blocks. */
     public static final double MAX_HEIGHT = 10;
+    /** How high a wild aerwhale throws a rider it won't have, in blocks: higher than any leap. */
+    public static final double BUCK_HEIGHT = 14;
+    /** How hard a wild aerwhale flings its rider off to one side, in blocks a tick. */
+    public static final double BUCK_SHOVE = 0.5;
     /** Ticks of holding the key to charge fully. */
     public static final int CHARGE_TICKS = 20;
     /** Ticks a whale left without a pilot coasts on before it turns to follow its owner. */

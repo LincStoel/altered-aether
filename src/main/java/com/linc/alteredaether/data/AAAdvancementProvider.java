@@ -19,6 +19,7 @@ import com.google.gson.JsonObject;
 import com.linc.alteredaether.AlteredAether;
 import com.linc.alteredaether.advancement.LandmarkVisits;
 import com.linc.alteredaether.loot.RumourMapFunction;
+import com.linc.alteredaether.registry.AARegistries;
 import com.linc.alteredaether.worldgen.AABiomes;
 import com.linc.alteredaether.worldgen.landmark.LandmarkType;
 import net.minecraft.data.PackOutput;
@@ -121,6 +122,10 @@ public final class AAAdvancementProvider extends JsonDataProvider {
         JsonObject riding = new JsonObject();
         JsonObject whale = new JsonObject();
         whale.addProperty("type", AlteredAether.MOD_ID + ":tamed_aerwhale");
+        // one that's been tamed, not a wild one someone is still breaking in
+        JsonObject owned = new JsonObject();
+        owned.addProperty("type", AARegistries.OWNED_AERWHALE.getId().toString());
+        whale.add("type_specific", owned);
         riding.add("vehicle", whale);
         advancement(all, "sky_rider", ROOT, "minecraft:saddle", "task", 0, "Sky Rider", "Ride a tamed aerwhale",
                 Map.of("riding", location(riding)));

@@ -15,6 +15,7 @@
 package com.linc.alteredaether.registry;
 
 import com.linc.alteredaether.AlteredAether;
+import com.linc.alteredaether.advancement.OwnedAerwhalePredicate;
 import com.linc.alteredaether.advancement.VisitLandmarkTrigger;
 import com.linc.alteredaether.block.AmbrosiumCampfireBlock;
 import com.linc.alteredaether.block.GleamVinesBlock;
@@ -70,8 +71,10 @@ import com.linc.alteredaether.worldgen.surface.Steep;
 import com.linc.alteredaether.worldgen.surface.Strata;
 import com.linc.alteredaether.worldgen.surface.SubstituteBlock;
 import com.aetherteam.aether.data.resources.AetherMobCategory;
+import com.mojang.serialization.Codec;
 import com.mojang.serialization.MapCodec;
 import net.minecraft.advancements.CriterionTrigger;
+import net.minecraft.advancements.critereon.EntitySubPredicate;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.world.level.storage.loot.functions.LootItemFunctionType;
 import net.minecraft.sounds.SoundEvent;
@@ -94,6 +97,7 @@ import net.neoforged.neoforge.common.DeferredSpawnEggItem;
 import net.neoforged.neoforge.common.conditions.ICondition;
 import net.neoforged.neoforge.common.extensions.IMenuTypeExtension;
 import net.neoforged.neoforge.common.world.BiomeModifier;
+import net.neoforged.neoforge.attachment.AttachmentType;
 import net.neoforged.neoforge.registries.DeferredBlock;
 import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredItem;
@@ -135,6 +139,17 @@ public final class AARegistries {
     public static final DeferredItem<DeferredSpawnEggItem> SQUALL_SPAWN_EGG = ITEMS.register("squall_spawn_egg",
             () -> new DeferredSpawnEggItem(SQUALL, 0x463C47, 0x9C838B, new Item.Properties()));
 
+    public static final DeferredRegister<AttachmentType<?>> ATTACHMENT_TYPES =
+            DeferredRegister.create(NeoForgeRegistries.Keys.ATTACHMENT_TYPES, AlteredAether.MOD_ID);
+
+    /**
+     * How close a wild aerwhale is to accepting a rider, 0 to {@code AerwhaleTemper.MAX}: kept on the Aether's wild
+     * aerwhale and on one being broken in alike, since a whale can turn from one into the other and back.
+     */
+    public static final DeferredHolder<AttachmentType<?>, AttachmentType<Integer>> AERWHALE_TEMPER =
+            ATTACHMENT_TYPES.register("aerwhale_temper",
+                    () -> AttachmentType.builder(() -> 0).serialize(Codec.INT).build());
+
     public static final DeferredRegister<MenuType<?>> MENUS = DeferredRegister.create(Registries.MENU, AlteredAether.MOD_ID);
 
     /** A tamed aerwhale's saddle and saddlebag; the client is sent which whale. */
@@ -150,6 +165,12 @@ public final class AARegistries {
             DeferredRegister.create(Registries.TRIGGER_TYPE, AlteredAether.MOD_ID);
     public static final DeferredHolder<CriterionTrigger<?>, VisitLandmarkTrigger> VISIT_LANDMARK =
             TRIGGERS.register("visit_landmark", VisitLandmarkTrigger::new);
+
+    public static final DeferredRegister<MapCodec<? extends EntitySubPredicate>> ENTITY_SUB_PREDICATES =
+            DeferredRegister.create(Registries.ENTITY_SUB_PREDICATE_TYPE, AlteredAether.MOD_ID);
+    /** Riding advancements count only aerwhales someone owns, not a wild one being broken in. */
+    public static final DeferredHolder<MapCodec<? extends EntitySubPredicate>, MapCodec<OwnedAerwhalePredicate>> OWNED_AERWHALE =
+            ENTITY_SUB_PREDICATES.register("owned_aerwhale", () -> OwnedAerwhalePredicate.CODEC);
 
     public static final DeferredRegister<LootItemFunctionType<?>> LOOT_FUNCTIONS =
             DeferredRegister.create(Registries.LOOT_FUNCTION_TYPE, AlteredAether.MOD_ID);
@@ -276,11 +297,13 @@ public final class AARegistries {
     public static void register(IEventBus modBus) {
         CONDITIONS.register(modBus);
         TRIGGERS.register(modBus);
+        ENTITY_SUB_PREDICATES.register(modBus);
         LOOT_FUNCTIONS.register(modBus);
         BLOCKS.register(modBus);
         ITEMS.register(modBus);
         ENTITY_TYPES.register(modBus);
         MENUS.register(modBus);
+        ATTACHMENT_TYPES.register(modBus);
         SURFACE_CONDITIONS.register(modBus);
         SURFACE_RULES.register(modBus);
         DENSITY_FUNCTIONS.register(modBus);

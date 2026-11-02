@@ -36,7 +36,7 @@ import net.neoforged.neoforge.network.PacketDistributor;
 import org.lwjgl.glfw.GLFW;
 
 /**
- * The key that leaps off a ridden aerwhale, J unless rebound. Holding it charges a leap, shown on the jump
+ * The key that leaps off a saddled, ridden aerwhale, space unless rebound. Holding it charges a leap, shown on the jump
  * bar's place in the HUD; letting go springs the rider up off the whale's back.
  */
 @EventBusSubscriber(modid = AlteredAether.MOD_ID, value = Dist.CLIENT)
@@ -53,7 +53,7 @@ public final class AerwhaleEjectKey {
         public boolean isActive() {
             Minecraft minecraft = Minecraft.getInstance();
             return minecraft.screen == null && minecraft.player != null
-                    && minecraft.player.getVehicle() instanceof TamedAerwhale;
+                    && minecraft.player.getVehicle() instanceof TamedAerwhale whale && whale.isSaddled();
         }
 
         @Override
@@ -63,7 +63,7 @@ public final class AerwhaleEjectKey {
     };
 
     public static final KeyMapping KEY = new KeyMapping("key.altered_aether.aerwhale_eject", RIDING_AERWHALE,
-            InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_J, CATEGORY);
+            InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_SPACE, CATEGORY);
 
     private static final ResourceLocation BAR_BACKGROUND = ResourceLocation.withDefaultNamespace("hud/jump_bar_background");
     private static final ResourceLocation BAR_PROGRESS = ResourceLocation.withDefaultNamespace("hud/jump_bar_progress");
@@ -79,8 +79,8 @@ public final class AerwhaleEjectKey {
     public static void onClientTick(ClientTickEvent.Post event) {
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft.player == null || !(minecraft.player.getVehicle() instanceof TamedAerwhale whale)
-                || minecraft.screen != null) {
-            // a screen opening lets go of every key; that isn't a leap
+                || minecraft.screen != null || !whale.isSaddled()) {
+            // a screen opening lets go of every key; that isn't a leap. Nor is anything bareback: leaping needs a saddle
             chargeTicks = 0;
             return;
         }

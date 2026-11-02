@@ -21,10 +21,17 @@ import com.linc.alteredaether.AlteredAether;
 import com.mojang.authlib.GameProfile;
 import com.linc.alteredaether.entity.AerwhaleCommand;
 import com.linc.alteredaether.entity.AerwhaleEject;
+import com.linc.alteredaether.entity.AerwhaleLanding;
 import com.linc.alteredaether.entity.AerwhaleMode;
+import com.linc.alteredaether.entity.AerwhaleTemper;
+import com.linc.alteredaether.config.AACommonConfig;
+import net.minecraft.util.Mth;
 import com.linc.alteredaether.entity.TamedAerwhale;
 import com.linc.alteredaether.registry.AARegistries;
+import com.google.gson.JsonObject;
+import com.mojang.serialization.JsonOps;
 import net.minecraft.advancements.AdvancementHolder;
+import net.minecraft.advancements.critereon.EntitySubPredicate;
 import net.minecraft.core.NonNullList;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.gametest.framework.GameTest;
@@ -65,7 +72,7 @@ public final class AerwhaleTests {
             ResourceLocation.fromNamespaceAndPath("deep_aether", "aerwhale_saddle");
 
     @GameTest(template = "arena")
-    public static void blueBerriesTameWildAerwhales(GameTestHelper helper) {
+    public static void blueBerriesCalmWildAerwhales(GameTestHelper helper) {
         if (deepAetherWhales(helper)) {
             return;
         }
@@ -73,19 +80,129 @@ public final class AerwhaleTests {
         wild.setNoAi(true);
         Player player = helper.makeMockPlayer(GameType.SURVIVAL);
         player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(AetherItems.BLUE_BERRY.get(), 64));
-        // an eighth of the berries tame, so 64 tries all failing is a one in 5000 chance, so the stack is topped up a few times for safety
-        for (int refills = 0; wild.isAlive() && refills < 4; refills++) {
-            player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(AetherItems.BLUE_BERRY.get(), 64));
-            while (wild.isAlive() && !player.getMainHandItem().isEmpty()) {
-                player.interactOn(wild, InteractionHand.MAIN_HAND);
-            }
+        player.interactOn(wild, InteractionHand.MAIN_HAND);
+        helper.assertTrue(AerwhaleTemper.get(wild) == AACommonConfig.AERWHALE_TEMPER_PER_BERRY.get(),
+                "a berry should calm it, temper " + AerwhaleTemper.get(wild));
+        for (int i = 0; i < 20; i++) {
+            player.interactOn(wild, InteractionHand.MAIN_HAND);
         }
-        List<TamedAerwhale> tamed = tamedNear(helper);
-        helper.assertTrue(!wild.isAlive(), "the wild aerwhale should have been replaced");
-        helper.assertTrue(tamed.size() == 1, "expected one tamed aerwhale, found " + tamed.size());
-        helper.assertTrue(tamed.getFirst().isOwnedBy(player), "the tamer should own it");
-        helper.assertTrue(tamed.getFirst().command() == AerwhaleCommand.FOLLOW, "a new tame should follow its tamer");
-        helper.assertTrue(player.getMainHandItem().getCount() < 64, "taming should use berries");
+        helper.assertTrue(AerwhaleTemper.get(wild) == AerwhaleTemper.MAX, "temper should top out, got " + AerwhaleTemper.get(wild));
+        int eaten = 64 - player.getMainHandItem().getCount();
+        int needed = Mth.positiveCeilDiv(AerwhaleTemper.MAX, AACommonConfig.AERWHALE_TEMPER_PER_BERRY.get());
+        helper.assertTrue(eaten == needed, "a calm whale shouldn't eat more: ate " + eaten + ", expected " + needed);
+        helper.assertTrue(wild.isAlive() && tamedNear(helper).isEmpty(), "berries alone shouldn't tame it");
+        helper.succeed();
+    }
+
+    @GameTest(template = "arena", timeoutTicks = 600)
+    public static void ridingACalmAerwhaleTamesIt(GameTestHelper helper) {
+        if (deepAetherWhales(helper)) {
+            return;
+        }
+        Aerwhale wild = helper.spawn(AetherEntityTypes.AERWHALE.get(), SPOT);
+        wild.setPersistenceRequired();
+        AerwhaleTemper.set(wild, AerwhaleTemper.MAX);
+        Player rider = helper.makeMockPlayer(GameType.SURVIVAL);
+        rider.interactOn(wild, InteractionHand.MAIN_HAND);
+        List<TamedAerwhale> found = tamedNear(helper);
+        helper.assertTrue(!wild.isAlive() && found.size() == 1, "climbing on should take it in hand, found " + found);
+        TamedAerwhale whale = found.getFirst();
+        helper.assertTrue(whale.unbroken() && rider.getVehicle() == whale, "the rider should be aboard an unbroken whale");
+        helper.assertTrue(whale.getControllingPassenger() == null, "an unbroken whale flies itself");
+        helper.assertTrue(AerwhaleTemper.get(whale) == AerwhaleTemper.MAX, "its temper should carry over");
+        helper.succeedWhen(() -> {
+            helper.assertTrue(whale.isOwnedBy(rider), "a calm whale should accept its rider");
+            helper.assertTrue(rider.getVehicle() == whale, "and keep them aboard");
+            helper.assertTrue(whale.command() == AerwhaleCommand.FOLLOW, "a new tame should follow its tamer");
+        });
+    }
+
+    @GameTest(template = "arena", timeoutTicks = 1200)
+    public static void wildAerwhalesBuckRidersOff(GameTestHelper helper) {
+        if (deepAetherWhales(helper)) {
+            return;
+        }
+        Aerwhale wild = helper.spawn(AetherEntityTypes.AERWHALE.get(), SPOT);
+        wild.setPersistenceRequired();
+        Player rider = helper.makeMockPlayer(GameType.SURVIVAL);
+        rider.interactOn(wild, InteractionHand.MAIN_HAND);
+        helper.assertTrue(rider.getVehicle() instanceof TamedAerwhale, "the rider should be aboard");
+        double leap = AerwhaleEject.launchSpeed(AerwhaleEject.MAX_HEIGHT, rider.getGravity());
+        AABB arena = new AABB(helper.absoluteVec(Vec3.ZERO), helper.absoluteVec(new Vec3(48, 40, 48)));
+        helper.succeedWhen(() -> {
+            helper.assertFalse(rider.isPassenger(), "a wild whale should throw its rider off");
+            helper.assertTrue(rider.getDeltaMovement().y > leap,
+                    "higher than any leap: " + rider.getDeltaMovement().y + " vs " + leap);
+            helper.assertTrue(tamedNear(helper).isEmpty(), "left alone, it should go wild again");
+            List<Aerwhale> wilds = helper.getLevel().getEntitiesOfClass(Aerwhale.class, arena,
+                    whale -> !(whale instanceof TamedAerwhale));
+            helper.assertTrue(wilds.size() == 1, "expected one wild aerwhale, found " + wilds);
+            helper.assertTrue(AerwhaleTemper.get(wilds.getFirst()) == AACommonConfig.AERWHALE_TEMPER_PER_BUCK.get(),
+                    "throwing a rider should calm it a little, temper " + AerwhaleTemper.get(wilds.getFirst()));
+        });
+    }
+
+    @GameTest(template = "arena", timeoutTicks = 100)
+    public static void unbrokenAerwhalesDiveWhereThereIsRoom(GameTestHelper helper) {
+        if (deepAetherWhales(helper)) {
+            return;
+        }
+        TamedAerwhale whale = AARegistries.TAMED_AERWHALE.get().create(helper.getLevel());
+        helper.assertTrue(whale != null, "should create");
+        whale.moveTo(helper.absoluteVec(new Vec3(24, 30, 8)), 0, 0);
+        whale.setYRotData(0);
+        whale.setPersistenceRequired();
+        helper.getLevel().addFreshEntity(whale);
+        double startY = whale.getY();
+        helper.assertTrue(whale.unbroken(), "an ownerless adult is unbroken");
+        helper.assertTrue(whale.tryServerDive(6, 6), "there's room for a dive");
+        helper.succeedWhen(() -> {
+            helper.assertFalse(whale.diving(), "the dive should finish");
+            helper.assertTrue(startY - whale.getY() > 5, "it should come out lower, dropped " + (startY - whale.getY()));
+        });
+    }
+
+    @GameTest(template = "arena")
+    public static void ridingAdvancementsNeedAnOwnedWhale(GameTestHelper helper) {
+        if (deepAetherWhales(helper)) {
+            return;
+        }
+        // as the advancements write it, through the registry
+        JsonObject json = new JsonObject();
+        json.addProperty("type", AlteredAether.MOD_ID + ":owned_aerwhale");
+        EntitySubPredicate owned = EntitySubPredicate.CODEC.parse(JsonOps.INSTANCE, json).getOrThrow();
+        Aerwhale wild = helper.spawn(AetherEntityTypes.AERWHALE.get(), SPOT);
+        wild.setNoAi(true);
+        helper.assertFalse(owned.matches(wild, helper.getLevel(), wild.position()), "a wild whale isn't owned");
+        TamedAerwhale unbroken = TamedAerwhale.startBreaking(wild, helper.makeMockPlayer(GameType.SURVIVAL));
+        helper.assertTrue(unbroken != null, "should take a rider");
+        helper.assertFalse(owned.matches(unbroken, helper.getLevel(), unbroken.position()),
+                "one still being broken in isn't owned");
+        TamedAerwhale tamed = tamed(helper, helper.makeMockPlayer(GameType.SURVIVAL));
+        helper.assertTrue(owned.matches(tamed, helper.getLevel(), tamed.position()), "a tamed whale is owned");
+        helper.succeed();
+    }
+
+    @GameTest(template = "arena")
+    public static void wildCalvesTameWithBerries(GameTestHelper helper) {
+        if (deepAetherWhales(helper)) {
+            return;
+        }
+        TamedAerwhale calf = AARegistries.TAMED_AERWHALE.get().create(helper.getLevel());
+        helper.assertTrue(calf != null, "should create");
+        CompoundTag tag = calf.saveWithoutId(new CompoundTag());
+        tag.putInt("Age", -24000);
+        calf.load(tag);
+        calf.moveTo(helper.absoluteVec(SPOT));
+        calf.setPersistenceRequired();
+        calf.setNoAi(true);
+        helper.getLevel().addFreshEntity(calf);
+        AerwhaleTemper.set(calf, AerwhaleTemper.MAX - AACommonConfig.AERWHALE_TEMPER_PER_BERRY.get());
+        Player player = helper.makeMockPlayer(GameType.SURVIVAL);
+        player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(AetherItems.BLUE_BERRY.get()));
+        player.interactOn(calf, InteractionHand.MAIN_HAND);
+        helper.assertTrue(calf.isOwnedBy(player), "a calf calmed all the way should be tamed");
+        helper.assertTrue(player.getMainHandItem().isEmpty(), "it should eat the berry");
         helper.succeed();
     }
 
@@ -254,6 +371,112 @@ public final class AerwhaleTests {
             helper.assertTrue(whale.tryLandingMount(owner, 5), "landing on its back should mount it");
             helper.assertTrue(owner.getVehicle() == whale, "the owner should be riding");
             owner.stopRiding();
+            helper.succeed();
+        });
+    }
+
+    @GameTest(template = "arena")
+    public static void gettingOffASaddledWhaleStandsOnItsBack(GameTestHelper helper) {
+        if (deepAetherWhales(helper)) {
+            return;
+        }
+        Player owner = helper.makeMockPlayer(GameType.SURVIVAL);
+        TamedAerwhale whale = tamed(helper, owner);
+        whale.equipSaddle(new ItemStack(Items.SADDLE), null);
+        whale.setNoAi(true);
+        helper.runAfterDelay(2, () -> {
+            helper.assertTrue(owner.startRiding(whale), "the owner should be aboard");
+            Vec3 spot = whale.getDismountLocationForPassenger(owner);
+            boolean onDeck = false;
+            for (var part : whale.getParts()) {
+                AABB slab = part.getBoundingBox();
+                onDeck |= spot.y - slab.maxY > 0 && spot.y - slab.maxY < 0.6 && spot.x >= slab.minX && spot.x <= slab.maxX
+                        && spot.z >= slab.minZ && spot.z <= slab.maxZ;
+            }
+            helper.assertTrue(onDeck, "getting off should land on the deck, not at " + spot);
+            owner.stopRiding();
+            helper.succeed();
+        });
+    }
+
+    @GameTest(template = "arena")
+    public static void leapingOffNeedsASaddle(GameTestHelper helper) {
+        if (deepAetherWhales(helper)) {
+            return;
+        }
+        Player owner = helper.makeMockPlayer(GameType.SURVIVAL);
+        TamedAerwhale whale = tamed(helper, owner);
+        whale.setCommand(AerwhaleCommand.STAY);
+        helper.assertTrue(owner.startRiding(whale), "the owner should be aboard");
+        whale.eject(owner, 1, Vec3.ZERO);
+        helper.assertTrue(owner.getVehicle() == whale, "a bareback rider shouldn't be able to leap off");
+        helper.assertFalse(whale.canDive(), "or dive");
+        owner.stopRiding();
+        helper.succeed();
+    }
+
+    /** Puts {@code player} just below the top of {@code whale}'s back, having fallen through it this tick. */
+    private static void fallOnto(Player player, Aerwhale whale) {
+        AABB body = whale.getBoundingBox();
+        player.moveTo(body.getCenter().x, body.maxY - 0.2, body.getCenter().z);
+        player.yo = body.maxY + 0.3;
+        player.fallDistance = 5;
+    }
+
+    @GameTest(template = "arena")
+    public static void landingOnABarebackWhaleMountsIt(GameTestHelper helper) {
+        if (deepAetherWhales(helper)) {
+            return;
+        }
+        Player owner = helper.makeMockPlayer(GameType.SURVIVAL);
+        TamedAerwhale whale = tamed(helper, owner);
+        whale.setNoAi(true);
+        Player stranger = helper.makeMockPlayer(GameType.SURVIVAL);
+        helper.runAfterDelay(2, () -> {
+            fallOnto(stranger, whale);
+            helper.assertFalse(AerwhaleLanding.catchFalling(stranger), "a tamed whale doesn't take strangers");
+            fallOnto(owner, whale);
+            helper.assertTrue(AerwhaleLanding.catchFalling(owner) && owner.getVehicle() == whale,
+                    "its owner landing on it should ride it");
+            owner.stopRiding();
+            helper.succeed();
+        });
+    }
+
+    @GameTest(template = "arena", timeoutTicks = 100)
+    public static void landingOnAWildWhaleStartsBreakingItIn(GameTestHelper helper) {
+        if (deepAetherWhales(helper)) {
+            return;
+        }
+        Aerwhale wild = helper.spawn(AetherEntityTypes.AERWHALE.get(), SPOT);
+        wild.setNoAi(true);
+        Player player = helper.makeMockPlayer(GameType.SURVIVAL);
+        helper.runAfterDelay(2, () -> {
+            fallOnto(player, wild);
+            helper.assertTrue(AerwhaleLanding.catchFalling(player), "landing on a wild whale should catch the player");
+            helper.assertTrue(player.getVehicle() instanceof TamedAerwhale whale && whale.unbroken(),
+                    "they should be riding an unbroken whale, got " + player.getVehicle());
+            helper.succeed();
+        });
+    }
+
+    @GameTest(template = "arena", timeoutTicks = 100)
+    public static void buckedAerwhalesBoltForOpenAir(GameTestHelper helper) {
+        if (deepAetherWhales(helper)) {
+            return;
+        }
+        Aerwhale wild = helper.spawn(AetherEntityTypes.AERWHALE.get(), SPOT);
+        wild.setPersistenceRequired();
+        Player rider = helper.makeMockPlayer(GameType.SURVIVAL);
+        rider.interactOn(wild, InteractionHand.MAIN_HAND);
+        helper.assertTrue(rider.getVehicle() instanceof TamedAerwhale, "the rider should be aboard");
+        TamedAerwhale whale = (TamedAerwhale) rider.getVehicle();
+        Vec3 before = whale.position();
+        whale.buck(rider);
+        helper.assertFalse(rider.isPassenger(), "should be thrown");
+        helper.runAfterDelay(40, () -> {
+            helper.assertTrue(whale.position().distanceTo(before) > 8, "the whale should bolt, moved "
+                    + whale.position().distanceTo(before));
             helper.succeed();
         });
     }
