@@ -389,9 +389,9 @@ public final class AACommonConfig {
                 .push("aerbison");
         AERBISON_STAMPEDE_INTERVAL_MINUTES = b.comment("Average minutes between a herd's random stampedes. 0 turns random",
                         "stampedes off; herds still stampede to defend themselves.")
-                .defineInRange("stampede_interval_minutes", 8.0, 0.0, 1000.0);
+                .defineInRange("stampede_interval_minutes", 4.0, 0.0, 1000.0);
         AERBISON_STAMPEDE_MIN_ADULTS = b.comment("Adults that must be close together to start a random stampede.")
-                .defineInRange("stampede_min_adults", 3, 2, 16);
+                .defineInRange("stampede_min_adults", 2, 2, 16);
         AERBISON_STAMPEDE_MAX_SIZE = b.comment("Most aerbison in one stampede, passing bison that join included.")
                 .defineInRange("stampede_max_size", 14, 2, 64);
         AERBISON_STAMPEDE_COOLDOWN = b.comment("Seconds before a herd that stampeded can stampede at random again.")
