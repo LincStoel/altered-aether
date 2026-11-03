@@ -58,6 +58,7 @@ public final class AABlockProvider extends JsonDataProvider {
         recipe();
         gleamVines();
         asset("models/item", AlteredAether.id("squall_spawn_egg"), model("minecraft:item/template_spawn_egg", Map.of()));
+        asset("models/item", AlteredAether.id("aerbison_spawn_egg"), model("minecraft:item/template_spawn_egg", Map.of()));
         language();
     }
 
@@ -278,6 +279,14 @@ public final class AABlockProvider extends JsonDataProvider {
         lang.put("entity." + AlteredAether.MOD_ID + ".tamed_aerwhale", "Aerwhale");
         lang.put("entity." + AlteredAether.MOD_ID + ".squall", "Squall");
         lang.put("item." + AlteredAether.MOD_ID + ".squall_spawn_egg", "Squall Spawn Egg");
+        lang.put("entity." + AlteredAether.MOD_ID + ".aerbison", "Aerbison");
+        lang.put("item." + AlteredAether.MOD_ID + ".aerbison_spawn_egg", "Aerbison Spawn Egg");
+        String[][] subtitles = {{"ambient", "grunts"}, {"hurt", "is hurt"}, {"death", "dies"}, {"step", "steps"},
+                {"snort", "snorts"}, {"bellow", "bellows"}, {"stomp", "stamps"}, {"land", "lands"},
+                {"stun", "is dazed"}, {"horn_toss", "tosses its head"}};
+        for (String[] sound : subtitles) {
+            lang.put("subtitles." + AlteredAether.MOD_ID + ".aerbison." + sound[0], "Aerbison " + sound[1]);
+        }
         lang.put("message." + AlteredAether.MOD_ID + ".aerwhale.stay", "%s will circle here");
         lang.put("message." + AlteredAether.MOD_ID + ".aerwhale.wander", "%s will roam freely");
         lang.put("message." + AlteredAether.MOD_ID + ".aerwhale.follow", "%s will follow you");

@@ -1,0 +1,7 @@
+{
+  "replace": false,
+  "values": [
+    "#aether:aether_animals_spawnable_on",
+    "aether:quicksoil"
+  ]
+}

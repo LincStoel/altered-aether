@@ -50,6 +50,7 @@ public final class AABlockEvents {
         }
         if (event.getTabKey().equals(CreativeModeTabs.SPAWN_EGGS)) {
             event.accept(AARegistries.SQUALL_SPAWN_EGG.get());
+            event.accept(AARegistries.AERBISON_SPAWN_EGG.get());
         }
     }
 

@@ -81,6 +81,10 @@ public final class SpawnPlacementEvents {
         skySpawn(event, AetherEntityTypes.ZEPHYR.get());
         skySpawn(event, AARegistries.SQUALL.get());
 
+        // Aerbison: Aether soil, grass or quicksoil in daylight; see Aerbison.checkSpawnRules.
+        event.register(AARegistries.AERBISON.get(), SpawnPlacementTypes.ON_GROUND, Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,
+                com.linc.alteredaether.entity.Aerbison::checkSpawnRules, RegisterSpawnPlacementsEvent.Operation.REPLACE);
+
         // Lagoon life. The host biomes spawn it (see the lagoon_life biome modifier), but only an atoll's lagoon will
         // have it, so the forests' other water stays empty.
         orInAether(event, EntityType.TROPICAL_FISH, (level, pos) -> surfaceWater(level, pos)

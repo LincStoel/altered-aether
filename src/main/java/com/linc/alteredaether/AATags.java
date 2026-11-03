@@ -65,6 +65,16 @@ public final class AATags {
     public static final TagKey<Item> AERWHALE_BREEDING_FOOD =
             TagKey.create(Registries.ITEM, AlteredAether.id("aerwhale_breeding_food"));
 
+    /** Food that tempts and breeds aerbison. */
+    public static final TagKey<Item> AERBISON_FOOD = TagKey.create(Registries.ITEM, AlteredAether.id("aerbison_food"));
+    /** Ground aerbison may spawn on: the Aether's animal ground, and quicksoil for the dunes. */
+    public static final TagKey<Block> AERBISON_SPAWNABLE_ON =
+            TagKey.create(Registries.BLOCK, AlteredAether.id("aerbison_spawnable_on"));
+    /** Blocks a stampede breaks as it passes: plants, glass and small fragile decorations. */
+    public static final TagKey<Block> AERBISON_TRAMPLES = TagKey.create(Registries.BLOCK, AlteredAether.id("aerbison_tramples"));
+    /** Entities that quicksoil's slipperiness and speed do not affect. */
+    public static final TagKey<EntityType<?>> SURE_FOOTED = TagKey.create(Registries.ENTITY_TYPE, AlteredAether.id("sure_footed"));
+
     /** Fliers an aercloud doesn't slow or ground (see AercloudDragMixin); they can still stand on one. */
     public static final TagKey<EntityType<?>> IGNORES_AERCLOUD_DRAG =
             TagKey.create(Registries.ENTITY_TYPE, AlteredAether.id("ignores_aercloud_drag"));

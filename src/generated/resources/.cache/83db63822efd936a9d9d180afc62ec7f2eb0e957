@@ -1,4 +1,4 @@
-// 1.21.1	2026-11-01T18:35:32.0651204	Altered Aether loot tables
+// 1.21.1	2026-11-02T19:55:47.1251436	Altered Aether loot tables
 da7d952bd2602ab84a5bbbc60811f7f8d93992c1 data/altered_aether/loot_modifiers/bronze_dungeon_rumour_map.json
 6d7b90c78b7fcb70d68629dc918a2819472bad9b data/altered_aether/loot_modifiers/silver_dungeon_rumour_map.json
 df7232e8dfacb22d52716fb06abbd4f7642949d0 data/altered_aether/loot_table/chests/double_atoll.json
@@ -12,5 +12,6 @@ a83e5579ef589c920d6d037ffd2d62f1254f6f9e data/altered_aether/loot_table/chests/g
 0fc1d686cbf424bf2ed14aa1efce2d8e962bafb2 data/altered_aether/loot_table/chests/grove/stump_poor.json
 1a8bbd3b6622ff836476d293d4fd0bb279e60dc5 data/altered_aether/loot_table/chests/grove/village_crate.json
 02bbc249f59aea52cffcfcc1d04ca38861ab0400 data/altered_aether/loot_table/chests/rumour_map.json
+b302187e09aa993a0702d7b9998cc2ffc9b05976 data/altered_aether/loot_table/entities/aerbison.json
 a19cc1e74747563fecc7f580d602668c8060f6ef data/altered_aether/loot_table/entities/squall.json
 3d72c927283a489d0315b3d0b95650e79f940882 data/neoforge/loot_modifiers/global_loot_modifiers.json

@@ -1,4 +1,4 @@
-// 1.21.1	2026-11-01T12:39:16.8573909	Altered Aether biome modifiers
+// 1.21.1	2026-11-02T19:55:47.1210862	Altered Aether biome modifiers
 a6b67b4c1c313dc7fdb12bbc3331f85be76ab355 data/altered_aether/neoforge/biome_modifier/aether_exclusive.json
 5aa795e9611228495aa045b613bafcf69423632e data/altered_aether/neoforge/biome_modifier/basin_fill.json
 7fb8c799e30de1bc657c97a9046a2e637c6525ba data/altered_aether/neoforge/biome_modifier/basin_seal.json
@@ -11,6 +11,8 @@ a9345f6216c4fb0178a1c9b7792da91d3db86f61 data/altered_aether/neoforge/biome_modi
 0101f84b2647b243f490cfa87d69271b8b7cd472 data/altered_aether/neoforge/biome_modifier/landmarks.json
 b1928d7c8f93dc0119888606843a7f0e447ca675 data/altered_aether/neoforge/biome_modifier/landmark_decoration.json
 abf079c5cf13392766b0ddea34ab7a6b5ef1db5e data/altered_aether/neoforge/biome_modifier/overworld_archwood.json
+47d701058f8efc2f1cbf86ea16cef1c678e4ffb3 data/altered_aether/neoforge/biome_modifier/spawns/aerbison_dunes.json
+f43dd8d2fb6624c73c088ed6baea6381642fd8e3 data/altered_aether/neoforge/biome_modifier/spawns/aerbison_open.json
 aee40d4da06a995e06f8fc14573fa69f9f61c9d0 data/altered_aether/neoforge/biome_modifier/spawns/breeze.json
 eacffc9c09dbd6f7b64d3398f47c52a8185bed29 data/altered_aether/neoforge/biome_modifier/spawns/breeze_rift.json
 9fd56d72f68a22da19e13717cbfb5ed3cdbb5bf0 data/altered_aether/neoforge/biome_modifier/spawns/cockatrice_rare.json

@@ -119,6 +119,19 @@ public final class AACommonConfig {
     public static final IntValue AERWHALE_BREEDING_COOLDOWN;
     public static final IntValue AERWHALE_GROWTH_TIME;
     public static final IntValue AERWHALE_FOLLOW_TELEPORT;
+    public static final DoubleValue AERBISON_STAMPEDE_INTERVAL_MINUTES;
+    public static final IntValue AERBISON_STAMPEDE_MIN_ADULTS;
+    public static final IntValue AERBISON_STAMPEDE_MAX_SIZE;
+    public static final IntValue AERBISON_STAMPEDE_COOLDOWN;
+    public static final IntValue AERBISON_STAMPEDE_FAILED_COOLDOWN;
+    public static final IntValue AERBISON_RUN_MIN;
+    public static final IntValue AERBISON_RUN_MAX;
+    public static final IntValue AERBISON_MAX_CLIMB;
+    public static final DoubleValue AERBISON_KNOCKBACK_HORIZONTAL;
+    public static final DoubleValue AERBISON_KNOCKBACK_VERTICAL;
+    public static final DoubleValue AERBISON_KNOCKBACK_DAMAGE;
+    public static final IntValue AERBISON_SLOW_FALL_TICKS;
+    public static final BooleanValue AERBISON_TRAMPLE;
 
     // [tall_mode]
     public static final ModConfigSpec.ConfigValue<List<? extends String>> TALL_MODE_EXCLUSIONS;
@@ -369,6 +382,39 @@ public final class AACommonConfig {
         AERWHALE_FOLLOW_TELEPORT = b.comment("A following aerwhale this far from its owner, in blocks, catches up by",
                         "teleporting to them, as wolves and cats do. 0 never teleports.")
                 .defineInRange("follow_teleport_distance", 24, 0, 512);
+        b.pop();
+
+        b.comment("Aerbison herds. Where they spawn is under spawns.aerbison. A stampede is a herd running 30 to 50 blocks,",
+                        "rising on a gust and gliding down; it also answers an attack on the herd.")
+                .push("aerbison");
+        AERBISON_STAMPEDE_INTERVAL_MINUTES = b.comment("Average minutes between a herd's random stampedes. 0 turns random",
+                        "stampedes off; herds still stampede to defend themselves.")
+                .defineInRange("stampede_interval_minutes", 8.0, 0.0, 1000.0);
+        AERBISON_STAMPEDE_MIN_ADULTS = b.comment("Adults that must be close together to start a random stampede.")
+                .defineInRange("stampede_min_adults", 3, 2, 16);
+        AERBISON_STAMPEDE_MAX_SIZE = b.comment("Most aerbison in one stampede, passing bison that join included.")
+                .defineInRange("stampede_max_size", 14, 2, 64);
+        AERBISON_STAMPEDE_COOLDOWN = b.comment("Seconds before a herd that stampeded can stampede at random again.")
+                .defineInRange("stampede_cooldown_seconds", 300, 0, 100000);
+        AERBISON_STAMPEDE_FAILED_COOLDOWN = b.comment("Seconds before a herd that found no room tries again.")
+                .defineInRange("failed_stampede_cooldown_seconds", 60, 0, 100000);
+        AERBISON_RUN_MIN = b.comment("Shortest stampede run, in blocks, before the glide down.")
+                .defineInRange("run_length_min", 32, 8, 256);
+        AERBISON_RUN_MAX = b.comment("Longest stampede run, in blocks.")
+                .defineInRange("run_length_max", 48, 8, 256);
+        AERBISON_MAX_CLIMB = b.comment("Most blocks a stampede rises above where it started, before it glides down.")
+                .defineInRange("max_climb", 8, 0, 64);
+        AERBISON_KNOCKBACK_HORIZONTAL = b.comment("How hard a stampede throws what it hits forward.")
+                .defineInRange("knockback_horizontal", 1.1, 0.0, 10.0);
+        AERBISON_KNOCKBACK_VERTICAL = b.comment("How hard a stampede throws what it hits upward.")
+                .defineInRange("knockback_vertical", 0.95, 0.0, 10.0);
+        AERBISON_KNOCKBACK_DAMAGE = b.comment("Damage a stampede does to what it hits, once each.")
+                .defineInRange("knockback_damage", 4.0, 0.0, 1000.0);
+        AERBISON_SLOW_FALL_TICKS = b.comment("Ticks of slow falling given to what a stampede throws, so the fall isn't instant.")
+                .defineInRange("knockback_slow_fall_ticks", 14, 0, 2000);
+        AERBISON_TRAMPLE = b.comment("Whether a stampede breaks plants, glass and other fragile blocks (#altered_aether:aerbison_tramples).",
+                        "The mobGriefing game rule must also allow it.")
+                .define("trample_blocks", true);
         b.pop();
 
         b.comment("The taller Aether (-64..319) comes from the built-in 'altered_aether:tall_aether' datapack, chosen when",

@@ -1,0 +1,9 @@
+{
+  "type": "altered_aether:configured_spawns",
+  "biomes": "altered_aether:windswept_dunes",
+  "category": "creature",
+  "max_count": 4,
+  "min_count": 2,
+  "mob": "aerbison",
+  "weight": 4
+}

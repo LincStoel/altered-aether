@@ -1,0 +1,12 @@
+{
+  "type": "altered_aether:configured_spawns",
+  "biomes": [
+    "altered_aether:aether_plateau",
+    "aether:skyroot_meadow"
+  ],
+  "category": "creature",
+  "max_count": 5,
+  "min_count": 3,
+  "mob": "aerbison",
+  "weight": 7
+}

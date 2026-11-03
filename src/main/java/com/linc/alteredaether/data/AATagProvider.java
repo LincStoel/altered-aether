@@ -84,6 +84,15 @@ public final class AATagProvider extends JsonDataProvider {
                 "altered_aether:squall");
         // Tamed aerwhales (see TamedAerwhale).
         tag("item", AlteredAether.id("aerwhale_taming_food"), "aether:blue_berry");
+        tag("item", AlteredAether.id("aerbison_food"), "aether:blue_berry");
+        tag("block", AlteredAether.id("aerbison_spawnable_on"), "#aether:aether_animals_spawnable_on", "aether:quicksoil");
+        tag("entity_type", AlteredAether.id("sure_footed"), "altered_aether:aerbison");
+        tag("block", AlteredAether.id("aerbison_tramples"),
+                "#minecraft:flowers", "minecraft:short_grass", "minecraft:tall_grass", "minecraft:fern",
+                "minecraft:large_fern", "minecraft:dead_bush", "#minecraft:saplings", "#minecraft:crops",
+                "minecraft:sweet_berry_bush", "#minecraft:leaves", "#c:glass_blocks", "#c:glass_panes",
+                "aether:quicksoil_glass", "aether:quicksoil_glass_pane", "minecraft:snow", "minecraft:cobweb",
+                "#minecraft:flower_pots", "#minecraft:candles", "aether:berry_bush", "aether:berry_bush_stem");
         tag("item", AlteredAether.id("aerwhale_breeding_food"), "aether:enchanted_berry");
         gleamVines();
         aetherBiomes();

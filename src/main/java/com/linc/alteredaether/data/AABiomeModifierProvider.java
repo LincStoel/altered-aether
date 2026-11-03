@@ -130,6 +130,10 @@ public final class AABiomeModifierProvider extends JsonDataProvider {
         breezeBiomes.add("values", breezeParts);
         spawns("breeze", "breeze", breezeBiomes, "monster", 2, 2, 3, 1.0);
         spawns("breeze_rift", "breeze", new JsonPrimitive("altered_aether:shattered_rift"), "monster", 2, 3, 4, 3.0);
+        // Herds of aerbison on the open ground: the plateau and the stock meadows, and a smaller herd on the dunes.
+        spawns("aerbison_open", "aerbison", List.of("altered_aether:aether_plateau", "aether:skyroot_meadow"), "creature",
+                7, 3, 5);
+        spawns("aerbison_dunes", "aerbison", List.of("altered_aether:windswept_dunes"), "creature", 4, 2, 4);
         spawns("naga_yagroot", "naga", List.of("deep_aether:yagroot_swamp"), "monster", 10, 1, 1, "mowziesmobs",
                 "deep_aether");
         // With Deep Aether, cockatrices thin out across the Aether and gather in the yagroot swamps. They hold the

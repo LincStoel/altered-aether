@@ -51,6 +51,8 @@ public record AddedMob(String key, String entityId, Method method, boolean exclu
             natural("wilden_guardian", "ars_nouveau:wilden_guardian", true, 0.7, 0.08),
             natural("wilden_stalker", "ars_nouveau:wilden_stalker", true, 0.7, 0.08),
             natural("snuffle", "snuffles:snuffle", true, 0, 0),
+            // Ours, but it shares the config section: weights, group sizes and spawn cost.
+            natural("aerbison", "altered_aether:aerbison", false, 0.5, 0.06),
             // The only mob that keeps its vanilla spawns by default: breezes belong to trial chambers too.
             natural("breeze", "minecraft:breeze", false, 0.5, 0.05),
             familiar("starbuncle", "ars_nouveau:starbuncle"),

@@ -17,6 +17,7 @@
     "GleamVinesMixins$BeeGrow",
     "GleamVinesMixins$FoxPick",
     "LargeAercloudStructureMixin",
+    "QuicksoilFrictionMixin",
     "SilverDungeonStructureMixin",
     "TallRemapExclusionMixins$Features",
     "TallRemapExclusionMixins$Jigsaw",

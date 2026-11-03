@@ -1,0 +1,31 @@
+{
+  "replace": false,
+  "values": [
+    "#minecraft:flowers",
+    "minecraft:short_grass",
+    "minecraft:tall_grass",
+    "minecraft:fern",
+    "minecraft:large_fern",
+    "minecraft:dead_bush",
+    "#minecraft:saplings",
+    "#minecraft:crops",
+    "minecraft:sweet_berry_bush",
+    "#minecraft:leaves",
+    {
+      "id": "#c:glass_blocks",
+      "required": false
+    },
+    {
+      "id": "#c:glass_panes",
+      "required": false
+    },
+    "aether:quicksoil_glass",
+    "aether:quicksoil_glass_pane",
+    "minecraft:snow",
+    "minecraft:cobweb",
+    "#minecraft:flower_pots",
+    "#minecraft:candles",
+    "aether:berry_bush",
+    "aether:berry_bush_stem"
+  ]
+}

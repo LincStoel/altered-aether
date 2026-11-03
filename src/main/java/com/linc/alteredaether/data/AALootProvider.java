@@ -63,6 +63,7 @@ public final class AALootProvider extends JsonDataProvider {
         rumourMaps();
         doubleAtoll();
         squall();
+        aerbison();
     }
 
     /**
@@ -88,6 +89,52 @@ public final class AALootProvider extends JsonDataProvider {
         table.add("pools", pools);
         table.addProperty("random_sequence", AlteredAether.MOD_ID + ":chests/double_atoll");
         data("loot_table/chests", AlteredAether.id("double_atoll"), table);
+    }
+
+    /** Leather and beef like a cow's, but more of each; the beef is cooked if the bison dies burning. */
+    private void aerbison() {
+        JsonObject leather = entry("minecraft:leather", 1, 0, 2);
+        leather.remove("weight");
+        leather.getAsJsonArray("functions").add(looting());
+        JsonObject beef = entry("minecraft:beef", 1, 1, 3);
+        beef.remove("weight");
+        JsonArray beefFunctions = beef.getAsJsonArray("functions");
+        JsonObject smelt = new JsonObject();
+        smelt.addProperty("function", "minecraft:furnace_smelt");
+        JsonArray onFire = new JsonArray();
+        JsonObject condition = new JsonObject();
+        condition.addProperty("condition", "minecraft:entity_properties");
+        condition.addProperty("entity", "this");
+        JsonObject predicate = new JsonObject();
+        JsonObject flags = new JsonObject();
+        flags.addProperty("is_on_fire", true);
+        predicate.add("flags", flags);
+        condition.add("predicate", predicate);
+        onFire.add(condition);
+        smelt.add("conditions", onFire);
+        beefFunctions.add(smelt);
+        beefFunctions.add(looting());
+        JsonObject table = new JsonObject();
+        table.addProperty("type", "minecraft:entity");
+        table.add("pools", entries(lootPool(leather), lootPool(beef)));
+        table.addProperty("random_sequence", AlteredAether.MOD_ID + ":entities/aerbison");
+        data("loot_table/entities", AlteredAether.id("aerbison"), table);
+    }
+
+    private static JsonObject looting() {
+        JsonObject looting = new JsonObject();
+        looting.addProperty("function", "minecraft:enchanted_count_increase");
+        looting.addProperty("enchantment", "minecraft:looting");
+        looting.add("count", uniform(0, 1));
+        return looting;
+    }
+
+    private static JsonObject lootPool(JsonObject entry) {
+        JsonObject pool = new JsonObject();
+        pool.addProperty("rolls", 1.0);
+        pool.addProperty("bonus_rolls", 0.0);
+        pool.add("entries", entries(entry));
+        return pool;
     }
 
     /** The zephyr's drop: a cold aercloud or two, one more with looting. */

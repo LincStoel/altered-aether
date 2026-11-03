@@ -21,6 +21,7 @@ import com.linc.alteredaether.block.AmbrosiumCampfireBlock;
 import com.linc.alteredaether.block.GleamVinesBlock;
 import com.linc.alteredaether.block.GleamVinesPlantBlock;
 import com.linc.alteredaether.compat.ModEnabled;
+import com.linc.alteredaether.entity.Aerbison;
 import com.linc.alteredaether.entity.Squall;
 import com.linc.alteredaether.entity.TamedAerwhale;
 import com.linc.alteredaether.loot.RumourMapFunction;
@@ -139,6 +140,13 @@ public final class AARegistries {
     public static final DeferredItem<DeferredSpawnEggItem> SQUALL_SPAWN_EGG = ITEMS.register("squall_spawn_egg",
             () -> new DeferredSpawnEggItem(SQUALL, 0x463C47, 0x9C838B, new Item.Properties()));
 
+    /** The Aether's open-plains bison; see entity/Aerbison. */
+    public static final DeferredHolder<EntityType<?>, EntityType<Aerbison>> AERBISON = ENTITY_TYPES.register(
+            "aerbison", () -> EntityType.Builder.<Aerbison>of(Aerbison::new, MobCategory.CREATURE)
+                    .sized(1.8F, 2.2F).eyeHeight(1.2F).clientTrackingRange(10).updateInterval(2).build("aerbison"));
+    public static final DeferredItem<DeferredSpawnEggItem> AERBISON_SPAWN_EGG = ITEMS.register("aerbison_spawn_egg",
+            () -> new DeferredSpawnEggItem(AERBISON, 0xE6F4F3, 0xB7947B, new Item.Properties()));
+
     public static final DeferredRegister<AttachmentType<?>> ATTACHMENT_TYPES =
             DeferredRegister.create(NeoForgeRegistries.Keys.ATTACHMENT_TYPES, AlteredAether.MOD_ID);
 
@@ -220,6 +228,21 @@ public final class AARegistries {
     /** The crackle before a Tempest strike hits a player; see storm/TempestStorms. */
     public static final DeferredHolder<SoundEvent, SoundEvent> INCOMING_LIGHTNING = SOUND_EVENTS.register(
             "storm.incoming_lightning", () -> SoundEvent.createVariableRangeEvent(AlteredAether.id("storm.incoming_lightning")));
+
+    public static final DeferredHolder<SoundEvent, SoundEvent> AERBISON_AMBIENT = sound("aerbison.ambient");
+    public static final DeferredHolder<SoundEvent, SoundEvent> AERBISON_HURT = sound("aerbison.hurt");
+    public static final DeferredHolder<SoundEvent, SoundEvent> AERBISON_DEATH = sound("aerbison.death");
+    public static final DeferredHolder<SoundEvent, SoundEvent> AERBISON_STEP = sound("aerbison.step");
+    public static final DeferredHolder<SoundEvent, SoundEvent> AERBISON_SNORT = sound("aerbison.snort");
+    public static final DeferredHolder<SoundEvent, SoundEvent> AERBISON_BELLOW = sound("aerbison.bellow");
+    public static final DeferredHolder<SoundEvent, SoundEvent> AERBISON_STOMP = sound("aerbison.stomp");
+    public static final DeferredHolder<SoundEvent, SoundEvent> AERBISON_LAND = sound("aerbison.land");
+    public static final DeferredHolder<SoundEvent, SoundEvent> AERBISON_STUN = sound("aerbison.stun");
+    public static final DeferredHolder<SoundEvent, SoundEvent> AERBISON_HORN_TOSS = sound("aerbison.horn_toss");
+
+    private static DeferredHolder<SoundEvent, SoundEvent> sound(String name) {
+        return SOUND_EVENTS.register(name, () -> SoundEvent.createVariableRangeEvent(AlteredAether.id(name)));
+    }
 
     public static final DeferredRegister<Feature<?>> FEATURES = DeferredRegister.create(Registries.FEATURE, AlteredAether.MOD_ID);
 
