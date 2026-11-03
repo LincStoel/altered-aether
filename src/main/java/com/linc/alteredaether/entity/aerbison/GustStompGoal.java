@@ -51,7 +51,7 @@ public class GustStompGoal extends Goal {
 
     @Override
     public boolean canUse() {
-        if (bison.stompCooldown > 0 || !bison.onGround() || bison.getState() != Aerbison.State.IDLE || bison.isBaby()) {
+        if (bison.stampede != null || bison.stompCooldown > 0 || !bison.onGround() || bison.getState() != Aerbison.State.IDLE || bison.isBaby()) {
             return false;
         }
         Path path = bison.getNavigation().getPath();
@@ -64,16 +64,17 @@ public class GustStompGoal extends Goal {
             return false;
         }
         double dx = next.x + 0.5 - bison.getX(), dz = next.z + 0.5 - bison.getZ();
-        return dx * dx + dz * dz < 2.5 * 2.5;
+        if (dx * dx + dz * dz >= 2.5 * 2.5) {
+            return false;
+        }
+        // remembered here: another goal that starts first this tick may stop the navigation before start() runs
+        step = new Vec3(next.x + 0.5, next.y, next.z + 0.5);
+        destination = Vec3.atBottomCenterOf(path.getTarget());
+        return true;
     }
 
     @Override
     public void start() {
-        Path path = bison.getNavigation().getPath();
-        Node next = path.getNextNode();
-        step = new Vec3(next.x + 0.5, next.y, next.z + 0.5);
-        net.minecraft.core.BlockPos target = path.getTarget();
-        destination = Vec3.atBottomCenterOf(target);
         tick = 0;
         bison.getNavigation().stop();
         bison.play(AerbisonTiming.EVENT_STOMP);
@@ -81,7 +82,7 @@ public class GustStompGoal extends Goal {
 
     @Override
     public boolean canContinueToUse() {
-        return tick < AerbisonTiming.STOMP_TICKS;
+        return bison.stampede == null && tick < AerbisonTiming.STOMP_TICKS;
     }
 
     @Override
