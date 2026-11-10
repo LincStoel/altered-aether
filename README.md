@@ -227,17 +227,17 @@ time in all (the benchmark reports it as `ms/grove_plan` and `ms/grove_build`).
 
 ## Development
 
-The Aether and the mods it needs are not committed. Copy these from the CurseForge instance's `mods` folder into
-`libs/`:
+The Aether and the mods it needs (Aeroblender, TerraBlender, Accessories, owo-lib), and Create and JEI to compile
+against, come from [Modrinth's Maven](https://support.modrinth.com/en/articles/8801191-modrinth-maven); their versions
+are in `gradle.properties`. Gradle copies them into each run's `mods` folder.
 
-- `aether-1.21.1-1.5.10-neoforge.jar`
-- `aeroblender-1.21.1-1.0.0-neoforge.jar`
-- `TerraBlender-neoforge-1.21.1-4.1.0.8.jar`
-- `accessories-neoforge-1.1.0-beta.54+1.21.1.jar`
-- `owo-lib-neoforge-0.12.15.6-beta.1+1.21.jar`
+Optional mods to test with go in `libs/optional/` (not committed) and are copied into the runs; Deep Aether and
+Lithium come from Modrinth's Maven instead. `-PoptionalMods=all`, `none`, or a comma-separated list of jar name
+prefixes or Modrinth project names (`-PoptionalMods=deep-aether,lithium`) picks which. Client and server runs default
+to all of them, the GameTest server to none.
 
-Optional mods to test with go in `libs/optional/` and are copied into the runs; `-PoptionalMods=none` (or a
-comma-separated list of jar name prefixes) picks which.
+The debug tooling (`debug/`) and the GameTests (`gametest/`) live in the `dev` source set, `src/dev/`: every run
+loads it, but the released jar is built from `src/main` alone, and `.\gradlew build` fails if any of it gets in.
 
 - `.\gradlew runClient`, `.\gradlew runServer`, `.\gradlew build`.
 - Client runs load Iris and Sodium from `libs/shaders/` (not committed) with the BSL shaderpack from `run/shaderpacks/`,
@@ -246,6 +246,9 @@ comma-separated list of jar name prefixes) picks which.
   from the World Traveler 2 instance. `-PclientMods=false` runs the client without them.
 - `.\gradlew runData` regenerates `src/generated/resources` (worldgen, tags, models, lang).
 - `.\gradlew test` runs the unit tests, including the biome table's partition across every combination of mods.
+- `.\gradlew runGameTestServer` runs the GameTests on a headless server and exits with the number that failed.
+- GitHub Actions (`.github/workflows/build.yml`) builds and runs the unit tests, checks `runData` leaves
+  `src/generated` unchanged, and runs the GameTests twice: with no optional mods, and with Deep Aether and Lithium.
 
 Worldgen tools, all on the dev server:
 
@@ -255,7 +258,7 @@ Worldgen tools, all on the dev server:
   `break:` and `landmark:village_tree` it adds slices through the site, and for the village tree, plans of its two
   galleries.
 - `-PaaReport=radius,step` prints a report of biomes, masks and columns.
-- `/altered_aether debug` reports the biome, climate point, region mask, basin, landmark and storm at your position.
+- `/altered_aether debug` (dev runs only, like `report` and `fly`) reports the biome, climate point, region mask, basin, landmark and storm at your position.
 - `-PaaTour=stop,stop,...` on the client quick-plays `run/saves/tour` and screenshots each landmark (and `storm`,
   `campfire`, `biome:<name>`, `giant:<type>`) into `run/screenshots/tour/`.
 - `/altered_aether fly <from> <to> <speed> [radius]` (run in the Aether, e.g. through RCON) moves a chunk ticket

@@ -1,0 +1,75 @@
+name: Build
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Compiles, runs the unit tests and checks the released jar holds no dev-only code.
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - uses: gradle/actions/setup-gradle@v4
+      - run: ./gradlew build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: altered_aether
+          path: build/libs/*.jar
+
+  # The generated resources are committed: regenerating them must change nothing.
+  datagen:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - uses: gradle/actions/setup-gradle@v4
+      - run: ./gradlew runData
+      - name: Check the generated resources are up to date
+        run: |
+          git add -N src/generated
+          if ! git diff --exit-code --stat -- src/generated ':!src/generated/resources/.cache'; then
+            echo "::error::src/generated is out of date: run ./gradlew runData and commit the result."
+            exit 1
+          fi
+
+  # The GameTests, alone and with the optional mods most likely to break them: Deep Aether, whose aerwhale patches
+  # are cancelled, and Lithium, whose collision changes the aerwhale deck works around.
+  gametest:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        optional: [none, "deep-aether,lithium"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - uses: gradle/actions/setup-gradle@v4
+      # The server exits with the number of failed tests. A run that finds no tests at all would pass too, so the log
+      # must also report some passing.
+      - run: ./gradlew runGameTestServer -PoptionalMods=${{ matrix.optional }} | tee gametest.log
+        shell: bash -o pipefail {0}
+      - name: Check tests ran
+        run: grep -E "All [1-9][0-9]* required tests passed" gametest.log
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: gametest-logs-${{ strategy.job-index }}
+          path: run-gametest/logs/
