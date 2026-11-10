@@ -15,6 +15,7 @@
 package com.linc.alteredaether.mixin;
 
 import com.bawnorton.mixinsquared.canceller.MixinCancellerRegistrar;
+import com.linc.alteredaether.compat.DeepAetherWhalePatches;
 import com.linc.alteredaether.entity.AerwhaleMode;
 import org.objectweb.asm.tree.ClassNode;
 import org.spongepowered.asm.mixin.extensibility.IMixinConfigPlugin;
@@ -25,21 +26,15 @@ import java.util.Set;
 
 /**
  * Chooses between our aerwhales and Deep Aether's (see {@link AerwhaleMode}). With ours in play, MixinSquared cancels
- * every Deep Aether mixin that patches the Aether's aerwhale, its model or its renderer, so neither its saddle, chest,
- * seats, flight nor saddle layers exist; {@link DeepAetherWhaleCargoMixin} then salvages what its whales had saved.
+ * every Deep Aether mixin that patches the Aether's aerwhale, its model or its renderer ({@link DeepAetherWhalePatches}),
+ * so neither its saddle, chest, seats, flight nor saddle layers exist; {@link DeepAetherWhaleCargoMixin} then salvages
+ * what its whales had saved.
  */
 public final class AAMixinPlugin implements IMixinConfigPlugin {
-    private static final String DEEP_AETHER_MIXINS = "io.github.razordevs.deep_aether.mixin.entity.";
-    private static final Set<String> DEEP_AETHER_WHALE_MIXINS = Set.of(
-            DEEP_AETHER_MIXINS + "AerwhaleMixin",
-            DEEP_AETHER_MIXINS + "AerwhaleModelMixin",
-            DEEP_AETHER_MIXINS + "ClassicAerwhaleModelMixin",
-            DEEP_AETHER_MIXINS + "AerwhaleRendererMixin");
-
     @Override
     public void onLoad(String mixinPackage) {
         if (AerwhaleMode.deepAetherCancelled()) {
-            MixinCancellerRegistrar.register((targets, mixin) -> DEEP_AETHER_WHALE_MIXINS.contains(mixin));
+            MixinCancellerRegistrar.register(DeepAetherWhalePatches::shouldCancel);
         }
     }
 
