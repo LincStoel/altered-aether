@@ -16,14 +16,12 @@ package com.linc.alteredaether.compat.jei;
 
 import com.linc.alteredaether.AlteredAether;
 import com.linc.alteredaether.compat.CreateCompat;
-import com.linc.alteredaether.debug.JeiShot;
 import mezz.jei.api.IModPlugin;
 import mezz.jei.api.JeiPlugin;
 import mezz.jei.api.recipe.category.IRecipeCategory;
 import mezz.jei.api.registration.IRecipeCatalystRegistration;
 import mezz.jei.api.registration.IRecipeCategoryRegistration;
 import mezz.jei.api.registration.IRecipeRegistration;
-import mezz.jei.api.runtime.IJeiRuntime;
 import net.minecraft.resources.ResourceLocation;
 import net.neoforged.fml.ModList;
 
@@ -64,11 +62,5 @@ public final class AAJeiPlugin implements IModPlugin {
         if (fanEnchanting != null) {
             FanEnchantingCategory.registerCatalysts(fanEnchanting, registration);
         }
-    }
-
-    /** The dev client's screenshot of a page, when one is asked for. */
-    @Override
-    public void onRuntimeAvailable(IJeiRuntime runtime) {
-        JeiShot.start(runtime);
     }
 }

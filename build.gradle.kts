@@ -1,3 +1,5 @@
+import java.util.zip.ZipFile
+
 plugins {
     id("java-library")
     id("net.neoforged.moddev") version "2.0.148"
@@ -12,6 +14,11 @@ base {
 
 java.toolchain.languageVersion = JavaLanguageVersion.of(21)
 
+// Debug tooling (the worldgen report and benchmark, the camera tour, the JEI screenshot, /altered_aether's dev
+// commands) and the GameTests. Every dev run loads it as part of the mod; the released jar is built from main alone,
+// so nothing in main can depend on it.
+val dev: SourceSet = sourceSets.create("dev")
+
 neoForge {
     enable {
         version = property("neo_version") as String
@@ -25,9 +32,12 @@ neoForge {
         minecraftVersion = property("parchment_minecraft_version") as String
     }
 
+    addModdingDependenciesTo(dev)
+
     mods {
         register(property("mod_id") as String) {
             sourceSet(sourceSets.main.get())
+            sourceSet(dev)
         }
     }
 
@@ -87,41 +97,69 @@ neoForge {
             )
         }
         configureEach {
+            // The dev source set's classpath holds main's too, so each run has the whole mod.
+            sourceSet = dev
             systemProperty("forge.logging.markers", "REGISTRIES")
             logLevel = org.slf4j.event.Level.DEBUG
         }
     }
 }
 
-// The Aether, Aeroblender and the mods they need at runtime, copied from the CurseForge instance into libs/ (not
-// committed): aether, aeroblender, TerraBlender (which Aeroblender requires), accessories (newer than the copy
-// bundled in the Aether's jar) and owo-lib (which Accessories requires).
-// They are compiled against, and loaded at runtime from the run folders' mods/ (see copyClientDevMods), so jar-in-jar
-// dependencies (Cumulus and Nitrogen inside the Aether's jar) resolve exactly as they do in a real instance.
-val devMods = fileTree("libs") { include("*.jar") }
-
 repositories {
+    // Mods published on Modrinth, as maven.modrinth:<project slug>:<version number>.
+    maven("https://api.modrinth.com/maven") {
+        content { includeGroup("maven.modrinth") }
+    }
     maven("https://maven.bawnorton.com/releases") {
         content { includeGroup("com.github.bawnorton.mixinsquared") }
     }
 }
 
+fun modrinth(project: String, versionProperty: String) = "maven.modrinth:$project:${property(versionProperty)}"
+
+// The Aether, Aeroblender and the mods they need at runtime: aether, aeroblender, TerraBlender (which Aeroblender
+// requires), accessories (newer than the copy bundled in the Aether's jar) and owo-lib (which Accessories requires).
+// They are compiled against, and loaded at runtime from the run folders' mods/ (see the copy tasks below), so jar-in-jar
+// dependencies (Cumulus and Nitrogen inside the Aether's jar) resolve exactly as they do in a real instance.
+val devMods: Configuration by configurations.creating
+// Create, compiled against for the ambrosium campfire's fan processing (see CreateCompat).
+val createMod: Configuration by configurations.creating
+// Optional mods taken from Modrinth Maven rather than libs/optional/; selected with -PoptionalMods like the rest.
+val optionalMaven: Configuration by configurations.creating
+val optionalMavenModules = listOf("deep-aether", "lithium")
+
+configurations.compileOnly {
+    extendsFrom(devMods, createMod)
+}
+// The dev source set compiles and runs against everything main does, and main itself.
+configurations.named(dev.compileOnlyConfigurationName) { extendsFrom(configurations.compileOnly.get()) }
+configurations.named(dev.implementationConfigurationName) { extendsFrom(configurations.implementation.get()) }
+configurations.named(dev.runtimeOnlyConfigurationName) { extendsFrom(configurations.runtimeOnly.get()) }
+
 dependencies {
-    compileOnly(devMods)
-    // The one optional mod compiled against: Create, for the ambrosium campfire's fan processing (see CreateCompat).
-    // Only classes loaded when Create is present reference it. Its JEI page draws with Ponder's catnip library, which
-    // Create bundles as a jar-in-jar along with Flywheel (named in catnip's signatures), so both are taken out of
-    // Create's jar for compiling too.
-    val createJars = fileTree("libs/optional") { include("create-*.jar") }
-    compileOnly(createJars)
-    compileOnly(files(createJars.files.map { jar ->
+    devMods(modrinth("aether", "aether_version")) { isTransitive = false }
+    devMods(modrinth("aeroblender", "aeroblender_version")) { isTransitive = false }
+    devMods(modrinth("terrablender", "terrablender_version")) { isTransitive = false }
+    devMods(modrinth("accessories", "accessories_version")) { isTransitive = false }
+    devMods(modrinth("owo-lib", "owo_lib_version")) { isTransitive = false }
+
+    // The one optional mod compiled against: Create. Only classes loaded when Create is present reference it. Its JEI
+    // page draws with Ponder's catnip library, which Create bundles as a jar-in-jar along with Flywheel (named in
+    // catnip's signatures), so both are taken out of Create's jar for compiling too.
+    createMod(modrinth("create", "create_version")) { isTransitive = false }
+    compileOnly(files(createMod.files.map { jar ->
         zipTree(jar).matching { include("META-INF/jarjar/ponder-*.jar", "META-INF/jarjar/flywheel-*.jar") }
     }))
     // JEI, for that page (see compat/jei); it runs only in client runs, from libs/client.
-    compileOnly(fileTree("libs/client") { include("jei-*.jar") })
+    compileOnly(modrinth("jei", "jei_version")) { isTransitive = false }
     // MixinSquared cancels Deep Aether's aerwhale mixins when our own aerwhales are in use (see AAMixinPlugin).
     compileOnly("com.github.bawnorton.mixinsquared:mixinsquared-common:0.3.7")
     jarJar(implementation("com.github.bawnorton.mixinsquared:mixinsquared-neoforge:0.3.7")!!)
+
+    optionalMaven(modrinth("deep-aether", "deep_aether_version")) { isTransitive = false }
+    optionalMaven(modrinth("lithium", "lithium_version")) { isTransitive = false }
+
+    "devImplementation"(sourceSets.main.get().output)
 
     testImplementation(platform("org.junit:junit-bom:5.11.4"))
     testImplementation("org.junit.jupiter:junit-jupiter")
@@ -138,21 +176,33 @@ sourceSets.main.get().resources {
     exclude(".cache/")
 }
 
-// Optional mods the content integrates with (Ars Nouveau, Ars Elemental, Snuffles, and Ars Nouveau's dependencies
-// Curios and GeckoLib) live in libs/optional/ (not committed, not compiled against). -PoptionalMods picks which of them
-// go into a client or server run: "all" (the default), "none", or comma-separated jar name prefixes such as
-// -PoptionalMods=snuffles. Use it to test the mod both with and without each integration.
-val optionalJars = fileTree("libs/optional") { include("*.jar") }
-val optionalSelection = (findProperty("optionalMods") as String?) ?: "all"
-val selectedOptionalJars: FileCollection = when (optionalSelection) {
-    "all" -> optionalJars
-    "none" -> files()
-    else -> {
-        val prefixes = optionalSelection.split(',').map { it.trim() }
-        optionalJars.filter { jar -> prefixes.any { jar.name.startsWith(it) } }
+// Optional mods the content integrates with live in libs/optional/ (not committed, not compiled against), apart from
+// those in optionalMaven. -PoptionalMods picks which of them go into a run: "all", "none", or comma-separated names
+// (jar name prefixes or Modrinth project names, with - and _ alike) such as -PoptionalMods=snuffles,deep-aether.
+// Client and server runs default to "all"; the GameTest server defaults to "none", since some optional mods (Quark)
+// stop it from loading. Use it to test the mod both with and without each integration.
+fun normalised(name: String) = name.lowercase().replace('-', '_')
+val mavenOptionalPrefixes = optionalMavenModules.map(::normalised)
+// A jar in libs/optional for a mod optionalMaven already provides is left out, so a run never gets two copies.
+val optionalJars = files(fileTree("libs/optional") { include("*.jar") }.files
+    .filter { jar -> mavenOptionalPrefixes.none { normalised(jar.name).startsWith(it) } })
+val optionalJarNames = fileTree("libs/optional") { include("*.jar") }.files.map { it.name }
+
+fun selectedOptional(selection: String): FileCollection {
+    if (selection == "none") {
+        return files()
     }
+    val prefixes = if (selection == "all") null else selection.split(',').map { normalised(it.trim()) }
+    val local = optionalJars.files.filter { jar -> prefixes == null || prefixes.any { normalised(jar.name).startsWith(it) } }
+    // Kept free of script references (such as normalised), which the configuration cache can't store.
+    val maven = optionalMaven.incoming.artifactView {
+        componentFilter { id ->
+            id is ModuleComponentIdentifier
+                    && (prefixes == null || prefixes.any { id.module.lowercase().replace('-', '_').startsWith(it) })
+        }
+    }.files
+    return files(local, maven)
 }
-val optionalJarNames = optionalJars.files.map { it.name }
 
 // Iris and Sodium (libs/shaders/, not committed) go into client runs, with BSL selected through run/config/iris.properties
 // (seeded from iris.properties.staged when Iris hasn't written one yet) so effects can be checked under a shaderpack.
@@ -167,38 +217,47 @@ val clientJars = fileTree("libs/client") { include("*.jar") }
 val clientModsEnabled = ((findProperty("clientMods") as String?) ?: "true").toBoolean()
 val clientJarNames = clientJars.files.map { it.name }
 
-// Adds libs/ to the run's mods folder before each run. A copy rather than a sync, so other mods dropped into
-// run/mods by hand for play-testing are left alone; only optional jars that weren't selected are removed first.
+// Jars that earlier builds copied from libs/ itself, before devMods came from Modrinth Maven: removed from the run
+// folders so the Maven copies don't load beside them.
+val legacyDevJarNames = fileTree("libs") { include("*.jar") }.files.map { it.name }
+
+// Adds the dev mods to the run's mods folder before each run. A copy rather than a sync, so other mods dropped into
+// run/mods by hand for play-testing are left alone. What the last copy put there is listed in a manifest and removed
+// first, so a version bump or a mod left out of the selection doesn't stay behind.
 for ((run, dir) in listOf("Client" to "run", "Server" to "run-server", "Data" to "run-data",
         "GameTestServer" to "run-gametest")) {
     val modsDir = layout.projectDirectory.dir("$dir/mods").asFile
     val withOptional = run != "Data"
-    val optionalNames = optionalJarNames.toList()
+    val selection = (findProperty("optionalMods") as String?) ?: if (run == "GameTestServer") "none" else "all"
+    val shaders = run == "Client" && shadersEnabled
+    val clientMods = run == "Client" && clientModsEnabled
+    val sources = files(
+        devMods,
+        if (withOptional) selectedOptional(selection) else files(),
+        if (shaders) shaderJars else files(),
+        if (clientMods) clientJars else files(),
+    )
+    val staleNames = optionalJarNames + shaderJarNames + clientJarNames + legacyDevJarNames
     val copy = tasks.register<Copy>("copy${run}DevMods") {
         group = "mod development"
-        description = "Copies the mods in libs/ (and the selected libs/optional/ mods) into $dir/mods."
-        from(devMods)
-        if (withOptional) {
-            from(selectedOptionalJars)
-        }
-        val shaders = run == "Client" && shadersEnabled
-        if (shaders) {
-            from(shaderJars)
-        }
-        if (run == "Client" && clientModsEnabled) {
-            from(clientJars)
-        }
+        description = "Copies the dev mods (and the selected optional mods) into $dir/mods."
+        from(sources)
         into(modsDir)
-        val shaderNames = shaderJarNames.toList() + clientJarNames
         val configDir = layout.projectDirectory.dir("$dir/config").asFile
+        val manifest = modsDir.resolve(".altered-aether-dev-mods")
         doFirst {
-            optionalNames.forEach { modsDir.resolve(it).delete() }
-            shaderNames.forEach { modsDir.resolve(it).delete() }
+            if (manifest.exists()) {
+                manifest.readLines().filter { it.isNotBlank() }.forEach { modsDir.resolve(it).delete() }
+            }
+            staleNames.forEach { modsDir.resolve(it).delete() }
             val irisConfig = configDir.resolve("iris.properties")
             val staged = configDir.resolve("iris.properties.staged")
             if (shaders && !irisConfig.exists() && staged.exists()) {
                 staged.copyTo(irisConfig)
             }
+        }
+        doLast {
+            manifest.writeText(sources.files.joinToString("\n") { it.name })
         }
     }
     tasks.configureEach {
@@ -239,4 +298,26 @@ tasks.withType<JavaCompile>().configureEach {
 
 tasks.jar {
     from("LICENSE")
+}
+
+// The released jar holds main alone: fails the build if dev-only code or test structures got into it.
+val checkReleaseJar by tasks.registering {
+    group = "verification"
+    description = "Checks that the jar holds no debug tooling, GameTests or test structures."
+    val jar = tasks.jar.flatMap { it.archiveFile }
+    inputs.file(jar)
+    doLast {
+        val devOnly = listOf("com/linc/alteredaether/debug/", "com/linc/alteredaether/gametest/",
+            "data/altered_aether/structure/arena.nbt")
+        val found = ZipFile(jar.get().asFile).use { zip ->
+            zip.entries().asSequence().map { it.name }.filter { name -> devOnly.any { name.startsWith(it) } }.toList()
+        }
+        if (found.isNotEmpty()) {
+            throw GradleException("Dev-only files in the released jar: $found")
+        }
+    }
+}
+tasks.check {
+    // The dev source set isn't in the jar, so build would otherwise never compile it.
+    dependsOn(checkReleaseJar, dev.classesTaskName)
 }

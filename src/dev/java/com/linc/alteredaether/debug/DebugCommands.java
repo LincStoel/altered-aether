@@ -15,6 +15,7 @@
 package com.linc.alteredaether.debug;
 
 import com.linc.alteredaether.AlteredAether;
+import com.linc.alteredaether.command.AACommands;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import net.minecraft.Util;
@@ -37,15 +38,8 @@ import com.linc.alteredaether.worldgen.grove.GiantType;
 import com.linc.alteredaether.worldgen.grove.GroveField;
 import com.linc.alteredaether.worldgen.grove.Mire;
 import com.linc.alteredaether.worldgen.landmark.Landmark;
-import java.util.Optional;
-import net.minecraft.server.level.ServerPlayer;
-import com.linc.alteredaether.loot.RumourMapFunction;
 import com.linc.alteredaether.worldgen.landmark.LandmarkField;
 import com.linc.alteredaether.worldgen.landmark.LandmarkType;
-import com.mojang.brigadier.arguments.StringArgumentType;
-import net.minecraft.ChatFormatting;
-import net.minecraft.commands.SharedSuggestionProvider;
-import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.Level;
@@ -64,9 +58,12 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 /**
- * {@code /altered_aether report [radius] [step]} prints a {@link WorldgenReport} for the Aether around the caller.
- * Setting the system property {@code altered_aether.report} to {@code radius,step} runs one around the origin when the
- * server starts and then stops the server, so a dev run can check worldgen headlessly.
+ * The dev runs' half of {@code /altered_aether}, added to the released commands in {@link AACommands}:
+ * {@code report [radius] [step]} prints a {@link WorldgenReport} for the Aether around the caller, {@code debug} what the
+ * worldgen thinks of where the caller stands, and {@code fly} a {@link Flight}. Setting the system property
+ * {@code altered_aether.report} to {@code radius,step} runs a report around the origin when the server starts and then
+ * stops the server, so a dev run can check worldgen headlessly; {@code altered_aether.bench} does the same for a
+ * benchmark.
  */
 @EventBusSubscriber(modid = AlteredAether.MOD_ID)
 public final class DebugCommands {
@@ -91,28 +88,7 @@ public final class DebugCommands {
                                         .then(Commands.argument("speed", IntegerArgumentType.integer(1, 200))
                                                 .executes(ctx -> fly(ctx, 10))
                                                 .then(Commands.argument("radius", IntegerArgumentType.integer(2, 32))
-                                                        .executes(ctx -> fly(ctx, IntegerArgumentType.getInteger(ctx, "radius"))))))))
-                .then(Commands.literal("landmark")
-                        .then(Commands.argument("type", StringArgumentType.word())
-                                .suggests((ctx, builder) -> SharedSuggestionProvider.suggest(
-                                        java.util.Arrays.stream(LandmarkType.values()).map(LandmarkType::id), builder))
-                                .executes(DebugCommands::landmark)))
-                .then(Commands.literal("rumour").executes(DebugCommands::rumour))
-                .then(Commands.literal("ruin")
-                        .then(Commands.argument("kind", StringArgumentType.word())
-                                .suggests((ctx, builder) -> SharedSuggestionProvider.suggest(
-                                        java.util.Arrays.stream(com.linc.alteredaether.worldgen.ruin.Ruins.Kind.values())
-                                                .map(com.linc.alteredaether.worldgen.ruin.Ruins.Kind::id), builder))
-                                .executes(DebugCommands::ruin)))
-                .then(Commands.literal("giant")
-                        .then(Commands.argument("type", StringArgumentType.word())
-                                .suggests((ctx, builder) -> SharedSuggestionProvider.suggest(
-                                        java.util.stream.Stream.concat(java.util.Arrays.stream(GiantType.values())
-                                                .filter(t -> t != GiantType.LINK && t != GiantType.GRANDFATHER
-                                                        && t != GiantType.VILLAGE_TREE && t != GiantType.BREAK_BRIDGE
-                                                        && t != GiantType.YOUNG)
-                                                .map(GiantType::id), java.util.stream.Stream.of(MIRE, "break_edge", "break_chasm")), builder))
-                                .executes(DebugCommands::giant))));
+                                                        .executes(ctx -> fly(ctx, IntegerArgumentType.getInteger(ctx, "radius")))))))));
     }
 
     /** {@code /altered_aether fly <from> <to> <speed> [radius]}: see {@link Flight}. */
@@ -125,108 +101,6 @@ public final class DebugCommands {
             return 0;
         }
         ctx.getSource().sendSuccess(() -> Component.literal("Flying; progress goes to the log."), false);
-        return 1;
-    }
-
-    /**
-     * {@code /altered_aether ruin <kind>}: builds a grove ruin of a kind centred on the caller, on the ground as it
-     * lies, for a look at it. Each use draws a new one.
-     */
-    private static int ruin(CommandContext<CommandSourceStack> ctx) {
-        CommandSourceStack source = ctx.getSource();
-        var kind = com.linc.alteredaether.worldgen.ruin.Ruins.kind(StringArgumentType.getString(ctx, "kind"));
-        if (kind == null) {
-            source.sendFailure(Component.literal("No such ruin."));
-            return 0;
-        }
-        ServerLevel level = source.getLevel();
-        BlockPos pos = BlockPos.containing(source.getPosition());
-        var plan = com.linc.alteredaether.worldgen.ruin.Ruins.draw(kind, level.getRandom(), pos.getX(), pos.getZ());
-        int reach = com.linc.alteredaether.worldgen.ruin.Ruins.REACH;
-        plan.place(level, pos.getX() - reach, pos.getZ() - reach, pos.getX() + reach, pos.getZ() + reach,
-                (x, z) -> com.linc.alteredaether.worldgen.ruin.RuinPlan.groundOf(level, x, z));
-        source.sendSuccess(() -> Component.literal("Built a " + kind.id() + " ruin of " + plan.pieces().size()
-                + " blocks."), false);
-        return 1;
-    }
-
-    /** The name {@code giant} takes, in the commands and the bench, for the nearest swamp lake round a giant. */
-    static final String MIRE = "mire";
-
-    /**
-     * {@code /altered_aether giant <type>}: the nearest grove giant of a type, with a link to go and see it.
-     * {@code giant mire} finds the nearest swamp lake and stands you on its shore.
-     */
-    private static int giant(CommandContext<CommandSourceStack> ctx) {
-        CommandSourceStack source = ctx.getSource();
-        GroveField field = GroveField.get(THE_AETHER);
-        if (field != null && StringArgumentType.getString(ctx, "type").equals(MIRE)) {
-            int x = (int) source.getPosition().x, z = (int) source.getPosition().z;
-            CompletableFuture.supplyAsync(() -> field.nearestMire(x, z, 20000), Util.backgroundExecutor())
-                    .thenAcceptAsync(found -> {
-                        if (found.isEmpty()) {
-                            source.sendFailure(Component.literal("No mire within 20000 blocks."));
-                            return;
-                        }
-                        Mire mire = found.get();
-                        int sx = mire.x() + (int) Math.round(mire.radius() * 1.1);
-                        String tp = "/execute in aether:the_aether run tp @s " + sx + " " + (mire.water() + 4) + " "
-                                + mire.z() + " 90 15";
-                        source.sendSuccess(() -> Component.literal("mire at " + mire.x() + ", " + mire.z()
-                                + " water " + mire.water() + ", " + mire.islets().size() + " islets ").append(
-                                Component.literal("[go]").withStyle(style -> style.withColor(ChatFormatting.GREEN)
-                                        .withClickEvent(new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, tp)))), false);
-                    }, source.getServer());
-            return 1;
-        }
-        String name = StringArgumentType.getString(ctx, "type");
-        if (field != null && field.breaks() != null && name.startsWith("break_")) {
-            var kind = com.linc.alteredaether.worldgen.grove.BreakField.Kind.valueOf(name.substring(6)
-                    .toUpperCase(java.util.Locale.ROOT));
-            int x = (int) source.getPosition().x, z = (int) source.getPosition().z;
-            CompletableFuture.supplyAsync(() -> field.breaks().nearest(kind, x, z, 20000), Util.backgroundExecutor())
-                    .thenAcceptAsync(found -> {
-                        if (found.isEmpty()) {
-                            source.sendFailure(Component.literal("No " + kind.id() + " break within 20000 blocks."));
-                            return;
-                        }
-                        var site = found.get();
-                        int sx = (int) Math.round(site.x() - site.nx() * 12), sz = (int) Math.round(site.z() - site.nz() * 12);
-                        String tp = "/execute in aether:the_aether run tp @s " + sx + " " + (site.ground() + 6) + " " + sz;
-                        source.sendSuccess(() -> Component.literal(kind.id() + " break at " + (int) site.x() + ", "
-                                + (int) site.z() + String.format(" (gap %.0f, sunk %.0f) ", site.gap(), site.sink()))
-                                .append(Component.literal("[go]").withStyle(style -> style.withColor(ChatFormatting.GREEN)
-                                        .withClickEvent(new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, tp)))), false);
-                    }, source.getServer());
-            return 1;
-        }
-        GiantType type;
-        try {
-            type = GiantType.valueOf(StringArgumentType.getString(ctx, "type").toUpperCase(java.util.Locale.ROOT));
-        } catch (IllegalArgumentException e) {
-            source.sendFailure(Component.literal("No such giant."));
-            return 0;
-        }
-        if (field == null) {
-            source.sendFailure(Component.literal("The Aether has no groves."));
-            return 0;
-        }
-        int x = (int) source.getPosition().x, z = (int) source.getPosition().z;
-        source.sendSuccess(() -> Component.literal("Searching for a " + type.id() + "..."), false);
-        CompletableFuture.supplyAsync(() -> field.nearest(type, x, z, 20000), Util.backgroundExecutor())
-                .thenAcceptAsync(found -> {
-                    if (found.isEmpty()) {
-                        source.sendFailure(Component.literal("No " + type.id() + " within 20000 blocks."));
-                        return;
-                    }
-                    Giant site = found.get();
-                    String tp = "/execute in aether:the_aether run tp @s " + site.x() + " " + (site.base() + 2) + " "
-                            + site.z();
-                    source.sendSuccess(() -> Component.literal(type.id() + " at " + site.x() + ", " + site.z() + " ("
-                            + (int) Math.hypot(site.x() - x, site.z() - z) + " blocks) ").append(
-                            Component.literal("[go]").withStyle(style -> style.withColor(ChatFormatting.GREEN)
-                                    .withClickEvent(new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, tp)))), false);
-                }, source.getServer());
         return 1;
     }
 
@@ -268,70 +142,6 @@ public final class DebugCommands {
         lines.add(String.format("Storm intensity %.2f%s", com.linc.alteredaether.storm.TempestStorms.intensityAt(level,
                 pos.getX(), pos.getZ()), stormy ? "" : " (no storms in this biome)"));
         lines.forEach(line -> source.sendSuccess(() -> Component.literal(line), false));
-        return 1;
-    }
-
-    /** {@code /altered_aether landmark <type>}: the nearest landmark of a type, with a link to go and see it. */
-    private static int landmark(CommandContext<CommandSourceStack> ctx) {
-        CommandSourceStack source = ctx.getSource();
-        ServerLevel aether = source.getServer().getLevel(THE_AETHER);
-        LandmarkField field = aether == null ? null : LandmarkField.get(THE_AETHER);
-        LandmarkType type;
-        try {
-            type = LandmarkType.valueOf(StringArgumentType.getString(ctx, "type").toUpperCase(java.util.Locale.ROOT));
-        } catch (IllegalArgumentException e) {
-            source.sendFailure(Component.literal("No such landmark."));
-            return 0;
-        }
-        if (field == null) {
-            source.sendFailure(Component.literal("The Aether has no landmarks."));
-            return 0;
-        }
-        int x = (int) source.getPosition().x, z = (int) source.getPosition().z;
-        source.sendSuccess(() -> Component.literal("Searching for a " + type.id() + "..."), false);
-        CompletableFuture.supplyAsync(() -> field.nearest(type, x, z, 50000), Util.backgroundExecutor())
-                .thenAcceptAsync(found -> {
-                    if (found.isEmpty()) {
-                        source.sendFailure(Component.literal("No " + type.id() + " within 50000 blocks."));
-                        return;
-                    }
-                    Landmark site = found.get();
-                    int y = site.visitY() == Integer.MIN_VALUE ? 160 : site.visitY();
-                    String tp = "/execute in aether:the_aether run tp @s " + site.x() + " " + y + " " + site.z();
-                    source.sendSuccess(() -> Component.literal(type.id() + " at " + site.x() + ", " + site.z() + " ("
-                            + (int) Math.hypot(site.x() - x, site.z() - z) + " blocks) ").append(
-                            Component.literal("[go]").withStyle(style -> style.withColor(ChatFormatting.GREEN)
-                                    .withClickEvent(new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, tp)))), false);
-                }, source.getServer());
-        return 1;
-    }
-
-    /**
-     * {@code /altered_aether rumour}: a rumour map from where you stand, as a chest there would roll one. The search
-     * runs on the server thread, as it does for loot, and its time is reported.
-     */
-    private static int rumour(CommandContext<CommandSourceStack> ctx) {
-        CommandSourceStack source = ctx.getSource();
-        ServerLevel level = source.getLevel();
-        LandmarkField field = LandmarkField.get(level.dimension());
-        if (field == null) {
-            source.sendFailure(Component.literal("There are no landmarks here."));
-            return 0;
-        }
-        int x = (int) source.getPosition().x, z = (int) source.getPosition().z;
-        long start = System.nanoTime();
-        Optional<Landmark> site = RumourMapFunction.find(field, java.util.Arrays.asList(LandmarkType.values()), x, z,
-                6000, level.getRandom());
-        double ms = (System.nanoTime() - start) / 1e6;
-        if (site.isEmpty()) {
-            source.sendFailure(Component.literal(String.format("No landmark within 6000 blocks (%.1f ms).", ms)));
-            return 0;
-        }
-        if (source.getEntity() instanceof ServerPlayer player) {
-            player.getInventory().add(RumourMapFunction.create(level, site.get(), (byte) 2));
-        }
-        source.sendSuccess(() -> Component.literal(String.format("A rumour of a %s at %d, %d (%.1f ms).",
-                site.get().type().id(), site.get().x(), site.get().z(), ms)), false);
         return 1;
     }
 
@@ -409,7 +219,7 @@ public final class DebugCommands {
                 origin = new BlockPos(site.x(), 64, site.z());
                 AlteredAether.LOGGER.info("Worldgen benchmark: centred on {} at {} (extent {})", type.id(),
                         origin.toShortString(), String.format("%.0f", site.extent()));
-            } else if (biome != null && biome.equals("giant:" + MIRE)) {
+            } else if (biome != null && biome.equals("giant:" + AACommands.MIRE)) {
                 GroveField field = GroveField.get(THE_AETHER);
                 Mire site = field == null ? null : field.nearestMire(origin.getX(), origin.getZ(), 60000).orElse(null);
                 if (site == null) {
@@ -569,7 +379,7 @@ public final class DebugCommands {
                                     || BuiltInRegistries.BLOCK.getKey(state.getBlock()).getPath().contains(family))).join();
                 }
             }
-            if (Boolean.getBoolean("altered_aether.render") && biome != null && biome.equals("giant:" + MIRE)) {
+            if (Boolean.getBoolean("altered_aether.render") && biome != null && biome.equals("giant:" + AACommands.MIRE)) {
                 // Sections through the lake and a plan at its water line, so islets, roots and the bed show.
                 GroveField field = GroveField.get(THE_AETHER);
                 Mire site = field == null ? null : field.nearestMire(origin.getX(), origin.getZ(), 64).orElse(null);
