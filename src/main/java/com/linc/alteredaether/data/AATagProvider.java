@@ -83,7 +83,7 @@ public final class AATagProvider extends JsonDataProvider {
         tag("entity_type", ResourceLocation.fromNamespaceAndPath("deep_aether", "sterling_aercloud_blacklist"),
                 "altered_aether:squall");
         // Tamed aerwhales (see TamedAerwhale).
-        tag("item", AlteredAether.id("aerwhale_taming_food"), "aether:blue_berry");
+        tag("item", AlteredAether.id("aerwhale_taming_food"), "aether:blue_gummy_swet");
         tag("item", AlteredAether.id("aerwhale_breeding_food"), "aether:enchanted_berry");
         gleamVines();
         aetherBiomes();

@@ -18,9 +18,13 @@ import com.aetherteam.aether.entity.AetherEntityTypes;
 import com.aetherteam.aether.entity.passive.Aerwhale;
 import com.aetherteam.aether.item.AetherItems;
 import com.linc.alteredaether.AATags;
+import com.linc.alteredaether.AlteredAether;
+import com.linc.alteredaether.advancement.AAAdvancements;
 import com.linc.alteredaether.config.AACommonConfig;
 import com.linc.alteredaether.menu.AerwhaleInventoryMenu;
+import com.linc.alteredaether.item.WhaleWhistleItem;
 import com.linc.alteredaether.registry.AARegistries;
+import com.linc.alteredaether.worldgen.LootChest;
 import net.minecraft.advancements.CriteriaTriggers;
 import net.minecraft.advancements.critereon.EntityPredicate;
 import net.minecraft.core.BlockPos;
@@ -37,6 +41,7 @@ import net.minecraft.network.protocol.game.ClientboundSetEntityMotionPacket;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -61,6 +66,8 @@ import net.minecraft.world.entity.MoverType;
 import net.minecraft.world.entity.OwnableEntity;
 import net.minecraft.world.entity.Pose;
 import net.minecraft.world.entity.Saddleable;
+import net.minecraft.world.entity.ai.attributes.AttributeInstance;
+import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.ai.control.MoveControl;
 import net.minecraft.world.entity.ai.goal.Goal;
@@ -68,6 +75,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.GameRules;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.gameevent.GameEvent;
@@ -77,6 +85,7 @@ import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.entity.PartEntity;
 
 import javax.annotation.Nullable;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.List;
@@ -103,8 +112,8 @@ import java.util.function.BooleanSupplier;
  * <p>The rider's client flies it, the way vanilla mounts move: the server takes its position from the rider's vehicle
  * packets. It has no gravity, so riding it doesn't trip the server's "floating a vehicle" kick.
  *
- * <p>A calf from a wild parent has no owner. It can't be ridden, so blue berries tame it instead: each raises its temper
- * and then rolls on it. If it grows up wild, it turns into the Aether's wild aerwhale.
+ * <p>A calf from a wild parent has no owner. It can't be ridden, so blue gummy swets tame it instead: each raises its
+ * temper and then rolls on it. If it grows up wild, it turns into the Aether's wild aerwhale.
  *
  * <p>Deep Aether has aerwhales of its own: a patch to the Aether's aerwhale that adds a saddle, a chest and two seats.
  * Only one of the two is ever in play (see {@link AerwhaleMode}). With ours, that patch is switched off and Deep
@@ -125,8 +134,19 @@ public class TamedAerwhale extends Aerwhale
 
     /** Its flying speed, three quarters of the wild aerwhale's: a tamed whale is in no hurry. */
     public static final double FLYING_SPEED = 0.15;
+
+    /** An owned whale has half again the wild one's health. */
+    private static final AttributeModifier OWNED_HEALTH = new AttributeModifier(
+            ResourceLocation.fromNamespaceAndPath(AlteredAether.MOD_ID, "owned_aerwhale_health"), 0.5,
+            AttributeModifier.Operation.ADD_MULTIPLIED_BASE);
     /** Top cruising speed under a rider, in blocks per tick (12 m/s, about a horse's). */
     private static final double RIDDEN_SPEED = 0.6;
+    /** Top speed on the flight in to a whale whistle, in blocks per tick. */
+    private static final double SUMMON_SPEED = 0.5;
+    /** How far from the end of that flight it starts braking, in blocks. */
+    private static final double SUMMON_BRAKE = 10;
+    /** Ticks it glides on across its owner's front once it's arrived, before it goes back to following them. */
+    private static final int SUMMON_PRESENT_TICKS = 100;
     /** Speed along the arc of a dive. */
     private static final double DIVE_SPEED = RIDDEN_SPEED * 1.5;
     /** Ticks between dives, counted from the start of one. */
@@ -302,6 +322,19 @@ public class TamedAerwhale extends Aerwhale
     private Entity steppedOnDeck;
     private int steppedOnDeckTicks;
 
+    // Answering a whale whistle, on the server.
+    /** The flight round to its owner it's on, and how far along it. */
+    @Nullable
+    private WhistleFlight summon;
+    private double summonDistance;
+    /** Ticks left gliding slowly on across its owner's front once it's arrived, for them to jump aboard. */
+    private int presenting;
+    /** Where it last told {@link AerwhaleLocations} it was. */
+    @Nullable
+    private ChunkPos trackedChunk;
+    @Nullable
+    private ResourceKey<Level> trackedDimension;
+
     // On a client that isn't flying it, its pitch and yaw eased toward what the server last sent, so the turns of a
     // whale someone stands on are as smooth as its movement.
     private boolean smoothed;
@@ -463,6 +496,25 @@ public class TamedAerwhale extends Aerwhale
 
     public void setOwnerUUID(@Nullable UUID owner) {
         entityData.set(DATA_OWNER, Optional.ofNullable(owner));
+        updateOwnedHealth(owner != null);
+    }
+
+    /**
+     * Gives an owned whale its extra health, or takes it away, keeping it just as hurt as it was. The modifier is
+     * permanent so it's saved with the whale, and its health loads against the right maximum.
+     */
+    private void updateOwnedHealth(boolean owned) {
+        AttributeInstance maxHealth = getAttribute(Attributes.MAX_HEALTH);
+        if (level().isClientSide || maxHealth == null || maxHealth.hasModifier(OWNED_HEALTH.id()) == owned) {
+            return;
+        }
+        float fraction = getHealth() / getMaxHealth();
+        if (owned) {
+            maxHealth.addPermanentModifier(OWNED_HEALTH);
+        } else {
+            maxHealth.removeModifier(OWNED_HEALTH.id());
+        }
+        setHealth(fraction * getMaxHealth());
     }
 
     public boolean isOwnedBy(LivingEntity entity) {
@@ -653,12 +705,13 @@ public class TamedAerwhale extends Aerwhale
                 return stack.isEmpty() && !player.isSecondaryUseActive() && hand == InteractionHand.MAIN_HAND
                         ? board(player) : InteractionResult.PASS;
             }
-            // a wild calf can't be ridden, so berries tame it: each calms it, then it may take to its feeder
+            // a wild calf can't be ridden, so swets tame it: each calms it, then it may take to its feeder
             int temper = AerwhaleTemper.forFood(stack);
             if (temper <= 0 || !AACommonConfig.AERWHALE_TAMING.get()) {
                 return super.mobInteract(player, hand);
             }
             if (!client) {
+                AAAdvancements.fedAerwhale(player, stack);
                 stack.consume(1, player);
                 AerwhaleTemper.add(this, temper);
                 if (AerwhaleTemper.rolls(this, random)) {
@@ -672,7 +725,7 @@ public class TamedAerwhale extends Aerwhale
 
         if (!isOwnedBy(player)) {
             if (player.isSecondaryUseActive() || isTamingFood(stack) || isBreedingFood(stack) || swetHealing(stack) > 0
-                    || isSaddleItem(stack) || stack.is(Items.CHEST)) {
+                    || isSaddleItem(stack) || stack.is(Items.CHEST) || stack.is(AARegistries.WHALE_WHISTLE.get())) {
                 if (!client) {
                     player.displayClientMessage(Component.translatable("message.altered_aether.aerwhale.not_owner"), true);
                 }
@@ -680,6 +733,13 @@ public class TamedAerwhale extends Aerwhale
             }
             // anyone may come aboard
             return isBaby() ? super.mobInteract(player, hand) : board(player);
+        }
+
+        if (stack.is(AARegistries.WHALE_WHISTLE.get()) && !player.isSecondaryUseActive()) {
+            if (!client) {
+                WhaleWhistleItem.link(stack, this, player);
+            }
+            return InteractionResult.sidedSuccess(client);
         }
 
         if (player.isSecondaryUseActive()) {
@@ -693,6 +753,7 @@ public class TamedAerwhale extends Aerwhale
         float swet = swetHealing(stack);
         if (swet > 0 && getHealth() < getMaxHealth()) {
             if (!client) {
+                AAAdvancements.fedAerwhale(player, stack);
                 stack.consume(1, player);
                 heal(getMaxHealth() * swet);
                 particles(ParticleTypes.HAPPY_VILLAGER, 6);
@@ -748,6 +809,7 @@ public class TamedAerwhale extends Aerwhale
                 setChest(true);
                 playSound(SoundEvents.DONKEY_CHEST, 1.0F, (random.nextFloat() - random.nextFloat()) * 0.2F + 1.0F);
                 stack.consume(1, player);
+                AAAdvancements.award(player, AAAdvancements.AIRBORNE_CARGO, "saddlebag");
             }
             return InteractionResult.sidedSuccess(client);
         }
@@ -861,6 +923,14 @@ public class TamedAerwhale extends Aerwhale
             if (loveTicks == 0) {
                 loveCause = null;
             }
+            if (isVehicle()) {
+                // someone came aboard: it's done coming to them
+                summon = null;
+                presenting = 0;
+            } else if (presenting > 0) {
+                presenting--;
+            }
+            trackLocation();
             if (coast > 0 && --coast == 0 && getControllingPassenger() == null) {
                 // nobody came back aboard: it goes looking for its owner
                 setCommand(AerwhaleCommand.FOLLOW);
@@ -976,6 +1046,8 @@ public class TamedAerwhale extends Aerwhale
             fly(rider, input);
         } else if (serverDive && dive != null && isControlledByLocalInstance()) {
             diveStep();
+        } else if (summon != null && isControlledByLocalInstance()) {
+            summonStep();
         } else {
             if (isControlledByLocalInstance()) {
                 Vec3 from = position();
@@ -1095,6 +1167,97 @@ public class TamedAerwhale extends Aerwhale
     /** Whether it's in the middle of a dive it flies itself, unbroken under a rider. */
     public boolean diving() {
         return serverDive && dive != null;
+    }
+
+    // ---- answering a whale whistle ----
+
+    /** Its call, as when it answers a whale whistle. */
+    public void call(float volume, float pitch) {
+        playSound(getAmbientSound(), volume, pitch);
+    }
+
+    /** Whether it's on its way round to its owner, who whistled for it. */
+    public boolean answeringWhistle() {
+        return summon != null;
+    }
+
+    /** How high above its feet the middle of its back is, which a whistle brings level with its owner's feet. */
+    public double deckHeight() {
+        if (isBaby()) {
+            return getBbHeight() * 0.85;
+        }
+        return (legacyModel.getAsBoolean() ? CLASSIC_DECK : DECK)[2].up();
+    }
+
+    /**
+     * Sets off along {@code flight}, which starts where it now is, round to its owner who blew a whistle for it. It
+     * answers the call as it appears, and follows them once it arrives.
+     */
+    public void startSummon(WhistleFlight flight) {
+        summon = flight;
+        summonDistance = 0;
+        presenting = 0;
+        dive = null;
+        serverDive = false;
+        thrashing = false;
+        coast = 0;
+        halt();
+        setDeltaMovement(Vec3.ZERO);
+        call(getSoundVolume(), 1.0F);
+    }
+
+    /**
+     * One tick along the flight to its owner: fast while it's out of the way, braking as it comes in, so it arrives at
+     * the speed it swims at its slowest. Running into anything ends it there.
+     */
+    private void summonStep() {
+        double remaining = summon.length() - summonDistance;
+        double speed = MIN_SWIM_SPEED + (SUMMON_SPEED - MIN_SWIM_SPEED) * Math.min(1, remaining / SUMMON_BRAKE);
+        summonDistance = Math.min(summon.length(), summonDistance + speed);
+        Vec3 motion = summon.at(summonDistance).subtract(position());
+        setDeltaMovement(motion);
+        move(MoverType.SELF, motion);
+        Vec3 heading = summon.heading(summonDistance);
+        float yaw = (float) (Mth.atan2(heading.z, heading.x) * Mth.RAD_TO_DEG) - 90.0F;
+        float pitch = Mth.clamp((float) (Mth.atan2(heading.y, heading.horizontalDistance()) * Mth.RAD_TO_DEG),
+                -MAX_WANDERING_PITCH, MAX_WANDERING_PITCH);
+        setYRot(yaw);
+        setYRotData(yaw);
+        setYBodyRot(yaw);
+        setYHeadRot(yaw);
+        setXRot(pitch);
+        setXRotData(pitch);
+        if (summonDistance >= summon.length() || horizontalCollision || verticalCollision) {
+            summon = null;
+            control().currentSpeed = MIN_SWIM_SPEED;
+            // keeps by them from now on, whatever it was told before; until they've had a chance to jump on, it
+            // just glides on past
+            setCommand(AerwhaleCommand.FOLLOW);
+            presenting = SUMMON_PRESENT_TICKS;
+        }
+        calculateEntityAnimation(false);
+    }
+
+    /** Tells {@link AerwhaleLocations} where an owned whale is, whenever that's a new chunk or dimension. */
+    private void trackLocation() {
+        if (getOwnerUUID() == null || !(level() instanceof ServerLevel level)) {
+            return;
+        }
+        ChunkPos chunk = chunkPosition();
+        if (!chunk.equals(trackedChunk) || level.dimension() != trackedDimension) {
+            AerwhaleLocations.get(level.getServer()).put(getUUID(), level.dimension(), chunk);
+            trackedChunk = chunk;
+            trackedDimension = level.dimension();
+        }
+    }
+
+    /** A whale that's gone for good, rather than unloaded or off to another dimension, can't be whistled for. */
+    @Override
+    public void remove(RemovalReason reason) {
+        super.remove(reason);
+        if (reason.shouldDestroy() && reason != RemovalReason.CHANGED_DIMENSION && level() instanceof ServerLevel level) {
+            AerwhaleLocations.get(level.getServer()).remove(getUUID());
+        }
     }
 
     /**
@@ -1613,6 +1776,20 @@ public class TamedAerwhale extends Aerwhale
     @Override
     protected void dropEquipment() {
         super.dropEquipment();
+        if (hasChest() && isDeadOrDying() && level() instanceof ServerLevel level) {
+            // a saddlebag with anything in it comes down as a chest where it died, with everything still in it; an
+            // empty one just drops its chest
+            List<ItemStack> bag = new ArrayList<>();
+            for (int i = 1; i < INVENTORY_SIZE; i++) {
+                bag.add(inventory.getItem(i));
+            }
+            if (bag.stream().anyMatch(stack -> !stack.isEmpty()) && LootChest.placeWith(level, getBoundingBox().getCenter(), getDirection().getOpposite(), bag)) {
+                for (int i = 1; i < INVENTORY_SIZE; i++) {
+                    inventory.removeItemNoUpdate(i);
+                }
+                entityData.set(DATA_CHEST, false);
+            }
+        }
         for (int i = 0; i < INVENTORY_SIZE; i++) {
             ItemStack stack = inventory.removeItemNoUpdate(i);
             if (!stack.isEmpty()) {
@@ -1860,7 +2037,7 @@ public class TamedAerwhale extends Aerwhale
         @Override
         public void tick() {
             TamedAerwhale whale = TamedAerwhale.this;
-            if (whale.getControllingPassenger() != null || diving()) {
+            if (whale.getControllingPassenger() != null || diving() || summon != null) {
                 currentSpeed = whale.getDeltaMovement().length();
                 return;
             }
@@ -1871,6 +2048,14 @@ public class TamedAerwhale extends Aerwhale
                     whale.setDeltaMovement(heading(whale.getYRot(), whale.getXRotData()).scale(MIN_SWIM_SPEED));
                 }
                 currentSpeed = whale.getDeltaMovement().length();
+                return;
+            }
+            if (presenting > 0) {
+                // come to its owner's call, it glides on level and slow across their front for them to jump aboard
+                whale.setDeltaMovement(heading(whale.getYRot(), 0).scale(MIN_SWIM_SPEED));
+                whale.setXRot(0);
+                whale.setXRotData(0);
+                currentSpeed = MIN_SWIM_SPEED;
                 return;
             }
             if (cruising && operation == Operation.MOVE_TO && !whale.isVehicle()) {

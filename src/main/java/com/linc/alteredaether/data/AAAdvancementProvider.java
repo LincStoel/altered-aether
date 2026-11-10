@@ -73,8 +73,12 @@ public final class AAAdvancementProvider extends JsonDataProvider {
                 "Spire of Ice", "Find a frozen spire twisting up out of the crags");
         biome(all, "tempest_peaks", AABiomes.TEMPEST_PEAKS, "minecraft:oxidized_copper", "Lightning Country",
                 "Brave the Tempest Peaks");
+        // Awarded in code by TempestStorms, checked once a second.
+        advancement(all, "living_lightning_rod", "tempest_peaks", "minecraft:iron_sword", "task", 0,
+                "Living Lightning Rod", "Wear or hold overworld metal in the Tempest Peaks, where it calls the lightning",
+                Map.of("carrying", criterion("minecraft:impossible")));
         // Awarded in code by TempestStorms, when a bolt drawn by a player's overworld metal hits them.
-        advancement(all, "thunderstruck", "tempest_peaks", "minecraft:iron_chestplate", "task", 0, "Thunderstruck!",
+        advancement(all, "thunderstruck", "living_lightning_rod", "minecraft:iron_chestplate", "task", 0, "Thunderstruck!",
                 "Attract lightning with your overworld metal equipment",
                 Map.of("struck", criterion("minecraft:impossible")));
         landmark(all, "tempest_crown", "tempest_peaks", LandmarkType.TEMPEST_SPIRES.id(), "minecraft:lightning_rod",
@@ -131,6 +135,18 @@ public final class AAAdvancementProvider extends JsonDataProvider {
                 Map.of("riding", location(riding)));
         advancement(all, "ride_the_storm", "sky_rider", "aether:lightning_knife", "goal", 50, "Ride the Storm",
                 "Ride an aerwhale through the Tempest Peaks", Map.of("riding", inBiome(AABiomes.TEMPEST_PEAKS, whale)));
+        // Both awarded in code, by AerwhaleTaming and TamedAerwhale.
+        advancement(all, "favorite_snack", ROOT, "aether:blue_gummy_swet", "task", 0, "Favorite Snack",
+                "Feed an aerwhale a blue gummy swet", Map.of("fed", criterion("minecraft:impossible")));
+        advancement(all, "airborne_cargo", "sky_rider", "minecraft:chest", "task", 0, "Airborne Cargo",
+                "Put a saddlebag on your aerwhale", Map.of("saddlebag", criterion("minecraft:impossible")));
+        JsonObject crafted = criterion("minecraft:recipe_crafted");
+        crafted.getAsJsonObject("conditions").addProperty("recipe_id", AlteredAether.MOD_ID + ":whale_whistle");
+        advancement(all, "toot_toot", "sky_rider", AlteredAether.MOD_ID + ":whale_whistle", "task", 0, "Toot Toot!",
+                "Craft a whale whistle", Map.of("crafted", crafted));
+        // Awarded in code by AerwhaleWhistle, when a whale sets off to answer.
+        advancement(all, "to_me", "toot_toot", "aether:aerwhale_spawn_egg", "task", 0, "To me!",
+                "Whistle for your aerwhale and have it come to you", Map.of("summoned", criterion("minecraft:impossible")));
         // Awarded in code by MountUnsaddling.
         advancement(all, "take_a_load_off", ROOT, "minecraft:saddle", "task", 0, "Take a Load Off",
                 "Sneak and take the saddle off a phyg or flying cow",

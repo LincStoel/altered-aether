@@ -1,0 +1,26 @@
+{
+  "parent": "altered_aether:toot_toot",
+  "criteria": {
+    "summoned": {
+      "conditions": {},
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "display": {
+    "description": {
+      "translate": "advancements.altered_aether.to_me.description"
+    },
+    "frame": "task",
+    "icon": {
+      "id": "aether:aerwhale_spawn_egg"
+    },
+    "title": {
+      "translate": "advancements.altered_aether.to_me.title"
+    }
+  },
+  "requirements": [
+    [
+      "summoned"
+    ]
+  ]
+}

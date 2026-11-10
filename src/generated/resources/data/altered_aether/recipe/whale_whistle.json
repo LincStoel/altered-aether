@@ -1,0 +1,21 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "key": {
+    "G": {
+      "item": "aether:enchanted_gravitite"
+    },
+    "H": {
+      "item": "aether:holystone"
+    }
+  },
+  "pattern": [
+    "HG ",
+    " H ",
+    "  H"
+  ],
+  "result": {
+    "count": 1,
+    "id": "altered_aether:whale_whistle"
+  }
+}

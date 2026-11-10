@@ -113,7 +113,7 @@ public final class AACommonConfig {
     // [aerwhales]
     public static final BooleanValue AERWHALE_USE_DEEP_AETHER;
     public static final BooleanValue AERWHALE_TAMING;
-    public static final IntValue AERWHALE_TEMPER_PER_BERRY;
+    public static final IntValue AERWHALE_TEMPER_PER_SWET;
     public static final IntValue AERWHALE_TEMPER_PER_ENCHANTED_BERRY;
     public static final IntValue AERWHALE_TEMPER_PER_BUCK;
     public static final IntValue AERWHALE_BREEDING_COOLDOWN;
@@ -355,9 +355,9 @@ public final class AACommonConfig {
                 .define(AerwhaleMode.CONFIG_KEY, false);
         AERWHALE_TAMING = b.comment("Whether wild aerwhales can be tamed at all.")
                 .define("taming", true);
-        AERWHALE_TEMPER_PER_BERRY = b.comment("Temper a blue berry adds to a wild aerwhale. A wild calf, which can't be",
+        AERWHALE_TEMPER_PER_SWET = b.comment("Temper a blue gummy swet adds to a wild aerwhale. A wild calf, which can't be",
                         "ridden, then rolls for taming at once.")
-                .defineInRange("temper_per_berry", 10, 0, 100);
+                .defineInRange("temper_per_swet", 10, 0, 100);
         AERWHALE_TEMPER_PER_ENCHANTED_BERRY = b.comment("Temper an enchanted berry adds to a wild aerwhale.")
                 .defineInRange("temper_per_enchanted_berry", 20, 0, 100);
         AERWHALE_TEMPER_PER_BUCK = b.comment("Temper a wild aerwhale gains each time it throws its rider off.")

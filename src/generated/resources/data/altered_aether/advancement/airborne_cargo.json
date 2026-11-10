@@ -1,0 +1,26 @@
+{
+  "parent": "altered_aether:sky_rider",
+  "criteria": {
+    "saddlebag": {
+      "conditions": {},
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "display": {
+    "description": {
+      "translate": "advancements.altered_aether.airborne_cargo.description"
+    },
+    "frame": "task",
+    "icon": {
+      "id": "minecraft:chest"
+    },
+    "title": {
+      "translate": "advancements.altered_aether.airborne_cargo.title"
+    }
+  },
+  "requirements": [
+    [
+      "saddlebag"
+    ]
+  ]
+}

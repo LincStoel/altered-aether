@@ -1,0 +1,28 @@
+{
+  "parent": "altered_aether:sky_rider",
+  "criteria": {
+    "crafted": {
+      "conditions": {
+        "recipe_id": "altered_aether:whale_whistle"
+      },
+      "trigger": "minecraft:recipe_crafted"
+    }
+  },
+  "display": {
+    "description": {
+      "translate": "advancements.altered_aether.toot_toot.description"
+    },
+    "frame": "task",
+    "icon": {
+      "id": "altered_aether:whale_whistle"
+    },
+    "title": {
+      "translate": "advancements.altered_aether.toot_toot.title"
+    }
+  },
+  "requirements": [
+    [
+      "crafted"
+    ]
+  ]
+}

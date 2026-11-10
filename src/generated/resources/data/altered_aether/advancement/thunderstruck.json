@@ -1,5 +1,5 @@
 {
-  "parent": "altered_aether:tempest_peaks",
+  "parent": "altered_aether:living_lightning_rod",
   "criteria": {
     "struck": {
       "conditions": {},

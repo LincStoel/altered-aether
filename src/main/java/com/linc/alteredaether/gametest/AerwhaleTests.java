@@ -24,19 +24,24 @@ import com.linc.alteredaether.entity.AerwhaleEject;
 import com.linc.alteredaether.entity.AerwhaleLanding;
 import com.linc.alteredaether.entity.AerwhaleMode;
 import com.linc.alteredaether.entity.AerwhaleTemper;
+import com.linc.alteredaether.entity.AerwhaleWhistle;
 import com.linc.alteredaether.config.AACommonConfig;
 import net.minecraft.util.Mth;
 import com.linc.alteredaether.entity.TamedAerwhale;
+import com.linc.alteredaether.entity.WhistleFlight;
+import com.linc.alteredaether.item.WhistleLink;
 import com.linc.alteredaether.registry.AARegistries;
 import com.google.gson.JsonObject;
 import com.mojang.serialization.JsonOps;
 import net.minecraft.advancements.AdvancementHolder;
 import net.minecraft.advancements.critereon.EntitySubPredicate;
+import net.minecraft.core.BlockPos;
 import net.minecraft.core.NonNullList;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ClientInformation;
 import net.minecraft.server.level.ServerPlayer;
@@ -51,6 +56,8 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.GameType;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.entity.ChestBlockEntity;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.fml.ModList;
@@ -72,25 +79,25 @@ public final class AerwhaleTests {
             ResourceLocation.fromNamespaceAndPath("deep_aether", "aerwhale_saddle");
 
     @GameTest(template = "arena")
-    public static void blueBerriesCalmWildAerwhales(GameTestHelper helper) {
+    public static void blueSwetsCalmWildAerwhales(GameTestHelper helper) {
         if (deepAetherWhales(helper)) {
             return;
         }
         Aerwhale wild = helper.spawn(AetherEntityTypes.AERWHALE.get(), SPOT);
         wild.setNoAi(true);
         Player player = helper.makeMockPlayer(GameType.SURVIVAL);
-        player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(AetherItems.BLUE_BERRY.get(), 64));
+        player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(AetherItems.BLUE_GUMMY_SWET.get(), 64));
         player.interactOn(wild, InteractionHand.MAIN_HAND);
-        helper.assertTrue(AerwhaleTemper.get(wild) == AACommonConfig.AERWHALE_TEMPER_PER_BERRY.get(),
-                "a berry should calm it, temper " + AerwhaleTemper.get(wild));
+        helper.assertTrue(AerwhaleTemper.get(wild) == AACommonConfig.AERWHALE_TEMPER_PER_SWET.get(),
+                "a swet should calm it, temper " + AerwhaleTemper.get(wild));
         for (int i = 0; i < 20; i++) {
             player.interactOn(wild, InteractionHand.MAIN_HAND);
         }
         helper.assertTrue(AerwhaleTemper.get(wild) == AerwhaleTemper.MAX, "temper should top out, got " + AerwhaleTemper.get(wild));
         int eaten = 64 - player.getMainHandItem().getCount();
-        int needed = Mth.positiveCeilDiv(AerwhaleTemper.MAX, AACommonConfig.AERWHALE_TEMPER_PER_BERRY.get());
+        int needed = Mth.positiveCeilDiv(AerwhaleTemper.MAX, AACommonConfig.AERWHALE_TEMPER_PER_SWET.get());
         helper.assertTrue(eaten == needed, "a calm whale shouldn't eat more: ate " + eaten + ", expected " + needed);
-        helper.assertTrue(wild.isAlive() && tamedNear(helper).isEmpty(), "berries alone shouldn't tame it");
+        helper.assertTrue(wild.isAlive() && tamedNear(helper).isEmpty(), "swets alone shouldn't tame it");
         helper.succeed();
     }
 
@@ -184,7 +191,7 @@ public final class AerwhaleTests {
     }
 
     @GameTest(template = "arena")
-    public static void wildCalvesTameWithBerries(GameTestHelper helper) {
+    public static void wildCalvesTameWithSwets(GameTestHelper helper) {
         if (deepAetherWhales(helper)) {
             return;
         }
@@ -197,12 +204,12 @@ public final class AerwhaleTests {
         calf.setPersistenceRequired();
         calf.setNoAi(true);
         helper.getLevel().addFreshEntity(calf);
-        AerwhaleTemper.set(calf, AerwhaleTemper.MAX - AACommonConfig.AERWHALE_TEMPER_PER_BERRY.get());
+        AerwhaleTemper.set(calf, AerwhaleTemper.MAX - AACommonConfig.AERWHALE_TEMPER_PER_SWET.get());
         Player player = helper.makeMockPlayer(GameType.SURVIVAL);
-        player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(AetherItems.BLUE_BERRY.get()));
+        player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(AetherItems.BLUE_GUMMY_SWET.get()));
         player.interactOn(calf, InteractionHand.MAIN_HAND);
         helper.assertTrue(calf.isOwnedBy(player), "a calf calmed all the way should be tamed");
-        helper.assertTrue(player.getMainHandItem().isEmpty(), "it should eat the berry");
+        helper.assertTrue(player.getMainHandItem().isEmpty(), "it should eat the swet");
         helper.succeed();
     }
 
@@ -220,6 +227,129 @@ public final class AerwhaleTests {
         tamed(helper, player);
         helper.assertTrue(player.getAdvancements().getOrStartProgress(advancement).isDone(),
                 "taming an aerwhale should award Best Friends Forever");
+        helper.succeed();
+    }
+
+    /** The path itself, owner at the origin looking along +z: in from behind to one side, arriving heading +x. */
+    @GameTest(template = "arena")
+    public static void whistleFlightsArriveLevelAndBroadside(GameTestHelper helper) {
+        WhistleFlight flight = new WhistleFlight(new Vec3(-8, 10, -20), new Vec3(0, 0, 16),
+                new Vec3(-2, -2.55, 2.75), new Vec3(8, 0, 0));
+        helper.assertTrue(flight.at(0).distanceTo(flight.start()) < 1.0E-6, "starts at its start");
+        helper.assertTrue(flight.at(flight.length()).distanceTo(flight.end()) < 1.0E-6, "ends at its end");
+        helper.assertTrue(flight.at(flight.length() + 5).distanceTo(flight.end()) < 1.0E-6, "stops at its end");
+        helper.assertTrue(flight.heading(0).distanceTo(new Vec3(0, 0, 1)) < 1.0E-6, "leaves the way it's told");
+        helper.assertTrue(flight.heading(flight.length()).distanceTo(new Vec3(1, 0, 0)) < 1.0E-6,
+                "arrives level and broadside");
+        Vec3 previous = flight.at(0);
+        for (double s = 1; s <= flight.length(); s += 1) {
+            Vec3 point = flight.at(s);
+            helper.assertTrue(Math.abs(point.distanceTo(previous) - 1) < 0.05, "walks a block per block, at " + s);
+            helper.assertTrue(point.horizontalDistance() > 2, "keeps clear of the owner, at " + s + ": " + point);
+            previous = point;
+        }
+        helper.succeed();
+    }
+
+    @GameTest(template = "arena")
+    public static void whistlesLinkToYourOwnWhale(GameTestHelper helper) {
+        if (deepAetherWhales(helper)) {
+            return;
+        }
+        Player owner = helper.makeMockPlayer(GameType.SURVIVAL);
+        TamedAerwhale whale = tamed(helper, owner);
+        whale.setCustomName(Component.literal("Moby"));
+        Player stranger = helper.makeMockPlayer(GameType.SURVIVAL);
+        stranger.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(AARegistries.WHALE_WHISTLE.get()));
+        stranger.interactOn(whale, InteractionHand.MAIN_HAND);
+        helper.assertTrue(stranger.getMainHandItem().get(AARegistries.WHISTLE_LINK.get()) == null,
+                "a stranger's whistle shouldn't link");
+        owner.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(AARegistries.WHALE_WHISTLE.get()));
+        owner.interactOn(whale, InteractionHand.MAIN_HAND);
+        WhistleLink link = owner.getMainHandItem().get(AARegistries.WHISTLE_LINK.get());
+        helper.assertTrue(link != null && link.whale().equals(whale.getUUID()), "the owner's whistle should link");
+        helper.assertTrue(link.name().map(Component::getString).orElse("").equals("Moby"), "it should know the name");
+        helper.assertTrue(!whale.isVehicle(), "linking shouldn't board the whale");
+        helper.succeed();
+    }
+
+    @GameTest(template = "arena", timeoutTicks = 400)
+    public static void whistledWhalesComeRoundFromBehind(GameTestHelper helper) {
+        if (deepAetherWhales(helper)) {
+            return;
+        }
+        Player owner = ownerInLevel(helper, new Vec3(24, 2, 30));
+        owner.setYRot(180);
+        owner.setYHeadRot(180);
+        TamedAerwhale whale = tamed(helper, owner);
+        whale.setCommand(AerwhaleCommand.STAY);
+        Vec3 forward = Vec3.directionFromRotation(0, 180);
+        helper.assertTrue(AerwhaleWhistle.summon((ServerPlayer) owner, whale), "there's room in the arena");
+        Vec3 start = whale.position().subtract(owner.position());
+        helper.assertTrue(start.dot(forward) < -8, "should appear behind its owner: " + start);
+        helper.assertTrue(start.y > owner.getBbHeight() + 2, "should appear above its owner: " + start);
+        helper.succeedWhen(() -> {
+            helper.assertTrue(!whale.answeringWhistle(), "still on its way at " + whale.position());
+            Vec3 offset = whale.position().subtract(owner.position());
+            helper.assertTrue(offset.dot(forward) > 0, "should end up in front of its owner: " + offset);
+            helper.assertTrue(offset.horizontalDistance() < 6, "should end up beside its owner: " + offset);
+            helper.assertTrue(whale.command() == AerwhaleCommand.FOLLOW, "should follow its owner after");
+            removeFromLevel(helper, owner);
+        });
+    }
+
+    @GameTest(template = "arena")
+    public static void whistledWhalesNeedRoom(GameTestHelper helper) {
+        if (deepAetherWhales(helper)) {
+            return;
+        }
+        // shut in a stone box with only a little air round them
+        BlockPos centre = new BlockPos(24, 4, 24);
+        for (BlockPos pos : BlockPos.betweenClosed(centre.offset(-3, -2, -3), centre.offset(3, 4, 3))) {
+            helper.setBlock(pos, Blocks.STONE);
+        }
+        for (BlockPos pos : BlockPos.betweenClosed(centre.offset(-2, -1, -2), centre.offset(2, 3, 2))) {
+            helper.setBlock(pos, Blocks.AIR);
+        }
+        Player owner = ownerInLevel(helper, Vec3.atBottomCenterOf(centre.below()));
+        TamedAerwhale whale = tamed(helper, owner);
+        Vec3 before = whale.position();
+        helper.assertFalse(AerwhaleWhistle.summon((ServerPlayer) owner, whale), "there's no room in the box");
+        helper.assertTrue(whale.position().equals(before) && !whale.answeringWhistle(), "it should stay where it was");
+        removeFromLevel(helper, owner);
+        helper.succeed();
+    }
+
+    @GameTest(template = "arena")
+    public static void saddlebagsBecomeAChestWhenTheWhaleDies(GameTestHelper helper) {
+        if (deepAetherWhales(helper)) {
+            return;
+        }
+        Player owner = helper.makeMockPlayer(GameType.SURVIVAL);
+        TamedAerwhale whale = tamed(helper, owner);
+        whale.setChest(true);
+        whale.inventory().setItem(TamedAerwhale.SADDLE_SLOT, new ItemStack(Items.SADDLE));
+        whale.inventory().setItem(1, new ItemStack(Items.DIAMOND, 5));
+        whale.inventory().setItem(TamedAerwhale.INVENTORY_SIZE - 1, new ItemStack(Items.EMERALD, 3));
+        Vec3 centre = whale.getBoundingBox().getCenter();
+        whale.kill();
+        BlockPos found = null;
+        for (BlockPos pos : BlockPos.withinManhattan(BlockPos.containing(centre), 2, 2, 2)) {
+            if (helper.getLevel().getBlockEntity(pos) instanceof ChestBlockEntity) {
+                found = pos.immutable();
+                break;
+            }
+        }
+        helper.assertTrue(found != null, "a chest should be set where the whale died, near " + centre);
+        ChestBlockEntity chest = (ChestBlockEntity) helper.getLevel().getBlockEntity(found);
+        helper.assertTrue(chest.getItem(0).is(Items.DIAMOND) && chest.getItem(0).getCount() == 5, "the bag's first slot");
+        helper.assertTrue(chest.getItem(TamedAerwhale.SADDLEBAG_SIZE - 1).is(Items.EMERALD), "the bag's last slot");
+        AABB around = new AABB(centre, centre).inflate(4);
+        List<ItemEntity> drops = helper.getLevel().getEntitiesOfClass(ItemEntity.class, around);
+        helper.assertTrue(drops.stream().anyMatch(drop -> drop.getItem().is(Items.SADDLE)), "the saddle still drops");
+        helper.assertTrue(drops.stream().noneMatch(drop -> drop.getItem().is(Items.CHEST) || drop.getItem().is(Items.DIAMOND)),
+                "the bag's contents and its chest go in the placed chest, not on the ground");
+        helper.getLevel().removeBlock(found, false);
         helper.succeed();
     }
 
@@ -783,14 +913,18 @@ public final class AerwhaleTests {
         owner.interactOn(whale, InteractionHand.MAIN_HAND);
         helper.assertTrue(whale.hasChest(), "the owner's chest should go on");
         helper.assertTrue(owner.getMainHandItem().isEmpty(), "the chest should be used up");
-        whale.inventory().setItem(TamedAerwhale.INVENTORY_SIZE - 1, new ItemStack(Items.DIAMOND, 3));
+        // with nothing in the saddlebag, its chest just drops (one with something in it is set down whole: see
+        // saddlebagsBecomeAChestWhenTheWhaleDies)
+        BlockPos centre = BlockPos.containing(whale.getBoundingBox().getCenter());
         whale.kill();
         List<ItemStack> drops = helper.getLevel()
                 .getEntitiesOfClass(ItemEntity.class, whale.getBoundingBox().inflate(4)).stream()
                 .map(ItemEntity::getItem).toList();
         helper.assertTrue(drops.stream().anyMatch(stack -> stack.is(Items.CHEST)), "the chest should drop, got " + drops);
-        helper.assertTrue(drops.stream().anyMatch(stack -> stack.is(Items.DIAMOND) && stack.getCount() == 3),
-                "the saddlebag's contents should drop, got " + drops);
+        for (BlockPos pos : BlockPos.withinManhattan(centre, 2, 2, 2)) {
+            helper.assertFalse(helper.getLevel().getBlockEntity(pos) instanceof ChestBlockEntity,
+                    "an empty saddlebag shouldn't be set down as a chest");
+        }
         helper.succeed();
     }
 
@@ -841,17 +975,17 @@ public final class AerwhaleTests {
     }
 
     @GameTest(template = "arena", timeoutTicks = 300)
-    public static void blueBerriesTemptWildAerwhales(GameTestHelper helper) {
+    public static void blueSwetsTemptWildAerwhales(GameTestHelper helper) {
         if (deepAetherWhales(helper)) {
             return;
         }
         Player player = ownerInLevel(helper, new Vec3(4, 2, 4));
-        player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(AetherItems.BLUE_BERRY.get()));
+        player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(AetherItems.BLUE_GUMMY_SWET.get()));
         Aerwhale wild = helper.spawn(AetherEntityTypes.AERWHALE.get(), new Vec3(13, 8, 13));
         double start = wild.distanceTo(player);
         helper.succeedWhen(() -> {
             helper.assertTrue(wild.distanceTo(player) < 10,
-                    "should come to the berries: " + start + " -> " + wild.distanceTo(player));
+                    "should come to the swet: " + start + " -> " + wild.distanceTo(player));
             removeFromLevel(helper, player);
         });
     }

@@ -4,5 +4,11 @@
     "sounds": [
       "altered_aether:storm/incoming_lightning"
     ]
+  },
+  "item.whale_whistle.blow": {
+    "subtitle": "subtitles.altered_aether.item.whale_whistle.blow",
+    "sounds": [
+      "aether:entity/aerwhale/call"
+    ]
   }
 }

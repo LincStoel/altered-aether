@@ -35,7 +35,7 @@ public final class AABlockEvents {
 
     /**
      * The campfire right after the soul campfire, gleamberries after glow berries wherever those are listed, and the
-     * squall's spawn egg with the others.
+     * squall's spawn egg with the others, and the whale whistle among the tools.
      */
     @SubscribeEvent
     public static void onCreativeTab(BuildCreativeModeTabContentsEvent event) {
@@ -47,6 +47,9 @@ public final class AABlockEvents {
         if (event.getTabKey().equals(CreativeModeTabs.NATURAL_BLOCKS) || event.getTabKey().equals(CreativeModeTabs.FOOD_AND_DRINKS)) {
             event.insertAfter(Items.GLOW_BERRIES.getDefaultInstance(), AARegistries.GLEAMBERRIES.get().getDefaultInstance(),
                     net.minecraft.world.item.CreativeModeTab.TabVisibility.PARENT_AND_SEARCH_TABS);
+        }
+        if (event.getTabKey().equals(CreativeModeTabs.TOOLS_AND_UTILITIES)) {
+            event.accept(AARegistries.WHALE_WHISTLE.get());
         }
         if (event.getTabKey().equals(CreativeModeTabs.SPAWN_EGGS)) {
             event.accept(AARegistries.SQUALL_SPAWN_EGG.get());

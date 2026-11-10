@@ -23,6 +23,8 @@ import com.linc.alteredaether.block.GleamVinesPlantBlock;
 import com.linc.alteredaether.compat.ModEnabled;
 import com.linc.alteredaether.entity.Squall;
 import com.linc.alteredaether.entity.TamedAerwhale;
+import com.linc.alteredaether.item.WhaleWhistleItem;
+import com.linc.alteredaether.item.WhistleLink;
 import com.linc.alteredaether.loot.RumourMapFunction;
 import com.linc.alteredaether.menu.AerwhaleInventoryMenu;
 import com.linc.alteredaether.worldgen.density.Atoll;
@@ -75,6 +77,7 @@ import com.mojang.serialization.Codec;
 import com.mojang.serialization.MapCodec;
 import net.minecraft.advancements.CriterionTrigger;
 import net.minecraft.advancements.critereon.EntitySubPredicate;
+import net.minecraft.core.component.DataComponentType;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.world.level.storage.loot.functions.LootItemFunctionType;
 import net.minecraft.sounds.SoundEvent;
@@ -138,6 +141,16 @@ public final class AARegistries {
                     .sized(4.5F, 3.5F).clientTrackingRange(10).build("squall"));
     public static final DeferredItem<DeferredSpawnEggItem> SQUALL_SPAWN_EGG = ITEMS.register("squall_spawn_egg",
             () -> new DeferredSpawnEggItem(SQUALL, 0x463C47, 0x9C838B, new Item.Properties()));
+
+    public static final DeferredRegister.DataComponents DATA_COMPONENTS =
+            DeferredRegister.createDataComponents(Registries.DATA_COMPONENT_TYPE, AlteredAether.MOD_ID);
+    /** The aerwhale a whale whistle is linked to; see item/WhaleWhistleItem. */
+    public static final DeferredHolder<DataComponentType<?>, DataComponentType<WhistleLink>> WHISTLE_LINK =
+            DATA_COMPONENTS.registerComponentType("whistle_link",
+                    builder -> builder.persistent(WhistleLink.CODEC).networkSynchronized(WhistleLink.STREAM_CODEC));
+    /** Calls the aerwhale it's linked to; see entity/AerwhaleWhistle. */
+    public static final DeferredItem<WhaleWhistleItem> WHALE_WHISTLE = ITEMS.register("whale_whistle",
+            () -> new WhaleWhistleItem(new Item.Properties().stacksTo(1)));
 
     public static final DeferredRegister<AttachmentType<?>> ATTACHMENT_TYPES =
             DeferredRegister.create(NeoForgeRegistries.Keys.ATTACHMENT_TYPES, AlteredAether.MOD_ID);
@@ -220,6 +233,9 @@ public final class AARegistries {
     /** The crackle before a Tempest strike hits a player; see storm/TempestStorms. */
     public static final DeferredHolder<SoundEvent, SoundEvent> INCOMING_LIGHTNING = SOUND_EVENTS.register(
             "storm.incoming_lightning", () -> SoundEvent.createVariableRangeEvent(AlteredAether.id("storm.incoming_lightning")));
+    /** A whale whistle blown: the aerwhale's own call. */
+    public static final DeferredHolder<SoundEvent, SoundEvent> WHALE_WHISTLE_SOUND = SOUND_EVENTS.register(
+            "item.whale_whistle.blow", () -> SoundEvent.createVariableRangeEvent(AlteredAether.id("item.whale_whistle.blow")));
 
     public static final DeferredRegister<Feature<?>> FEATURES = DeferredRegister.create(Registries.FEATURE, AlteredAether.MOD_ID);
 
@@ -300,6 +316,7 @@ public final class AARegistries {
         ENTITY_SUB_PREDICATES.register(modBus);
         LOOT_FUNCTIONS.register(modBus);
         BLOCKS.register(modBus);
+        DATA_COMPONENTS.register(modBus);
         ITEMS.register(modBus);
         ENTITY_TYPES.register(modBus);
         MENUS.register(modBus);

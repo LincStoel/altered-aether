@@ -1,8 +1,8 @@
-// 1.21.1	2026-11-01T15:43:14.0062949	Altered Aether blocks and language
+// 1.21.1	2026-11-10T10:28:33.9328824	Altered Aether blocks and language
 cc4a268c9d003718a9458f1257ad3d879abd35d6 assets/altered_aether/blockstates/ambrosium_campfire.json
 9279ad634d42135691b2587520af886dfe5ee4b5 assets/altered_aether/blockstates/gleam_vines.json
 7109808a35c46e4977768327eb3866d2740067cc assets/altered_aether/blockstates/gleam_vines_plant.json
-976874895b493e382ebe0cb4eca7b302d8977cb7 assets/altered_aether/lang/en_us.json
+834e037ce8f5e541751df701ea1ab3aad4b67c22 assets/altered_aether/lang/en_us.json
 d9ba4bf337d6633fefcee7a328069e422cf6437f assets/altered_aether/models/block/ambrosium_campfire.json
 755e85dd5983a1e575c7421ae51c5c5af233d89c assets/altered_aether/models/block/ambrosium_campfire_off.json
 6ca26b286266763bc972dabc5128e2c663523f28 assets/altered_aether/models/block/gleam_vines.json
@@ -13,9 +13,11 @@ d9ba4bf337d6633fefcee7a328069e422cf6437f assets/altered_aether/models/block/ambr
 0188ed25dc9149716f6936197c95d314e92ded44 assets/altered_aether/models/item/ambrosium_campfire.json
 aafd61bac6c10d313e631dd350aa6c236f54bb89 assets/altered_aether/models/item/gleamberries.json
 63ec6c618a3a23eab4cab9c52d7d3250de9b516e assets/altered_aether/models/item/squall_spawn_egg.json
+c14c60d900acda6c89ca0ae89ace2d4cbbc83e7e assets/altered_aether/models/item/whale_whistle.json
 511cd1f9a809a31402fd40da695600518d042263 data/altered_aether/loot_table/blocks/ambrosium_campfire.json
 469ec4f02c0878a4556aae9bd4a52717fe7e3bd5 data/altered_aether/loot_table/blocks/gleam_vines.json
 8ef6858bad2558ac53114f8577ac2cab1d8c550d data/altered_aether/loot_table/blocks/gleam_vines_plant.json
 9bbf530d954fc9bc4278e0233387b79c2084970c data/altered_aether/recipe/ambrosium_campfire.json
 fabcd0179e2508f56cedfce961224fe0efc22235 data/altered_aether/recipe/ambrosium_campfire_from_parity.json
+15ce4addd333ae4ef68c6bbb4f48974404f6c4bc data/altered_aether/recipe/whale_whistle.json
 5b1db77b64cc94bd9ad4475d10609429ca124881 data/neoforge/data_maps/item/compostables.json

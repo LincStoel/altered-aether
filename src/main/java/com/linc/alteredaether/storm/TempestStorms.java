@@ -16,6 +16,7 @@ package com.linc.alteredaether.storm;
 
 import com.linc.alteredaether.AATags;
 import com.linc.alteredaether.AlteredAether;
+import com.linc.alteredaether.advancement.AAAdvancements;
 import com.linc.alteredaether.config.AACommonConfig;
 import com.linc.alteredaether.registry.AARegistries;
 import net.minecraft.advancements.AdvancementHolder;
@@ -176,6 +177,11 @@ public final class TempestStorms {
             double intensity = !stormy ? 0 : force >= 0 ? force : storms.intensity(player.getX(), player.getZ(), time);
             if (time % 20 == player.getId() % 20) {
                 PacketDistributor.sendToPlayer(player, new StormPayload((float) intensity));
+            }
+            if (enabled && time % 20 == player.getId() % 20 && !player.isSpectator() && !player.isCreative()
+                    && level.getBiome(player.blockPosition()).is(AATags.HAS_STORMS) && holds(level, player, Cause.METAL)) {
+                // carrying metal that would call lightning down on them
+                AAAdvancements.award(player, AAAdvancements.LIVING_LIGHTNING_ROD, "carrying");
             }
             if (enabled && budget > 0 && !player.isSpectator() && !player.isCreative()
                     && level.getBiome(player.blockPosition()).is(AATags.HAS_STORMS) && !targeted(player)

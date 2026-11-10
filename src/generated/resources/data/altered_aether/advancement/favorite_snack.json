@@ -1,0 +1,26 @@
+{
+  "parent": "altered_aether:root",
+  "criteria": {
+    "fed": {
+      "conditions": {},
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "display": {
+    "description": {
+      "translate": "advancements.altered_aether.favorite_snack.description"
+    },
+    "frame": "task",
+    "icon": {
+      "id": "aether:blue_gummy_swet"
+    },
+    "title": {
+      "translate": "advancements.altered_aether.favorite_snack.title"
+    }
+  },
+  "requirements": [
+    [
+      "fed"
+    ]
+  ]
+}

@@ -25,9 +25,9 @@ import java.util.Map;
 import java.util.TreeMap;
 
 /**
- * The ambrosium campfire's and gleam vines' models, loot and recipe, and the language file. The campfire's logs are the
- * Aether's skyroot log textures, by reference; the flame is our own strip (tools/textures/ambrosium_campfire_fire.py).
- * The gleam vines are vanilla's cave vines recolored and split into a tintable leaves layer and an untinted stem and
+ * The ambrosium campfire's and gleam vines' models, loot and recipe, the whale whistle's model and recipe, and the
+ * language file. The campfire's logs are the Aether's skyroot log textures, by reference; the flame is our own strip
+ * (tools/textures/ambrosium_campfire_fire.py). The gleam vines are vanilla's cave vines recolored and split into a tintable leaves layer and an untinted stem and
  * berry overlay (tools/textures/gleam_vines.py).
  */
 public final class AABlockProvider extends JsonDataProvider {
@@ -39,6 +39,7 @@ public final class AABlockProvider extends JsonDataProvider {
     private static final String GLEAM_VINES = "gleam_vines";
     private static final String GLEAM_VINES_PLANT = "gleam_vines_plant";
     private static final String GLEAMBERRIES = "gleamberries";
+    private static final String WHALE_WHISTLE = "whale_whistle";
 
     public AABlockProvider(PackOutput output) {
         super(output, "blocks and language");
@@ -58,6 +59,7 @@ public final class AABlockProvider extends JsonDataProvider {
         recipe();
         gleamVines();
         asset("models/item", AlteredAether.id("squall_spawn_egg"), model("minecraft:item/template_spawn_egg", Map.of()));
+        whaleWhistle();
         language();
     }
 
@@ -248,6 +250,29 @@ public final class AABlockProvider extends JsonDataProvider {
         data("recipe", AlteredAether.id(CAMPFIRE + "_from_parity"), swap, "aether_beyond_parity");
     }
 
+    /** The whale whistle's model, and its recipe: a crook of holystone round a mouthpiece of enchanted gravitite. */
+    private void whaleWhistle() {
+        asset("models/item", AlteredAether.id(WHALE_WHISTLE), model("minecraft:item/generated",
+                Map.of("layer0", AlteredAether.MOD_ID + ":item/" + WHALE_WHISTLE)));
+        JsonObject holystone = new JsonObject();
+        holystone.addProperty("item", "aether:holystone");
+        JsonObject gravitite = new JsonObject();
+        gravitite.addProperty("item", "aether:enchanted_gravitite");
+        JsonObject key = new JsonObject();
+        key.add("G", gravitite);
+        key.add("H", holystone);
+        JsonObject result = new JsonObject();
+        result.addProperty("id", AlteredAether.MOD_ID + ":" + WHALE_WHISTLE);
+        result.addProperty("count", 1);
+        JsonObject json = new JsonObject();
+        json.addProperty("type", "minecraft:crafting_shaped");
+        json.addProperty("category", "equipment");
+        json.add("key", key);
+        json.add("pattern", array("HG ", " H ", "  H"));
+        json.add("result", result);
+        data("recipe", AlteredAether.id(WHALE_WHISTLE), json);
+    }
+
     private static JsonObject ingredientTag(String tag) {
         JsonObject json = new JsonObject();
         json.addProperty("tag", tag);
@@ -282,6 +307,17 @@ public final class AABlockProvider extends JsonDataProvider {
         lang.put("message." + AlteredAether.MOD_ID + ".aerwhale.wander", "%s will roam freely");
         lang.put("message." + AlteredAether.MOD_ID + ".aerwhale.follow", "%s will follow you");
         lang.put("message." + AlteredAether.MOD_ID + ".aerwhale.not_owner", "This aerwhale answers to someone else");
+        lang.put("item." + AlteredAether.MOD_ID + "." + WHALE_WHISTLE, "Whale Whistle");
+        lang.put("item." + AlteredAether.MOD_ID + "." + WHALE_WHISTLE + ".summons", "Summons %s");
+        lang.put("item." + AlteredAether.MOD_ID + "." + WHALE_WHISTLE + ".an_aerwhale", "an aerwhale");
+        lang.put("item." + AlteredAether.MOD_ID + "." + WHALE_WHISTLE + ".unlinked", "Use on an aerwhale you have tamed to link it");
+        lang.put("message." + AlteredAether.MOD_ID + "." + WHALE_WHISTLE + ".linked", "%s will answer this whistle");
+        lang.put("message." + AlteredAether.MOD_ID + "." + WHALE_WHISTLE + ".unlinked", "This whistle isn't linked to an aerwhale");
+        lang.put("message." + AlteredAether.MOD_ID + "." + WHALE_WHISTLE + ".cant_hear", "Your whale can't hear you from here");
+        lang.put("message." + AlteredAether.MOD_ID + "." + WHALE_WHISTLE + ".no_answer", "Your whale doesn't answer");
+        lang.put("message." + AlteredAether.MOD_ID + "." + WHALE_WHISTLE + ".busy", "%s is carrying someone else");
+        lang.put("message." + AlteredAether.MOD_ID + "." + WHALE_WHISTLE + ".no_room", "There doesn't seem to be room for your whale here");
+        lang.put("subtitles." + AlteredAether.MOD_ID + ".item." + WHALE_WHISTLE + ".blow", "Whale Whistle calls");
         lang.put("key." + AlteredAether.MOD_ID + ".aerwhale_dive", "Dive Aerwhale");
         // Create's JEI page for bulk enchanting (see compat/jei); Create names the page's fan under its own namespace
         lang.put(AlteredAether.MOD_ID + ".recipe.fan_enchanting", "Bulk Enchanting");

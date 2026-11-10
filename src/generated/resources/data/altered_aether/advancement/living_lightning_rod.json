@@ -1,0 +1,26 @@
+{
+  "parent": "altered_aether:tempest_peaks",
+  "criteria": {
+    "carrying": {
+      "conditions": {},
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "display": {
+    "description": {
+      "translate": "advancements.altered_aether.living_lightning_rod.description"
+    },
+    "frame": "task",
+    "icon": {
+      "id": "minecraft:iron_sword"
+    },
+    "title": {
+      "translate": "advancements.altered_aether.living_lightning_rod.title"
+    }
+  },
+  "requirements": [
+    [
+      "carrying"
+    ]
+  ]
+}

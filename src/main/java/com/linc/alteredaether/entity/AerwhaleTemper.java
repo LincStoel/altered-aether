@@ -22,9 +22,9 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.item.ItemStack;
 
 /**
- * A wild aerwhale's temper, as a horse's: how ready it is to accept a rider, from 0 to {@link #MAX}. Blue berries raise
- * it, and so does each rider it throws off. Every time it decides whether to keep a rider, it does with a chance of its
- * temper out of {@link #MAX}. It's kept as an attachment, which goes on the Aether's wild aerwhale as well as ours.
+ * A wild aerwhale's temper, as a horse's: how ready it is to accept a rider, from 0 to {@link #MAX}. Blue gummy swets
+ * raise it, and so does each rider it throws off. Every time it decides whether to keep a rider, it does with a chance of
+ * its temper out of {@link #MAX}. It's kept as an attachment, which goes on the Aether's wild aerwhale as well as ours.
  */
 public final class AerwhaleTemper {
     public static final int MAX = 100;
@@ -56,7 +56,7 @@ public final class AerwhaleTemper {
         if (TamedAerwhale.isBreedingFood(stack)) {
             return AACommonConfig.AERWHALE_TEMPER_PER_ENCHANTED_BERRY.get();
         }
-        return TamedAerwhale.isTamingFood(stack) ? AACommonConfig.AERWHALE_TEMPER_PER_BERRY.get() : 0;
+        return TamedAerwhale.isTamingFood(stack) ? AACommonConfig.AERWHALE_TEMPER_PER_SWET.get() : 0;
     }
 
     private AerwhaleTemper() {

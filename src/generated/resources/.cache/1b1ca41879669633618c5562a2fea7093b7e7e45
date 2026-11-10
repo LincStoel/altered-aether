@@ -1,4 +1,4 @@
-// 1.21.1	2026-10-30T22:28:45.3676868	Altered Aether tags
+// 1.21.1	2026-11-10T10:28:33.931882	Altered Aether tags
 b032a16350ca6010469714eb13672f97361123fc data/aether/tags/worldgen/biome/is_aether.json
 7ec09b2e18ab43d296e2d76cad7fe25c11cda07f data/altered_aether/tags/block/breeze_spawnable_on.json
 ced54e3c0345a29f08205713ce269209a192e5b8 data/altered_aether/tags/block/charged_copper.json
@@ -11,7 +11,7 @@ f76decdcce75cd4e962a371b9b30e0f57f123884 data/altered_aether/tags/block/scorchab
 103ae3d710b0ba3d9238ab8230adc473830e6b2b data/altered_aether/tags/block/tempest_peak_ore_replaceables.json
 117d4e5a0ee8cdb45131467d1ea07d6c8612150a data/altered_aether/tags/entity_type/ignores_aercloud_drag.json
 b1fe34d2a9ffbf95392b5399248e0d0ce4eed170 data/altered_aether/tags/item/aerwhale_breeding_food.json
-bbf0d0c17212568adf6c02381fe81bf1670bf7ff data/altered_aether/tags/item/aerwhale_taming_food.json
+54e9ace3261d185a4d3368102b6af48ed538c6f0 data/altered_aether/tags/item/aerwhale_taming_food.json
 382f42a5e82fcadecd2d78d451c21d40b9aff2ca data/altered_aether/tags/item/attracts_lightning.json
 558650699ee11b9f0bb9350e42d7433200b1339d data/altered_aether/tags/item/insulating_boots.json
 b9cb72fb4859bb228260166a46afc3921c7f737b data/altered_aether/tags/worldgen/biome/has_lanterns.json

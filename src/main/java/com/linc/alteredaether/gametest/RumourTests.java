@@ -46,9 +46,9 @@ public final class RumourTests {
     private static final ResourceKey<Level> THE_AETHER = ResourceKey.create(Registries.DIMENSION,
             ResourceLocation.fromNamespaceAndPath("aether", "the_aether"));
     private static final List<String> ADVANCEMENTS = List.of("root", "frozen_crags", "frozen_spire",
-            "tempest_peaks", "thunderstruck", "tempest_crown", "shattered_rift", "great_fracture", "windswept_dunes", "aether_plateau",
+            "tempest_peaks", "living_lightning_rod", "thunderstruck", "tempest_crown", "shattered_rift", "great_fracture", "windswept_dunes", "aether_plateau",
             "grand_cascade", "skyroot_cathedral", "grandfather", "village_tree", "nurselog_hollow", "stump_cache",
-            "atoll", "double_atoll", "sky_rider", "ride_the_storm", "take_a_load_off", "rumour", "seven_wonders",
+            "atoll", "double_atoll", "favorite_snack", "sky_rider", "airborne_cargo", "ride_the_storm", "take_a_load_off", "rumour", "seven_wonders",
             "altered_cartographer");
 
     @GameTest(template = "arena")

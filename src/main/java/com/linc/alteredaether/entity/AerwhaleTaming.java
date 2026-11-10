@@ -17,6 +17,7 @@ package com.linc.alteredaether.entity;
 import com.aetherteam.aether.entity.AetherEntityTypes;
 import com.aetherteam.aether.entity.passive.Aerwhale;
 import com.linc.alteredaether.AlteredAether;
+import com.linc.alteredaether.advancement.AAAdvancements;
 import com.linc.alteredaether.config.AACommonConfig;
 import com.linc.alteredaether.registry.AARegistries;
 import net.minecraft.core.particles.ParticleTypes;
@@ -33,7 +34,7 @@ import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 
 /**
- * The wild aerwhale's side of taming, as a horse's: it follows a player holding blue berries, and feeding it them
+ * The wild aerwhale's side of taming, as a horse's: it follows a player holding blue gummy swets, and feeding it them
  * raises its {@link AerwhaleTemper temper}. Climbing on bare-handed turns it into an unbroken {@link TamedAerwhale},
  * which flies its rider about until it either accepts them or throws them off. A spawn egg used on any aerwhale, wild
  * or tamed, makes a calf. The
@@ -67,7 +68,7 @@ public final class AerwhaleTaming {
         boolean client = event.getLevel().isClientSide;
         int temper = AerwhaleTemper.forFood(stack);
         if (temper > 0) {
-            // berries calm it; only the server knows how calm it already is, so the client can't tell if it will eat
+            // swets calm it; only the server knows how calm it already is, so the client can't tell if it will eat
             if (client) {
                 event.setCanceled(true);
                 event.setCancellationResult(InteractionResult.CONSUME);
@@ -78,6 +79,7 @@ public final class AerwhaleTaming {
             }
             event.setCanceled(true);
             event.setCancellationResult(InteractionResult.SUCCESS);
+            AAAdvancements.fedAerwhale(player, stack);
             stack.consume(1, player);
             AerwhaleTemper.add(whale, temper);
             if (event.getLevel() instanceof ServerLevel level) {
@@ -98,7 +100,7 @@ public final class AerwhaleTaming {
         }
     }
 
-    /** Wild aerwhales come to blue berries. */
+    /** Wild aerwhales come to blue gummy swets. */
     @SubscribeEvent
     public static void onJoin(EntityJoinLevelEvent event) {
         if (!event.getLevel().isClientSide && !AerwhaleMode.deepAether()
