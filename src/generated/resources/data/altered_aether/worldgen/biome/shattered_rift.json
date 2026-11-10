@@ -1,7 +1,7 @@
 {
   "carvers": {},
   "creature_spawn_probability": 0.25,
-  "downfall": 0.0,
+  "downfall": 0.3,
   "effects": {
     "fog_color": 9412787,
     "foliage_color": 7240558,
@@ -159,5 +159,5 @@
     "water_ambient": [],
     "water_creature": []
   },
-  "temperature": 1.95
+  "temperature": 0.62
 }

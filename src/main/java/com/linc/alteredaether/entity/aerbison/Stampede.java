@@ -116,9 +116,6 @@ public final class Stampede {
         bison.stampede = this;
         bison.getNavigation().stop();
         bison.setState(Aerbison.State.WINDUP);
-        if (bison.isLying()) {
-            member.activeAt += 24;
-        }
         return member;
     }
 
@@ -396,14 +393,14 @@ public final class Stampede {
         Aerbison lead = leader.bison;
         AABB box = lead.getBoundingBox().inflate(JOIN_AHEAD + 4, 6, JOIN_AHEAD + 4);
         for (Aerbison other : level.getEntitiesOfClass(Aerbison.class, box, b -> b.stampede == null && b.isAlive()
-                && (b.getState() == Aerbison.State.IDLE || b.getState() == Aerbison.State.LYING))) {
+                && b.getState() == Aerbison.State.IDLE)) {
             double dx = other.getX() - lead.getX(), dz = other.getZ() - lead.getZ();
             double along = dx * hx + dz * hz;
             double across = Math.abs(dx * -hz + dz * hx);
             if (across > JOIN_LATERAL || along > JOIN_AHEAD || along < -12) {
                 continue;
             }
-            Member joiner = add(other, tick + (other.isLying() ? 24 : level.getRandom().nextInt(6)));
+            Member joiner = add(other, tick + level.getRandom().nextInt(6));
             other.play(AerbisonTiming.EVENT_ROUSE);
             joiner.roused = true;
             reslot();

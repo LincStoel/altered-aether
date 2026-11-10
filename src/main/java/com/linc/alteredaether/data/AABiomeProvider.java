@@ -80,7 +80,7 @@ public final class AABiomeProvider extends JsonDataProvider {
                 .weight("aether:blue_swet", 20), "ars_nouveau");
         biome("flashing_archwood_grove", grove("flashing", ARIA)
                 .add(BiomeJson.TOP, AADecorationProvider.GOLDEN_HIGH_CLOUD)
-                .climate(1.95f, 0.0f)
+                .climate(0.95f, 0.15f)
                 .effect("foliage_color", 13084948).effect("grass_color", 13414701).sky(16769928)
                 .drop(VANILLA_GRASS)
                 .weight("aether:golden_swet", 20), "ars_nouveau", "ars_elemental");
@@ -158,7 +158,7 @@ public final class AABiomeProvider extends JsonDataProvider {
 
     private BiomeJson tempestPeaks() {
         return base()
-                .climate(1.95f, 0.0f)
+                .climate(0.3f, 0.8f)
                 // Rain, so the storms can bring it (see StormAtmosphere); the Aether itself never rains.
                 .precipitation(true)
                 .drop(BARREN).drop(FOREST_TREES)
@@ -186,7 +186,8 @@ public final class AABiomeProvider extends JsonDataProvider {
     /** Bare broken holystone: no lakes, springs or stock vegetation, and aerwhales drift through the gaps. */
     private BiomeJson shatteredRift() {
         return base()
-                .climate(1.95f, 0.0f)
+                // 0.62 is 60F in Cold Sweat (F = 45 * temperature + 32): cool, thin air rather than desert heat.
+                .climate(0.62f, 0.3f)
                 .drop("aether:quicksoil_shelf", "aether:water_lake", "aether:water_spring")
                 .drop(STOCK_VEGETATION)
                 .effect("fog_color", 9412787).effect("foliage_color", 7240558).effect("grass_color", 7240558)
@@ -212,7 +213,7 @@ public final class AABiomeProvider extends JsonDataProvider {
     /** Arid quicksoil dunes: whirlwinds in numbers, hardly any wildlife. */
     private BiomeJson windsweptDunes() {
         BiomeJson biome = base()
-                .climate(1.95f, 0.0f)
+                .climate(1.2f, 0.0f)
                 .drop("aether:quicksoil_shelf", "aether:water_lake", "aether:cold_aercloud", "aether:blue_aercloud")
                 .drop(STOCK_VEGETATION)
                 .effect("fog_color", 14263434).effect("foliage_color", 12105576).effect("grass_color", 12766328)

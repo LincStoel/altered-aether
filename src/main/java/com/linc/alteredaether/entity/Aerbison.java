@@ -19,7 +19,6 @@ import com.linc.alteredaether.AATags;
 import com.linc.alteredaether.AlteredAether;
 import com.linc.alteredaether.entity.aerbison.AerbisonGrazeGoal;
 import com.linc.alteredaether.entity.aerbison.AerbisonNavigation;
-import com.linc.alteredaether.entity.aerbison.AerbisonRestGoal;
 import com.linc.alteredaether.entity.aerbison.AerbisonTiming;
 import com.linc.alteredaether.entity.aerbison.GustStompGoal;
 import com.linc.alteredaether.entity.aerbison.HerdDefense;
@@ -71,14 +70,14 @@ import java.util.List;
 
 /**
  * The aerbison: a shaggy bison of the Aether's open plains, its mane a bank of cloud with the zephyr's square spirals
- * worked into it. Herds graze and lie down together. It is wind-touched: stamping the ground throws it up a ledge
+ * worked into it. Herds graze together. It is wind-touched: stamping the ground throws it up a ledge
  * (see {@link GustStompGoal}), its mane spreads like a canopy to sail down from any height, and the herd can stampede
  * (see entity/aerbison/Stampede). The animation state lives here, on both sides, and the model only reads it.
  */
 public class Aerbison extends AetherAnimal {
     /** What the bison is doing, for the animation and for the herd's logic; synced. */
     public enum State {
-        IDLE, LYING, WINDUP, RUN, GLIDE, STAGGER, DEFENDING;
+        IDLE, WINDUP, RUN, GLIDE, STAGGER, DEFENDING;
 
         private static final State[] VALUES = values();
 
@@ -107,7 +106,6 @@ public class Aerbison extends AetherAnimal {
     public final AnimationState rouseAnim = new AnimationState();
     public final AnimationState stompAnim = new AnimationState();
     public final AnimationState hornTossAnim = new AnimationState();
-    public final AnimationState wallowAnim = new AnimationState();
     public final AnimationState staggerAnim = new AnimationState();
     public final AnimationState refuseAnim = new AnimationState();
 
@@ -129,12 +127,20 @@ public class Aerbison extends AetherAnimal {
     private final Clip rouse = clip(rouseAnim, AerbisonTiming.ROUSE_TICKS);
     private final Clip stomp = clip(stompAnim, AerbisonTiming.STOMP_TICKS);
     private final Clip hornToss = clip(hornTossAnim, AerbisonTiming.HORN_TOSS_TICKS);
-    private final Clip wallow = clip(wallowAnim, AerbisonTiming.WALLOW_TICKS);
     private final Clip stagger = clip(staggerAnim, AerbisonTiming.STAGGER_TICKS);
     private final Clip refuse = clip(refuseAnim, AerbisonTiming.REFUSE_TICKS);
 
     /** Smoothed pose weights, advanced every tick on both sides; the model blends by them. */
-    public float lie, lieO, gallop, gallopO, charge, chargeO, sail, sailO, thud, thudO;
+    public float walk, walkO, gallop, gallopO, charge, chargeO, sail, sailO, idle, idleO, thud, thudO;
+    /**
+     * Limb-swing speed (4 x blocks a tick) past which it gallops instead of walking, and below which it drops back.
+     * A stroll is about 0.29, following or tempted about 0.43, panicking about 0.9.
+     */
+    private static final float GALLOP_STRIDE = 0.6F, WALK_STRIDE = 0.48F;
+    /** Limb-swing speed below which it's standing still. */
+    private static final float STILL_STRIDE = 0.05F;
+    /** Whether it's moving fast enough to gallop, with some hysteresis so it doesn't flicker between the two. */
+    private boolean hurrying;
 
     /** Ticks until the gust stomp can be used again. */
     public int stompCooldown;
@@ -188,7 +194,6 @@ public class Aerbison extends AetherAnimal {
         goalSelector.addGoal(5, new TemptGoal(this, 1.1, Ingredient.of(AATags.AERBISON_FOOD), false));
         goalSelector.addGoal(6, new FollowParentGoal(this, 1.1));
         goalSelector.addGoal(7, new AerbisonGrazeGoal(this));
-        goalSelector.addGoal(8, new AerbisonRestGoal(this));
         goalSelector.addGoal(9, new WaterAvoidingRandomStrollGoal(this, 0.9));
         goalSelector.addGoal(10, new LookAtPlayerGoal(this, Player.class, 8.0F));
         goalSelector.addGoal(11, new RandomLookAroundGoal(this));
@@ -228,10 +233,6 @@ public class Aerbison extends AetherAnimal {
         return getState() == State.STAGGER;
     }
 
-    public boolean isLying() {
-        return getState() == State.LYING;
-    }
-
     public boolean isSailing() {
         return entityData.get(DATA_SAILING);
     }
@@ -268,7 +269,6 @@ public class Aerbison extends AetherAnimal {
             case AerbisonTiming.EVENT_ROUSE -> start(rouse);
             case AerbisonTiming.EVENT_STOMP -> start(stomp);
             case AerbisonTiming.EVENT_HORN_TOSS -> start(hornToss);
-            case AerbisonTiming.EVENT_WALLOW -> start(wallow);
             case AerbisonTiming.EVENT_REFUSE -> start(refuse);
             case AerbisonTiming.EVENT_LAND -> {
                 thud = 1;
@@ -288,16 +288,29 @@ public class Aerbison extends AetherAnimal {
             }
         }
         State state = getState();
-        lieO = lie;
+        walkO = walk;
         gallopO = gallop;
         chargeO = charge;
         sailO = sail;
+        idleO = idle;
         thudO = thud;
-        lie = approach(lie, state == State.LYING ? 1 : 0, state == State.LYING ? 1 / 32F : 1 / 24F);
         boolean moving = getDeltaMovement().horizontalDistanceSqr() > 0.01;
-        gallop = approach(gallop, state == State.RUN || state == State.DEFENDING && moving ? 1 : 0, 0.1F);
+        float stride = walkAnimation.speed();
+        if (stride > GALLOP_STRIDE) {
+            hurrying = true;
+        } else if (stride < WALK_STRIDE) {
+            hurrying = false;
+        }
+        boolean striding = stride >= STILL_STRIDE;
+        // the walk and gallop play at their own pace, so the gait changes with speed rather than the cycle speeding up
+        walk = approach(walk, striding ? 1 : 0, 0.15F);
+        gallop = approach(gallop, state == State.RUN || state == State.DEFENDING && moving || hurrying && striding ? 1 : 0, 0.1F);
         charge = approach(charge, state == State.RUN || state == State.DEFENDING ? 1 : 0, 0.1F);
         sail = approach(sail, isSailing() || state == State.GLIDE ? 1 : 0, 0.15F);
+        // the idle loop is for standing about with nothing else going on
+        boolean standing = state == State.IDLE && !isSailing() && !striding
+                && clips.stream().noneMatch(clip -> clip.started >= 0);
+        idle = approach(idle, standing ? 1 : 0, 0.05F);
         thud = Math.max(0, thud - 0.34F);
         if (stompCooldown > 0) {
             stompCooldown--;

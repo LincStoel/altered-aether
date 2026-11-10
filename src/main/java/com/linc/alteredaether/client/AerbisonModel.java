@@ -16,6 +16,8 @@ package com.linc.alteredaether.client;
 
 import com.linc.alteredaether.AlteredAether;
 import com.linc.alteredaether.entity.Aerbison;
+import net.minecraft.client.animation.AnimationDefinition;
+import net.minecraft.client.animation.KeyframeAnimations;
 import net.minecraft.client.model.HierarchicalModel;
 import net.minecraft.client.model.geom.ModelLayerLocation;
 import net.minecraft.client.model.geom.ModelPart;
@@ -25,17 +27,20 @@ import net.minecraft.client.model.geom.builders.LayerDefinition;
 import net.minecraft.client.model.geom.builders.MeshDefinition;
 import net.minecraft.client.model.geom.builders.PartDefinition;
 import net.minecraft.util.Mth;
+import org.joml.Vector3f;
 
 /**
- * The aerbison, from the Blockbench model. Walking, galloping, sailing down, lying and rising are blended in code
- * from the entity's smoothed weights; the one-shots are keyframed in {@link AerbisonAnimations} and laid on top. The
- * body is one root part, "bison", standing on the ground, so whole-body poses (rearing, rolling, the gallop's pitch)
- * pivot about its feet. The hump is a part of its own, "mane", for the flare of the sail. Left is +x, as in the model.
+ * The aerbison, from the Blockbench model (the parts are generated, see {@link AerbisonAnimations}). The keyframed
+ * animations are blended by the entity's smoothed weights, each playing at its authored pace: walk while moving,
+ * gallop while stampeding or moving faster than a stroll, idle while standing with nothing else to do, and the one-shots on top (lay_down and laying_idle are generated but not played
+ * yet). The mane-sail, the landing thud, the charge and the head look are code.
+ * The root, "bison", stands on the ground; the entity's left is +x, as in vanilla's quadrupeds.
  */
 public class AerbisonModel extends HierarchicalModel<Aerbison> {
     public static final ModelLayerLocation LAYER = new ModelLayerLocation(AlteredAether.id("aerbison"), "main");
     private static final float DEG = Mth.DEG_TO_RAD;
 
+    private final Vector3f cache = new Vector3f();
     private final ModelPart root;
     private final ModelPart bison, mane, neck, head;
     private final ModelPart legBackLeft, legBackRight, legFrontLeft, legFrontRight;
@@ -43,61 +48,82 @@ public class AerbisonModel extends HierarchicalModel<Aerbison> {
     public AerbisonModel(ModelPart root) {
         this.root = root;
         bison = root.getChild("bison");
-        mane = bison.getChild("body").getChild("mane");
-        neck = bison.getChild("neck");
-        head = neck.getChild("head");
-        legBackLeft = bison.getChild("leg_back_left");
-        legBackRight = bison.getChild("leg_back_right");
-        legFrontLeft = bison.getChild("leg_front_left");
-        legFrontRight = bison.getChild("leg_front_right");
+        mane = part("mane");
+        neck = part("neck");
+        head = part("head");
+        legBackLeft = part("leg_back_left");
+        legBackRight = part("leg_back_right");
+        legFrontLeft = part("leg_front_left");
+        legFrontRight = part("leg_front_right");
+    }
+
+    private ModelPart part(String name) {
+        return getAnyDescendantWithName(name).orElseThrow(() -> new IllegalStateException("aerbison model has no " + name));
     }
 
     public static LayerDefinition createBodyLayer() {
         MeshDefinition mesh = new MeshDefinition();
         PartDefinition root = mesh.getRoot();
+        // BEGIN GENERATED MODEL (tools/blockbench/bbmodel_to_java.py; edit the .bbmodel, not this)
         PartDefinition bison = root.addOrReplaceChild("bison", CubeListBuilder.create(),
                 PartPose.offset(0, 24, 6));
-        PartDefinition body = bison.addOrReplaceChild("body", CubeListBuilder.create()
-                .texOffs(0, 90).addBox(-8, 10, -6, 16, 15, 23),
-                PartPose.offsetAndRotation(0, -14, -4, Mth.HALF_PI, 0, 0));
-        PartDefinition mane = body.addOrReplaceChild("mane", CubeListBuilder.create()
-                .texOffs(36, 39).addBox(-10, -9, -6, 20, 19, 26),
+        PartDefinition bodyAndNeck = bison.addOrReplaceChild("body_and_neck", CubeListBuilder.create(),
+                PartPose.offset(0, -14, -4));
+        PartDefinition body = bodyAndNeck.addOrReplaceChild("body", CubeListBuilder.create(),
+                PartPose.offsetAndRotation(0, 0, 0, 90 * DEG, 0, 0));
+        body.addOrReplaceChild("rear_body", CubeListBuilder.create()
+                .texOffs(90, 122).addBox(-10, -15.5F, -10.5F, 20, 24, 23),
+                PartPose.offset(0, 17.5F, 5.5F));
+        body.addOrReplaceChild("mane", CubeListBuilder.create()
+                .texOffs(81, 61).addBox(-12, -9, -6, 24, 19, 28),
                 PartPose.offset(0, 0, 0));
-        PartDefinition neck = bison.addOrReplaceChild("neck", CubeListBuilder.create()
-                .texOffs(72, 85).addBox(-5, -6, -15, 10, 10, 18),
-                PartPose.offset(0, -20, -2));
+        PartDefinition neck = bodyAndNeck.addOrReplaceChild("neck", CubeListBuilder.create()
+                .texOffs(2, 74).addBox(-5, -6, -21, 10, 10, 24),
+                PartPose.offset(0, -6, 2));
         PartDefinition head = neck.addOrReplaceChild("head", CubeListBuilder.create()
-                .texOffs(0, 0).addBox(-8, -6, -14, 16, 20, 16)
-                .texOffs(0, 0).addBox(-2, 12, -18, 4, 9, 4)
-                .texOffs(5, 37).addBox(-8, 12, -14, 16, 7, 11),
-                PartPose.offset(0, -3, -14));
-        PartDefinition horns = head.addOrReplaceChild("horns", CubeListBuilder.create()
-                .texOffs(66, 24).addBox(3, -10, -1, 2, 10, 4)
-                .texOffs(94, 24).addBox(3, -6, 9, 2, 10, 4)
-                .texOffs(109, 31).addBox(3, 1, 5, 2, 3, 4)
-                .texOffs(109, 31).addBox(-15, 1, 5, 2, 3, 4)
-                .texOffs(94, 24).addBox(-15, -6, 9, 2, 10, 4)
-                .texOffs(66, 24).addBox(-15, -10, -1, 2, 10, 4),
-                PartPose.offsetAndRotation(5, 1, -9, Mth.HALF_PI, 0, 0));
-        PartDefinition horn_left_tip = horns.addOrReplaceChild("horn_left_tip", CubeListBuilder.create()
-                .texOffs(80, 24).addBox(8, -37, -20, 2, 10, 4),
-                PartPose.offsetAndRotation(-5, -26, 40, Mth.HALF_PI, 0, 0));
-        PartDefinition horn_right_tip = horns.addOrReplaceChild("horn_right_tip", CubeListBuilder.create()
-                .texOffs(80, 24).addBox(8, -37, -20, 2, 10, 4),
-                PartPose.offsetAndRotation(-23, -26, 40, Mth.HALF_PI, 0, 0));
-        PartDefinition leg_back_left = bison.addOrReplaceChild("leg_back_left", CubeListBuilder.create()
-                .texOffs(100, 0).addBox(-3, -1, -4, 6, 10, 8),
-                PartPose.offset(6, -9, 14));
-        PartDefinition leg_back_right = bison.addOrReplaceChild("leg_back_right", CubeListBuilder.create()
-                .texOffs(100, 0).addBox(-3, -1, -4, 6, 10, 8),
+                .texOffs(0, 1).addBox(-10, -8, -14, 20, 22, 16)
+                .texOffs(5, 39).addBox(-10, 14, -14, 20, 5, 11),
+                PartPose.offset(0, -6, -14));
+        head.addOrReplaceChild("nose", CubeListBuilder.create()
+                .texOffs(5, 58).addBox(-3, -1.5F, -2, 6, 9, 4)
+                .texOffs(47, 61).addBox(-3, -1.5F, -1, 6, 5, 5),
+                PartPose.offset(0, 12.5F, -16));
+        PartDefinition horns = head.addOrReplaceChild("horns", CubeListBuilder.create(),
+                PartPose.offsetAndRotation(-5, 1, -9, 90 * DEG, 0, 0));
+        PartDefinition hornRight = horns.addOrReplaceChild("horn_right", CubeListBuilder.create()
+                .texOffs(111, 23).addBox(-12, -26, -14, 4, 4, 4)
+                .texOffs(110, 1).addBox(-12, -33, -10, 4, 11, 5)
+                .texOffs(83, 22).addBox(-12, -38, -22, 4, 11, 6),
+                PartPose.offset(3, 28, 20));
+        hornRight.addOrReplaceChild("horn_right_r1", CubeListBuilder.create()
+                .texOffs(84, 2).addBox(-12, -37, -20, 4, 11, 5),
+                PartPose.offsetAndRotation(0, -53, 21, 90 * DEG, 0, 0));
+        PartDefinition hornLeft = horns.addOrReplaceChild("horn_left", CubeListBuilder.create()
+                .texOffs(111, 23).addBox(-12, -26, -14, 4, 4, 4)
+                .texOffs(110, 1).addBox(-12, -33, -10, 4, 11, 5)
+                .texOffs(83, 22).addBox(-12, -38, -22, 4, 11, 6),
+                PartPose.offset(27, 28, 20));
+        hornLeft.addOrReplaceChild("horn_left_r1", CubeListBuilder.create()
+                .texOffs(84, 2).addBox(-12, -37, -20, 4, 11, 5),
+                PartPose.offsetAndRotation(0, -53, 21, 90 * DEG, 0, 0));
+        PartDefinition legBack = bison.addOrReplaceChild("leg_back", CubeListBuilder.create(),
                 PartPose.offset(-6, -9, 14));
-        PartDefinition leg_front_left = bison.addOrReplaceChild("leg_front_left", CubeListBuilder.create()
-                .texOffs(66, 0).addBox(-4, -1, -4, 8, 13, 8),
-                PartPose.offset(7, -12, -9));
-        PartDefinition leg_front_right = bison.addOrReplaceChild("leg_front_right", CubeListBuilder.create()
-                .texOffs(66, 0).addBox(-4, -1, -4, 8, 13, 8),
+        legBack.addOrReplaceChild("leg_back_right", CubeListBuilder.create()
+                .texOffs(42, 121).addBox(-3, -3, -3, 6, 12, 8),
+                PartPose.offset(0, 0, 0));
+        legBack.addOrReplaceChild("leg_back_left", CubeListBuilder.create()
+                .texOffs(42, 121).addBox(-3, -3, -3, 6, 12, 8),
+                PartPose.offset(12, 0, 0));
+        PartDefinition frontLegs = bison.addOrReplaceChild("front_legs", CubeListBuilder.create(),
                 PartPose.offset(-7, -12, -9));
-        return LayerDefinition.create(mesh, 128, 128);
+        frontLegs.addOrReplaceChild("leg_front_right", CubeListBuilder.create()
+                .texOffs(2, 120).addBox(-6, -1, -3, 8, 13, 8),
+                PartPose.offset(0, 0, 0));
+        frontLegs.addOrReplaceChild("leg_front_left", CubeListBuilder.create()
+                .texOffs(2, 120).addBox(-2, -1, -3, 8, 13, 8),
+                PartPose.offset(14, 0, 0));
+        // END GENERATED MODEL
+        return LayerDefinition.create(mesh, 192, 192);
     }
 
     @Override
@@ -110,44 +136,36 @@ public class AerbisonModel extends HierarchicalModel<Aerbison> {
         return t * t * (3 - 2 * t);
     }
 
+    private void play(AnimationDefinition animation, float seconds, float weight) {
+        if (weight > 0.001F) {
+            KeyframeAnimations.animate(this, animation, (long) (seconds * 1000), weight, cache);
+        }
+    }
+
     @Override
     public void setupAnim(Aerbison e, float swing, float amount, float age, float yaw, float pitch) {
-        root().getAllParts().forEach(ModelPart::resetPose);
-        mane.xScale = mane.yScale = mane.zScale = 1;
-        neck.xScale = neck.yScale = neck.zScale = 1;
-        head.xScale = head.yScale = head.zScale = 1;
+        root().getAllParts().forEach(part -> {
+            part.resetPose();
+            part.xScale = part.yScale = part.zScale = 1;
+        });
 
         float partial = age - e.tickCount;
-        float lying = Mth.lerp(partial, e.lieO, e.lie);
+        float walking = smooth(Mth.lerp(partial, e.walkO, e.walk));
         float gallop = smooth(Mth.lerp(partial, e.gallopO, e.gallop));
         float charge = smooth(Mth.lerp(partial, e.chargeO, e.charge));
         float sail = smooth(Mth.lerp(partial, e.sailO, e.sail));
+        float idle = smooth(Mth.lerp(partial, e.idleO, e.idle));
         float thud = Mth.lerp(partial, e.thudO, e.thud);
+        float seconds = age / 20;
 
-        // walking: the user's swing, diagonal pairs together, with the half-speed bob of the body and a sway of the head
-        float walk = amount * (1 - gallop) * (1 - sail) * (1 - lying);
-        float stride = swing * 0.6662F;
-        float swingAngle = 45 * DEG * Mth.cos(stride) * walk;
-        legBackLeft.xRot += swingAngle;
-        legFrontRight.xRot += swingAngle;
-        legBackRight.xRot -= swingAngle;
-        legFrontLeft.xRot -= swingAngle;
-        bison.y += 2 * Mth.cos(swing * 0.3331F) * walk;
-        head.yRot += 2 * DEG * Mth.cos(stride) * walk;
+        // the walk plays at its authored pace and full stride whenever it's moving, as in Blockbench
+        play(AerbisonAnimations.WALK, seconds, walking * (1 - gallop) * (1 - sail));
+        play(AerbisonAnimations.GALLOP, seconds, gallop);
+        play(AerbisonAnimations.IDLE, seconds, idle);
 
-        // galloping: a bound on its own phase, since a stampede sets the velocity itself
-        if (gallop > 0) {
-            float phase = age * 0.55F;
-            legFrontLeft.xRot += 60 * DEG * Mth.sin(phase + 0.3F) * gallop;
-            legFrontRight.xRot += 60 * DEG * Mth.sin(phase) * gallop;
-            legBackLeft.xRot += 60 * DEG * Mth.sin(phase + 2.5F) * gallop;
-            legBackRight.xRot += 60 * DEG * Mth.sin(phase + 2.2F) * gallop;
-            bison.xRot += 5 * DEG * Mth.sin(phase + 1.1F) * gallop;
-            bison.y -= 1.5F * Math.abs(Mth.sin(phase)) * gallop;
-            neck.xRot += 4 * DEG * Mth.sin(phase + 0.6F) * gallop;
-        }
-        neck.xRot += 28 * DEG * charge;
-        head.xRot += 14 * DEG * charge;
+        // the head lowered to the horns when squaring up to something
+        neck.xRot += 28 * DEG * charge * (1 - gallop);
+        head.xRot += 14 * DEG * charge * (1 - gallop);
 
         // sailing: legs stretched out like a leaping deer, and the mane flared like a canopy
         if (sail > 0) {
@@ -161,26 +179,11 @@ public class AerbisonModel extends HierarchicalModel<Aerbison> {
             legFrontRight.zRot += 14 * DEG * sail;
             legBackRight.zRot += 14 * DEG * sail;
             head.xRot -= 12 * DEG * sail;
+            // the mane is under the body, which is turned on its end: its x is the width, z the height
             float ripple = 0.02F * Mth.sin(age * 0.9F);
             mane.xScale += 0.12F * sail + ripple;
             mane.zScale += 0.12F * sail + ripple;
             mane.yScale += 0.06F * sail;
-        }
-
-        // lying: the knees fold front first, then the hind legs; reversed, the hind end rises first
-        if (lying > 0) {
-            float front = smooth(lying / 0.6F);
-            float back = smooth((lying - 0.4F) / 0.6F);
-            legFrontLeft.xRot += 88 * DEG * front;
-            legFrontRight.xRot += 88 * DEG * front;
-            legBackLeft.xRot -= 88 * DEG * back;
-            legBackRight.xRot -= 88 * DEG * back;
-            bison.xRot += 14 * DEG * front * (1 - back);
-            bison.y += 3 * front + 4 * back;
-            neck.xRot += 8 * DEG * lying;
-            float lungs = 0.03F * Mth.sin(age * 0.06F) * lying;
-            mane.xScale += lungs;
-            mane.zScale += lungs;
         }
 
         // landing thud
@@ -192,14 +195,8 @@ public class AerbisonModel extends HierarchicalModel<Aerbison> {
             legBackRight.zRot += 10 * DEG * thud;
         }
 
-        // idle breathing
-        float breath = Mth.sin(age * 0.08F);
-        bison.y += 0.15F * breath;
-        mane.xScale += 0.012F * breath;
-        mane.zScale += 0.012F * breath;
-
         // head look, held back by anything that owns the head
-        float look = 1 - 0.5F * lying;
+        float look = 1;
         if (e.isStaggering()) {
             look = 0;
         } else if (e.grazeAnim.isStarted() || e.hornTossAnim.isStarted()) {
@@ -221,7 +218,6 @@ public class AerbisonModel extends HierarchicalModel<Aerbison> {
         animate(e.rouseAnim, AerbisonAnimations.ROUSE, age);
         animate(e.stompAnim, AerbisonAnimations.STOMP, age);
         animate(e.hornTossAnim, AerbisonAnimations.HORN_TOSS, age);
-        animate(e.wallowAnim, AerbisonAnimations.WALLOW, age);
         animate(e.staggerAnim, AerbisonAnimations.STAGGER, age);
         animate(e.refuseAnim, AerbisonAnimations.REFUSE, age);
     }

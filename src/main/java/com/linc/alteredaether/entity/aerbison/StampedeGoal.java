@@ -115,6 +115,6 @@ public class StampedeGoal extends Goal {
     static List<Aerbison> nearbyAdults(ServerLevel level, Aerbison center) {
         AABB box = center.getBoundingBox().inflate(HERD_RADIUS, 6, HERD_RADIUS);
         return level.getEntitiesOfClass(Aerbison.class, box, b -> b.isAlive() && !b.isBaby()
-                && (b.getState() == Aerbison.State.IDLE || b.getState() == Aerbison.State.LYING || b == center));
+                && (b.getState() == Aerbison.State.IDLE || b == center));
     }
 }

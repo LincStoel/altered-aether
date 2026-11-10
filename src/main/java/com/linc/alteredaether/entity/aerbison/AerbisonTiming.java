@@ -26,22 +26,21 @@ public final class AerbisonTiming {
     public static final byte EVENT_ROUSE = 83;
     public static final byte EVENT_STOMP = 84;
     public static final byte EVENT_HORN_TOSS = 85;
-    public static final byte EVENT_WALLOW = 86;
     public static final byte EVENT_REFUSE = 87;
+    // 86 was the wallow
     public static final byte EVENT_LAND = 88;
 
     public static final int GRAZE_TICKS = 48;
     /** The bite: when a grazing calf's growth is sped up. */
     public static final int GRAZE_BITE_TICK = 24;
     public static final int HEAD_SHAKE_TICKS = 20;
-    public static final int WINDUP_TICKS = 26;
+    public static final int WINDUP_TICKS = 24;
     public static final int ROUSE_TICKS = 10;
-    public static final int STOMP_TICKS = 18;
-    /** The tick the stamp lands and the gust fires. */
-    public static final int STOMP_LAUNCH_TICK = 9;
+    public static final int STOMP_TICKS = 20;
+    /** The tick the front hooves come down and the gust fires, as the hind legs kick back. */
+    public static final int STOMP_LAUNCH_TICK = 13;
     public static final int HORN_TOSS_TICKS = 12;
     public static final int HORN_TOSS_HIT_TICK = 7;
-    public static final int WALLOW_TICKS = 52;
     public static final int REFUSE_TICKS = 14;
     public static final int STAGGER_TICKS = 40;
 
