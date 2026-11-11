@@ -37,7 +37,8 @@ import org.lwjgl.glfw.GLFW;
 
 /**
  * The key that leaps off a saddled, ridden aerwhale, space unless rebound. Holding it charges a leap, shown on the jump
- * bar's place in the HUD; letting go springs the rider up off the whale's back.
+ * bar's place in the HUD; letting go springs the rider up off the whale's back. A tap shorter than
+ * {@link AerwhaleEject#MIN_HOLD} does nothing, and the bar shows only once the hold is past that.
  */
 @EventBusSubscriber(modid = AlteredAether.MOD_ID, value = Dist.CLIENT)
 public final class AerwhaleEjectKey {
@@ -68,11 +69,17 @@ public final class AerwhaleEjectKey {
     private static final ResourceLocation BAR_BACKGROUND = ResourceLocation.withDefaultNamespace("hud/jump_bar_background");
     private static final ResourceLocation BAR_PROGRESS = ResourceLocation.withDefaultNamespace("hud/jump_bar_progress");
 
+    /** Ticks the key has been held, the minimum hold included. */
     private static int chargeTicks;
 
-    /** How far the leap has charged, from 0 to 1. */
+    /** Whether the key has been held long enough that letting go leaps. */
+    private static boolean charging() {
+        return chargeTicks > AerwhaleEject.MIN_HOLD;
+    }
+
+    /** How far the leap has charged, from 0 to 1, counted from the end of the minimum hold. */
     public static float charge() {
-        return Math.min(1, chargeTicks / (float) AerwhaleEject.CHARGE_TICKS);
+        return Math.clamp((chargeTicks - AerwhaleEject.MIN_HOLD) / (float) AerwhaleEject.CHARGE_TICKS, 0F, 1F);
     }
 
     @SubscribeEvent
@@ -85,9 +92,11 @@ public final class AerwhaleEjectKey {
             return;
         }
         if (KEY.isDown()) {
-            chargeTicks = Math.min(chargeTicks + 1, AerwhaleEject.CHARGE_TICKS);
+            chargeTicks = Math.min(chargeTicks + 1, AerwhaleEject.MIN_HOLD + AerwhaleEject.CHARGE_TICKS);
         } else if (chargeTicks > 0) {
-            PacketDistributor.sendToServer(new AerwhaleEjectPayload(charge(), velocity(whale)));
+            if (charging()) {
+                PacketDistributor.sendToServer(new AerwhaleEjectPayload(charge(), velocity(whale)));
+            }
             chargeTicks = 0;
         }
     }
@@ -100,7 +109,7 @@ public final class AerwhaleEjectKey {
     /** The charge bar, drawn over the jump bar's place, where a horse's or camel's charge shows. */
     static void renderBar(GuiGraphics graphics, DeltaTracker delta) {
         Minecraft minecraft = Minecraft.getInstance();
-        if (chargeTicks <= 0 || minecraft.options.hideGui || minecraft.player == null) {
+        if (!charging() || minecraft.options.hideGui || minecraft.player == null) {
             return;
         }
         int x = graphics.guiWidth() / 2 - 91;

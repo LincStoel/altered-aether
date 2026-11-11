@@ -271,6 +271,12 @@ public class TamedAerwhale extends Aerwhale
     @Nullable
     private BlockPos home;
 
+    /** Where it was told to stay, if it has been. */
+    @Nullable
+    public BlockPos stayAnchor() {
+        return home;
+    }
+
     // Flight under a rider, which only the rider's client runs.
     private boolean wasPiloting;
     private float pilotPitch;
@@ -301,7 +307,7 @@ public class TamedAerwhale extends Aerwhale
     @Nullable
     private ServerPlayer thrown;
     private Vec3 throwMotion = Vec3.ZERO;
-    /** Ticks left coasting on after its pilot leapt off, before it turns to follow its owner. */
+    /** Ticks left coasting on after its pilot leapt off, before it takes up its orders again. */
     private int coast;
 
     // Breaking in, on the server.
@@ -932,8 +938,8 @@ public class TamedAerwhale extends Aerwhale
             }
             trackLocation();
             if (coast > 0 && --coast == 0 && getControllingPassenger() == null) {
-                // nobody came back aboard: it goes looking for its owner
-                setCommand(AerwhaleCommand.FOLLOW);
+                // nobody came back aboard: it takes up the order it had again, staying (if told to) where it ended up
+                setCommand(command());
             }
         }
         super.aiStep();
@@ -1352,7 +1358,7 @@ public class TamedAerwhale extends Aerwhale
      * {@code rider} leaps off: they spring straight up from their seat, {@code charge} (0 to 1) of the way to the
      * highest leap, keeping the speed {@code velocity} the whale had as their client saw it. If they were flying it and
      * nobody else aboard takes the reins, it coasts on as it was going, long enough for them to come down on its back
-     * again, then turns to follow its owner.
+     * again, then takes up the order it had, a stay anchored where it ended up.
      */
     public void eject(Player rider, float charge, Vec3 velocity) {
         if (level().isClientSide || !hasPassenger(rider) || !isSaddled()) {

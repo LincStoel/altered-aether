@@ -27,9 +27,11 @@ public final class AerwhaleEject {
     public static final double BUCK_HEIGHT = 14;
     /** How hard a wild aerwhale flings its rider off to one side, in blocks a tick. */
     public static final double BUCK_SHOVE = 0.5;
-    /** Ticks of holding the key to charge fully. */
+    /** Ticks the key must be held before letting go leaps at all, so a stray tap doesn't throw the rider off. */
+    public static final int MIN_HOLD = 5;
+    /** Ticks of holding the key, after the minimum hold, to charge fully. */
     public static final int CHARGE_TICKS = 20;
-    /** Ticks a whale left without a pilot coasts on before it turns to follow its owner. */
+    /** Ticks a whale left without a pilot coasts on before it takes up its orders again where it ends up. */
     public static final int COAST_TICKS = 50;
     /** The most speed, in blocks a tick, a rider's client may claim the whale had. */
     public static final double MAX_INHERITED_SPEED = 1.5;

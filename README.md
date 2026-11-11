@@ -128,7 +128,7 @@ rider it throws calms it a little more. A wild calf can't be ridden, so swets al
   it flies, and whatever stands there is carried along. Unsaddled it carries one rider and stays put.
 - Fly it by looking where you want to go. The dive key (J by default) charges a dive, and the leap key (space by
   default; both under Altered Aether in Controls) throws you off upward at the whale's speed. The whale coasts on
-  long enough for you to land back on it, then turns to follow you.
+  long enough for you to land back on it, then goes back to whatever you'd told it to do.
 - Sneak and use it to cycle stay, wander and follow. The inventory key, while riding, opens its saddle and
   saddlebag.
 - Blue and golden gummy swets heal it, and holding one draws it to you from far off. Enchanted berries breed two

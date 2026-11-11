@@ -452,9 +452,12 @@ public final class AerwhaleTests {
         double startX = whale.getX();
         helper.runAfterDelay(10, () -> helper.assertTrue(whale.getX() - startX > 2,
                 "the whale should keep going, moved " + (whale.getX() - startX)));
+        BlockPos anchor = whale.stayAnchor();
         helper.runAfterDelay(AerwhaleEject.COAST_TICKS + 5, () -> {
             helper.assertFalse(whale.coasting(), "should be done coasting");
-            helper.assertTrue(whale.command() == AerwhaleCommand.FOLLOW, "should follow its owner, got " + whale.command());
+            helper.assertTrue(whale.command() == AerwhaleCommand.STAY, "should keep its order, got " + whale.command());
+            helper.assertTrue(whale.stayAnchor() != null && anchor != null && whale.stayAnchor().getX() - anchor.getX() > 2,
+                    "should stay where it coasted to, anchored at " + whale.stayAnchor() + " from " + anchor);
             helper.succeed();
         });
     }
