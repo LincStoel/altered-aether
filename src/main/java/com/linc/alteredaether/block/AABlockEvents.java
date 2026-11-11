@@ -35,7 +35,7 @@ public final class AABlockEvents {
 
     /**
      * The campfire right after the soul campfire, gleamberries after glow berries wherever those are listed, and the
-     * squall's spawn egg with the others, and the whale whistle among the tools.
+     * squall's and gravitite golem's spawn eggs with the others, and the whale whistle and storage pebble among the tools.
      */
     @SubscribeEvent
     public static void onCreativeTab(BuildCreativeModeTabContentsEvent event) {
@@ -50,9 +50,11 @@ public final class AABlockEvents {
         }
         if (event.getTabKey().equals(CreativeModeTabs.TOOLS_AND_UTILITIES)) {
             event.accept(AARegistries.WHALE_WHISTLE.get());
+            event.accept(AARegistries.STORAGE_PEBBLE.get());
         }
         if (event.getTabKey().equals(CreativeModeTabs.SPAWN_EGGS)) {
             event.accept(AARegistries.SQUALL_SPAWN_EGG.get());
+            event.accept(AARegistries.GRAVITITE_GOLEM_SPAWN_EGG.get());
         }
     }
 

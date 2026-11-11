@@ -87,6 +87,119 @@ public final class AATagProvider extends JsonDataProvider {
         tag("item", AlteredAether.id("aerwhale_breeding_food"), "aether:enchanted_berry");
         gleamVines();
         aetherBiomes();
+        golem();
+    }
+
+    /**
+     * Gravitite golems (see entity/golem/GolemStorage): what can be their head, what they only empty, and what they
+     * never link. Most machines are caught by what their block entity is; the blacklist names the rest, for vanilla,
+     * the Aether and the popular mods with machines or storage networks, as optional entries.
+     */
+    private void golem() {
+        tag("block", AlteredAether.id("golem_heads"), "minecraft:carved_pumpkin", "deep_aether:carved_blue_squash",
+                "deep_aether:carved_green_squash", "deep_aether:carved_purple_squash");
+        tag("block", AlteredAether.id("golem_empty_only"), "minecraft:hopper", "create:depot");
+        tag("block", AlteredAether.id("golem_linkable"));
+        List<String> never = new ArrayList<>(List.of(
+                // vanilla machines and inventories that aren't storage
+                "minecraft:furnace", "minecraft:blast_furnace", "minecraft:smoker", "minecraft:brewing_stand",
+                "minecraft:dropper", "minecraft:dispenser", "minecraft:crafter", "#minecraft:campfires",
+                "minecraft:composter", "minecraft:lectern", "minecraft:jukebox", "minecraft:chiseled_bookshelf",
+                "minecraft:decorated_pot", "minecraft:ender_chest", "minecraft:beacon", "minecraft:vault",
+                // the Aether's machines, its locked dungeon chests and mimics
+                "aether:altar", "aether:freezer", "aether:incubator", "aether:treasure_chest", "aether:chest_mimic",
+                "aether:sun_altar", "altered_aether:ambrosium_campfire",
+                "deep_aether:combiner", "deep_aether:poison_cauldron", "aether_beyond_parity:ambrosium_campfire",
+                // Create: everything that moves or processes items, belts most of all
+                "create:belt", "create:chute", "create:smart_chute", "create:andesite_funnel", "create:brass_funnel",
+                "create:andesite_belt_funnel", "create:brass_belt_funnel", "create:andesite_tunnel", "create:brass_tunnel",
+                "create:basin", "create:millstone", "create:crushing_wheel_controller", "create:mechanical_crafter",
+                "create:deployer", "create:mechanical_saw", "create:item_drain", "create:spout", "create:weighted_ejector",
+                "create:portable_storage_interface", "create:stock_link", "create:stock_ticker", "create:packager",
+                "create:repackager", "create:item_hatch", "create:package_frogport", "create:redstone_requester",
+                "create:blaze_burner", "create:lit_blaze_burner", "create:clipboard",
+                // Ars Nouveau
+                "ars_nouveau:imbuement_chamber", "ars_nouveau:enchanting_apparatus", "ars_nouveau:arcane_pedestal",
+                "ars_nouveau:scribes_table", "ars_nouveau:basic_spell_turret", "ars_nouveau:spell_turret",
+                "ars_nouveau:timer_spell_turret", "ars_nouveau:rotating_spell_turret", "ars_nouveau:wixie_cauldron",
+                "ars_nouveau:storage_lectern", "ars_nouveau:repository_controller", "ars_nouveau:bookwyrm_lectern",
+                "ars_nouveau:item_detector", "ars_nouveau:volcanic_sourcelink", "ars_nouveau:mycelial_sourcelink",
+                "ars_nouveau:alchemical_sourcelink", "ars_nouveau:potion_melder", "ars_nouveau:ritual_brazier",
+                "ars_nouveau:scryers_crystal", "ars_nouveau:mob_jar",
+                // Supplementaries: displays and devices, but its safes and sacks are storage
+                "supplementaries:item_shelf", "supplementaries:pedestal", "supplementaries:notice_board",
+                "supplementaries:jar", "supplementaries:jar_tinted", "supplementaries:soul_jar", "supplementaries:faucet",
+                "supplementaries:hourglass", "supplementaries:book_pile", "supplementaries:book_pile_horizontal",
+                "supplementaries:cannon", "supplementaries:crystal_display", "supplementaries:urn",
+                "supplementaries:cage", "supplementaries:mob_jar",
+                // Quark
+                "quark:pipe", "quark:encased_pipe", "quark:feeding_trough", "quark:matrix_enchanter",
+                // Lootr's per-player loot
+                "lootr:lootr_chest", "lootr:lootr_trapped_chest", "lootr:lootr_barrel", "lootr:lootr_shulker",
+                "lootr:lootr_inventory",
+                // storage networks: their interfaces would hand the golem a whole network
+                "ae2:interface", "ae2:pattern_provider", "ae2:drive", "ae2:chest", "ae2:io_port",
+                "ae2:molecular_assembler", "ae2:inscriber", "ae2:charger", "ae2:cell_workbench", "ae2:condenser",
+                "ae2:spatial_io_port", "ae2:vibration_chamber", "ae2:controller", "ae2:crafting_unit",
+                "refinedstorage:interface", "refinedstorage:external_storage", "refinedstorage:disk_drive",
+                "refinedstorage:importer", "refinedstorage:exporter", "refinedstorage:constructor",
+                "refinedstorage:destructor", "refinedstorage:autocrafter", "refinedstorage:disk_interface",
+                "toms_storage:ts.inventory_connector", "toms_storage:ts.inventory_proxy",
+                "toms_storage:ts.storage_terminal", "toms_storage:ts.crafting_terminal", "toms_storage:ts.inventory_cable_connector",
+                "toms_storage:ts.inventory_interface", "toms_storage:ts.level_emitter",
+                "sophisticatedstorage:controller", "sophisticatedstorage:storage_link", "sophisticatedstorage:storage_io",
+                "sophisticatedstorage:storage_input", "sophisticatedstorage:storage_output",
+                "storagedrawers:controller", "storagedrawers:controller_io",
+                "functionalstorage:storage_controller", "functionalstorage:controller_extension",
+                "integrateddynamics:cable", "integratedtunnels:part_interface_item",
+                // Mekanism: its machines, and the personal chests its security guards
+                "mekanism:personal_chest", "mekanism:personal_barrel", "mekanism:metallurgic_infuser",
+                "mekanism:enrichment_chamber", "mekanism:crusher", "mekanism:osmium_compressor", "mekanism:combiner",
+                "mekanism:purification_chamber", "mekanism:energized_smelter", "mekanism:digital_miner",
+                "mekanism:logistical_sorter", "mekanism:formulaic_assemblicator", "mekanism:precision_sawmill",
+                "mekanism:chemical_injection_chamber", "mekanism:chemical_oxidizer", "mekanism:chemical_infuser",
+                "mekanism:electrolytic_separator", "mekanism:rotary_condensentrator", "mekanism:pressurized_reaction_chamber",
+                "mekanism:isotopic_centrifuge", "mekanism:antiprotonic_nucleosynthesizer", "mekanism:pigment_extractor",
+                "mekanism:painting_machine", "mekanism:dimensional_stabilizer", "mekanism:qio_drive_array",
+                "mekanism:qio_importer", "mekanism:qio_exporter", "mekanism:qio_dashboard", "mekanism:qio_redstone_adapter",
+                "mekanism:basic_smelting_factory", "mekanism:elite_smelting_factory",
+                // Thermal
+                "thermal:machine_furnace", "thermal:machine_sawmill", "thermal:machine_pulverizer",
+                "thermal:machine_smelter", "thermal:machine_insolator", "thermal:machine_centrifuge",
+                "thermal:machine_press", "thermal:machine_crucible", "thermal:machine_chiller", "thermal:machine_refinery",
+                "thermal:machine_pyrolyzer", "thermal:machine_bottler", "thermal:machine_brewer", "thermal:machine_crafter",
+                "thermal:dynamo_stirling", "thermal:dynamo_compression", "thermal:dynamo_magmatic",
+                "thermal:dynamo_numismatic", "thermal:dynamo_lapidary", "thermal:dynamo_disenchantment",
+                "thermal:dynamo_gourmand", "thermal:device_tree_extractor", "thermal:device_fisher",
+                "thermal:device_composter", "thermal:device_nullifier", "thermal:device_potion_diffuser",
+                // Oritech
+                "oritech:pulverizer_block", "oritech:grinder_block", "oritech:assembler_block", "oritech:foundry_block",
+                "oritech:centrifuge_block", "oritech:atomic_forge_block", "oritech:powered_furnace_block",
+                "oritech:fragment_forge_block", "oritech:cooler_block", "oritech:enchanter_block",
+                "oritech:basic_generator_block", "oritech:bio_generator_block", "oritech:lava_generator_block",
+                "oritech:fuel_generator_block", "oritech:steam_engine_block", "oritech:laser_arm_block",
+                "oritech:deep_drill_block", "oritech:destroyer_block", "oritech:placer_block", "oritech:fertilizer_block",
+                "oritech:item_pipe", "oritech:item_pipe_connection",
+                // Immersive Engineering (its crates stay storage)
+                "immersiveengineering:sorter", "immersiveengineering:item_batcher", "immersiveengineering:craftingtable",
+                "immersiveengineering:conveyor_basic", "immersiveengineering:alloy_smelter",
+                "immersiveengineering:coke_oven", "immersiveengineering:blast_furnace",
+                "immersiveengineering:advanced_blast_furnace", "immersiveengineering:assembler",
+                // Farmer's Delight
+                "farmersdelight:cooking_pot", "farmersdelight:stove", "farmersdelight:skillet",
+                "farmersdelight:cutting_board", "farmersdelight:basket",
+                // Botania
+                "botania:open_crate", "botania:runic_altar", "botania:apothecary_default", "botania:terra_plate",
+                "botania:alchemy_catalyst"));
+        // Create's postboxes and table cloths take things to send or sell
+        for (String color : new String[]{"white", "orange", "magenta", "light_blue", "yellow", "lime", "pink", "gray",
+                "light_gray", "cyan", "purple", "blue", "brown", "green", "red", "black"}) {
+            never.add("create:" + color + "_postbox");
+            never.add("create:" + color + "_table_cloth");
+            never.add("create:" + color + "_toolbox");
+        }
+        never.addAll(List.of("create:andesite_table_cloth", "create:brass_table_cloth", "create:copper_table_cloth"));
+        tag("block", AlteredAether.id("golem_link_blacklist"), never.toArray(String[]::new));
     }
 
     /**

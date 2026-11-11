@@ -1,0 +1,26 @@
+{
+  "parent": "altered_aether:root",
+  "criteria": {
+    "built": {
+      "conditions": {},
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "display": {
+    "description": {
+      "translate": "advancements.altered_aether.mind_over_matter.description"
+    },
+    "frame": "task",
+    "icon": {
+      "id": "aether:enchanted_gravitite"
+    },
+    "title": {
+      "translate": "advancements.altered_aether.mind_over_matter.title"
+    }
+  },
+  "requirements": [
+    [
+      "built"
+    ]
+  ]
+}

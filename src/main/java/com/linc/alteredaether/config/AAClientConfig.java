@@ -18,6 +18,7 @@ import net.neoforged.neoforge.common.ModConfigSpec;
 import net.neoforged.neoforge.common.ModConfigSpec.BooleanValue;
 import net.neoforged.neoforge.common.ModConfigSpec.DoubleValue;
 import net.neoforged.neoforge.common.ModConfigSpec.EnumValue;
+import net.neoforged.neoforge.common.ModConfigSpec.IntValue;
 
 /** Client-only presentation settings. */
 public final class AAClientConfig {
@@ -30,6 +31,13 @@ public final class AAClientConfig {
     public static final DoubleValue PARTICLE_DENSITY;
     public static final EnumValue<ShaderMode> SHADER_MODE;
     public static final BooleanValue GLEAM_VINE_LEAF_TINT;
+    public static final ModConfigSpec.ConfigValue<String> GOLEM_GLOW_COLOR;
+    public static final BooleanValue GOLEM_GLOW_THROUGH_WALLS;
+    public static final BooleanValue GOLEM_SHOW_FLIGHTS;
+    public static final BooleanValue GOLEM_REDUCED_EFFECTS;
+    public static final IntValue GOLEM_LINK_GLOW_SECONDS;
+    public static final IntValue GOLEM_SHOW_LINKS_SECONDS;
+    public static final IntValue GOLEM_SEARCH_SECONDS;
 
     public enum ShaderMode {
         /** Detect an active Iris shaderpack. */
@@ -59,7 +67,40 @@ public final class AAClientConfig {
                         "Aether's blue-green.")
                 .define("gleam_vine_leaf_tint", true);
         b.pop();
+        b.push("gravitite_golem");
+        GOLEM_GLOW_COLOR = b.comment("Colour of the glow on linked storage and golems, as #RRGGBB.")
+                .define("glow_color", "#E072D7", o -> o instanceof String s && parseColor(s) >= 0);
+        GOLEM_GLOW_THROUGH_WALLS = b.comment("Show the glow through walls.").define("glow_through_walls", false);
+        GOLEM_SHOW_FLIGHTS = b.comment("Draw items flying between chests.").define("show_flights", true);
+        GOLEM_REDUCED_EFFECTS = b.comment("Fewer particles around golems, their range and their flights.")
+                .define("reduced_effects", false);
+        GOLEM_LINK_GLOW_SECONDS = b.comment("Seconds a block glows after it is linked.")
+                .defineInRange("link_glow_seconds", 2, 1, 30);
+        GOLEM_SHOW_LINKS_SECONDS = b.comment("Seconds everything linked glows after using a pebble on its own golem.")
+                .defineInRange("show_links_seconds", 15, 1, 120);
+        GOLEM_SEARCH_SECONDS = b.comment("Seconds storage holding a searched item glows.")
+                .defineInRange("search_seconds", 15, 1, 120);
+        b.pop();
         SPEC = b.build();
+    }
+
+    /** {@code #RRGGBB} (or {@code RRGGBB}) as an RGB int, or -1 if it isn't one. */
+    public static int parseColor(String text) {
+        String hex = text.startsWith("#") ? text.substring(1) : text;
+        if (hex.length() != 6) {
+            return -1;
+        }
+        try {
+            return Integer.parseInt(hex, 16);
+        } catch (NumberFormatException e) {
+            return -1;
+        }
+    }
+
+    /** The golem glow colour, falling back to the default if the setting is unreadable. */
+    public static int golemGlowColor() {
+        int color = parseColor(GOLEM_GLOW_COLOR.get());
+        return color < 0 ? 0xE072D7 : color;
     }
 
     private AAClientConfig() {

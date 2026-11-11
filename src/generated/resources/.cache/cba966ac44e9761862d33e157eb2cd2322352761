@@ -1,4 +1,4 @@
-// 1.21.1	2026-11-10T10:28:33.9343928	Altered Aether advancements
+// 1.21.1	2026-11-10T23:05:09.809463	Altered Aether advancements
 6b0bbdb4842ffb603caf7f8239d078d0bbdfd92b data/altered_aether/advancement/aether_plateau.json
 f6a6daf0bf94dfcc310fd3a41f538ba65b795ad5 data/altered_aether/advancement/airborne_cargo.json
 3ab50013a2ad5a4a75448d9f017ef245d5b1e340 data/altered_aether/advancement/altered_cartographer.json
@@ -11,8 +11,11 @@ c52603c8c5e2bc18e30452d66664472d03c498bb data/altered_aether/advancement/frozen_
 6f0f1a30d7f951b27862864b1a6b1e18ac0fa05e data/altered_aether/advancement/grandfather.json
 cb8695adffb6fc3415d5082d6effbf3eca08ef81 data/altered_aether/advancement/grand_cascade.json
 47cff58fc97cd793818aee98c879ad4281750e2e data/altered_aether/advancement/great_fracture.json
+ca7e4088218ed4ee7a2e128c897f5af956392324 data/altered_aether/advancement/hive_mind.json
 e76bdebc80723f8928ee4020711e3bcfe599b9d8 data/altered_aether/advancement/living_lightning_rod.json
+c68e600897e15563d3541176a0684fd8de7761eb data/altered_aether/advancement/mind_over_matter.json
 a90e570671d65d1e4b767b01eecbc4bda5668d23 data/altered_aether/advancement/nurselog_hollow.json
+2d901a1403ed0591b7565a03b01ab28998bed8a3 data/altered_aether/advancement/perfectly_organized.json
 cd66135b92d6de1859324e79fa98bf967d65503d data/altered_aether/advancement/ride_the_storm.json
 7400f45c217e350957c90ac0556b6c9364eda08c data/altered_aether/advancement/root.json
 c85bb7040168616ee3d6a3207d3bd897ef4910f3 data/altered_aether/advancement/rumour.json

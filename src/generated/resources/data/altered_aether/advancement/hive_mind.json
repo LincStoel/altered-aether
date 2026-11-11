@@ -1,0 +1,26 @@
+{
+  "parent": "altered_aether:mind_over_matter",
+  "criteria": {
+    "linked": {
+      "conditions": {},
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "display": {
+    "description": {
+      "translate": "advancements.altered_aether.hive_mind.description"
+    },
+    "frame": "task",
+    "icon": {
+      "id": "altered_aether:storage_pebble"
+    },
+    "title": {
+      "translate": "advancements.altered_aether.hive_mind.title"
+    }
+  },
+  "requirements": [
+    [
+      "linked"
+    ]
+  ]
+}

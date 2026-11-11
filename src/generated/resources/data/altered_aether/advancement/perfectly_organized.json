@@ -1,0 +1,29 @@
+{
+  "parent": "altered_aether:mind_over_matter",
+  "criteria": {
+    "sorted": {
+      "conditions": {},
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "display": {
+    "description": {
+      "translate": "advancements.altered_aether.perfectly_organized.description"
+    },
+    "frame": "goal",
+    "icon": {
+      "id": "minecraft:chest"
+    },
+    "title": {
+      "translate": "advancements.altered_aether.perfectly_organized.title"
+    }
+  },
+  "requirements": [
+    [
+      "sorted"
+    ]
+  ],
+  "rewards": {
+    "experience": 50
+  }
+}

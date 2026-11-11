@@ -152,6 +152,8 @@ dependencies {
     }))
     // JEI, for that page (see compat/jei); it runs only in client runs, from libs/client.
     compileOnly(modrinth("jei", "jei_version")) { isTransitive = false }
+    // Jade, for the gravitite golem's lines (see compat/jade); it runs only in client runs, from libs/client.
+    compileOnly(modrinth("jade", "jade_version")) { isTransitive = false }
     // MixinSquared cancels Deep Aether's aerwhale mixins when our own aerwhales are in use (see AAMixinPlugin).
     compileOnly("com.github.bawnorton.mixinsquared:mixinsquared-common:0.3.7")
     jarJar(implementation("com.github.bawnorton.mixinsquared:mixinsquared-neoforge:0.3.7")!!)

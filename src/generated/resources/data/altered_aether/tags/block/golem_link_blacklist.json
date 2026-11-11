@@ -1,0 +1,1092 @@
+{
+  "replace": false,
+  "values": [
+    "minecraft:furnace",
+    "minecraft:blast_furnace",
+    "minecraft:smoker",
+    "minecraft:brewing_stand",
+    "minecraft:dropper",
+    "minecraft:dispenser",
+    "minecraft:crafter",
+    "#minecraft:campfires",
+    "minecraft:composter",
+    "minecraft:lectern",
+    "minecraft:jukebox",
+    "minecraft:chiseled_bookshelf",
+    "minecraft:decorated_pot",
+    "minecraft:ender_chest",
+    "minecraft:beacon",
+    "minecraft:vault",
+    "aether:altar",
+    "aether:freezer",
+    "aether:incubator",
+    "aether:treasure_chest",
+    "aether:chest_mimic",
+    "aether:sun_altar",
+    "altered_aether:ambrosium_campfire",
+    {
+      "id": "deep_aether:combiner",
+      "required": false
+    },
+    {
+      "id": "deep_aether:poison_cauldron",
+      "required": false
+    },
+    {
+      "id": "aether_beyond_parity:ambrosium_campfire",
+      "required": false
+    },
+    {
+      "id": "create:belt",
+      "required": false
+    },
+    {
+      "id": "create:chute",
+      "required": false
+    },
+    {
+      "id": "create:smart_chute",
+      "required": false
+    },
+    {
+      "id": "create:andesite_funnel",
+      "required": false
+    },
+    {
+      "id": "create:brass_funnel",
+      "required": false
+    },
+    {
+      "id": "create:andesite_belt_funnel",
+      "required": false
+    },
+    {
+      "id": "create:brass_belt_funnel",
+      "required": false
+    },
+    {
+      "id": "create:andesite_tunnel",
+      "required": false
+    },
+    {
+      "id": "create:brass_tunnel",
+      "required": false
+    },
+    {
+      "id": "create:basin",
+      "required": false
+    },
+    {
+      "id": "create:millstone",
+      "required": false
+    },
+    {
+      "id": "create:crushing_wheel_controller",
+      "required": false
+    },
+    {
+      "id": "create:mechanical_crafter",
+      "required": false
+    },
+    {
+      "id": "create:deployer",
+      "required": false
+    },
+    {
+      "id": "create:mechanical_saw",
+      "required": false
+    },
+    {
+      "id": "create:item_drain",
+      "required": false
+    },
+    {
+      "id": "create:spout",
+      "required": false
+    },
+    {
+      "id": "create:weighted_ejector",
+      "required": false
+    },
+    {
+      "id": "create:portable_storage_interface",
+      "required": false
+    },
+    {
+      "id": "create:stock_link",
+      "required": false
+    },
+    {
+      "id": "create:stock_ticker",
+      "required": false
+    },
+    {
+      "id": "create:packager",
+      "required": false
+    },
+    {
+      "id": "create:repackager",
+      "required": false
+    },
+    {
+      "id": "create:item_hatch",
+      "required": false
+    },
+    {
+      "id": "create:package_frogport",
+      "required": false
+    },
+    {
+      "id": "create:redstone_requester",
+      "required": false
+    },
+    {
+      "id": "create:blaze_burner",
+      "required": false
+    },
+    {
+      "id": "create:lit_blaze_burner",
+      "required": false
+    },
+    {
+      "id": "create:clipboard",
+      "required": false
+    },
+    {
+      "id": "ars_nouveau:imbuement_chamber",
+      "required": false
+    },
+    {
+      "id": "ars_nouveau:enchanting_apparatus",
+      "required": false
+    },
+    {
+      "id": "ars_nouveau:arcane_pedestal",
+      "required": false
+    },
+    {
+      "id": "ars_nouveau:scribes_table",
+      "required": false
+    },
+    {
+      "id": "ars_nouveau:basic_spell_turret",
+      "required": false
+    },
+    {
+      "id": "ars_nouveau:spell_turret",
+      "required": false
+    },
+    {
+      "id": "ars_nouveau:timer_spell_turret",
+      "required": false
+    },
+    {
+      "id": "ars_nouveau:rotating_spell_turret",
+      "required": false
+    },
+    {
+      "id": "ars_nouveau:wixie_cauldron",
+      "required": false
+    },
+    {
+      "id": "ars_nouveau:storage_lectern",
+      "required": false
+    },
+    {
+      "id": "ars_nouveau:repository_controller",
+      "required": false
+    },
+    {
+      "id": "ars_nouveau:bookwyrm_lectern",
+      "required": false
+    },
+    {
+      "id": "ars_nouveau:item_detector",
+      "required": false
+    },
+    {
+      "id": "ars_nouveau:volcanic_sourcelink",
+      "required": false
+    },
+    {
+      "id": "ars_nouveau:mycelial_sourcelink",
+      "required": false
+    },
+    {
+      "id": "ars_nouveau:alchemical_sourcelink",
+      "required": false
+    },
+    {
+      "id": "ars_nouveau:potion_melder",
+      "required": false
+    },
+    {
+      "id": "ars_nouveau:ritual_brazier",
+      "required": false
+    },
+    {
+      "id": "ars_nouveau:scryers_crystal",
+      "required": false
+    },
+    {
+      "id": "ars_nouveau:mob_jar",
+      "required": false
+    },
+    {
+      "id": "supplementaries:item_shelf",
+      "required": false
+    },
+    {
+      "id": "supplementaries:pedestal",
+      "required": false
+    },
+    {
+      "id": "supplementaries:notice_board",
+      "required": false
+    },
+    {
+      "id": "supplementaries:jar",
+      "required": false
+    },
+    {
+      "id": "supplementaries:jar_tinted",
+      "required": false
+    },
+    {
+      "id": "supplementaries:soul_jar",
+      "required": false
+    },
+    {
+      "id": "supplementaries:faucet",
+      "required": false
+    },
+    {
+      "id": "supplementaries:hourglass",
+      "required": false
+    },
+    {
+      "id": "supplementaries:book_pile",
+      "required": false
+    },
+    {
+      "id": "supplementaries:book_pile_horizontal",
+      "required": false
+    },
+    {
+      "id": "supplementaries:cannon",
+      "required": false
+    },
+    {
+      "id": "supplementaries:crystal_display",
+      "required": false
+    },
+    {
+      "id": "supplementaries:urn",
+      "required": false
+    },
+    {
+      "id": "supplementaries:cage",
+      "required": false
+    },
+    {
+      "id": "supplementaries:mob_jar",
+      "required": false
+    },
+    {
+      "id": "quark:pipe",
+      "required": false
+    },
+    {
+      "id": "quark:encased_pipe",
+      "required": false
+    },
+    {
+      "id": "quark:feeding_trough",
+      "required": false
+    },
+    {
+      "id": "quark:matrix_enchanter",
+      "required": false
+    },
+    {
+      "id": "lootr:lootr_chest",
+      "required": false
+    },
+    {
+      "id": "lootr:lootr_trapped_chest",
+      "required": false
+    },
+    {
+      "id": "lootr:lootr_barrel",
+      "required": false
+    },
+    {
+      "id": "lootr:lootr_shulker",
+      "required": false
+    },
+    {
+      "id": "lootr:lootr_inventory",
+      "required": false
+    },
+    {
+      "id": "ae2:interface",
+      "required": false
+    },
+    {
+      "id": "ae2:pattern_provider",
+      "required": false
+    },
+    {
+      "id": "ae2:drive",
+      "required": false
+    },
+    {
+      "id": "ae2:chest",
+      "required": false
+    },
+    {
+      "id": "ae2:io_port",
+      "required": false
+    },
+    {
+      "id": "ae2:molecular_assembler",
+      "required": false
+    },
+    {
+      "id": "ae2:inscriber",
+      "required": false
+    },
+    {
+      "id": "ae2:charger",
+      "required": false
+    },
+    {
+      "id": "ae2:cell_workbench",
+      "required": false
+    },
+    {
+      "id": "ae2:condenser",
+      "required": false
+    },
+    {
+      "id": "ae2:spatial_io_port",
+      "required": false
+    },
+    {
+      "id": "ae2:vibration_chamber",
+      "required": false
+    },
+    {
+      "id": "ae2:controller",
+      "required": false
+    },
+    {
+      "id": "ae2:crafting_unit",
+      "required": false
+    },
+    {
+      "id": "refinedstorage:interface",
+      "required": false
+    },
+    {
+      "id": "refinedstorage:external_storage",
+      "required": false
+    },
+    {
+      "id": "refinedstorage:disk_drive",
+      "required": false
+    },
+    {
+      "id": "refinedstorage:importer",
+      "required": false
+    },
+    {
+      "id": "refinedstorage:exporter",
+      "required": false
+    },
+    {
+      "id": "refinedstorage:constructor",
+      "required": false
+    },
+    {
+      "id": "refinedstorage:destructor",
+      "required": false
+    },
+    {
+      "id": "refinedstorage:autocrafter",
+      "required": false
+    },
+    {
+      "id": "refinedstorage:disk_interface",
+      "required": false
+    },
+    {
+      "id": "toms_storage:ts.inventory_connector",
+      "required": false
+    },
+    {
+      "id": "toms_storage:ts.inventory_proxy",
+      "required": false
+    },
+    {
+      "id": "toms_storage:ts.storage_terminal",
+      "required": false
+    },
+    {
+      "id": "toms_storage:ts.crafting_terminal",
+      "required": false
+    },
+    {
+      "id": "toms_storage:ts.inventory_cable_connector",
+      "required": false
+    },
+    {
+      "id": "toms_storage:ts.inventory_interface",
+      "required": false
+    },
+    {
+      "id": "toms_storage:ts.level_emitter",
+      "required": false
+    },
+    {
+      "id": "sophisticatedstorage:controller",
+      "required": false
+    },
+    {
+      "id": "sophisticatedstorage:storage_link",
+      "required": false
+    },
+    {
+      "id": "sophisticatedstorage:storage_io",
+      "required": false
+    },
+    {
+      "id": "sophisticatedstorage:storage_input",
+      "required": false
+    },
+    {
+      "id": "sophisticatedstorage:storage_output",
+      "required": false
+    },
+    {
+      "id": "storagedrawers:controller",
+      "required": false
+    },
+    {
+      "id": "storagedrawers:controller_io",
+      "required": false
+    },
+    {
+      "id": "functionalstorage:storage_controller",
+      "required": false
+    },
+    {
+      "id": "functionalstorage:controller_extension",
+      "required": false
+    },
+    {
+      "id": "integrateddynamics:cable",
+      "required": false
+    },
+    {
+      "id": "integratedtunnels:part_interface_item",
+      "required": false
+    },
+    {
+      "id": "mekanism:personal_chest",
+      "required": false
+    },
+    {
+      "id": "mekanism:personal_barrel",
+      "required": false
+    },
+    {
+      "id": "mekanism:metallurgic_infuser",
+      "required": false
+    },
+    {
+      "id": "mekanism:enrichment_chamber",
+      "required": false
+    },
+    {
+      "id": "mekanism:crusher",
+      "required": false
+    },
+    {
+      "id": "mekanism:osmium_compressor",
+      "required": false
+    },
+    {
+      "id": "mekanism:combiner",
+      "required": false
+    },
+    {
+      "id": "mekanism:purification_chamber",
+      "required": false
+    },
+    {
+      "id": "mekanism:energized_smelter",
+      "required": false
+    },
+    {
+      "id": "mekanism:digital_miner",
+      "required": false
+    },
+    {
+      "id": "mekanism:logistical_sorter",
+      "required": false
+    },
+    {
+      "id": "mekanism:formulaic_assemblicator",
+      "required": false
+    },
+    {
+      "id": "mekanism:precision_sawmill",
+      "required": false
+    },
+    {
+      "id": "mekanism:chemical_injection_chamber",
+      "required": false
+    },
+    {
+      "id": "mekanism:chemical_oxidizer",
+      "required": false
+    },
+    {
+      "id": "mekanism:chemical_infuser",
+      "required": false
+    },
+    {
+      "id": "mekanism:electrolytic_separator",
+      "required": false
+    },
+    {
+      "id": "mekanism:rotary_condensentrator",
+      "required": false
+    },
+    {
+      "id": "mekanism:pressurized_reaction_chamber",
+      "required": false
+    },
+    {
+      "id": "mekanism:isotopic_centrifuge",
+      "required": false
+    },
+    {
+      "id": "mekanism:antiprotonic_nucleosynthesizer",
+      "required": false
+    },
+    {
+      "id": "mekanism:pigment_extractor",
+      "required": false
+    },
+    {
+      "id": "mekanism:painting_machine",
+      "required": false
+    },
+    {
+      "id": "mekanism:dimensional_stabilizer",
+      "required": false
+    },
+    {
+      "id": "mekanism:qio_drive_array",
+      "required": false
+    },
+    {
+      "id": "mekanism:qio_importer",
+      "required": false
+    },
+    {
+      "id": "mekanism:qio_exporter",
+      "required": false
+    },
+    {
+      "id": "mekanism:qio_dashboard",
+      "required": false
+    },
+    {
+      "id": "mekanism:qio_redstone_adapter",
+      "required": false
+    },
+    {
+      "id": "mekanism:basic_smelting_factory",
+      "required": false
+    },
+    {
+      "id": "mekanism:elite_smelting_factory",
+      "required": false
+    },
+    {
+      "id": "thermal:machine_furnace",
+      "required": false
+    },
+    {
+      "id": "thermal:machine_sawmill",
+      "required": false
+    },
+    {
+      "id": "thermal:machine_pulverizer",
+      "required": false
+    },
+    {
+      "id": "thermal:machine_smelter",
+      "required": false
+    },
+    {
+      "id": "thermal:machine_insolator",
+      "required": false
+    },
+    {
+      "id": "thermal:machine_centrifuge",
+      "required": false
+    },
+    {
+      "id": "thermal:machine_press",
+      "required": false
+    },
+    {
+      "id": "thermal:machine_crucible",
+      "required": false
+    },
+    {
+      "id": "thermal:machine_chiller",
+      "required": false
+    },
+    {
+      "id": "thermal:machine_refinery",
+      "required": false
+    },
+    {
+      "id": "thermal:machine_pyrolyzer",
+      "required": false
+    },
+    {
+      "id": "thermal:machine_bottler",
+      "required": false
+    },
+    {
+      "id": "thermal:machine_brewer",
+      "required": false
+    },
+    {
+      "id": "thermal:machine_crafter",
+      "required": false
+    },
+    {
+      "id": "thermal:dynamo_stirling",
+      "required": false
+    },
+    {
+      "id": "thermal:dynamo_compression",
+      "required": false
+    },
+    {
+      "id": "thermal:dynamo_magmatic",
+      "required": false
+    },
+    {
+      "id": "thermal:dynamo_numismatic",
+      "required": false
+    },
+    {
+      "id": "thermal:dynamo_lapidary",
+      "required": false
+    },
+    {
+      "id": "thermal:dynamo_disenchantment",
+      "required": false
+    },
+    {
+      "id": "thermal:dynamo_gourmand",
+      "required": false
+    },
+    {
+      "id": "thermal:device_tree_extractor",
+      "required": false
+    },
+    {
+      "id": "thermal:device_fisher",
+      "required": false
+    },
+    {
+      "id": "thermal:device_composter",
+      "required": false
+    },
+    {
+      "id": "thermal:device_nullifier",
+      "required": false
+    },
+    {
+      "id": "thermal:device_potion_diffuser",
+      "required": false
+    },
+    {
+      "id": "oritech:pulverizer_block",
+      "required": false
+    },
+    {
+      "id": "oritech:grinder_block",
+      "required": false
+    },
+    {
+      "id": "oritech:assembler_block",
+      "required": false
+    },
+    {
+      "id": "oritech:foundry_block",
+      "required": false
+    },
+    {
+      "id": "oritech:centrifuge_block",
+      "required": false
+    },
+    {
+      "id": "oritech:atomic_forge_block",
+      "required": false
+    },
+    {
+      "id": "oritech:powered_furnace_block",
+      "required": false
+    },
+    {
+      "id": "oritech:fragment_forge_block",
+      "required": false
+    },
+    {
+      "id": "oritech:cooler_block",
+      "required": false
+    },
+    {
+      "id": "oritech:enchanter_block",
+      "required": false
+    },
+    {
+      "id": "oritech:basic_generator_block",
+      "required": false
+    },
+    {
+      "id": "oritech:bio_generator_block",
+      "required": false
+    },
+    {
+      "id": "oritech:lava_generator_block",
+      "required": false
+    },
+    {
+      "id": "oritech:fuel_generator_block",
+      "required": false
+    },
+    {
+      "id": "oritech:steam_engine_block",
+      "required": false
+    },
+    {
+      "id": "oritech:laser_arm_block",
+      "required": false
+    },
+    {
+      "id": "oritech:deep_drill_block",
+      "required": false
+    },
+    {
+      "id": "oritech:destroyer_block",
+      "required": false
+    },
+    {
+      "id": "oritech:placer_block",
+      "required": false
+    },
+    {
+      "id": "oritech:fertilizer_block",
+      "required": false
+    },
+    {
+      "id": "oritech:item_pipe",
+      "required": false
+    },
+    {
+      "id": "oritech:item_pipe_connection",
+      "required": false
+    },
+    {
+      "id": "immersiveengineering:sorter",
+      "required": false
+    },
+    {
+      "id": "immersiveengineering:item_batcher",
+      "required": false
+    },
+    {
+      "id": "immersiveengineering:craftingtable",
+      "required": false
+    },
+    {
+      "id": "immersiveengineering:conveyor_basic",
+      "required": false
+    },
+    {
+      "id": "immersiveengineering:alloy_smelter",
+      "required": false
+    },
+    {
+      "id": "immersiveengineering:coke_oven",
+      "required": false
+    },
+    {
+      "id": "immersiveengineering:blast_furnace",
+      "required": false
+    },
+    {
+      "id": "immersiveengineering:advanced_blast_furnace",
+      "required": false
+    },
+    {
+      "id": "immersiveengineering:assembler",
+      "required": false
+    },
+    {
+      "id": "farmersdelight:cooking_pot",
+      "required": false
+    },
+    {
+      "id": "farmersdelight:stove",
+      "required": false
+    },
+    {
+      "id": "farmersdelight:skillet",
+      "required": false
+    },
+    {
+      "id": "farmersdelight:cutting_board",
+      "required": false
+    },
+    {
+      "id": "farmersdelight:basket",
+      "required": false
+    },
+    {
+      "id": "botania:open_crate",
+      "required": false
+    },
+    {
+      "id": "botania:runic_altar",
+      "required": false
+    },
+    {
+      "id": "botania:apothecary_default",
+      "required": false
+    },
+    {
+      "id": "botania:terra_plate",
+      "required": false
+    },
+    {
+      "id": "botania:alchemy_catalyst",
+      "required": false
+    },
+    {
+      "id": "create:white_postbox",
+      "required": false
+    },
+    {
+      "id": "create:white_table_cloth",
+      "required": false
+    },
+    {
+      "id": "create:white_toolbox",
+      "required": false
+    },
+    {
+      "id": "create:orange_postbox",
+      "required": false
+    },
+    {
+      "id": "create:orange_table_cloth",
+      "required": false
+    },
+    {
+      "id": "create:orange_toolbox",
+      "required": false
+    },
+    {
+      "id": "create:magenta_postbox",
+      "required": false
+    },
+    {
+      "id": "create:magenta_table_cloth",
+      "required": false
+    },
+    {
+      "id": "create:magenta_toolbox",
+      "required": false
+    },
+    {
+      "id": "create:light_blue_postbox",
+      "required": false
+    },
+    {
+      "id": "create:light_blue_table_cloth",
+      "required": false
+    },
+    {
+      "id": "create:light_blue_toolbox",
+      "required": false
+    },
+    {
+      "id": "create:yellow_postbox",
+      "required": false
+    },
+    {
+      "id": "create:yellow_table_cloth",
+      "required": false
+    },
+    {
+      "id": "create:yellow_toolbox",
+      "required": false
+    },
+    {
+      "id": "create:lime_postbox",
+      "required": false
+    },
+    {
+      "id": "create:lime_table_cloth",
+      "required": false
+    },
+    {
+      "id": "create:lime_toolbox",
+      "required": false
+    },
+    {
+      "id": "create:pink_postbox",
+      "required": false
+    },
+    {
+      "id": "create:pink_table_cloth",
+      "required": false
+    },
+    {
+      "id": "create:pink_toolbox",
+      "required": false
+    },
+    {
+      "id": "create:gray_postbox",
+      "required": false
+    },
+    {
+      "id": "create:gray_table_cloth",
+      "required": false
+    },
+    {
+      "id": "create:gray_toolbox",
+      "required": false
+    },
+    {
+      "id": "create:light_gray_postbox",
+      "required": false
+    },
+    {
+      "id": "create:light_gray_table_cloth",
+      "required": false
+    },
+    {
+      "id": "create:light_gray_toolbox",
+      "required": false
+    },
+    {
+      "id": "create:cyan_postbox",
+      "required": false
+    },
+    {
+      "id": "create:cyan_table_cloth",
+      "required": false
+    },
+    {
+      "id": "create:cyan_toolbox",
+      "required": false
+    },
+    {
+      "id": "create:purple_postbox",
+      "required": false
+    },
+    {
+      "id": "create:purple_table_cloth",
+      "required": false
+    },
+    {
+      "id": "create:purple_toolbox",
+      "required": false
+    },
+    {
+      "id": "create:blue_postbox",
+      "required": false
+    },
+    {
+      "id": "create:blue_table_cloth",
+      "required": false
+    },
+    {
+      "id": "create:blue_toolbox",
+      "required": false
+    },
+    {
+      "id": "create:brown_postbox",
+      "required": false
+    },
+    {
+      "id": "create:brown_table_cloth",
+      "required": false
+    },
+    {
+      "id": "create:brown_toolbox",
+      "required": false
+    },
+    {
+      "id": "create:green_postbox",
+      "required": false
+    },
+    {
+      "id": "create:green_table_cloth",
+      "required": false
+    },
+    {
+      "id": "create:green_toolbox",
+      "required": false
+    },
+    {
+      "id": "create:red_postbox",
+      "required": false
+    },
+    {
+      "id": "create:red_table_cloth",
+      "required": false
+    },
+    {
+      "id": "create:red_toolbox",
+      "required": false
+    },
+    {
+      "id": "create:black_postbox",
+      "required": false
+    },
+    {
+      "id": "create:black_table_cloth",
+      "required": false
+    },
+    {
+      "id": "create:black_toolbox",
+      "required": false
+    },
+    {
+      "id": "create:andesite_table_cloth",
+      "required": false
+    },
+    {
+      "id": "create:brass_table_cloth",
+      "required": false
+    },
+    {
+      "id": "create:copper_table_cloth",
+      "required": false
+    }
+  ]
+}

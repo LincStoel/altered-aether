@@ -148,6 +148,15 @@ public final class AAAdvancementProvider extends JsonDataProvider {
         // Awarded in code by AerwhaleWhistle, when a whale sets off to answer.
         advancement(all, "to_me", "toot_toot", "aether:aerwhale_spawn_egg", "task", 0, "To me!",
                 "Whistle for your aerwhale and have it come to you", Map.of("summoned", criterion("minecraft:impossible")));
+        // Gravitite golems, awarded in code (GolemEvents, GolemInteractions, GolemSorter).
+        advancement(all, "mind_over_matter", ROOT, "aether:enchanted_gravitite", "task", 0, "Mind over Matter",
+                "Wake a gravitite golem", Map.of("built", criterion("minecraft:impossible")));
+        advancement(all, "hive_mind", "mind_over_matter", AlteredAether.MOD_ID + ":storage_pebble", "task", 0,
+                "Hive Mind", "Link two gravitite golems with a storage pebble",
+                Map.of("linked", criterion("minecraft:impossible")));
+        advancement(all, "perfectly_organized", "mind_over_matter", "minecraft:chest", "goal", 50,
+                "Perfectly Organized", "Watch a gravitite golem finish sorting sixteen or more linked chests",
+                Map.of("sorted", criterion("minecraft:impossible")));
         // Awarded in code by MountUnsaddling.
         advancement(all, "take_a_load_off", ROOT, "minecraft:saddle", "task", 0, "Take a Load Off",
                 "Sneak and take the saddle off a phyg or flying cow",

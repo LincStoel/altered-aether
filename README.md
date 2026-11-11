@@ -138,6 +138,34 @@ rider it throws calms it a little more. A wild calf can't be ridden, so swets al
 
 **Unsaddling**: sneak and use an empty hand on a saddled phyg or flying cow to take its saddle back.
 
+**Gravitite golems.** A storage sorter that works by telekinesis. Place a carved pumpkin (or a Deep Aether carved
+squash) on a block of enchanted gravitite standing on holystone, and a thin, big-headed golem sits down there in
+meditation. That spot is its home.
+- **Linking storage.** Use the golem with an empty hand to take its storage pebble. Use the pebble on chests, barrels
+  and other storage to link them (the chest doesn't open, and briefly glows), and again to unlink. Hoppers and
+  Create's depots are only ever emptied, never filled. Machines can't be linked. A golem reaches 16 blocks out and
+  half that up and down.
+- **Sorting.** When something in its storage changes, the golem concentrates and items glide one stack at a time
+  from chest to chest. An item never leaves its chest until it lands in the next: nothing is lost if the golem is
+  interrupted, killed or unloaded mid-flight. Chests a player has open are left alone. Once it is done, it chimes,
+  and plain chests and barrels are also ordered inside.
+- **Modes.** Sneak and use the golem with an empty hand to switch. *Tidy* keeps each kind of item to its own chest:
+  each chest keeps what it mostly holds, and one-offs share a chest. *Compact* packs everything into as few chests
+  as it fits in. An item frame or Create placard on a chest pins that item, and its family, to that chest in either
+  mode.
+- **Finding things.** Use the golem with any item to see which linked chests hold it, with the total above the
+  hotbar. Use its own pebble on it to see everything linked for 15 seconds. While you hold its pebble you see the
+  edge of its reach and motes over linked storage, and the tooltip shows its mode and links.
+- **Moving it.** Sneak and use the pebble on the top of a block to send the golem there; it walks, levitates up
+  steps, floats across gaps, and sits down there as its new home. Anything else that moves it, it walks back from.
+- **Teams.** Use one golem's pebble on another to link them (both seated, within 32 blocks of each other, 2 to a
+  network by default); together they cover both areas and pass items between them. Use it again to unlink.
+- **Care.** Six hearts. It pushes everything near it away when struck (players gently), and is otherwise peaceful;
+  monsters ignore it. Ambrosium shards heal it. A redstone signal makes it rest. It drops its holystone, and half
+  the time its enchanted gravitite.
+- With Jade installed, looking at a golem shows its mode, links and what it is doing or waiting on; looking at
+  linked storage shows its golem and pin. JEI has a page on the pebble and spawn egg.
+
 ## The tall Aether
 
 The built-in datapack **Altered Aether: Tall Aether** (on by default) makes the Aether -64..319 like the Overworld,
@@ -161,7 +189,7 @@ With the tall pack, other mods' Aether structures and ores are moved to the matc
 |---|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | Ars Nouveau | the archwood groves, scattered archwood, familiars and wilden in the groves; archwood is taken out of the overworld (Ars Elemental's too) unless `disable_overworld_archwood` is off                                                                  |
 | Ars Elemental | the Flashing Archwood Grove, flashjacks, sirens, sourcestone boulders                                                                                                                                                                                 |
-| Create | zinc in Tempest Peaks                                                                                                                                                                                                                                 |
+| Create | zinc in Tempest Peaks; placards pin items for gravitite golems, depots are emptied by them                                                                                                                                                                                                                                 |
 | Oreganized | silver in the crags and the rift                                                                                                                                                                                                                      |
 | Dried Ghast | dried ghast fields in the Windswept Dunes                                                                                                                                                                                                             |
 | Snuffles | Snuffles in the Frozen Crags, and only in the Aether (configurable)                                                                                                                                                                                   |
@@ -191,11 +219,15 @@ on cold aerclouds.
 - `[spawns]`: per added mob: on or off, `aether_exclusive`, weight, group size and spawn cost.
 - `[climate]`: the biome temperature fix.
 - `[storms]`: everything about the Tempest storms.
+- `[gravitite_golem]`: reach, golems per network, links per golem, how many slots a network reads, flight time,
+  items in the air at once, how often storage is checked, the push when struck, healing and how far a golem can be
+  sent.
 - `[tall_mode]`: structures the tall Aether should leave at their own heights.
 - `[compat]`: one switch per optional mod, the Beyond Parity campfire swap, and `disable_overworld_archwood`.
 
-`config/altered_aether-client.toml`: storm fog, sky flashes, local rain, particle density, and how the
-effects adapt to shaderpacks.
+`config/altered_aether-client.toml`: storm fog, sky flashes, local rain, particle density, how the effects adapt
+to shaderpacks, and for gravitite golems the glow colour, whether it shows through walls (off by default), how long
+it lasts, flying items on or off, and fewer particles.
 
 ## Shaders
 

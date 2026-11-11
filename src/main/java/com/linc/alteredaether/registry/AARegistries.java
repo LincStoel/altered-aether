@@ -23,6 +23,9 @@ import com.linc.alteredaether.block.GleamVinesPlantBlock;
 import com.linc.alteredaether.compat.ModEnabled;
 import com.linc.alteredaether.entity.Squall;
 import com.linc.alteredaether.entity.TamedAerwhale;
+import com.linc.alteredaether.entity.golem.GravititeGolem;
+import com.linc.alteredaether.item.PebbleLink;
+import com.linc.alteredaether.item.StoragePebbleItem;
 import com.linc.alteredaether.item.WhaleWhistleItem;
 import com.linc.alteredaether.item.WhistleLink;
 import com.linc.alteredaether.loot.RumourMapFunction;
@@ -142,6 +145,13 @@ public final class AARegistries {
     public static final DeferredItem<DeferredSpawnEggItem> SQUALL_SPAWN_EGG = ITEMS.register("squall_spawn_egg",
             () -> new DeferredSpawnEggItem(SQUALL, 0x463C47, 0x9C838B, new Item.Properties()));
 
+    /** Sorts the storage linked to it; see entity/golem/GravititeGolem. Seated, it is smaller (see its dimensions). */
+    public static final DeferredHolder<EntityType<?>, EntityType<GravititeGolem>> GRAVITITE_GOLEM = ENTITY_TYPES.register(
+            "gravitite_golem", () -> EntityType.Builder.<GravititeGolem>of(GravititeGolem::new, MobCategory.MISC)
+                    .sized(0.6F, 1.45F).eyeHeight(1.15F).clientTrackingRange(10).build("gravitite_golem"));
+    public static final DeferredItem<DeferredSpawnEggItem> GRAVITITE_GOLEM_SPAWN_EGG = ITEMS.register(
+            "gravitite_golem_spawn_egg", () -> new DeferredSpawnEggItem(GRAVITITE_GOLEM, 0x8A8F94, 0xBD42B2, new Item.Properties()));
+
     public static final DeferredRegister.DataComponents DATA_COMPONENTS =
             DeferredRegister.createDataComponents(Registries.DATA_COMPONENT_TYPE, AlteredAether.MOD_ID);
     /** The aerwhale a whale whistle is linked to; see item/WhaleWhistleItem. */
@@ -151,6 +161,14 @@ public final class AARegistries {
     /** Calls the aerwhale it's linked to; see entity/AerwhaleWhistle. */
     public static final DeferredItem<WhaleWhistleItem> WHALE_WHISTLE = ITEMS.register("whale_whistle",
             () -> new WhaleWhistleItem(new Item.Properties().stacksTo(1)));
+
+    /** The gravitite golem a storage pebble belongs to; see item/StoragePebbleItem. */
+    public static final DeferredHolder<DataComponentType<?>, DataComponentType<PebbleLink>> PEBBLE_LINK =
+            DATA_COMPONENTS.registerComponentType("pebble_link",
+                    builder -> builder.persistent(PebbleLink.CODEC).networkSynchronized(PebbleLink.STREAM_CODEC));
+    /** Links storage and golems to the golem it came from. */
+    public static final DeferredItem<StoragePebbleItem> STORAGE_PEBBLE = ITEMS.register("storage_pebble",
+            () -> new StoragePebbleItem(new Item.Properties().stacksTo(1)));
 
     public static final DeferredRegister<AttachmentType<?>> ATTACHMENT_TYPES =
             DeferredRegister.create(NeoForgeRegistries.Keys.ATTACHMENT_TYPES, AlteredAether.MOD_ID);
@@ -236,6 +254,17 @@ public final class AARegistries {
     /** A whale whistle blown: the aerwhale's own call. */
     public static final DeferredHolder<SoundEvent, SoundEvent> WHALE_WHISTLE_SOUND = SOUND_EVENTS.register(
             "item.whale_whistle.blow", () -> SoundEvent.createVariableRangeEvent(AlteredAether.id("item.whale_whistle.blow")));
+
+    public static final DeferredHolder<SoundEvent, SoundEvent> GOLEM_HUM = sound("entity.gravitite_golem.hum");
+    public static final DeferredHolder<SoundEvent, SoundEvent> GOLEM_CHIME = sound("entity.gravitite_golem.chime");
+    public static final DeferredHolder<SoundEvent, SoundEvent> GOLEM_LINK = sound("entity.gravitite_golem.link");
+    public static final DeferredHolder<SoundEvent, SoundEvent> GOLEM_UNLINK = sound("entity.gravitite_golem.unlink");
+    public static final DeferredHolder<SoundEvent, SoundEvent> GOLEM_SHAKE = sound("entity.gravitite_golem.shake");
+    public static final DeferredHolder<SoundEvent, SoundEvent> GOLEM_REPEL = sound("entity.gravitite_golem.repel");
+
+    private static DeferredHolder<SoundEvent, SoundEvent> sound(String name) {
+        return SOUND_EVENTS.register(name, () -> SoundEvent.createVariableRangeEvent(AlteredAether.id(name)));
+    }
 
     public static final DeferredRegister<Feature<?>> FEATURES = DeferredRegister.create(Registries.FEATURE, AlteredAether.MOD_ID);
 

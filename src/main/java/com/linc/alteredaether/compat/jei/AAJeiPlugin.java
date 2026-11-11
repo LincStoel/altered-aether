@@ -22,14 +22,19 @@ import mezz.jei.api.recipe.category.IRecipeCategory;
 import mezz.jei.api.registration.IRecipeCatalystRegistration;
 import mezz.jei.api.registration.IRecipeCategoryRegistration;
 import mezz.jei.api.registration.IRecipeRegistration;
+import com.linc.alteredaether.registry.AARegistries;
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.ItemStack;
 import net.neoforged.fml.ModList;
 
 import javax.annotation.Nullable;
+import java.util.List;
 
 /**
  * JEI pages for what this mod adds to other mods' machines: so far Create's bulk enchanting through an ambrosium
- * campfire ({@link FanEnchantingCategory}). Nothing here names a Create type, so the plugin loads without Create.
+ * campfire ({@link FanEnchantingCategory}). Nothing here names a Create type, so the plugin loads without Create. Also
+ * the gravitite golem's how-to, on its pebble and spawn egg.
  */
 @JeiPlugin
 public final class AAJeiPlugin implements IModPlugin {
@@ -55,6 +60,14 @@ public final class AAJeiPlugin implements IModPlugin {
         if (fanEnchanting != null) {
             FanEnchantingCategory.registerRecipes(fanEnchanting, registration);
         }
+        // how to build and use a gravitite golem, on its pebble and spawn egg
+        Component[] golem = {info("build"), info("pebble"), info("controls"), info("more")};
+        registration.addItemStackInfo(List.of(new ItemStack(AARegistries.STORAGE_PEBBLE.get()),
+                new ItemStack(AARegistries.GRAVITITE_GOLEM_SPAWN_EGG.get())), golem);
+    }
+
+    private static Component info(String key) {
+        return Component.translatable("jei." + AlteredAether.MOD_ID + ".golem." + key);
     }
 
     @Override

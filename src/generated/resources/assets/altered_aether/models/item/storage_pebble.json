@@ -1,0 +1,14 @@
+{
+  "parent": "minecraft:item/generated",
+  "overrides": [
+    {
+      "model": "altered_aether:item/storage_pebble_dull",
+      "predicate": {
+        "altered_aether:dull": 1
+      }
+    }
+  ],
+  "textures": {
+    "layer0": "altered_aether:item/storage_pebble"
+  }
+}

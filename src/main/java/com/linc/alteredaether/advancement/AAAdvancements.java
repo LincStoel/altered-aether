@@ -29,6 +29,10 @@ public final class AAAdvancements {
     public static final ResourceLocation FAVORITE_SNACK = AlteredAether.id("favorite_snack");
     public static final ResourceLocation AIRBORNE_CARGO = AlteredAether.id("airborne_cargo");
     public static final ResourceLocation LIVING_LIGHTNING_ROD = AlteredAether.id("living_lightning_rod");
+    /** Gravitite golems: built one, linked two, had a big network sort itself. */
+    public static final ResourceLocation MIND_OVER_MATTER = AlteredAether.id("mind_over_matter");
+    public static final ResourceLocation HIVE_MIND = AlteredAether.id("hive_mind");
+    public static final ResourceLocation PERFECTLY_ORGANIZED = AlteredAether.id("perfectly_organized");
 
     /** Grants {@code criterion} of {@code id} to a server player; does nothing on the client. */
     public static void award(Player player, ResourceLocation id, String criterion) {

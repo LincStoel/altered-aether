@@ -1,0 +1,18 @@
+{
+  "replace": false,
+  "values": [
+    "minecraft:carved_pumpkin",
+    {
+      "id": "deep_aether:carved_blue_squash",
+      "required": false
+    },
+    {
+      "id": "deep_aether:carved_green_squash",
+      "required": false
+    },
+    {
+      "id": "deep_aether:carved_purple_squash",
+      "required": false
+    }
+  ]
+}

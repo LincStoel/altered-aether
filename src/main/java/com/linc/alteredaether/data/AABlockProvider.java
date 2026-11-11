@@ -375,6 +375,7 @@ public final class AABlockProvider extends JsonDataProvider {
         lang.put("item." + AlteredAether.MOD_ID + ".rumour_map.flourishing_archwood_grove", "Rumour of a Flourishing Archwood Grove");
         lang.put("item." + AlteredAether.MOD_ID + ".rumour_map.vexing_archwood_grove", "Rumour of a Vexing Archwood Grove");
         AAAdvancementProvider.language(lang);
+        AAGolemProvider.language(lang);
         JsonObject json = new JsonObject();
         lang.forEach(json::addProperty);
         asset("lang", AlteredAether.id("en_us"), json);

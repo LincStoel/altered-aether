@@ -119,6 +119,21 @@ public final class AACommonConfig {
     public static final IntValue AERWHALE_BREEDING_COOLDOWN;
     public static final IntValue AERWHALE_GROWTH_TIME;
 
+    // [gravitite_golem]
+    public static final IntValue GOLEM_RANGE;
+    public static final IntValue GOLEM_MAX_NETWORK;
+    public static final IntValue GOLEM_MAX_LINKS;
+    public static final IntValue GOLEM_MAX_SLOTS;
+    public static final IntValue GOLEM_MOVE_TICKS;
+    public static final IntValue GOLEM_MAX_IN_FLIGHT;
+    public static final IntValue GOLEM_SCAN_INTERVAL;
+    public static final DoubleValue GOLEM_REPEL_RADIUS;
+    public static final DoubleValue GOLEM_REPEL_MOBS;
+    public static final DoubleValue GOLEM_REPEL_PLAYERS;
+    public static final IntValue GOLEM_REPEL_COOLDOWN;
+    public static final IntValue GOLEM_HEAL;
+    public static final IntValue GOLEM_MAX_MOVE;
+
     // [tall_mode]
     public static final ModConfigSpec.ConfigValue<List<? extends String>> TALL_MODE_EXCLUSIONS;
 
@@ -365,6 +380,38 @@ public final class AACommonConfig {
                 .defineInRange("breeding_cooldown", 6000, 0, 240000);
         AERWHALE_GROWTH_TIME = b.comment("Ticks a calf takes to grow up. Each enchanted berry fed to it takes a tenth off.")
                 .defineInRange("growth_time", 24000, 1, 480000);
+        b.pop();
+
+        b.comment("Gravitite golems: put a carved pumpkin (or a Deep Aether carved squash) on enchanted gravitite on",
+                        "holystone. A golem sorts the storage linked to it with its pebble, moving one stack at a time;",
+                        "an item never leaves its chest until it lands in the next one.")
+                .push("gravitite_golem");
+        GOLEM_RANGE = b.comment("How far a golem reaches from where it sits: this many blocks out, and half as many up",
+                        "and down. Golems can link when they sit within twice this of each other.")
+                .defineInRange("range", 16, 8, 32);
+        GOLEM_MAX_NETWORK = b.comment("Most golems one network can hold.")
+                .defineInRange("max_network_golems", 2, 1, 8);
+        GOLEM_MAX_LINKS = b.comment("Most storage blocks each golem in a network adds to what it can link.")
+                .defineInRange("max_links", 32, 1, 256);
+        GOLEM_MAX_SLOTS = b.comment("Most inventory slots a network reads when it plans. Storage past this waits.")
+                .defineInRange("max_slots_scanned", 4096, 64, 65536);
+        GOLEM_MOVE_TICKS = b.comment("Ticks an item takes to fly from one chest to the next.")
+                .defineInRange("move_ticks", 30, 5, 200);
+        GOLEM_MAX_IN_FLIGHT = b.comment("Most items one golem keeps in the air at once.")
+                .defineInRange("max_in_flight", 3, 1, 8);
+        GOLEM_SCAN_INTERVAL = b.comment("Ticks between looks into the next linked inventory for changes made by",
+                        "hoppers and other automation. Players closing a linked chest are noticed at once.")
+                .defineInRange("scan_interval", 10, 1, 200);
+        GOLEM_REPEL_RADIUS = b.comment("How far a struck golem pushes everything away.")
+                .defineInRange("repel_radius", 3.0, 0.0, 8.0);
+        GOLEM_REPEL_MOBS = b.comment("How hard it pushes mobs.").defineInRange("repel_strength_mobs", 1.2, 0.0, 4.0);
+        GOLEM_REPEL_PLAYERS = b.comment("How hard it pushes players; gentle by default, so no one is thrown off an island.")
+                .defineInRange("repel_strength_players", 0.4, 0.0, 4.0);
+        GOLEM_REPEL_COOLDOWN = b.comment("Ticks before a golem can push again.")
+                .defineInRange("repel_cooldown", 20, 0, 1200);
+        GOLEM_HEAL = b.comment("Health an ambrosium shard gives back.").defineInRange("heal_amount", 4, 0, 12);
+        GOLEM_MAX_MOVE = b.comment("Furthest a golem can be sent with a pebble, in blocks.")
+                .defineInRange("max_move_distance", 48, 4, 256);
         b.pop();
 
         b.comment("The taller Aether (-64..319) comes from the built-in 'altered_aether:tall_aether' datapack, chosen when",
