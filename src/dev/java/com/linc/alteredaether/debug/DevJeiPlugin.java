@@ -20,7 +20,7 @@ import mezz.jei.api.JeiPlugin;
 import mezz.jei.api.runtime.IJeiRuntime;
 import net.minecraft.resources.ResourceLocation;
 
-/** Dev runs only: hands JEI's runtime to {@link JeiShot}, for the client run's {@code -PaaJeiShot}. */
+/** Dev runs only: hands JEI's runtime to {@link JeiShot} and {@link GolemTour}, for the client run's {@code -PaaJeiShot} and {@code -PaaGolemTour}. */
 @JeiPlugin
 public final class DevJeiPlugin implements IModPlugin {
     @Override
@@ -31,5 +31,6 @@ public final class DevJeiPlugin implements IModPlugin {
     @Override
     public void onRuntimeAvailable(IJeiRuntime runtime) {
         JeiShot.start(runtime);
+        GolemTourJei.runtime = runtime;
     }
 }

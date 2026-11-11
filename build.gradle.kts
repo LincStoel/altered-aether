@@ -51,7 +51,10 @@ neoForge {
             // -PaaJeiShot=<category id> quick-plays it too, opens that JEI page, screenshots it and quits (debug/JeiShot).
             val jeiShot = findProperty("aaJeiShot") as String?
             systemProperty("altered_aether.jei_shot", jeiShot ?: "")
-            if (tour != null || jeiShot != null) {
+            // -PaaGolemTour=<label> quick-plays it too and runs the scripted gravitite golem check in debug/GolemTour.
+            val golemTour = findProperty("aaGolemTour") as String?
+            systemProperty("altered_aether.golem_tour", golemTour ?: "")
+            if (tour != null || jeiShot != null || golemTour != null) {
                 programArguments.addAll("--quickPlaySingleplayer", "tour")
             }
             // -PaaJoin=host:port joins that server on start, to check a dedicated server end to end.
