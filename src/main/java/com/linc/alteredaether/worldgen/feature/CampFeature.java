@@ -72,9 +72,6 @@ public final class CampFeature extends Feature<CampFeature.Config> {
     public static final ResourceKey<LootTable> LOOT = ResourceKey.create(Registries.LOOT_TABLE,
             AlteredAether.id("chests/grove/camp"));
 
-    /** Where camps and farms have been set since the server started, for the locate command. */
-    public static final java.util.Set<BlockPos> PLACED = java.util.concurrent.ConcurrentHashMap.newKeySet();
-
     public CampFeature() {
         super(Config.CODEC);
     }
@@ -199,7 +196,6 @@ public final class CampFeature extends Feature<CampFeature.Config> {
             }
         }
         FeatureStats.placed("camp/" + blueprint.name());
-        PLACED.add(origin.immutable());
         return true;
     }
 
