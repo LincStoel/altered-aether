@@ -392,6 +392,44 @@ public final class GravititeGolemTests {
         }).thenSucceed();
     }
 
+    /** Sneaking with the pebble on the top of a block sends the golem there, and that becomes its home. */
+    @GameTest(template = "arena", timeoutTicks = 600)
+    public static void aSneakingPebbleClickSendsTheGolem(GameTestHelper helper) {
+        floor(helper);
+        GravititeGolem golem = golem(helper, HOME);
+        FakePlayer player = player(helper, "golem-sender");
+        BlockPos target = HOME.offset(-6, 0, 2);
+        helper.startSequence().thenIdle(5).thenExecute(() -> {
+            takePebble(golem, player);
+            player.setShiftKeyDown(true);
+            use(helper, player, target.below(), Direction.UP);
+            player.setShiftKeyDown(false);
+            helper.assertTrue(helper.absolutePos(target).equals(golem.order()), "the golem wasn't sent: " + golem.order());
+        }).thenWaitUntil(() -> {
+            helper.assertTrue(golem.isSeated() && golem.order() == null, "still on its way");
+            helper.assertTrue(helper.absolutePos(target).equals(golem.home()), "home didn't move");
+        }).thenExecute(() -> leave(helper, player)).thenSucceed();
+    }
+
+    /** Players are pushed more gently than mobs, so no one is flung off an island. */
+    @GameTest(template = "arena", timeoutTicks = 200)
+    public static void playersArePushedGently(GameTestHelper helper) {
+        floor(helper);
+        GravititeGolem golem = golem(helper, HOME);
+        Zombie zombie = helper.spawn(EntityType.ZOMBIE, Vec3.atBottomCenterOf(HOME.east(2)));
+        zombie.setNoAi(true);
+        FakePlayer player = player(helper, "golem-pushed");
+        helper.startSequence().thenIdle(5).thenExecute(() -> {
+            player.moveTo(helper.absoluteVec(Vec3.atBottomCenterOf(HOME.west(2))));
+            player.setDeltaMovement(Vec3.ZERO);
+            golem.hurt(helper.getLevel().damageSources().mobAttack(zombie), 1);
+            double mob = zombie.getDeltaMovement().horizontalDistance();
+            double them = player.getDeltaMovement().horizontalDistance();
+            helper.assertTrue(them > 0, "the player wasn't pushed at all");
+            helper.assertTrue(them < mob, "the player was pushed as hard as the zombie: " + them + " vs " + mob);
+        }).thenExecute(() -> leave(helper, player)).thenSucceed();
+    }
+
     @GameTest(template = "arena", timeoutTicks = 200)
     public static void redstoneMakesItRest(GameTestHelper helper) {
         floor(helper);
