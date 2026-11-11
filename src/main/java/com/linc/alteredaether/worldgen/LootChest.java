@@ -20,6 +20,7 @@ import net.minecraft.core.Direction;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.tags.FluidTags;
 import net.minecraft.world.Container;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Block;
@@ -45,7 +46,10 @@ public final class LootChest {
     private static final ResourceLocation SKYROOT_CHEST = ResourceLocation.fromNamespaceAndPath(BEYOND_PARITY, "skyroot_chest");
     private static final String ASCENDED_QUARK = "ascended_quark";
     private static final ResourceLocation QUARK_SKYROOT_CHEST = ResourceLocation.fromNamespaceAndPath(ASCENDED_QUARK, "skyroot_chest");
-    /** How far from where it was meant to go a chest of belongings may be set instead, in blocks. */
+    /**
+     * How far from where it was meant to go a chest of belongings may be set instead, in blocks: either side of it on
+     * the ground below, or every way round it when it's left hanging.
+     */
     private static final int PLACE_REACH = 2;
 
     /** A single chest facing {@code facing}. */
@@ -74,18 +78,12 @@ public final class LootChest {
     }
 
     /**
-     * Sets a skyroot chest holding {@code items} as near {@code at} as there's room for one, within a couple of blocks,
-     * nearest first; one set in water is waterlogged. Returns false, setting nothing, if there's nowhere to put it.
+     * Sets a skyroot chest holding {@code items} on solid ground below {@code at}, as if it fell there, within a couple
+     * of blocks either side; with no ground below, it's set as near {@code at} as there's room for one, left hanging.
+     * One set in water is waterlogged. Returns false, setting nothing, if there's nowhere to put it.
      */
     public static boolean placeWith(ServerLevel level, Vec3 at, Direction facing, List<ItemStack> items) {
-        BlockPos centre = BlockPos.containing(at);
-        Optional<BlockPos> spot = StreamSupport.stream(BlockPos.withinManhattan(centre, PLACE_REACH, PLACE_REACH,
-                        PLACE_REACH).spliterator(), false)
-                .map(BlockPos::immutable)
-                .sorted(Comparator.comparingDouble(pos -> pos.distToCenterSqr(at)))
-                .filter(pos -> level.isInWorldBounds(pos) && level.getWorldBorder().isWithinBounds(pos)
-                        && level.isLoaded(pos) && level.getBlockState(pos).canBeReplaced())
-                .findFirst();
+        Optional<BlockPos> spot = groundBelow(level, at).or(() -> roomNear(level, at));
         if (spot.isEmpty()) {
             return false;
         }
@@ -104,6 +102,49 @@ public final class LootChest {
         }
         container.setChanged();
         return true;
+    }
+
+    /**
+     * Where a chest dropped from {@code at} would come to rest: down each column within a couple of blocks of it,
+     * through air, water and anything else a block can be set over, to the first top that will hold a chest, the
+     * resting place nearest {@code at} winning. A column that ends in lava or on something that won't hold a chest, or
+     * that runs out of the world, has none.
+     */
+    private static Optional<BlockPos> groundBelow(ServerLevel level, Vec3 at) {
+        BlockPos centre = BlockPos.containing(at);
+        BlockPos best = null;
+        for (BlockPos column : BlockPos.betweenClosed(centre.offset(-PLACE_REACH, 0, -PLACE_REACH),
+                centre.offset(PLACE_REACH, 0, PLACE_REACH))) {
+            if (!roomAt(level, column)) {
+                continue;
+            }
+            BlockPos.MutableBlockPos pos = column.mutable();
+            while (roomAt(level, pos.below())) {
+                pos.move(Direction.DOWN);
+            }
+            BlockPos under = pos.below();
+            if (level.isInWorldBounds(under) && level.getBlockState(under).isFaceSturdy(level, under, Direction.UP)
+                    && (best == null || pos.distToCenterSqr(at) < best.distToCenterSqr(at))) {
+                best = pos.immutable();
+            }
+        }
+        return Optional.ofNullable(best);
+    }
+
+    /** The nearest place within a couple of blocks of {@code at} with room for a chest, whatever is under it. */
+    private static Optional<BlockPos> roomNear(ServerLevel level, Vec3 at) {
+        return StreamSupport.stream(BlockPos.withinManhattan(BlockPos.containing(at), PLACE_REACH, PLACE_REACH,
+                        PLACE_REACH).spliterator(), false)
+                .map(BlockPos::immutable)
+                .sorted(Comparator.comparingDouble(pos -> pos.distToCenterSqr(at)))
+                .filter(pos -> roomAt(level, pos))
+                .findFirst();
+    }
+
+    /** Whether a chest could be set at {@code pos}: somewhere loaded and open to building, not in lava, which burns it. */
+    private static boolean roomAt(ServerLevel level, BlockPos pos) {
+        return level.isInWorldBounds(pos) && level.getWorldBorder().isWithinBounds(pos) && level.isLoaded(pos)
+                && level.getBlockState(pos).canBeReplaced() && !level.getFluidState(pos).is(FluidTags.LAVA);
     }
 
     /** Whether Quark hasn't switched the block off, as its variant chests can be; a block that can't say is on. */

@@ -1783,14 +1783,15 @@ public class TamedAerwhale extends Aerwhale
     protected void dropEquipment() {
         super.dropEquipment();
         if (hasChest() && isDeadOrDying() && level() instanceof ServerLevel level) {
-            // a saddlebag with anything in it comes down as a chest where it died, with everything still in it; an
-            // empty one just drops its chest
-            List<ItemStack> bag = new ArrayList<>();
-            for (int i = 1; i < INVENTORY_SIZE; i++) {
-                bag.add(inventory.getItem(i));
+            // a saddlebag comes down as a chest on the ground below where it died (left hanging there if there's no
+            // ground), holding the saddle and everything in the bag, laid out as in its inventory: the saddle first,
+            // then the bag. With nothing to hold, it just drops its chest
+            List<ItemStack> held = new ArrayList<>();
+            for (int i = 0; i < INVENTORY_SIZE; i++) {
+                held.add(inventory.getItem(i));
             }
-            if (bag.stream().anyMatch(stack -> !stack.isEmpty()) && LootChest.placeWith(level, getBoundingBox().getCenter(), getDirection().getOpposite(), bag)) {
-                for (int i = 1; i < INVENTORY_SIZE; i++) {
+            if (held.stream().anyMatch(stack -> !stack.isEmpty()) && LootChest.placeWith(level, getBoundingBox().getCenter(), getDirection().getOpposite(), held)) {
+                for (int i = 0; i < INVENTORY_SIZE; i++) {
                     inventory.removeItemNoUpdate(i);
                 }
                 entityData.set(DATA_CHEST, false);

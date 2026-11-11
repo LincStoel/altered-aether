@@ -36,6 +36,7 @@ import com.mojang.serialization.JsonOps;
 import net.minecraft.advancements.AdvancementHolder;
 import net.minecraft.advancements.critereon.EntitySubPredicate;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.core.NonNullList;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.gametest.framework.GameTest;
@@ -333,6 +334,41 @@ public final class AerwhaleTests {
         whale.inventory().setItem(TamedAerwhale.INVENTORY_SIZE - 1, new ItemStack(Items.EMERALD, 3));
         Vec3 centre = whale.getBoundingBox().getCenter();
         whale.kill();
+        BlockPos found = chestBelow(helper, centre);
+        helper.assertTrue(found != null, "a chest should be set below where the whale died, " + centre);
+        BlockPos under = found.below();
+        helper.assertTrue(found.getY() < centre.y - 3
+                        && helper.getLevel().getBlockState(under).isFaceSturdy(helper.getLevel(), under, Direction.UP),
+                "the chest should come down onto the arena floor, not hang where the whale died: at " + found);
+        ChestBlockEntity chest = (ChestBlockEntity) helper.getLevel().getBlockEntity(found);
+        helper.assertTrue(chest.getItem(TamedAerwhale.SADDLE_SLOT).is(Items.SADDLE), "the saddle goes in the chest");
+        helper.assertTrue(chest.getItem(1).is(Items.DIAMOND) && chest.getItem(1).getCount() == 5, "the bag's first slot");
+        helper.assertTrue(chest.getItem(TamedAerwhale.INVENTORY_SIZE - 1).is(Items.EMERALD), "the bag's last slot");
+        AABB around = new AABB(centre, centre).inflate(4);
+        List<ItemEntity> drops = helper.getLevel().getEntitiesOfClass(ItemEntity.class, around);
+        helper.assertTrue(drops.stream().noneMatch(drop -> drop.getItem().is(Items.CHEST) || drop.getItem().is(Items.DIAMOND)
+                        || drop.getItem().is(Items.SADDLE)),
+                "the saddle, the bag's contents and its chest go in the placed chest, not on the ground");
+        helper.getLevel().removeBlock(found, false);
+        helper.succeed();
+    }
+
+    @GameTest(template = "arena")
+    public static void saddlebagsHangWhereTheWhaleDiedWithNoGroundBelow(GameTestHelper helper) {
+        if (deepAetherWhales(helper)) {
+            return;
+        }
+        Player owner = helper.makeMockPlayer(GameType.SURVIVAL);
+        TamedAerwhale whale = tamed(helper, owner);
+        whale.setChest(true);
+        whale.inventory().setItem(1, new ItemStack(Items.DIAMOND));
+        // a layer of fence under it: nothing a chest could rest on, and nothing it could fall through to the floor
+        BlockPos spot = BlockPos.containing(SPOT);
+        for (BlockPos pos : BlockPos.betweenClosed(spot.offset(-4, -3, -4), spot.offset(4, -3, 4))) {
+            helper.setBlock(pos, Blocks.OAK_FENCE);
+        }
+        Vec3 centre = whale.getBoundingBox().getCenter();
+        whale.kill();
         BlockPos found = null;
         for (BlockPos pos : BlockPos.withinManhattan(BlockPos.containing(centre), 2, 2, 2)) {
             if (helper.getLevel().getBlockEntity(pos) instanceof ChestBlockEntity) {
@@ -340,15 +376,9 @@ public final class AerwhaleTests {
                 break;
             }
         }
-        helper.assertTrue(found != null, "a chest should be set where the whale died, near " + centre);
-        ChestBlockEntity chest = (ChestBlockEntity) helper.getLevel().getBlockEntity(found);
-        helper.assertTrue(chest.getItem(0).is(Items.DIAMOND) && chest.getItem(0).getCount() == 5, "the bag's first slot");
-        helper.assertTrue(chest.getItem(TamedAerwhale.SADDLEBAG_SIZE - 1).is(Items.EMERALD), "the bag's last slot");
-        AABB around = new AABB(centre, centre).inflate(4);
-        List<ItemEntity> drops = helper.getLevel().getEntitiesOfClass(ItemEntity.class, around);
-        helper.assertTrue(drops.stream().anyMatch(drop -> drop.getItem().is(Items.SADDLE)), "the saddle still drops");
-        helper.assertTrue(drops.stream().noneMatch(drop -> drop.getItem().is(Items.CHEST) || drop.getItem().is(Items.DIAMOND)),
-                "the bag's contents and its chest go in the placed chest, not on the ground");
+        helper.assertTrue(found != null, "with no ground below, the chest should hang where the whale died, " + centre);
+        helper.assertTrue(((ChestBlockEntity) helper.getLevel().getBlockEntity(found)).getItem(1).is(Items.DIAMOND),
+                "the bag's contents go in the chest");
         helper.getLevel().removeBlock(found, false);
         helper.succeed();
     }
@@ -918,16 +948,13 @@ public final class AerwhaleTests {
         helper.assertTrue(owner.getMainHandItem().isEmpty(), "the chest should be used up");
         // with nothing in the saddlebag, its chest just drops (one with something in it is set down whole: see
         // saddlebagsBecomeAChestWhenTheWhaleDies)
-        BlockPos centre = BlockPos.containing(whale.getBoundingBox().getCenter());
+        Vec3 centre = whale.getBoundingBox().getCenter();
         whale.kill();
         List<ItemStack> drops = helper.getLevel()
                 .getEntitiesOfClass(ItemEntity.class, whale.getBoundingBox().inflate(4)).stream()
                 .map(ItemEntity::getItem).toList();
         helper.assertTrue(drops.stream().anyMatch(stack -> stack.is(Items.CHEST)), "the chest should drop, got " + drops);
-        for (BlockPos pos : BlockPos.withinManhattan(centre, 2, 2, 2)) {
-            helper.assertFalse(helper.getLevel().getBlockEntity(pos) instanceof ChestBlockEntity,
-                    "an empty saddlebag shouldn't be set down as a chest");
-        }
+        helper.assertTrue(chestBelow(helper, centre) == null, "an empty saddlebag shouldn't be set down as a chest");
         helper.succeed();
     }
 
@@ -1110,6 +1137,18 @@ public final class AerwhaleTests {
             helper.succeed();
         }
         return AerwhaleMode.deepAether();
+    }
+
+    /** A chest anywhere from a little above {@code centre} down to the bottom of the test, within a couple of blocks. */
+    private static BlockPos chestBelow(GameTestHelper helper, Vec3 centre) {
+        BlockPos top = BlockPos.containing(centre).offset(2, 2, 2);
+        BlockPos bottom = new BlockPos(top.getX() - 4, helper.absolutePos(BlockPos.ZERO).getY(), top.getZ() - 4);
+        for (BlockPos pos : BlockPos.betweenClosed(bottom, top)) {
+            if (helper.getLevel().getBlockEntity(pos) instanceof ChestBlockEntity) {
+                return pos.immutable();
+            }
+        }
+        return null;
     }
 
     private static TamedAerwhale tamed(GameTestHelper helper, Player owner) {
