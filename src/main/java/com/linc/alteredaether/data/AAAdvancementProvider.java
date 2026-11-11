@@ -109,7 +109,8 @@ public final class AAAdvancementProvider extends JsonDataProvider {
                 AlteredAether.MOD_ID + ":chests/grove/stump_poor");
         advancement(all, "stump_cache", "nurselog_hollow", "aether:golden_amber", "task", 0,
                 "Buried in the Stump", "Dig up the cache hidden in a colossal stump",
-                Map.of("stump", cache, "stump_poor", poorCache));
+                // ordered: Map.of's order changes from run to run, and with it the generated requirements
+                new java.util.TreeMap<>(Map.of("stump", cache, "stump_poor", poorCache)));
         landmark(all, "atoll", ROOT, LandmarkVisits.ATOLL, "minecraft:brain_coral", "Lagoon in the Sky",
                 "Find an atoll and its lagoon");
         landmark(all, "double_atoll", "atoll", LandmarkType.DOUBLE_ATOLL.id(), "minecraft:heart_of_the_sea",
