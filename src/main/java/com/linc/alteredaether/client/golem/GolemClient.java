@@ -100,6 +100,12 @@ public final class GolemClient {
             }
         }
 
+        /** How many golem hums are playing. */
+        public static int hums() {
+            Minecraft mc = Minecraft.getInstance();
+            return (int) HUMS.values().stream().filter(sound -> mc.getSoundManager().isActive(sound)).count();
+        }
+
         @SubscribeEvent
         public static void onRender(RenderLevelStageEvent event) {
             GolemGlowRenderer.render(event);

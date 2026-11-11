@@ -109,7 +109,9 @@ public final class GolemEvents {
         if (golem == null) {
             return null;
         }
-        float yaw = builder == null ? 0 : builder.getYRot() + 180;
+        // facing whoever built it, from where they stand
+        float yaw = builder == null ? 0 : (float) (Math.atan2(builder.getZ() - (base.getZ() + 0.5),
+                builder.getX() - (base.getX() + 0.5)) * (180 / Math.PI)) - 90;
         golem.moveTo(base.getX() + 0.5, base.getY(), base.getZ() + 0.5, yaw, 0);
         golem.setYHeadRot(yaw);
         golem.yBodyRot = yaw;

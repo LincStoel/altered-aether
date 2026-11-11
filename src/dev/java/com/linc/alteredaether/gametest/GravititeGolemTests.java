@@ -458,6 +458,87 @@ public final class GravititeGolemTests {
                 }).thenSucceed();
     }
 
+    /** Sent onto a block a step higher, it levitates up and sits there. */
+    @GameTest(template = "arena", timeoutTicks = 600)
+    public static void itClimbsAStep(GameTestHelper helper) {
+        floor(helper);
+        for (int x = 12; x <= 20; x++) {
+            for (int z = 22; z <= 28; z++) {
+                helper.setBlock(new BlockPos(x, 2, z), Blocks.STONE);
+            }
+        }
+        GravititeGolem golem = golem(helper, HOME);
+        BlockPos target = new BlockPos(16, 3, 25);
+        trace(helper, golem, "step");
+        helper.startSequence().thenIdle(5).thenExecute(() -> golem.sendTo(helper.absolutePos(target), null))
+                .thenWaitUntil(() -> {
+                    helper.assertTrue(golem.isSeated() && golem.order() == null, "still on its way");
+                    helper.assertTrue(helper.absolutePos(target).equals(golem.home()), "didn't get up the step: " + golem.position());
+                }).thenSucceed();
+    }
+
+    /** Sent across a gap to another island, it floats over and sits there. */
+    @GameTest(template = "arena", timeoutTicks = 800)
+    public static void itFloatsAcrossAGap(GameTestHelper helper) {
+        for (int x = 10; x <= 22; x++) {
+            for (int z = 10; z <= 20; z++) {
+                helper.setBlock(new BlockPos(x, 1, z), Blocks.STONE);
+            }
+            for (int z = 26; z <= 32; z++) {
+                helper.setBlock(new BlockPos(x, 1, z), Blocks.STONE);
+            }
+        }
+        GravititeGolem golem = golem(helper, HOME);
+        BlockPos target = new BlockPos(16, 2, 29);
+        trace(helper, golem, "gap");
+        helper.startSequence().thenIdle(5).thenExecute(() -> golem.sendTo(helper.absolutePos(target), null))
+                .thenWaitUntil(() -> {
+                    helper.assertTrue(golem.isSeated() && golem.order() == null, "still on its way");
+                    helper.assertTrue(helper.absolutePos(target).equals(golem.home()), "didn't cross the gap: " + golem.position());
+                }).thenSucceed();
+    }
+
+    /** Sent somewhere new halfway up a step, it changes course: over the gap beyond, and sits there. */
+    @GameTest(template = "arena", timeoutTicks = 1000)
+    public static void aNewOrderMidClimbIsFollowed(GameTestHelper helper) {
+        floor(helper);
+        for (int x = 12; x <= 20; x++) {
+            for (int z = 22; z <= 27; z++) {
+                helper.setBlock(new BlockPos(x, 2, z), Blocks.STONE);
+            }
+            for (int z = 33; z <= 37; z++) {
+                helper.setBlock(new BlockPos(x, 2, z), Blocks.STONE);
+            }
+            for (int z = 28; z <= 32; z++) {
+                helper.setBlock(new BlockPos(x, 1, z), Blocks.AIR);
+            }
+        }
+        GravititeGolem golem = golem(helper, HOME);
+        BlockPos step = new BlockPos(16, 3, 25), far = new BlockPos(16, 3, 35);
+        trace(helper, golem, "midclimb");
+        helper.startSequence().thenIdle(5).thenExecute(() -> golem.sendTo(helper.absolutePos(step), null))
+                .thenWaitUntil(() -> helper.assertTrue(golem.isRising(), "not climbing yet"))
+                .thenExecute(() -> golem.sendTo(helper.absolutePos(far), null))
+                .thenWaitUntil(() -> {
+                    helper.assertTrue(golem.isSeated() && golem.order() == null, "still on its way");
+                    helper.assertTrue(helper.absolutePos(far).equals(golem.home()), "didn't get there: " + golem.position());
+                }).thenSucceed();
+    }
+
+    /** Logs where a golem is every 10 ticks, to follow a move. */
+    private static void trace(GameTestHelper helper, GravititeGolem golem, String name) {
+        int[] tick = {0};
+        helper.onEachTick(() -> {
+            if (tick[0]++ % 10 == 0) {
+                AlteredAether.LOGGER.info("Golem trace {} t{}: pos {} state {} floating {} rising {} order {} home {} nav done {} "
+                                + "onGround {} hcol {}", name, tick[0], helper.relativeVec(golem.position()), golem.state(),
+                        golem.isFloating(), golem.isRising(), golem.order() == null ? "-" : helper.relativePos(golem.order()),
+                        golem.home() == null ? "-" : helper.relativePos(golem.home()), golem.getNavigation().isDone(),
+                        golem.onGround(), golem.horizontalCollision);
+            }
+        });
+    }
+
     @GameTest(template = "arena", timeoutTicks = 100)
     public static void itDropsItsHolystone(GameTestHelper helper) {
         floor(helper);

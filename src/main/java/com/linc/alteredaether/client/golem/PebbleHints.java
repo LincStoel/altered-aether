@@ -67,8 +67,10 @@ final class PebbleHints {
             return;
         }
         boolean reduced = AAClientConfig.GOLEM_REDUCED_EFFECTS.get();
-        if (player.tickCount % (reduced ? 20 : 10) == 0) {
+        if (player.tickCount % (reduced ? 12 : 4) == 0) {
             ring(level, player, info, reduced);
+        }
+        if (player.tickCount % (reduced ? 20 : 10) == 0) {
             for (BlockPos pos : info.links()) {
                 if (pos.distToCenterSqr(player.position()) < SPECK_RANGE * SPECK_RANGE) {
                     level.addParticle(new DustParticleOptions(GravititeGolem.GRAVITITE, 0.6F),
@@ -91,10 +93,13 @@ final class PebbleHints {
         return null;
     }
 
-    /** Motes on the circle each golem reaches, only the part of it near the player. */
+    /**
+     * Motes on the circle each golem reaches, about one a block, only the part of it near the player: a dotted line
+     * on the ground marking the edge of its reach.
+     */
     private static void ring(ClientLevel level, LocalPlayer player, PebbleInfo.Info info, boolean reduced) {
-        int points = reduced ? 24 : 64;
         double range = info.range();
+        int points = (int) (Math.PI * 2 * range / (reduced ? 2.5 : 1.0));
         for (BlockPos home : info.homes()) {
             double cx = home.getX() + 0.5, cz = home.getZ() + 0.5, y = home.getY() + 0.15;
             for (int i = 0; i < points; i++) {
@@ -104,7 +109,7 @@ final class PebbleHints {
                 if (dx * dx + dz * dz > 40 * 40) {
                     continue;
                 }
-                level.addParticle(new DustParticleOptions(GravititeGolem.GRAVITITE_DARK, 0.6F), x, y, z, 0, 0.01, 0);
+                level.addParticle(new DustParticleOptions(GravititeGolem.GRAVITITE, 1.5F), x, y + 0.1, z, 0, 0.005, 0);
             }
         }
     }

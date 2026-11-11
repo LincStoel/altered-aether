@@ -39,7 +39,7 @@
   "entity.gravitite_golem.shake": {
     "subtitle": "subtitles.altered_aether.entity.gravitite_golem.shake",
     "sounds": [
-      {"name": "aether:entity.sentry.ambient", "type": "event", "pitch": 1.3}
+      {"name": "aether:entity.sentry.jump", "type": "event", "pitch": 1.4}
     ]
   },
   "entity.gravitite_golem.repel": {

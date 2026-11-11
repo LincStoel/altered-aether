@@ -657,6 +657,8 @@ public class GravititeGolem extends PathfinderMob {
         @Override
         public void tick() {
             if (golem.isFloating()) {
+                // the float steers itself; a climb it was part-way through is over
+                golem.setRising(false);
                 operation = Operation.WAIT;
                 mob.setZza(0);
                 return;
@@ -761,6 +763,12 @@ public class GravititeGolem extends PathfinderMob {
             done = false;
             golem.setState(MOVING);
             target = currentTarget();
+            log("start", "to " + target.toShortString());
+        }
+
+        private void log(String what, String detail) {
+            AlteredAether.LOGGER.debug("Golem move {} {}: {} at {} (order {}, home {})", golem.getUUID().toString().substring(0, 8),
+                    what, detail, golem.position(), golem.order, golem.home);
         }
 
         private BlockPos currentTarget() {
@@ -796,6 +804,7 @@ public class GravititeGolem extends PathfinderMob {
                 return;
             }
             if (ticks > MOVE_TIMEOUT || tooFar()) {
+                log("give up", ticks > MOVE_TIMEOUT ? "took too long" : "too far");
                 fail();
                 return;
             }
@@ -832,6 +841,7 @@ public class GravititeGolem extends PathfinderMob {
 
         private void route() {
             Path path = golem.getNavigation().createPath(target, 0);
+            log("route", path == null ? "no path" : path.canReach() ? "walk " + path.getNodeCount() + " nodes" : "path falls short");
             if (path != null && path.canReach()) {
                 endFloat();
                 golem.getNavigation().moveTo(path, 1.0);
@@ -883,6 +893,7 @@ public class GravititeGolem extends PathfinderMob {
             golem.yBodyRot = golem.getYRot();
             stuck = golem.horizontalCollision || golem.verticalCollision && step.y > 0 ? stuck + 1 : 0;
             if (stuck > 40) {
+                log("give up", "stuck floating");
                 fail();
             }
         }
@@ -897,6 +908,7 @@ public class GravititeGolem extends PathfinderMob {
         }
 
         private void arrive() {
+            log("arrive", target.toShortString());
             if (golem.order != null && golem.order.equals(target)) {
                 golem.setHome(target);
                 golem.order = null;

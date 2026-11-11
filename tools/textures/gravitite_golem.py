@@ -83,7 +83,8 @@ def main():
         golem.putpixel((x, fy + 3), GRAV_DEEP + (255,))
     for ex in (fx + 2, fx + 5):
         for dx in range(2):
-            golem.putpixel((ex + dx, fy + 4), EYE + (255,))
+            # dark in the base texture, so the eyes go out when redstone makes the golem rest; the glow layer lights them
+            golem.putpixel((ex + dx, fy + 4), (0x4A, 0x10, 0x44, 255))
             eyes.putpixel((ex + dx, fy + 4), EYE + (255,))
             golem.putpixel((ex + dx, fy + 5), GRAV_DEEP + (255,))
     # a small mouth, pressed shut in concentration

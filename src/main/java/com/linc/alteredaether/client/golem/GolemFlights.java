@@ -207,7 +207,8 @@ public final class GolemFlights {
             poseStack.pushPose();
             poseStack.translate(at.x, at.y - 0.15, at.z);
             poseStack.mulPose(Axis.YP.rotationDegrees((now * 6 + view.id * 47) % 360));
-            poseStack.scale(0.6F, 0.6F, 0.6F);
+            // the ground transform draws an item at a quarter block; this makes it about half a block, easy to follow
+            poseStack.scale(1.1F, 1.1F, 1.1F);
             mc.getItemRenderer().renderStatic(view.item, ItemDisplayContext.GROUND, LightTexture.FULL_BRIGHT,
                     OverlayTexture.NO_OVERLAY, poseStack, buffers, golem.level(), view.id);
             poseStack.popPose();
