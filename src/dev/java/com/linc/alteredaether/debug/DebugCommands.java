@@ -82,6 +82,8 @@ public final class DebugCommands {
                                         .executes(ctx -> report(ctx, IntegerArgumentType.getInteger(ctx, "radius"),
                                                 IntegerArgumentType.getInteger(ctx, "step"))))))
                 .then(Commands.literal("debug").executes(DebugCommands::here))
+                .then(Commands.literal("rumourwarm").executes(DebugCommands::rumourWarm))
+                .then(Commands.literal("rumourbiomes").executes(DebugCommands::rumourBiomes))
                 .then(Commands.literal("fly")
                         .then(Commands.argument("from", net.minecraft.commands.arguments.coordinates.ColumnPosArgument.columnPos())
                                 .then(Commands.argument("to", net.minecraft.commands.arguments.coordinates.ColumnPosArgument.columnPos())
@@ -89,6 +91,53 @@ public final class DebugCommands {
                                                 .executes(ctx -> fly(ctx, 10))
                                                 .then(Commands.argument("radius", IntegerArgumentType.integer(2, 32))
                                                         .executes(ctx -> fly(ctx, IntegerArgumentType.getInteger(ctx, "radius")))))))));
+    }
+
+    /** The made-up player {@code rumourwarm} searches ahead for. */
+    private static final java.util.UUID RUMOUR_SCOUT = java.util.UUID.nameUUIDFromBytes("rumour-scout".getBytes());
+
+    /**
+     * {@code /altered_aether rumourwarm}: runs the rumour warm-up from the caller's position as if a player stood there,
+     * and says whether it's finished. Repeat until it is, then time {@code /altered_aether rumour} at the same spot.
+     */
+    private static int rumourWarm(CommandContext<CommandSourceStack> ctx) {
+        CommandSourceStack source = ctx.getSource();
+        LandmarkField field = LandmarkField.get(source.getLevel().dimension());
+        if (field == null) {
+            source.sendFailure(Component.literal("There are no landmarks here."));
+            return 0;
+        }
+        int x = (int) source.getPosition().x, z = (int) source.getPosition().z;
+        com.linc.alteredaether.loot.RumourWarmup.warm(source.getLevel(), field, RUMOUR_SCOUT, x, z);
+        boolean settled = com.linc.alteredaether.loot.RumourWarmup.settled(source.getLevel(), field,
+                RUMOUR_SCOUT, x, z);
+        source.sendSuccess(() -> Component.literal(settled ? "Warmed." : "Still searching ahead."), false);
+        return settled ? 1 : 0;
+    }
+
+    /**
+     * {@code /altered_aether rumourbiomes}: times the grove searches a rumour map from the caller's position makes, one
+     * per archwood grove (Ars Nouveau's). A repeat in the same cell, or after {@code rumourwarm}, is a cache hit.
+     */
+    private static int rumourBiomes(CommandContext<CommandSourceStack> ctx) {
+        CommandSourceStack source = ctx.getSource();
+        ServerLevel level = source.getLevel();
+        int x = (int) source.getPosition().x, z = (int) source.getPosition().z;
+        StringBuilder out = new StringBuilder();
+        for (ResourceLocation biome : com.linc.alteredaether.loot.RumourMapFunction.ARCHWOOD_GROVES) {
+            if (!com.linc.alteredaether.loot.RumourMapFunction.registered(level, biome)) {
+                continue;
+            }
+            long start = System.nanoTime();
+            var found = com.linc.alteredaether.loot.RumourMapFunction.nearestBiome(level, biome, x, z,
+                    com.linc.alteredaether.loot.RumourMapFunction.DEFAULT_RADIUS);
+            double ms = (System.nanoTime() - start) / 1e6;
+            out.append(String.format("%s %s (%.1f ms); ", biome.getPath(),
+                    found.map(pos -> pos.getX() + "," + pos.getZ()).orElse("none"), ms));
+        }
+        String report = out.isEmpty() ? "No archwood groves registered." : out.toString();
+        source.sendSuccess(() -> Component.literal(report), false);
+        return 1;
     }
 
     /** {@code /altered_aether fly <from> <to> <speed> [radius]}: see {@link Flight}. */

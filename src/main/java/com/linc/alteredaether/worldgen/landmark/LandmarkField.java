@@ -165,7 +165,7 @@ public final class LandmarkField {
     /** The nearest landmark of a type to a point that the filter accepts. */
     public Optional<Landmark> nearest(LandmarkType type, int x, int z, int maxDistance,
                                       java.util.function.Predicate<Landmark> accept) {
-        int cell = type.gridded() ? cell(type) : basins == null ? 0 : basins.doubleCell();
+        int cell = gridCell(type);
         if (cell == 0 || rarity() <= 0) {
             return Optional.empty();
         }
@@ -205,6 +205,14 @@ public final class LandmarkField {
     }
 
     // ------------------------------------------------------------------------------------------------ cells --
+
+    /**
+     * The size of the grid a type's sites are spread over, in blocks: a search from anywhere in one grid cell looks
+     * at the same cells. 0 if the type has no sites in this world.
+     */
+    public int gridCell(LandmarkType type) {
+        return type.gridded() ? cell(type) : basins == null ? 0 : basins.doubleCell();
+    }
 
     int cell(LandmarkType type) {
         // A fracture's slabs are rift cells merged together, so it grows with them, and so must its grid.

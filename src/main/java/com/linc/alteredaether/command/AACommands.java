@@ -238,10 +238,11 @@ public final class AACommands {
         int x = (int) source.getPosition().x, z = (int) source.getPosition().z;
         long start = System.nanoTime();
         Optional<Landmark> site = RumourMapFunction.find(field, Arrays.asList(LandmarkType.values()), x, z,
-                6000, level.getRandom());
+                RumourMapFunction.DEFAULT_RADIUS, level.getRandom());
         double ms = (System.nanoTime() - start) / 1e6;
         if (site.isEmpty()) {
-            source.sendFailure(Component.literal(String.format("No landmark within 6000 blocks (%.1f ms).", ms)));
+            source.sendFailure(Component.literal(String.format("No landmark within %d blocks (%.1f ms).",
+                    RumourMapFunction.DEFAULT_RADIUS, ms)));
             return 0;
         }
         if (source.getEntity() instanceof ServerPlayer player) {

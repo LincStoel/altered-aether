@@ -17,6 +17,7 @@ package com.linc.alteredaether.data;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.linc.alteredaether.AlteredAether;
+import com.linc.alteredaether.loot.RumourMapFunction;
 import net.minecraft.data.PackOutput;
 import net.minecraft.resources.ResourceLocation;
 
@@ -118,8 +119,8 @@ public final class AALootProvider extends JsonDataProvider {
         JsonObject function = new JsonObject();
         function.addProperty("function", AlteredAether.MOD_ID + ":rumour_map");
         JsonArray groves = new JsonArray();
-        for (String grove : java.util.List.of("blazing", "cascading", "flashing", "flourishing", "vexing")) {
-            groves.add(AlteredAether.MOD_ID + ":" + grove + "_archwood_grove");
+        for (ResourceLocation grove : RumourMapFunction.ARCHWOOD_GROVES) {
+            groves.add(grove.toString());
         }
         function.add("biomes", groves);
         JsonArray functions = new JsonArray();

@@ -16,6 +16,10 @@ package com.linc.alteredaether.gametest;
 
 import com.linc.alteredaether.AlteredAether;
 import com.linc.alteredaether.loot.RumourMapFunction;
+import com.linc.alteredaether.loot.RumourWarmup;
+import com.linc.alteredaether.worldgen.landmark.LandmarkField;
+import com.linc.alteredaether.worldgen.landmark.LandmarkType;
+import com.mojang.authlib.GameProfile;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.gametest.framework.GameTest;
@@ -24,6 +28,8 @@ import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.util.RandomSource;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.component.CustomData;
@@ -34,10 +40,14 @@ import net.minecraft.world.level.storage.loot.parameters.LootContextParamSets;
 import net.minecraft.world.level.storage.loot.parameters.LootContextParams;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.fml.ModList;
+import net.neoforged.neoforge.common.util.FakePlayer;
+import net.neoforged.neoforge.common.util.FakePlayerFactory;
 import net.neoforged.neoforge.gametest.GameTestHolder;
 import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 
+import java.util.Arrays;
 import java.util.List;
+import java.util.UUID;
 
 /** The advancement tab loads whole, and rumour maps lead somewhere in the Aether and nowhere else. */
 @GameTestHolder(AlteredAether.MOD_ID)
@@ -114,6 +124,40 @@ public final class RumourTests {
             }
         }
         helper.succeed();
+    }
+
+    /**
+     * A player in the Aether has the rumour searches from where they stand made ahead of time, off the server thread,
+     * so a chest opened there finds its landmark from the cache. The cold search, on ground nobody has been near, is
+     * logged alongside for comparison.
+     */
+    @GameTest(template = "arena", timeoutTicks = 6000)
+    public static void rumourSearchesAreWarmedAroundPlayers(GameTestHelper helper) {
+        ServerLevel aether = helper.getLevel().getServer().getLevel(THE_AETHER);
+        LandmarkField field = LandmarkField.get(THE_AETHER);
+        if (aether == null || field == null) {
+            AlteredAether.LOGGER.info("Rumour warm-up test skipped: aether {}, landmark field {}", aether, field);
+            helper.succeed();
+            return;
+        }
+        List<LandmarkType> all = Arrays.asList(LandmarkType.values());
+        long start = System.nanoTime();
+        RumourMapFunction.find(field, all, -60_000, 45_000, RumourMapFunction.DEFAULT_RADIUS, RandomSource.create(1));
+        double cold = (System.nanoTime() - start) / 1e6;
+        int x = 60_000, z = -45_000;
+        FakePlayer scout = FakePlayerFactory.get(aether, new GameProfile(UUID.randomUUID(), "rumour-scout"));
+        scout.moveTo(x + 0.5, 200, z + 0.5);
+        aether.addNewPlayer(scout);
+        helper.succeedWhen(() -> {
+            helper.assertTrue(RumourWarmup.settled(aether, field, scout.getUUID(), x, z), "still searching ahead");
+            long from = System.nanoTime();
+            RumourMapFunction.find(field, all, x, z, RumourMapFunction.DEFAULT_RADIUS, RandomSource.create(1));
+            double warm = (System.nanoTime() - from) / 1e6;
+            AlteredAether.LOGGER.info("Rumour search: {} ms cold, {} ms warmed", String.format("%.1f", cold),
+                    String.format("%.2f", warm));
+            aether.removePlayerImmediately(scout, Entity.RemovalReason.DISCARDED);
+            helper.assertTrue(warm < 50, "a warmed search should be cache hits, took " + warm + " ms");
+        });
     }
 
     private static boolean isRumour(ItemStack stack) {
