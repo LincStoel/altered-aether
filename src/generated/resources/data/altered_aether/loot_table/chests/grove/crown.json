@@ -6,7 +6,7 @@
       "entries": [
         {
           "type": "minecraft:loot_table",
-          "value": "aether:chests/dungeon/gold/gold_dungeon"
+          "value": "aether:chests/dungeon/silver/silver_dungeon"
         }
       ],
       "rolls": {

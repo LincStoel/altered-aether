@@ -54,11 +54,11 @@ public final class AALootProvider extends JsonDataProvider {
                 pool(1, 1, entry("aether:golden_amber", 1, 12, 24)), rumour(0.75));
         table("stump_poor", pool(2, 4, camp()), pool(1, 2, secret()), pool(1, 1, entry("aether:golden_amber", 1, 2, 6)),
                 rumour(0.35));
-        // The Grandfather's crown, a climb from anything: a gold dungeon chest's roll on top of the heartwood room's.
-        JsonObject gold = new JsonObject();
-        gold.addProperty("type", "minecraft:loot_table");
-        gold.addProperty("value", "aether:chests/dungeon/gold/gold_dungeon");
-        table("crown", pool(1, 1, gold), pool(2, 3, heartwood()), pool(1, 1, entry("aether:golden_amber", 1, 16, 32)),
+        // The Grandfather's crown, a climb from anything: a silver dungeon chest's roll on top of the heartwood room's.
+        JsonObject silver = new JsonObject();
+        silver.addProperty("type", "minecraft:loot_table");
+        silver.addProperty("value", "aether:chests/dungeon/silver/silver_dungeon");
+        table("crown", pool(1, 1, silver), pool(2, 3, heartwood()), pool(1, 1, entry("aether:golden_amber", 1, 16, 32)),
                 rumour(1.0));
         rumourMaps();
         doubleAtoll();
