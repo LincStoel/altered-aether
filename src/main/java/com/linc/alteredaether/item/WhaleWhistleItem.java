@@ -48,8 +48,8 @@ public class WhaleWhistleItem extends Item {
     private static final int NAME_COLOUR = 0xE072D7;
     /** The colour of "an aerwhale" in the tooltip of a whistle linked to an unnamed whale. */
     private static final int UNNAMED_COLOUR = 0x417E8E;
-    /** How long the whistle is held to the lips, in ticks. */
-    private static final int BLOW_TICKS = 30;
+    /** How long the whistle is held to the lips, in ticks: as long as the call it sounds, about five seconds. */
+    private static final int BLOW_TICKS = 105;
     /** How often a whistle in an inventory checks its whale's name, in ticks. */
     private static final int NAME_CHECK = 20;
 

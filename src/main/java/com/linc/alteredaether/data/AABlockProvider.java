@@ -193,6 +193,23 @@ public final class AABlockProvider extends JsonDataProvider {
         return model;
     }
 
+    /** A display transform for an item model. */
+    private static JsonObject transform(float[] rotation, float[] translation, float scale) {
+        JsonObject json = new JsonObject();
+        json.add("rotation", floats(rotation));
+        json.add("translation", floats(translation));
+        json.add("scale", floats(new float[]{scale, scale, scale}));
+        return json;
+    }
+
+    private static JsonArray floats(float[] values) {
+        JsonArray array = new JsonArray();
+        for (float value : values) {
+            array.add(value);
+        }
+        return array;
+    }
+
     private static JsonObject model(String parent, Map<String, String> textures) {
         JsonObject json = new JsonObject();
         json.addProperty("parent", parent);
@@ -250,10 +267,30 @@ public final class AABlockProvider extends JsonDataProvider {
         data("recipe", AlteredAether.id(CAMPFIRE + "_from_parity"), swap, "aether_beyond_parity");
     }
 
-    /** The whale whistle's model, and its recipe: a crook of holystone round a mouthpiece of enchanted gravitite. */
+    /**
+     * The whale whistle's models, and its recipe: a crook of holystone round a mouthpiece of enchanted gravitite. While
+     * it's blown it's held to the lips as a goat horn is, through the same "tooting" property and the same placing, its
+     * texture lying the same way as the horn's, the mouthpiece at the bottom right.
+     */
     private void whaleWhistle() {
-        asset("models/item", AlteredAether.id(WHALE_WHISTLE), model("minecraft:item/generated",
-                Map.of("layer0", AlteredAether.MOD_ID + ":item/" + WHALE_WHISTLE)));
+        String texture = AlteredAether.MOD_ID + ":item/" + WHALE_WHISTLE;
+        String tooting = "tooting_" + WHALE_WHISTLE;
+        JsonObject held = model("minecraft:item/generated", Map.of("layer0", texture));
+        JsonObject predicate = new JsonObject();
+        predicate.addProperty("tooting", 1);
+        JsonObject override = new JsonObject();
+        override.add("predicate", predicate);
+        override.addProperty("model", AlteredAether.MOD_ID + ":item/" + tooting);
+        held.add("overrides", array(override));
+        asset("models/item", AlteredAether.id(WHALE_WHISTLE), held);
+        JsonObject blown = model("minecraft:item/generated", Map.of("layer0", texture));
+        JsonObject display = new JsonObject();
+        display.add("thirdperson_righthand", transform(new float[]{0, -125, 0}, new float[]{-1, 2, 2}, 0.5F));
+        display.add("thirdperson_lefthand", transform(new float[]{0, 55, 0}, new float[]{-1, 2, 2}, 0.5F));
+        display.add("firstperson_righthand", transform(new float[]{0, -55, -5}, new float[]{-1, -2.5F, -7.5F}, 1));
+        display.add("firstperson_lefthand", transform(new float[]{0, 115, 5}, new float[]{0, -2.5F, -7.5F}, 1));
+        blown.add("display", display);
+        asset("models/item", AlteredAether.id(tooting), blown);
         JsonObject holystone = new JsonObject();
         holystone.addProperty("item", "aether:holystone");
         JsonObject gravitite = new JsonObject();

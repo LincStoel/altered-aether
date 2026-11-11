@@ -24,7 +24,7 @@ public enum AerwhaleCommand {
     STAY,
     /** Roam freely, as a wild aerwhale does. */
     WANDER,
-    /** Keep near its owner as a wolf does, teleporting to catch up when left far behind. */
+    /** Keep near its owner as a wolf does, though it never teleports to catch up. */
     FOLLOW;
 
     private static final AerwhaleCommand[] VALUES = values();

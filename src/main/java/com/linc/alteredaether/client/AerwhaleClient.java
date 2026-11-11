@@ -21,6 +21,8 @@ import com.linc.alteredaether.AlteredAether;
 import com.linc.alteredaether.entity.AerwhaleMode;
 import com.linc.alteredaether.entity.TamedAerwhale;
 import com.linc.alteredaether.registry.AARegistries;
+import net.minecraft.client.renderer.item.ItemProperties;
+import net.minecraft.resources.ResourceLocation;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -33,7 +35,7 @@ import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 
 /**
  * Client wiring for aerwhales: the animated renderers, the saddle's and calf's geometry, the inventory screen, and the
- * key and charge bar for leaping off.
+ * key and charge bar for leaping off, and the whale whistle held to the lips while it's blown.
  */
 @EventBusSubscriber(modid = AlteredAether.MOD_ID, bus = EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
 public final class AerwhaleClient {
@@ -75,6 +77,10 @@ public final class AerwhaleClient {
     @SubscribeEvent
     public static void setup(FMLClientSetupEvent event) {
         TamedAerwhale.legacyModel = AetherConfig.CLIENT.legacy_models::get;
+        // held to the lips while it's blown, as a goat horn is; vanilla only gives the horn this property
+        event.enqueueWork(() -> ItemProperties.register(AARegistries.WHALE_WHISTLE.get(),
+                ResourceLocation.withDefaultNamespace("tooting"), (stack, level, entity, seed) ->
+                        entity != null && entity.isUsingItem() && entity.getUseItem() == stack ? 1.0F : 0.0F));
     }
 
     private AerwhaleClient() {

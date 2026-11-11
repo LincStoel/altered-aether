@@ -82,6 +82,7 @@ import net.minecraft.world.level.gameevent.GameEvent;
 import net.minecraft.world.level.storage.loot.LootContext;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
+import net.neoforged.neoforge.common.Tags;
 import net.neoforged.neoforge.entity.PartEntity;
 
 import javax.annotation.Nullable;
@@ -147,6 +148,21 @@ public class TamedAerwhale extends Aerwhale
     private static final double SUMMON_BRAKE = 10;
     /** Ticks it glides on across its owner's front once it's arrived, before it goes back to following them. */
     private static final int SUMMON_PRESENT_TICKS = 100;
+    /** How fast it may pick up speed on that flight, in blocks per tick per tick. */
+    private static final double SUMMON_ACCELERATION = 0.02;
+    /**
+     * Ticks a whale near enough to hear a whistle has to fly in to its owner before it gives up on coming round to
+     * their front and just follows them.
+     */
+    private static final int APPROACH_TICKS = 400;
+    /** How near its owner it must be, flying in, before it looks for a way round to their front, in blocks. */
+    private static final double APPROACH_PLAN_RANGE = 40;
+    /** Ticks between those looks. */
+    private static final int APPROACH_REPLAN = 10;
+    /** Flying in, how far off to its own side of its owner it heads for, out of their way, in blocks. */
+    private static final double APPROACH_OFFSET = 10;
+    /** How near its owner it gives up looking for a way round and just follows them, in blocks. */
+    private static final double APPROACH_GIVE_UP = 6;
     /** Speed along the arc of a dive. */
     private static final double DIVE_SPEED = RIDDEN_SPEED * 1.5;
     /** Ticks between dives, counted from the start of one. */
@@ -260,6 +276,8 @@ public class TamedAerwhale extends Aerwhale
     private static TamedAerwhale localDeck;
 
     private final SimpleContainer inventory = new SimpleContainer(INVENTORY_SIZE);
+    /** The chest its saddlebag was made from, on the server; empty without one. */
+    private ItemStack chestItem = ItemStack.EMPTY;
 
     // Server state.
     /** Below zero a calf growing up, above zero a parent's breeding cooldown, as in vanilla's AgeableMob. */
@@ -333,6 +351,15 @@ public class TamedAerwhale extends Aerwhale
     @Nullable
     private WhistleFlight summon;
     private double summonDistance;
+    private double summonSpeed;
+    /**
+     * The owner it's flying in to, having heard their whistle from near enough to come by itself, before it's found a
+     * way round to their front; and ticks left to find one.
+     */
+    @Nullable
+    private UUID approaching;
+    private int approachTicks;
+    private int approachReplan;
     /** Ticks left gliding slowly on across its owner's front once it's arrived, for them to jump aboard. */
     private int presenting;
     /** Where it last told {@link AerwhaleLocations} it was. */
@@ -380,6 +407,7 @@ public class TamedAerwhale extends Aerwhale
         goalSelector.addGoal(0, new BreakInGoal());
         goalSelector.addGoal(0, new BoltGoal());
         goalSelector.addGoal(0, new SwetTemptGoal());
+        goalSelector.addGoal(0, new ApproachGoal());
         goalSelector.addGoal(1, new BreedGoal());
         goalSelector.addGoal(2, new FollowAdultGoal());
         goalSelector.addGoal(3, new CommandGoal());
@@ -568,9 +596,17 @@ public class TamedAerwhale extends Aerwhale
         return entityData.get(DATA_CHEST);
     }
 
-    /** Gives it a saddlebag, or takes it away along with whatever was in it. */
+    /** Gives it a saddlebag made from a plain chest, or takes it away along with whatever was in it. */
     public void setChest(boolean chest) {
-        if (!chest) {
+        setChest(chest ? new ItemStack(Items.CHEST) : ItemStack.EMPTY);
+    }
+
+    /**
+     * Gives it a saddlebag made from {@code chest}, any item tagged as a chest, or with nothing takes it away along with
+     * whatever was in it.
+     */
+    public void setChest(ItemStack chest) {
+        if (chest.isEmpty()) {
             for (int i = 1; i < INVENTORY_SIZE; i++) {
                 ItemStack stack = inventory.removeItemNoUpdate(i);
                 if (!stack.isEmpty() && !level().isClientSide) {
@@ -578,7 +614,13 @@ public class TamedAerwhale extends Aerwhale
                 }
             }
         }
-        entityData.set(DATA_CHEST, chest);
+        chestItem = chest.copyWithCount(1);
+        entityData.set(DATA_CHEST, !chest.isEmpty());
+    }
+
+    /** The chest its saddlebag was made from, which comes back when the bag comes off; a plain one if it can't say. */
+    private ItemStack chestItem() {
+        return chestItem.isEmpty() ? new ItemStack(Items.CHEST) : chestItem.copy();
     }
 
     /**
@@ -589,8 +631,9 @@ public class TamedAerwhale extends Aerwhale
         boolean saddled = isSaddled();
         ItemStack worn = inventory.getItem(SADDLE_SLOT).copy();
         if (hasChest()) {
+            ItemStack chest = chestItem();
             setChest(false);
-            spawnAtLocation(Items.CHEST);
+            spawnAtLocation(chest);
         }
         Aerwhale wild = convertTo(AetherEntityTypes.AERWHALE.get(), false);
         if (wild == null) {
@@ -731,7 +774,7 @@ public class TamedAerwhale extends Aerwhale
 
         if (!isOwnedBy(player)) {
             if (player.isSecondaryUseActive() || isTamingFood(stack) || isBreedingFood(stack) || swetHealing(stack) > 0
-                    || isSaddleItem(stack) || stack.is(Items.CHEST) || stack.is(AARegistries.WHALE_WHISTLE.get())) {
+                    || isSaddleItem(stack) || stack.is(Tags.Items.CHESTS) || stack.is(AARegistries.WHALE_WHISTLE.get())) {
                 if (!client) {
                     player.displayClientMessage(Component.translatable("message.altered_aether.aerwhale.not_owner"), true);
                 }
@@ -810,9 +853,9 @@ public class TamedAerwhale extends Aerwhale
             return InteractionResult.sidedSuccess(client);
         }
 
-        if (stack.is(Items.CHEST) && !hasChest() && !isBaby()) {
+        if (stack.is(Tags.Items.CHESTS) && !hasChest() && !isBaby()) {
             if (!client) {
-                setChest(true);
+                setChest(stack.copyWithCount(1));
                 playSound(SoundEvents.DONKEY_CHEST, 1.0F, (random.nextFloat() - random.nextFloat()) * 0.2F + 1.0F);
                 stack.consume(1, player);
                 AAAdvancements.award(player, AAAdvancements.AIRBORNE_CARGO, "saddlebag");
@@ -932,6 +975,7 @@ public class TamedAerwhale extends Aerwhale
             if (isVehicle()) {
                 // someone came aboard: it's done coming to them
                 summon = null;
+                approaching = null;
                 presenting = 0;
             } else if (presenting > 0) {
                 presenting--;
@@ -1184,6 +1228,11 @@ public class TamedAerwhale extends Aerwhale
 
     /** Whether it's on its way round to its owner, who whistled for it. */
     public boolean answeringWhistle() {
+        return summon != null || approaching != null;
+    }
+
+    /** Whether it's on the last of its way to its owner who whistled for it, the flight round to their front. */
+    public boolean onWhistleFlight() {
         return summon != null;
     }
 
@@ -1196,20 +1245,49 @@ public class TamedAerwhale extends Aerwhale
     }
 
     /**
-     * Sets off along {@code flight}, which starts where it now is, round to its owner who blew a whistle for it. It
-     * answers the call as it appears, and follows them once it arrives.
+     * Sets off along {@code flight}, which starts where it now is, round to its owner who blew a whistle for it, having
+     * just appeared there. It answers the call as it appears, and follows them once it arrives.
      */
     public void startSummon(WhistleFlight flight) {
-        summon = flight;
-        summonDistance = 0;
+        answerCall();
+        setDeltaMovement(Vec3.ZERO);
+        startFlight(flight, SUMMON_SPEED);
+    }
+
+    /**
+     * Flies in to {@code owner}, who blew a whistle for it within earshot: it answers at once, heads their way, and
+     * once it finds a clear way round to their front, takes it as a whale fetched from afar does. Should it get close
+     * without finding one, or take too long, it just follows them.
+     */
+    public void startApproach(Player owner) {
+        answerCall();
+        approaching = owner.getUUID();
+        approachTicks = APPROACH_TICKS;
+        approachReplan = 0;
+    }
+
+    private void answerCall() {
+        summon = null;
+        approaching = null;
         presenting = 0;
         dive = null;
         serverDive = false;
         thrashing = false;
         coast = 0;
         halt();
-        setDeltaMovement(Vec3.ZERO);
         call(getSoundVolume(), 1.0F);
+    }
+
+    private void startFlight(WhistleFlight flight, double speed) {
+        summon = flight;
+        summonDistance = 0;
+        summonSpeed = speed;
+    }
+
+    /** The way it's going, or facing if it's hardly moving. */
+    public Vec3 travelHeading() {
+        Vec3 motion = getDeltaMovement();
+        return motion.lengthSqr() > 1.0E-4 ? motion.normalize() : WhaleMoveControl.heading(getYRot(), getXRotData());
     }
 
     /**
@@ -1218,8 +1296,10 @@ public class TamedAerwhale extends Aerwhale
      */
     private void summonStep() {
         double remaining = summon.length() - summonDistance;
-        double speed = MIN_SWIM_SPEED + (SUMMON_SPEED - MIN_SWIM_SPEED) * Math.min(1, remaining / SUMMON_BRAKE);
-        summonDistance = Math.min(summon.length(), summonDistance + speed);
+        double braking = MIN_SWIM_SPEED + (SUMMON_SPEED - MIN_SWIM_SPEED) * Math.min(1, remaining / SUMMON_BRAKE);
+        // one that flew in rather than appearing goes on from the speed it had
+        summonSpeed = Math.max(MIN_SWIM_SPEED, Math.min(braking, summonSpeed + SUMMON_ACCELERATION));
+        summonDistance = Math.min(summon.length(), summonDistance + summonSpeed);
         Vec3 motion = summon.at(summonDistance).subtract(position());
         setDeltaMovement(motion);
         move(MoverType.SELF, motion);
@@ -1785,7 +1865,8 @@ public class TamedAerwhale extends Aerwhale
         if (hasChest() && isDeadOrDying() && level() instanceof ServerLevel level) {
             // a saddlebag comes down as a chest on the ground below where it died (left hanging there if there's no
             // ground), holding the saddle and everything in the bag, laid out as in its inventory: the saddle first,
-            // then the bag. With nothing to hold, it just drops its chest
+            // then the bag. With nothing to hold, it just drops its chest. A wooden chest becomes the one set down;
+            // anything else it was made from, an ender chest say, drops beside it
             List<ItemStack> held = new ArrayList<>();
             for (int i = 0; i < INVENTORY_SIZE; i++) {
                 held.add(inventory.getItem(i));
@@ -1794,6 +1875,11 @@ public class TamedAerwhale extends Aerwhale
                 for (int i = 0; i < INVENTORY_SIZE; i++) {
                     inventory.removeItemNoUpdate(i);
                 }
+                ItemStack chest = chestItem();
+                if (!chest.is(Tags.Items.CHESTS_WOODEN)) {
+                    spawnAtLocation(chest);
+                }
+                chestItem = ItemStack.EMPTY;
                 entityData.set(DATA_CHEST, false);
             }
         }
@@ -1804,7 +1890,8 @@ public class TamedAerwhale extends Aerwhale
             }
         }
         if (hasChest()) {
-            spawnAtLocation(Items.CHEST);
+            spawnAtLocation(chestItem());
+            chestItem = ItemStack.EMPTY;
             entityData.set(DATA_CHEST, false);
         }
     }
@@ -1831,6 +1918,9 @@ public class TamedAerwhale extends Aerwhale
             tag.put("SaddleItem", saddle.save(registryAccess()));
         }
         tag.putBoolean("Chest", hasChest());
+        if (hasChest() && !chestItem.isEmpty()) {
+            tag.put("ChestItem", chestItem.save(registryAccess()));
+        }
         // not "Items": Deep Aether's cargo, which DeepAetherWhaleCargoMixin drops from every aerwhale, is kept there
         ListTag bag = new ListTag();
         for (int i = 1; i < INVENTORY_SIZE; i++) {
@@ -1864,6 +1954,10 @@ public class TamedAerwhale extends Aerwhale
             inventory.setItem(SADDLE_SLOT, ItemStack.EMPTY);
         }
         entityData.set(DATA_CHEST, tag.getBoolean("Chest"));
+        // saved before it remembered which chest, it was a plain one
+        chestItem = !hasChest() ? ItemStack.EMPTY : tag.contains("ChestItem", Tag.TAG_COMPOUND)
+                ? ItemStack.parse(registryAccess(), tag.getCompound("ChestItem")).orElse(new ItemStack(Items.CHEST))
+                : new ItemStack(Items.CHEST);
         ListTag bag = tag.getList("Saddlebag", Tag.TAG_COMPOUND);
         for (int i = 0; i < bag.size(); i++) {
             CompoundTag slot = bag.getCompound(i);
@@ -1958,24 +2052,6 @@ public class TamedAerwhale extends Aerwhale
         double reach = whale.getBbWidth() / 2 + OVERHEAD_REACH;
         return entity.getY() > box.getCenter().y && entity.getY() < box.maxY + OVERHEAD_REACH
                 && dx * dx + dz * dz < reach * reach;
-    }
-
-    private boolean teleportNear(LivingEntity owner) {
-        for (int i = 0; i < 12; i++) {
-            double x = owner.getX() + random.nextInt(13) - 6;
-            double y = Math.max(owner.getY() + 3 + random.nextInt(6), floorY());
-            double z = owner.getZ() + random.nextInt(13) - 6;
-            if (!level().hasChunkAt(BlockPos.containing(x, y, z))) {
-                continue;
-            }
-            AABB box = getBoundingBox().move(x - getX(), y - getY(), z - getZ());
-            if (level().noCollision(this, box) && !level().containsAnyLiquid(box)) {
-                moveTo(x, y, z, getYRot(), getXRot());
-                halt();
-                return true;
-            }
-        }
-        return false;
     }
 
     private void breed(TamedAerwhale partner) {
@@ -2131,7 +2207,7 @@ public class TamedAerwhale extends Aerwhale
             whale.setXRotData(pitch);
         }
 
-        private static Vec3 heading(float yaw, float pitch) {
+        static Vec3 heading(float yaw, float pitch) {
             double yawRad = yaw * Mth.DEG_TO_RAD;
             double pitchRad = pitch * Mth.DEG_TO_RAD;
             return new Vec3(-Math.sin(yawRad) * Math.cos(pitchRad), Math.sin(pitchRad), Math.cos(yawRad) * Math.cos(pitchRad));
@@ -2150,6 +2226,62 @@ public class TamedAerwhale extends Aerwhale
                 }
             }
             return false;
+        }
+    }
+
+    /**
+     * Flying in to its owner, who whistled for it within earshot, until it finds a clear way round to their front, which
+     * it then takes as {@link #summonStep} does. It heads for a spot off to its own side of them, out of their way and
+     * not overhead, from which that way round is likeliest to be clear.
+     */
+    private final class ApproachGoal extends Goal {
+        ApproachGoal() {
+            setFlags(EnumSet.of(Flag.MOVE, Flag.LOOK));
+        }
+
+        @Override
+        public boolean canUse() {
+            return approaching != null && summon == null && !isVehicle() && !isBaby();
+        }
+
+        @Override
+        public boolean requiresUpdateEveryTick() {
+            return true;
+        }
+
+        @Override
+        public void tick() {
+            if (!(level() instanceof ServerLevel level) || approaching == null) {
+                return;
+            }
+            Player owner = level.getPlayerByUUID(approaching);
+            if (owner == null || !owner.isAlive() || owner.isSpectator() || --approachTicks <= 0) {
+                giveUp();
+                return;
+            }
+            double distance = distanceTo(owner);
+            if (distance < APPROACH_PLAN_RANGE && --approachReplan <= 0) {
+                approachReplan = APPROACH_REPLAN;
+                WhistleFlight flight = AerwhaleWhistle.planFromHere(level, owner, TamedAerwhale.this);
+                if (flight != null) {
+                    approaching = null;
+                    startFlight(flight, getDeltaMovement().length());
+                    return;
+                }
+            }
+            if (distance < APPROACH_GIVE_UP) {
+                giveUp();
+                return;
+            }
+            Vec3 away = new Vec3(getX() - owner.getX(), 0, getZ() - owner.getZ());
+            away = away.lengthSqr() < 1.0E-4 ? Vec3.ZERO : away.normalize().scale(APPROACH_OFFSET);
+            flyTo(owner.getX() + away.x, owner.getY() + 4, owner.getZ() + away.z, SUMMON_SPEED / FLYING_SPEED);
+        }
+
+        /** It found no way round to their front: it keeps by them as a follower instead. */
+        private void giveUp() {
+            approaching = null;
+            setCommand(AerwhaleCommand.FOLLOW);
         }
     }
 
@@ -2206,8 +2338,9 @@ public class TamedAerwhale extends Aerwhale
         }
 
         /**
-         * As a wolf follows: sets off once its owner is far enough away, settles to circling about them when close
-         * again, and catches up by teleporting when left far behind. Its owner on its back is close enough.
+         * As a wolf follows: sets off once its owner is far enough away and settles to circling about them when close
+         * again. It never teleports to catch up; a whale whistle fetches one left behind. Its owner on its back is close
+         * enough.
          */
         private void follow() {
             LivingEntity owner = getOwner();
@@ -2219,11 +2352,6 @@ public class TamedAerwhale extends Aerwhale
                 return;
             }
             double distance = distanceTo(owner);
-            int teleport = AACommonConfig.AERWHALE_FOLLOW_TELEPORT.get();
-            if (teleport > 0 && distance > teleport && !isLeashed() && teleportNear(owner)) {
-                following = false;
-                return;
-            }
             if (!following && distance > FOLLOW_START) {
                 following = true;
                 repath = 0;

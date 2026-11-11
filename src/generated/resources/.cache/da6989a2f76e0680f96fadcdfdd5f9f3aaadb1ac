@@ -1,4 +1,4 @@
-// 1.21.1	2026-11-10T10:28:33.9328824	Altered Aether blocks and language
+// 1.21.1	2026-11-10T21:07:13.9561328	Altered Aether blocks and language
 cc4a268c9d003718a9458f1257ad3d879abd35d6 assets/altered_aether/blockstates/ambrosium_campfire.json
 9279ad634d42135691b2587520af886dfe5ee4b5 assets/altered_aether/blockstates/gleam_vines.json
 7109808a35c46e4977768327eb3866d2740067cc assets/altered_aether/blockstates/gleam_vines_plant.json
@@ -13,7 +13,8 @@ d9ba4bf337d6633fefcee7a328069e422cf6437f assets/altered_aether/models/block/ambr
 0188ed25dc9149716f6936197c95d314e92ded44 assets/altered_aether/models/item/ambrosium_campfire.json
 aafd61bac6c10d313e631dd350aa6c236f54bb89 assets/altered_aether/models/item/gleamberries.json
 63ec6c618a3a23eab4cab9c52d7d3250de9b516e assets/altered_aether/models/item/squall_spawn_egg.json
-c14c60d900acda6c89ca0ae89ace2d4cbbc83e7e assets/altered_aether/models/item/whale_whistle.json
+ad61534b93b6842f08ee7f69dad59ed3b0b9b4b1 assets/altered_aether/models/item/tooting_whale_whistle.json
+68b54c91471f39893cb3bd30da895408f308aed1 assets/altered_aether/models/item/whale_whistle.json
 511cd1f9a809a31402fd40da695600518d042263 data/altered_aether/loot_table/blocks/ambrosium_campfire.json
 469ec4f02c0878a4556aae9bd4a52717fe7e3bd5 data/altered_aether/loot_table/blocks/gleam_vines.json
 8ef6858bad2558ac53114f8577ac2cab1d8c550d data/altered_aether/loot_table/blocks/gleam_vines_plant.json

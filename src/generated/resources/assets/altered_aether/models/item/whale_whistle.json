@@ -1,5 +1,13 @@
 {
   "parent": "minecraft:item/generated",
+  "overrides": [
+    {
+      "model": "altered_aether:item/tooting_whale_whistle",
+      "predicate": {
+        "tooting": 1
+      }
+    }
+  ],
   "textures": {
     "layer0": "altered_aether:item/whale_whistle"
   }

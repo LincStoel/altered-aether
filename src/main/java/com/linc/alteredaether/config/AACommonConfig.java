@@ -118,7 +118,6 @@ public final class AACommonConfig {
     public static final IntValue AERWHALE_TEMPER_PER_BUCK;
     public static final IntValue AERWHALE_BREEDING_COOLDOWN;
     public static final IntValue AERWHALE_GROWTH_TIME;
-    public static final IntValue AERWHALE_FOLLOW_TELEPORT;
 
     // [tall_mode]
     public static final ModConfigSpec.ConfigValue<List<? extends String>> TALL_MODE_EXCLUSIONS;
@@ -366,9 +365,6 @@ public final class AACommonConfig {
                 .defineInRange("breeding_cooldown", 6000, 0, 240000);
         AERWHALE_GROWTH_TIME = b.comment("Ticks a calf takes to grow up. Each enchanted berry fed to it takes a tenth off.")
                 .defineInRange("growth_time", 24000, 1, 480000);
-        AERWHALE_FOLLOW_TELEPORT = b.comment("A following aerwhale this far from its owner, in blocks, catches up by",
-                        "teleporting to them, as wolves and cats do. 0 never teleports.")
-                .defineInRange("follow_teleport_distance", 24, 0, 512);
         b.pop();
 
         b.comment("The taller Aether (-64..319) comes from the built-in 'altered_aether:tall_aether' datapack, chosen when",

@@ -29,6 +29,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.level.TicketType;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.portal.DimensionTransition;
@@ -47,10 +48,11 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * What a whale whistle does when blown in the Aether: finds the whale it's linked to, loading it from wherever it was
- * left if need be, and brings it round to its owner. The whale appears out of sight, behind and above them, then
- * swings round beside them and comes in level and broadside across their front, its back at their feet, for them to
- * jump aboard. If no such flight has room, it doesn't come.
+ * What a whale whistle does when blown in the Aether: finds the whale it's linked to and brings it round to its owner,
+ * to come in level and broadside across their front, its back at their feet, for them to jump aboard. A whale within
+ * simulation distance flies there by itself (see {@link TamedAerwhale#startApproach}). One further off is loaded from
+ * wherever it was left if need be and fetched: it appears out of sight, behind and above them, then swings round beside
+ * them and comes in. If no such flight has room, it doesn't come.
  */
 @EventBusSubscriber(modid = AlteredAether.MOD_ID)
 public final class AerwhaleWhistle {
@@ -163,7 +165,10 @@ public final class AerwhaleWhistle {
         PENDING.clear();
     }
 
-    /** Brings {@code whale} round to {@code player}, if it's theirs to call and there's room. Returns whether it came. */
+    /**
+     * Brings {@code whale} round to {@code player}, if it's theirs to call: flying in if it's within simulation distance
+     * of them, otherwise fetched if there's room. Returns whether it answered.
+     */
     public static boolean summon(ServerPlayer player, TamedAerwhale whale) {
         if (!whale.isOwnedBy(player)) {
             tell(player, "no_answer");
@@ -177,6 +182,20 @@ public final class AerwhaleWhistle {
                     whale.getDisplayName()), true);
             return false;
         }
+        ServerLevel level = player.serverLevel();
+        if (whale.level() == level && level.isPositionEntityTicking(whale.blockPosition())) {
+            whale.startApproach(player);
+            award(player);
+            return true;
+        }
+        return fetch(player, whale);
+    }
+
+    /**
+     * Fetches {@code whale} to {@code player} from wherever it is: it appears behind and above them and flies round to
+     * their front, if there's room for that. Returns whether it came.
+     */
+    public static boolean fetch(ServerPlayer player, TamedAerwhale whale) {
         ServerLevel level = player.serverLevel();
         WhistleFlight flight = plan(level, player, whale);
         if (flight == null) {
@@ -203,19 +222,37 @@ public final class AerwhaleWhistle {
             chunks.addEntity(whale);
         }
         whale.startSummon(flight);
+        award(player);
+        return true;
+    }
+
+    private static void award(ServerPlayer player) {
         AdvancementHolder toMe = player.server.getAdvancements().get(TO_ME);
         if (toMe != null) {
             player.getAdvancements().award(toMe, "summoned");
         }
-        return true;
     }
 
     /**
-     * The best flight round to {@code player} that {@code whale} has room for, or null. It arrives as low as it can,
-     * as straight ahead and as close as it can, and comes from whichever side has room.
+     * The best flight round to {@code player} that {@code whale} has room for, appearing behind them, or null. It
+     * arrives as low as it can, as straight ahead and as close as it can, and comes from whichever side has room.
      */
     @Nullable
-    static WhistleFlight plan(ServerLevel level, ServerPlayer player, TamedAerwhale whale) {
+    static WhistleFlight plan(Level level, Player player, TamedAerwhale whale) {
+        return plan(level, player, whale, false);
+    }
+
+    /**
+     * The best flight round to {@code player} that {@code whale} has room for from where it is now, setting off the way
+     * it's going, or null. It comes in from its own side of them.
+     */
+    @Nullable
+    public static WhistleFlight planFromHere(Level level, Player player, TamedAerwhale whale) {
+        return plan(level, player, whale, true);
+    }
+
+    @Nullable
+    private static WhistleFlight plan(Level level, Player player, TamedAerwhale whale, boolean fromHere) {
         double width = whale.getBbWidth();
         double height = whale.getBbHeight();
         Vec3 feet = player.position();
@@ -232,6 +269,21 @@ public final class AerwhaleWhistle {
                         // it comes in from this side, crossing their front toward the other
                         Vec3 across = new Vec3(toward.z, 0, -toward.x).scale(side);
                         Vec3 end = feet.add(toward.scale(reach)).add(across.scale(-ARRIVAL_LEAD)).add(0, rise, 0);
+                        if (fromHere) {
+                            // it can only come in from the side it's on
+                            Vec3 from = whale.position();
+                            if (across.dot(from.subtract(end)) > 0
+                                    || !arrivalClear(level, whale, end, across, width, height, body)) {
+                                continue;
+                            }
+                            double run = from.distanceTo(end);
+                            WhistleFlight flight = new WhistleFlight(from, whale.travelHeading().scale(run * 0.35), end,
+                                    across.scale(Math.max(4, run * 0.3)));
+                            if (flightClear(level, whale, flight, width, height, body)) {
+                                return flight;
+                            }
+                            continue;
+                        }
                         if (!arrivalClear(level, whale, end, across, width, height, body)) {
                             continue;
                         }

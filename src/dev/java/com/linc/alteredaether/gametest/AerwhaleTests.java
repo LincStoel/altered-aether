@@ -14,6 +14,7 @@
  */
 package com.linc.alteredaether.gametest;
 
+import com.aetherteam.aether.block.AetherBlocks;
 import com.aetherteam.aether.entity.AetherEntityTypes;
 import com.aetherteam.aether.entity.passive.Aerwhale;
 import com.aetherteam.aether.item.AetherItems;
@@ -285,12 +286,42 @@ public final class AerwhaleTests {
         TamedAerwhale whale = tamed(helper, owner);
         whale.setCommand(AerwhaleCommand.STAY);
         Vec3 forward = Vec3.directionFromRotation(0, 180);
-        helper.assertTrue(AerwhaleWhistle.summon((ServerPlayer) owner, whale), "there's room in the arena");
+        helper.assertTrue(AerwhaleWhistle.fetch((ServerPlayer) owner, whale), "there's room in the arena");
         Vec3 start = whale.position().subtract(owner.position());
         helper.assertTrue(start.dot(forward) < -8, "should appear behind its owner: " + start);
         helper.assertTrue(start.y > owner.getBbHeight() + 2, "should appear above its owner: " + start);
         helper.succeedWhen(() -> {
             helper.assertTrue(!whale.answeringWhistle(), "still on its way at " + whale.position());
+            Vec3 offset = whale.position().subtract(owner.position());
+            helper.assertTrue(offset.dot(forward) > 0, "should end up in front of its owner: " + offset);
+            helper.assertTrue(offset.horizontalDistance() < 6, "should end up beside its owner: " + offset);
+            helper.assertTrue(whale.command() == AerwhaleCommand.FOLLOW, "should follow its owner after");
+            removeFromLevel(helper, owner);
+        });
+    }
+
+    /** Within simulation distance it isn't fetched: it flies in from where it is, and round to its owner's front. */
+    @GameTest(template = "arena", timeoutTicks = 600)
+    public static void whistledWhalesNearbyFlyIn(GameTestHelper helper) {
+        if (deepAetherWhales(helper)) {
+            return;
+        }
+        Player owner = ownerInLevel(helper, new Vec3(12, 2, 12));
+        owner.setYRot(0);
+        owner.setYHeadRot(0);
+        TamedAerwhale whale = tamed(helper, owner);
+        whale.setPos(helper.absoluteVec(new Vec3(40, 8, 40)));
+        whale.setCommand(AerwhaleCommand.STAY);
+        Vec3 before = whale.position();
+        helper.assertTrue(AerwhaleWhistle.summon((ServerPlayer) owner, whale), "it should answer");
+        helper.assertTrue(whale.position().equals(before), "it shouldn't teleport, but moved to " + whale.position());
+        helper.assertTrue(whale.answeringWhistle(), "it should be on its way");
+        boolean[] flewRound = {false};
+        Vec3 forward = Vec3.directionFromRotation(0, 0);
+        helper.succeedWhen(() -> {
+            flewRound[0] |= whale.onWhistleFlight();
+            helper.assertTrue(!whale.answeringWhistle(), "still on its way at " + whale.position());
+            helper.assertTrue(flewRound[0], "it should have found a way round to its owner's front");
             Vec3 offset = whale.position().subtract(owner.position());
             helper.assertTrue(offset.dot(forward) > 0, "should end up in front of its owner: " + offset);
             helper.assertTrue(offset.horizontalDistance() < 6, "should end up beside its owner: " + offset);
@@ -315,7 +346,7 @@ public final class AerwhaleTests {
         Player owner = ownerInLevel(helper, Vec3.atBottomCenterOf(centre.below()));
         TamedAerwhale whale = tamed(helper, owner);
         Vec3 before = whale.position();
-        helper.assertFalse(AerwhaleWhistle.summon((ServerPlayer) owner, whale), "there's no room in the box");
+        helper.assertFalse(AerwhaleWhistle.fetch((ServerPlayer) owner, whale), "there's no room in the box");
         helper.assertTrue(whale.position().equals(before) && !whale.answeringWhistle(), "it should stay where it was");
         removeFromLevel(helper, owner);
         helper.succeed();
@@ -379,6 +410,16 @@ public final class AerwhaleTests {
         helper.assertTrue(found != null, "with no ground below, the chest should hang where the whale died, " + centre);
         helper.assertTrue(((ChestBlockEntity) helper.getLevel().getBlockEntity(found)).getItem(1).is(Items.DIAMOND),
                 "the bag's contents go in the chest");
+        helper.assertTrue(helper.getLevel().getBlockState(found.below()).is(AetherBlocks.COLD_AERCLOUD.get()),
+                "a hanging chest should sit on a little cold aercloud");
+        int cloud = 0;
+        for (BlockPos pos : BlockPos.betweenClosed(found.offset(-2, -2, -2), found.offset(2, -1, 2))) {
+            if (helper.getLevel().getBlockState(pos).is(AetherBlocks.COLD_AERCLOUD.get())) {
+                cloud++;
+                helper.getLevel().removeBlock(pos, false);
+            }
+        }
+        helper.assertTrue(cloud >= 9 && cloud <= 21, "a small blob, not " + cloud + " blocks");
         helper.getLevel().removeBlock(found, false);
         helper.succeed();
     }
@@ -422,7 +463,7 @@ public final class AerwhaleTests {
     }
 
     @GameTest(template = "arena", timeoutTicks = 100)
-    public static void followingAerwhalesTeleportWhenLeftBehind(GameTestHelper helper) {
+    public static void followingAerwhalesNeverTeleport(GameTestHelper helper) {
         if (deepAetherWhales(helper)) {
             return;
         }
@@ -430,10 +471,13 @@ public final class AerwhaleTests {
         TamedAerwhale whale = tamed(helper, owner);
         whale.setPos(helper.absoluteVec(new Vec3(44, 30, 44)));
         whale.setCommand(AerwhaleCommand.FOLLOW);
-        helper.succeedWhen(() -> {
-            helper.assertTrue(whale.distanceTo(owner) < 14, "should have teleported to its owner, "
-                    + whale.distanceTo(owner) + " away");
+        double start = whale.distanceTo(owner);
+        helper.runAtTickTime(20, () -> {
+            // it swims at most a third of a block a tick following, so 20 ticks bring it no more than about 7 closer
+            helper.assertTrue(whale.distanceTo(owner) > start - 10, "it should fly, not teleport: "
+                    + start + " -> " + whale.distanceTo(owner));
             removeFromLevel(helper, owner);
+            helper.succeed();
         });
     }
 
@@ -928,6 +972,33 @@ public final class AerwhaleTests {
                 "and in the saddle slot");
         whale.inventory().setItem(TamedAerwhale.SADDLE_SLOT, ItemStack.EMPTY);
         helper.assertFalse(whale.isSaddled(), "emptying the slot should unsaddle it");
+        helper.succeed();
+    }
+
+    @GameTest(template = "arena")
+    public static void anyChestMakesASaddlebag(GameTestHelper helper) {
+        if (deepAetherWhales(helper)) {
+            return;
+        }
+        Player owner = helper.makeMockPlayer(GameType.SURVIVAL);
+        TamedAerwhale whale = tamed(helper, owner);
+        owner.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(Items.TRAPPED_CHEST));
+        owner.interactOn(whale, InteractionHand.MAIN_HAND);
+        helper.assertTrue(whale.hasChest(), "a trapped chest should make a saddlebag");
+        helper.assertTrue(owner.getMainHandItem().isEmpty(), "the trapped chest should be used up");
+        TamedAerwhale copy = AARegistries.TAMED_AERWHALE.get().create(helper.getLevel());
+        helper.assertTrue(copy != null, "should create");
+        copy.load(whale.saveWithoutId(new CompoundTag()));
+        copy.setPos(whale.position());
+        whale.discard();
+        helper.getLevel().addFreshEntity(copy);
+        copy.kill();
+        List<ItemStack> drops = helper.getLevel()
+                .getEntitiesOfClass(ItemEntity.class, copy.getBoundingBox().inflate(4)).stream()
+                .map(ItemEntity::getItem).toList();
+        helper.assertTrue(drops.stream().anyMatch(stack -> stack.is(Items.TRAPPED_CHEST)),
+                "the trapped chest should come back, even after saving, got " + drops);
+        helper.assertTrue(drops.stream().noneMatch(stack -> stack.is(Items.CHEST)), "not a plain chest, got " + drops);
         helper.succeed();
     }
 

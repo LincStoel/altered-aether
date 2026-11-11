@@ -14,6 +14,7 @@
  */
 package com.linc.alteredaether.worldgen;
 
+import com.aetherteam.aether.block.AetherBlocks;
 import com.linc.alteredaether.config.AACommonConfig;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -21,6 +22,7 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.tags.FluidTags;
+import net.minecraft.util.RandomSource;
 import net.minecraft.world.Container;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Block;
@@ -79,15 +81,20 @@ public final class LootChest {
 
     /**
      * Sets a skyroot chest holding {@code items} on solid ground below {@code at}, as if it fell there, within a couple
-     * of blocks either side; with no ground below, it's set as near {@code at} as there's room for one, left hanging.
-     * One set in water is waterlogged. Returns false, setting nothing, if there's nowhere to put it.
+     * of blocks either side; with no ground below, it's set as near {@code at} as there's room for one, on a little cold
+     * aercloud put there to hold it up. One set in water is waterlogged. Returns false, setting nothing, if there's
+     * nowhere to put it.
      */
     public static boolean placeWith(ServerLevel level, Vec3 at, Direction facing, List<ItemStack> items) {
-        Optional<BlockPos> spot = groundBelow(level, at).or(() -> roomNear(level, at));
+        Optional<BlockPos> ground = groundBelow(level, at);
+        Optional<BlockPos> spot = ground.or(() -> roomNear(level, at));
         if (spot.isEmpty()) {
             return false;
         }
         BlockPos pos = spot.get();
+        if (ground.isEmpty()) {
+            cloudUnder(level, pos);
+        }
         BlockState chest = skyroot(facing);
         if (chest.hasProperty(BlockStateProperties.WATERLOGGED)) {
             chest = chest.setValue(BlockStateProperties.WATERLOGGED, level.getFluidState(pos).is(Fluids.WATER));
@@ -139,6 +146,35 @@ public final class LootChest {
                 .sorted(Comparator.comparingDouble(pos -> pos.distToCenterSqr(at)))
                 .filter(pos -> roomAt(level, pos))
                 .findFirst();
+    }
+
+    /**
+     * A small blob of cold aercloud under {@code chest}, which hangs in the air: a ragged layer about three blocks across
+     * right under it, and a smaller one under that. Only air and the like give way to it.
+     */
+    private static void cloudUnder(ServerLevel level, BlockPos chest) {
+        RandomSource random = level.getRandom();
+        BlockState cloud = AetherBlocks.COLD_AERCLOUD.get().defaultBlockState();
+        for (int layer = 1; layer <= 2; layer++) {
+            // the top layer reaches out to the corners of a 3x3, and sometimes a block past its edges; the one below is
+            // a cross, now and then filled out to its corners
+            double reach = layer == 1 ? 2 : 1;
+            for (BlockPos pos : BlockPos.betweenClosed(chest.offset(-2, -layer, -2), chest.offset(2, -layer, 2))) {
+                int dx = pos.getX() - chest.getX();
+                int dz = pos.getZ() - chest.getZ();
+                double distance = dx * dx + dz * dz;
+                boolean core = distance <= reach;
+                boolean fringe = !core && distance <= reach + 2 && random.nextFloat() < 0.35F;
+                if ((core || fringe || (dx == 0 && dz == 0)) && cloudFits(level, pos)) {
+                    level.setBlockAndUpdate(pos, cloud);
+                }
+            }
+        }
+    }
+
+    private static boolean cloudFits(ServerLevel level, BlockPos pos) {
+        return level.isInWorldBounds(pos) && level.isLoaded(pos) && level.getBlockState(pos).canBeReplaced()
+                && level.getFluidState(pos).isEmpty();
     }
 
     /** Whether a chest could be set at {@code pos}: somewhere loaded and open to building, not in lava, which burns it. */
