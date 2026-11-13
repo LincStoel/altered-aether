@@ -20,6 +20,7 @@ import com.linc.alteredaether.entity.golem.PebbleInfo;
 import com.linc.alteredaether.item.PebbleLink;
 import com.linc.alteredaether.registry.AARegistries;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.renderer.entity.ThrownItemRenderer;
 import net.minecraft.client.renderer.item.ItemProperties;
 import net.minecraft.world.entity.Entity;
@@ -29,6 +30,7 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
 import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
+import net.neoforged.neoforge.client.event.RegisterColorHandlersEvent;
 import net.neoforged.neoforge.client.event.EntityRenderersEvent;
 import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
 
@@ -55,15 +57,34 @@ public final class GolemClient {
 
         @SubscribeEvent
         public static void setup(FMLClientSetupEvent event) {
+            // dull once its network is gone, or carried out of its reach
             event.enqueueWork(() -> ItemProperties.register(AARegistries.STORAGE_PEBBLE.get(), AlteredAether.id("dull"),
-                    (stack, level, entity, seed) -> {
-                        PebbleLink link = stack.get(AARegistries.PEBBLE_LINK.get());
-                        return link == null || !link.glows() ? 1 : 0;
-                    }));
+                    (stack, level, entity, seed) -> PebbleInfo.bright(stack.get(AARegistries.PEBBLE_LINK.get()),
+                            entity == null ? null : entity.position()) ? 0 : 1));
             PebbleInfo.viewer = () -> {
                 Entity player = Minecraft.getInstance().player;
                 return player == null ? null : player.position();
             };
+            PebbleInfo.altDown = Screen::hasAltDown;
+        }
+
+        /** A live pebble takes its network's colour; a dull one stays grey. */
+        @SubscribeEvent
+        public static void itemColors(RegisterColorHandlersEvent.Item event) {
+            event.register((stack, tint) -> {
+                PebbleLink link = stack.get(AARegistries.PEBBLE_LINK.get());
+                if (tint != 0) {
+                    return -1;
+                }
+                if (link == null) {
+                    return 0xFF000000 | GravititeGolemRenderer.tint(GravititeGolem.DEFAULT_COLOR.getTextureDiffuseColor());
+                }
+                if (!PebbleInfo.bright(link, null)) {
+                    return -1;
+                }
+                PebbleInfo.Info info = PebbleInfo.get(link.network());
+                return 0xFF000000 | GravititeGolemRenderer.tint(info != null ? info.color() : link.color().getTextureDiffuseColor());
+            }, AARegistries.STORAGE_PEBBLE.get());
         }
 
         private Registration() {

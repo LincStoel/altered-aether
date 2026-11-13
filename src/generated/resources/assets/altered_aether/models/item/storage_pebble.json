@@ -9,6 +9,7 @@
     }
   ],
   "textures": {
-    "layer0": "altered_aether:item/storage_pebble"
+    "layer0": "altered_aether:item/storage_pebble",
+    "layer1": "altered_aether:item/storage_pebble_glint"
   }
 }

@@ -92,8 +92,10 @@ public final class AAJadePlugin implements IWailaPlugin {
             });
             tag.putString("others", String.join(", ", others));
             GolemSorter.Report report = GolemSorter.report(level, net);
-            tag.putString("status", golem.isPaused() ? "paused" : !golem.isSeated() ? "moving"
+            tag.putString("status", golem.isRefused() ? "refused" : golem.isPaused() ? "paused" : !golem.isSeated() ? "moving"
                     : report.status().name().toLowerCase());
+            tag.putInt("cap", com.linc.alteredaether.config.AACommonConfig.GOLEM_MAX_NETWORK.get());
+            tag.putInt("blocked", report.blocked());
             tag.putInt("moves", report.movesLeft());
             tag.putInt("unplaced", report.unplaced());
             tag.putInt("away", report.outOfReach());
@@ -116,6 +118,7 @@ public final class AAJadePlugin implements IWailaPlugin {
             tooltip.add(switch (status) {
                 case "sorting" -> line("sorting", tag.getInt("moves"));
                 case "no_space" -> line("no_space", tag.getInt("unplaced"));
+                case "refused" -> line("refused", tag.getInt("cap"));
                 case "sorted", "paused", "moving" -> line(status);
                 default -> line("idle");
             });
@@ -124,6 +127,9 @@ public final class AAJadePlugin implements IWailaPlugin {
             }
             if (tag.getInt("away") > 0) {
                 tooltip.add(line("out_of_reach", tag.getInt("away")));
+            }
+            if (tag.getInt("blocked") > 0) {
+                tooltip.add(line("blocked", tag.getInt("blocked")));
             }
         }
 
@@ -156,6 +162,7 @@ public final class AAJadePlugin implements IWailaPlugin {
             CompoundTag tag = new CompoundTag();
             tag.putString("name", net.name());
             tag.putBoolean("source", GolemStorage.role(level, pos) == GolemStorage.Role.SOURCE);
+            tag.putBoolean("encased", com.linc.alteredaether.entity.golem.GolemAccess.encased(level, pos));
             GolemStorage.Pins pins = GolemStorage.pins(level, pos);
             if (!pins.isEmpty()) {
                 tag.putString("pin", pins.items().get(0).getHoverName().getString());
@@ -173,6 +180,9 @@ public final class AAJadePlugin implements IWailaPlugin {
             tooltip.add(line("linked_to", tag.getString("name")));
             if (tag.getBoolean("source")) {
                 tooltip.add(line("source"));
+            }
+            if (tag.getBoolean("encased")) {
+                tooltip.add(line("encased"));
             }
             if (tag.contains("pin")) {
                 tooltip.add(line(tag.getBoolean("strict") ? "pinned_only" : "pinned", tag.getString("pin")));

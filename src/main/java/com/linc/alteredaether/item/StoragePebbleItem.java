@@ -15,7 +15,9 @@
 package com.linc.alteredaether.item;
 
 import com.linc.alteredaether.AlteredAether;
+import com.linc.alteredaether.compat.CreateCompat;
 import com.linc.alteredaether.config.AACommonConfig;
+import com.linc.alteredaether.entity.golem.GolemAccess;
 import com.linc.alteredaether.entity.golem.GolemNetworks;
 import com.linc.alteredaether.entity.golem.GolemPayloads;
 import com.linc.alteredaether.entity.golem.GolemSorter;
@@ -44,24 +46,54 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.Level;
+import net.neoforged.fml.ModList;
 import net.neoforged.neoforge.network.PacketDistributor;
 
+import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 /**
- * A storage pebble: a chip of a golem's gravitite that answers to it. Used on storage it links that storage to the
- * golem's network (the chest doesn't open), or unlinks it; used crouching on the top of a block it sends the golem
- * there; used on golems it shows links and links golems (see GolemInteractions). None of that uses it up. Used on
- * nothing it is thrown, and shatters. It glows only within reach of its golem's network.
+ * A storage pebble: a chip of a golem's gravitite that answers to its network. Used on storage it links that storage
+ * to the network (the chest doesn't open), or unlinks it; used crouching on the top of a block it sends its golem
+ * there; used on one of the network's golems it links everything around it, or crouching unlinks it all (see
+ * GolemInteractions). None of that uses it up. Used on nothing it is thrown, and shatters. It glows within reach of
+ * its network, and goes dull for good once the network is gone.
  */
 public class StoragePebbleItem extends Item {
+    private static final String TIP = "item." + AlteredAether.MOD_ID + ".storage_pebble.";
+
     public StoragePebbleItem(Properties properties) {
         super(properties);
     }
 
     private static Component message(String key, Object... args) {
         return Component.translatable("message." + AlteredAether.MOD_ID + ".golem." + key, args);
+    }
+
+    /**
+     * The network {@code link} answers to now: its origin golem's while that golem lives, else the network it last
+     * belonged to (or the one that network joined); null once that is gone.
+     */
+    @Nullable
+    public static GolemNetworks.Net network(ServerLevel level, PebbleLink link) {
+        ServerLevel home = level.getServer().getLevel(link.dimension());
+        if (home == null || link.dead()) {
+            return null;
+        }
+        GolemNetworks networks = GolemNetworks.get(home);
+        GolemNetworks.Net net = networks.netOf(link.origin());
+        return net != null ? net : link.hasNetwork() ? networks.resolve(link.network()) : null;
+    }
+
+    /** Whether {@code link}'s pebble is active at {@code at}: its network lives here and one of its golems reaches. */
+    public static boolean active(ServerLevel level, @Nullable PebbleLink link, BlockPos at) {
+        if (link == null || link.dead() || !link.dimension().equals(level.dimension())) {
+            return false;
+        }
+        GolemNetworks.Net net = network(level, link);
+        return net != null && net.reaches(at);
     }
 
     @Override
@@ -80,25 +112,43 @@ public class StoragePebbleItem extends Item {
         if (!server.mayInteract(player, pos)) {
             return InteractionResult.FAIL;
         }
-        if (link.dead()) {
+        GolemNetworks.Net net = link.dead() ? null : network(server, link);
+        if (net == null) {
+            if (!link.dead()) {
+                stack.set(AARegistries.PEBBLE_LINK.get(), link.asDead());
+            }
             player.displayClientMessage(message("pebble_dead"), true);
             return InteractionResult.PASS;
         }
         if (!link.dimension().equals(server.dimension())) {
-            player.displayClientMessage(message("cant_hear", link.name()), true);
+            player.displayClientMessage(message("cant_hear", net.name()), true);
             return InteractionResult.SUCCESS;
         }
-        if (player.isShiftKeyDown() && context.getClickedFace() == Direction.UP) {
-            sendGolem(link, player, server, pos.above());
+        // crouching on the top of a block sends the golem there; on storage it links as usual
+        if (player.isShiftKeyDown() && context.getClickedFace() == Direction.UP && GolemStorage.handler(server, pos) == null) {
+            sendGolem(link, net, player, server, pos.above());
             return InteractionResult.SUCCESS;
         }
-        toggleLink(link, player, server, pos);
+        toggleLink(link, net, player, server, pos);
         return InteractionResult.SUCCESS;
     }
 
-    private static void sendGolem(PebbleLink link, ServerPlayer player, ServerLevel level, BlockPos target) {
-        if (!(level.getEntity(link.golem()) instanceof GravititeGolem golem)) {
-            player.displayClientMessage(message("cant_hear", link.name()), true);
+    /** Sends the pebble's golem (or, if it is elsewhere, the network's golem nearest the spot) to {@code target}. */
+    private static void sendGolem(PebbleLink link, GolemNetworks.Net net, ServerPlayer player, ServerLevel level, BlockPos target) {
+        GravititeGolem golem = null;
+        if (net.members().containsKey(link.origin()) && level.getEntity(link.origin()) instanceof GravititeGolem origin) {
+            golem = origin;
+        } else {
+            double best = Double.MAX_VALUE;
+            for (UUID id : net.members().keySet()) {
+                if (level.getEntity(id) instanceof GravititeGolem member && member.blockPosition().distSqr(target) < best) {
+                    best = member.blockPosition().distSqr(target);
+                    golem = member;
+                }
+            }
+        }
+        if (golem == null) {
+            player.displayClientMessage(message("cant_hear", net.name()), true);
             return;
         }
         int max = AACommonConfig.GOLEM_MAX_MOVE.get();
@@ -116,13 +166,8 @@ public class StoragePebbleItem extends Item {
         player.displayClientMessage(message("on_its_way", golem.getName()), true);
     }
 
-    private static void toggleLink(PebbleLink link, ServerPlayer player, ServerLevel level, BlockPos pos) {
+    private static void toggleLink(PebbleLink link, GolemNetworks.Net net, ServerPlayer player, ServerLevel level, BlockPos pos) {
         GolemNetworks networks = GolemNetworks.get(level);
-        GolemNetworks.Net net = networks.netOf(link.golem());
-        if (net == null) {
-            player.displayClientMessage(message("pebble_dead"), true);
-            return;
-        }
         if (GolemStorage.handler(level, pos) == null) {
             return;
         }
@@ -140,24 +185,26 @@ public class StoragePebbleItem extends Item {
         switch (networks.toggleLink(net, pos, partner, p -> GolemStorage.inventoryKey(level, p))) {
             case LINKED -> {
                 level.playSound(null, pos, AARegistries.GOLEM_LINK.get(), SoundSource.BLOCKS, 0.8F, 1.0F);
-                PacketDistributor.sendToPlayer(player, GolemPayloads.Glow.blocks(GolemPayloads.LINK, -1, both,
-                        GolemStorage.strict(level, both)));
+                boolean blocked = GolemAccess.encased(level, pos);
+                PacketDistributor.sendToPlayer(player, blocked
+                        ? new GolemPayloads.Glow(GolemPayloads.LINK, -1, List.of(), both, List.of(), List.of(), List.of())
+                        : GolemPayloads.Glow.blocks(GolemPayloads.LINK, -1, both, GolemStorage.strict(level, both)));
                 int linked = GolemNetworks.inventories(net, p -> GolemStorage.inventoryKey(level, p));
-                player.displayClientMessage(message(role == GolemStorage.Role.SOURCE ? "linked_source" : "linked",
-                        link.name(), linked, net.maxLinks()), true);
-                GolemSorter.markDirty(level, net);
+                String key = blocked ? "linked_blocked" : role == GolemStorage.Role.SOURCE ? "linked_source" : "linked";
+                player.displayClientMessage(message(key, net.name(), linked, net.maxLinks()), true);
+                GolemSorter.linked(level, net, both);
             }
             case UNLINKED -> {
                 level.playSound(null, pos, AARegistries.GOLEM_UNLINK.get(), SoundSource.BLOCKS, 0.8F, 1.0F);
                 PacketDistributor.sendToPlayer(player, GolemPayloads.Glow.blocks(GolemPayloads.UNLINK, -1, both));
-                player.displayClientMessage(message("unlinked", link.name()), true);
-                GolemSorter.markDirty(level, net);
+                player.displayClientMessage(message("unlinked", net.name()), true);
+                GolemSorter.unlinked(level, net, both);
             }
-            case OUT_OF_REACH -> player.displayClientMessage(message("out_of_reach", link.name()), true);
-            case FULL -> player.displayClientMessage(message("full", link.name(), net.maxLinks()), true);
+            case OUT_OF_REACH -> player.displayClientMessage(message("out_of_reach", net.name()), true);
+            case FULL -> player.displayClientMessage(message("full", net.name(), net.maxLinks()), true);
             case TAKEN -> player.displayClientMessage(message("taken", owner == null ? "" : owner.name()), true);
         }
-        PebbleTracker.sendNow(player, link.golem());
+        PebbleTracker.send(player, net);
     }
 
     /** Used on nothing, the pebble is thrown like a snowball (see ThrownPebble), and that is the end of it. */
@@ -166,9 +213,10 @@ public class StoragePebbleItem extends Item {
         ItemStack stack = player.getItemInHand(hand);
         level.playSound(null, player.getX(), player.getY(), player.getZ(), SoundEvents.SNOWBALL_THROW, SoundSource.NEUTRAL,
                 0.5F, 0.4F / (level.getRandom().nextFloat() * 0.4F + 0.8F));
-        if (!level.isClientSide) {
+        if (level instanceof ServerLevel server) {
             ThrownPebble pebble = new ThrownPebble(level, player);
             pebble.setItem(stack);
+            pebble.setInert(!active(server, stack.get(AARegistries.PEBBLE_LINK.get()), player.blockPosition()));
             pebble.shootFromRotation(player, player.getXRot(), player.getYRot(), 0.0F, 1.5F, 1.0F);
             level.addFreshEntity(pebble);
         }
@@ -178,8 +226,8 @@ public class StoragePebbleItem extends Item {
     }
 
     /**
-     * A pebble whose golem is gone turns dull for good; one carried out of reach of every golem of its network goes
-     * dark until it is brought back.
+     * Keeps the pebble with its network: it follows its origin golem from network to network while that golem lives,
+     * and turns dull for good once its network is gone.
      */
     @Override
     public void inventoryTick(ItemStack stack, Level level, Entity entity, int slot, boolean selected) {
@@ -190,70 +238,77 @@ public class StoragePebbleItem extends Item {
         if (link == null || link.dead()) {
             return;
         }
-        ServerLevel home = server.getServer().getLevel(link.dimension());
-        GolemNetworks.Net net = home == null ? null : GolemNetworks.get(home).netOf(link.golem());
+        GolemNetworks.Net net = network(server, link);
         if (net == null) {
             stack.set(AARegistries.PEBBLE_LINK.get(), link.asDead());
             return;
         }
-        boolean far = home != server || !net.reaches(entity.blockPosition());
-        if (far != link.far()) {
-            stack.set(AARegistries.PEBBLE_LINK.get(), link.withFar(far));
+        if (!net.id.equals(link.network()) || !net.name().equals(link.name()) || net.color() != link.color()) {
+            stack.set(AARegistries.PEBBLE_LINK.get(), link.in(net.id, net.name(), net.color()));
         }
     }
 
-    /** Going dark or lighting up again doesn't make the pebble bob in the hand. */
+    /** Changing network or going dull doesn't make the pebble bob in the hand. */
     @Override
     public boolean shouldCauseReequipAnimation(ItemStack oldStack, ItemStack newStack, boolean slotChanged) {
         if (slotChanged || !newStack.is(oldStack.getItem())) {
             return true;
         }
         PebbleLink before = oldStack.get(AARegistries.PEBBLE_LINK.get()), after = newStack.get(AARegistries.PEBBLE_LINK.get());
-        return before == null || after == null || !before.golem().equals(after.golem());
+        return before == null || after == null || !before.origin().equals(after.origin());
     }
 
-    /** A pebble that answers to its golem from here shimmers; a dull, dark or unlinked one doesn't. */
+    /** A pebble within reach of its network shimmers; a dull, dark or unlinked one doesn't. */
     @Override
     public boolean isFoil(ItemStack stack) {
-        PebbleLink link = stack.get(AARegistries.PEBBLE_LINK.get());
-        return link != null && link.glows();
+        return PebbleInfo.bright(stack.get(AARegistries.PEBBLE_LINK.get()), null);
     }
 
     @Override
     public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltip, TooltipFlag flag) {
         PebbleLink link = stack.get(AARegistries.PEBBLE_LINK.get());
-        String prefix = "item." + AlteredAether.MOD_ID + ".storage_pebble.";
         if (link == null) {
-            tooltip.add(Component.translatable(prefix + "unlinked").withStyle(ChatFormatting.GRAY));
-            return;
-        }
-        if (link.dead()) {
-            tooltip.add(Component.translatable(prefix + "dead", link.name()).withStyle(ChatFormatting.DARK_GRAY));
-            return;
-        }
-        tooltip.add(Component.translatable(prefix + "belongs", link.name()).withStyle(ChatFormatting.LIGHT_PURPLE));
-        PebbleInfo.Info info = PebbleInfo.get(link.golem());
-        if (info != null) {
-            tooltip.add(Component.translatable(prefix + "mode", info.modeTitle()).withStyle(ChatFormatting.GRAY));
-            tooltip.add(Component.translatable(prefix + "links", info.linked(), info.maxLinks()).withStyle(ChatFormatting.GRAY));
-            double distance = info.distance();
-            if (distance >= 0) {
-                tooltip.add(Component.translatable(prefix + "distance", (int) Math.round(distance)).withStyle(ChatFormatting.GRAY));
+            tooltip.add(Component.translatable(TIP + "unlinked").withStyle(ChatFormatting.GRAY));
+        } else if (link.dead()) {
+            tooltip.add(Component.translatable(TIP + "dead", link.name()).withStyle(ChatFormatting.DARK_GRAY));
+        } else {
+            PebbleInfo.Info info = PebbleInfo.get(link.network());
+            tooltip.add(Component.translatable(TIP + "belongs", info != null ? info.name() : link.name())
+                    .withStyle(ChatFormatting.LIGHT_PURPLE));
+            if (info != null) {
+                tooltip.add(Component.translatable(TIP + "mode", info.modeTitle()).withStyle(ChatFormatting.GRAY));
+                tooltip.add(Component.translatable(TIP + "links", info.linked(), info.maxLinks()).withStyle(ChatFormatting.GRAY));
             }
         }
-        tooltip.add(Component.translatable(prefix + "use").withStyle(ChatFormatting.DARK_GRAY));
-        tooltip.add(Component.translatable(prefix + "send").withStyle(ChatFormatting.DARK_GRAY));
-        tooltip.add(Component.translatable(prefix + "throw").withStyle(ChatFormatting.DARK_GRAY));
+        if (!PebbleInfo.altDown.getAsBoolean()) {
+            tooltip.add(Component.translatable(TIP + "guide.hint").withStyle(ChatFormatting.DARK_GRAY));
+            return;
+        }
+        guide(tooltip);
     }
 
-    /** Whether {@code player} holds a pebble for {@code golem}. */
-    public static boolean holdsFor(Player player, GravititeGolem golem) {
-        for (ItemStack stack : List.of(player.getMainHandItem(), player.getOffhandItem())) {
-            PebbleLink link = stack.get(AARegistries.PEBBLE_LINK.get());
-            if (link != null && link.golem().equals(golem.getUUID())) {
-                return true;
-            }
-        }
-        return false;
+    /**
+     * Everything a gravitite golem answers to, for the pebble's tooltip while Alt is held: one line each, a heading
+     * then what it does, so it fits on screen at large GUI scales.
+     */
+    private static void guide(List<Component> tooltip) {
+        int cap = PebbleInfo.maxGolems > 0 ? PebbleInfo.maxGolems : AACommonConfig.GOLEM_MAX_NETWORK.get();
+        entry(tooltip, "build");
+        entry(tooltip, "hand");
+        entry(tooltip, "pebble.storage");
+        entry(tooltip, "pebble.golem");
+        entry(tooltip, "pebble.send");
+        entry(tooltip, "search");
+        entry(tooltip, "dye", cap);
+        entry(tooltip, "frames");
+        entry(tooltip, ModList.get().isLoaded(CreateCompat.MOD) ? "frames.strict_create" : "frames.strict");
+        entry(tooltip, "redstone");
+        entry(tooltip, "comparator");
+        entry(tooltip, "source");
+    }
+
+    private static void entry(List<Component> tooltip, String key, Object... args) {
+        tooltip.add(Component.translatable(TIP + "guide." + key + ".title").withStyle(ChatFormatting.LIGHT_PURPLE)
+                .append(Component.translatable(TIP + "guide." + key, args).withStyle(ChatFormatting.GRAY)));
     }
 }

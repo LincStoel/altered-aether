@@ -17,6 +17,7 @@ package com.linc.alteredaether.mixin;
 import com.bawnorton.mixinsquared.canceller.MixinCancellerRegistrar;
 import com.linc.alteredaether.compat.DeepAetherWhalePatches;
 import com.linc.alteredaether.entity.AerwhaleMode;
+import net.neoforged.fml.loading.LoadingModList;
 import org.objectweb.asm.tree.ClassNode;
 import org.spongepowered.asm.mixin.extensibility.IMixinConfigPlugin;
 import org.spongepowered.asm.mixin.extensibility.IMixinInfo;
@@ -42,6 +43,10 @@ public final class AAMixinPlugin implements IMixinConfigPlugin {
     public boolean shouldApplyMixin(String targetClassName, String mixinClassName) {
         if (mixinClassName.endsWith(".DeepAetherWhaleCargoMixin")) {
             return AerwhaleMode.deepAetherCancelled();
+        }
+        if (mixinClassName.endsWith(".CreateThresholdSwitchMixin")) {
+            // the golem network as a threshold switch's inventory, only with Create there to have one
+            return LoadingModList.get().getModFileById("create") != null;
         }
         return true;
     }

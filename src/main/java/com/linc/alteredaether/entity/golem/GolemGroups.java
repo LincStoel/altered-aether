@@ -91,6 +91,70 @@ public final class GolemGroups {
         }
     }
 
+    /**
+     * A name for {@code group} that means the same after a restart, unlike its number (a mod's family is numbered in
+     * the order mods are first seen), for saving which family a chest is for.
+     */
+    public static String name(int group) {
+        if (group >= 0 && group < TAGS.size()) {
+            return "tag:" + TAGS.get(group).location();
+        }
+        if (group == TOOLS) {
+            return "kind:tools";
+        }
+        if (group == ARMOR) {
+            return "kind:armor";
+        }
+        if (group == FOOD) {
+            return "kind:food";
+        }
+        if (group == BLOCKS) {
+            return "kind:blocks";
+        }
+        synchronized (NAMESPACES) {
+            for (Map.Entry<String, Integer> entry : NAMESPACES.entrySet()) {
+                if (entry.getValue() == group) {
+                    return "mod:" + entry.getKey();
+                }
+            }
+        }
+        return "";
+    }
+
+    /** The group a {@link #name} stands for, or -1. */
+    public static int byName(String name) {
+        if (name.startsWith("tag:")) {
+            for (int i = 0; i < TAGS.size(); i++) {
+                if (("tag:" + TAGS.get(i).location()).equals(name)) {
+                    return i;
+                }
+            }
+            return -1;
+        }
+        switch (name) {
+            case "kind:tools" -> {
+                return TOOLS;
+            }
+            case "kind:armor" -> {
+                return ARMOR;
+            }
+            case "kind:food" -> {
+                return FOOD;
+            }
+            case "kind:blocks" -> {
+                return BLOCKS;
+            }
+            default -> {
+            }
+        }
+        if (name.startsWith("mod:")) {
+            synchronized (NAMESPACES) {
+                return NAMESPACES.computeIfAbsent(name.substring(4), n -> MODS + NAMESPACES.size());
+            }
+        }
+        return -1;
+    }
+
     /** Where {@code stack} sorts within a chest: by family, then by item, then by its components. */
     public static long order(ItemStack stack) {
         long item = BuiltInRegistries.ITEM.getId(stack.getItem()) & 0xFFFFFL;

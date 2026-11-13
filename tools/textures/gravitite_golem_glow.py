@@ -15,7 +15,11 @@ Derives the gravitite golem's glow layers from its Blockbench texture (gravitite
 
 - gravitite_golem_glow.png: every purple (gravitite) pixel, unchanged; the renderer draws it fullbright over the body;
 - gravitite_golem_nose_glow.png: the nose's purple pixels at NOSE_BOOST strength; the renderer adds it on top, so the
-  nose shines brighter than the rest.
+  nose shines brighter than the rest;
+- gravitite_golem_tint.png, gravitite_golem_glow_tint.png and gravitite_golem_nose_glow_tint.png: the same purple
+  pixels in grey, for a golem dyed another colour: the renderer tints them its dye's colour and draws them in place of
+  the purple ones. Each grey is the purple's brightness against gravitite's lightest purple, so a lighter purple
+  stays a lighter shade of the dye.
 
 A pixel counts as purple when its red and blue both stand clear of its green; the stone is plain grey.
 
@@ -33,16 +37,25 @@ PURPLE_MARGIN = 15
 NOSE = (55, 29, 73, 40)
 # the additive pass adds this share of each nose pixel's colour; higher washes it toward white
 NOSE_BOOST = 0.55
+# gravitite's lightest purple's brightest channel: the grey masks reach white there
+LIGHTEST = 0xE0
 
 
 def purple(r, g, b):
     return r - g > PURPLE_MARGIN and b - g > PURPLE_MARGIN
 
 
+def grey(r, g, b):
+    v = min(255, round(max(r, g, b) * 255 / LIGHTEST))
+    return v, v, v
+
+
 def main():
     base = Image.open(ENTITY / "gravitite_golem.png").convert("RGBA")
     glow = Image.new("RGBA", base.size, (0, 0, 0, 0))
     nose = Image.new("RGBA", base.size, (0, 0, 0, 0))
+    tint = Image.new("RGBA", base.size, (0, 0, 0, 0))
+    nose_tint = Image.new("RGBA", base.size, (0, 0, 0, 0))
     count = 0
     for y in range(base.height):
         for x in range(base.width):
@@ -51,11 +64,18 @@ def main():
                 continue
             count += 1
             glow.putpixel((x, y), (r, g, b, a))
+            v = grey(r, g, b)
+            tint.putpixel((x, y), v + (a,))
             if NOSE[0] <= x < NOSE[2] and NOSE[1] <= y < NOSE[3]:
                 # additive blending ignores alpha, so the strength goes in the colour
                 nose.putpixel((x, y), (round(r * NOSE_BOOST), round(g * NOSE_BOOST), round(b * NOSE_BOOST), 255))
+                nose_tint.putpixel((x, y), tuple(round(c * NOSE_BOOST) for c in v) + (255,))
     glow.save(ENTITY / "gravitite_golem_glow.png")
     nose.save(ENTITY / "gravitite_golem_nose_glow.png")
+    # the glow and the body take the same grey mask: one is drawn lit, the other fullbright
+    tint.save(ENTITY / "gravitite_golem_tint.png")
+    tint.save(ENTITY / "gravitite_golem_glow_tint.png")
+    nose_tint.save(ENTITY / "gravitite_golem_nose_glow_tint.png")
     print("wrote", count, "glowing pixels to", ENTITY)
 
 

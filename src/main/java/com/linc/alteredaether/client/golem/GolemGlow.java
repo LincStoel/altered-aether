@@ -29,35 +29,52 @@ import org.joml.Vector3f;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
 /**
- * What glows for the gravitite golem's player: linked storage when it is linked, everything linked when its pebble is
- * used on its golem, storage holding a searched item, a spot a golem was sent to. Each glow fades in, holds, and
- * fades out over its last second, with gravitite motes drifting off it so it still reads under a shaderpack.
+ * What glows for the gravitite golem's player: linked storage when it is linked, storage holding a searched item, a
+ * spot a golem was sent to, a golem a full network turned away (red), and what the player looks at while holding a
+ * pebble. Each glow fades in, holds, and fades out, with gravitite motes drifting off it so it still reads under a
+ * shaderpack. Storage no golem can get at glows red, storage pinned strictly yellow.
+ *
+ * <p>Apart from those, {@link #HELD} is the faint outline of a held pebble's linked storage, drawn while it is held.
  */
 public final class GolemGlow {
     static final int FADE_IN_TICKS = 4;
     static final int FADE_OUT_TICKS = 20;
+    /** How long a look glow lingers, fading, once the look moves off. */
+    static final int LOOK_LINGER = 10;
+    /** A kind of glow of the client's own: what a pebble's holder is looking at. */
+    static final byte LOOK = 100;
     /** The edge colour of storage pinned strictly (by a glow item frame or placard): glow-ink yellow. */
     static final int STRICT_COLOR = 0xFFE14A;
+    /** The edge colour of storage no golem can get at, and of a golem a full network turned away. */
+    static final int BLOCKED_COLOR = 0xFF4A4A;
     private static final Vector3f STRICT_MOTE = Vec3.fromRGB24(STRICT_COLOR).toVector3f();
+    private static final Vector3f BLOCKED_MOTE = Vec3.fromRGB24(BLOCKED_COLOR).toVector3f();
 
     /**
      * A block ({@code pos}) or golem ({@code entity}, else -1) glowing {@code color} at {@code strength} (1 bright,
-     * less for faint), from {@code startTick} to {@code endTick}.
+     * less for faint), from {@code startTick} to {@code endTick}, fading out over its last {@code fadeOut} ticks.
      */
-    record Glow(byte kind, @Nullable BlockPos pos, int entity, int color, float strength, long startTick, long endTick) {
+    record Glow(byte kind, @Nullable BlockPos pos, int entity, int color, float strength, long startTick, long endTick,
+                int fadeOut) {
     }
 
     /** Two golems joined by a thread of motes until {@code endTick}. */
     record Thread(int a, int b, long endTick) {
     }
 
+    /** A faint outline on a held pebble's linked storage: never through walls, fading with distance. */
+    record Held(BlockPos pos, int color, float alpha) {
+    }
+
     static final List<Glow> GLOWS = new ArrayList<>();
     static final List<Thread> THREADS = new ArrayList<>();
+    static final List<Held> HELD = new ArrayList<>();
     static long ticks;
     @Nullable
     private static ClientLevel level;
@@ -73,38 +90,69 @@ public final class GolemGlow {
         syncLevel(mc.level);
         byte kind = payload.kind();
         int seconds = switch (kind) {
-            case GolemPayloads.SHOW -> AAClientConfig.GOLEM_SEARCH_SECONDS.get();
             case GolemPayloads.SEARCH -> AAClientConfig.GOLEM_SEARCH_SECONDS.get();
             case GolemPayloads.UNLINK -> 1;
             default -> AAClientConfig.GOLEM_LINK_GLOW_SECONDS.get();
         };
         long length = payload.ticks() > 0 ? payload.ticks() : seconds * 20L;
         long end = ticks + Math.max(length, FADE_IN_TICKS + FADE_OUT_TICKS);
-        if (kind == GolemPayloads.SHOW || kind == GolemPayloads.SEARCH) {
-            // a fresh look replaces the last one
-            GLOWS.removeIf(glow -> glow.kind() == GolemPayloads.SHOW || glow.kind() == GolemPayloads.SEARCH);
+        if (kind == GolemPayloads.SEARCH) {
+            // a fresh search replaces the last one
+            GLOWS.removeIf(glow -> glow.kind() == GolemPayloads.SEARCH);
             THREADS.clear();
         }
         int color = AAClientConfig.golemGlowColor();
         Set<BlockPos> strict = new HashSet<>(payload.strict());
         float strength = kind == GolemPayloads.UNLINK ? 0.6F : 1.0F;
         for (BlockPos pos : payload.bright()) {
-            GLOWS.add(new Glow(kind, pos, -1, strict.contains(pos) ? STRICT_COLOR : color, strength, ticks, end));
+            GLOWS.add(new Glow(kind, pos, -1, strict.contains(pos) ? STRICT_COLOR : color, strength, ticks, end, FADE_OUT_TICKS));
         }
-        for (BlockPos pos : payload.dim()) {
-            GLOWS.add(new Glow(kind, pos, -1, strict.contains(pos) ? STRICT_COLOR : color, 0.3F, ticks, end));
+        for (BlockPos pos : payload.blocked()) {
+            GLOWS.add(new Glow(kind, pos, -1, BLOCKED_COLOR, strength, ticks, end, FADE_OUT_TICKS));
         }
+        int golemColor = kind == GolemPayloads.REFUSE ? BLOCKED_COLOR : color;
         for (int id : payload.golems()) {
-            GLOWS.add(new Glow(kind, null, id, color, strength, ticks, end));
+            GLOWS.add(new Glow(kind, null, id, golemColor, strength, ticks, end, FADE_OUT_TICKS));
         }
         for (int i = 0; i + 1 < payload.threads().size(); i += 2) {
             THREADS.add(new Thread(payload.threads().get(i), payload.threads().get(i + 1), end));
         }
     }
 
+    /**
+     * Keeps the look glow on {@code blocks} (or the golem {@code entity}, if not -1) for one more tick: a look glow
+     * already there is extended without fading in again, and one the look has left fades out.
+     */
+    static void look(Collection<BlockPos> blocks, int entity, int color) {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.level == null) {
+            return;
+        }
+        syncLevel(mc.level);
+        // a tick over the linger, so a look still on holds at full strength between ticks
+        long end = ticks + LOOK_LINGER + 1;
+        if (entity >= 0) {
+            extend(null, entity, color, end);
+        }
+        for (BlockPos pos : blocks) {
+            extend(pos, -1, color, end);
+        }
+    }
+
+    private static void extend(@Nullable BlockPos pos, int entity, int color, long end) {
+        for (int i = 0; i < GLOWS.size(); i++) {
+            Glow glow = GLOWS.get(i);
+            if (glow.kind() == LOOK && glow.entity() == entity && (pos == null ? glow.pos() == null : pos.equals(glow.pos()))) {
+                GLOWS.set(i, new Glow(LOOK, pos, entity, color, 1.0F, glow.startTick(), end, LOOK_LINGER));
+                return;
+            }
+        }
+        GLOWS.add(new Glow(LOOK, pos, entity, color, 1.0F, ticks, end, LOOK_LINGER));
+    }
+
     static float fade(Glow glow, float now) {
         float in = Math.clamp((now - glow.startTick()) / FADE_IN_TICKS, 0F, 1F);
-        float out = Math.clamp((glow.endTick() - now) / FADE_OUT_TICKS, 0F, 1F);
+        float out = Math.clamp((glow.endTick() - now) / glow.fadeOut(), 0F, 1F);
         return in * out * glow.strength();
     }
 
@@ -124,13 +172,14 @@ public final class GolemGlow {
         if (ticks % every == 0) {
             for (Glow glow : GLOWS) {
                 AABB box = box(mc.level, glow, 1);
-                if (box == null || glow.strength() < 0.5F) {
+                if (box == null || glow.strength() < 0.5F || glow.kind() == LOOK) {
                     continue;
                 }
                 Vec3 at = new Vec3(box.minX + random.nextDouble() * box.getXsize(), box.maxY,
                         box.minZ + random.nextDouble() * box.getZsize());
-                mc.level.addParticle(new DustParticleOptions(glow.color() == STRICT_COLOR ? STRICT_MOTE : GravititeGolem.GRAVITITE,
-                        0.7F), at.x, at.y, at.z, 0, 0.02, 0);
+                Vector3f mote = glow.color() == STRICT_COLOR ? STRICT_MOTE : glow.color() == BLOCKED_COLOR ? BLOCKED_MOTE
+                        : GravititeGolem.GRAVITITE;
+                mc.level.addParticle(new DustParticleOptions(mote, 0.7F), at.x, at.y, at.z, 0, 0.02, 0);
             }
         }
         if (ticks % (reduced ? 8 : 3) == 0) {
@@ -162,7 +211,11 @@ public final class GolemGlow {
             Vec3 lerp = entity.getPosition(partial).subtract(entity.position());
             return entity.getBoundingBox().move(lerp).inflate(0.05);
         }
-        BlockPos pos = glow.pos();
+        return blockBox(level, glow.pos());
+    }
+
+    @Nullable
+    static AABB blockBox(ClientLevel level, @Nullable BlockPos pos) {
         if (pos == null || !level.isLoaded(pos)) {
             return null;
         }
@@ -174,6 +227,7 @@ public final class GolemGlow {
     static void clear() {
         GLOWS.clear();
         THREADS.clear();
+        HELD.clear();
         level = null;
     }
 
@@ -181,6 +235,7 @@ public final class GolemGlow {
         if (level != current) {
             GLOWS.clear();
             THREADS.clear();
+            HELD.clear();
             level = current;
         }
     }

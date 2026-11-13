@@ -1,5 +1,5 @@
-// 1.21.1	2026-11-10T23:05:09.8084631	Altered Aether gravitite golem
+// 1.21.1	2026-11-12T20:51:50.4901274	Altered Aether gravitite golem
 63ec6c618a3a23eab4cab9c52d7d3250de9b516e assets/altered_aether/models/item/gravitite_golem_spawn_egg.json
-cc29923d12a89e715a88b74bee1d9263b9f91051 assets/altered_aether/models/item/storage_pebble.json
+e303cb90143b6704560b8f62c8926f46ed076b63 assets/altered_aether/models/item/storage_pebble.json
 5dbd57a072f2199de0ff39d513afa82e2275ea13 assets/altered_aether/models/item/storage_pebble_dull.json
 54969a2887fd9a3c4de45e2e7d8fc6af346d695a data/altered_aether/loot_table/entities/gravitite_golem.json

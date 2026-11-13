@@ -17,6 +17,7 @@ package com.linc.alteredaether.client.golem;
 import com.linc.alteredaether.config.AAClientConfig;
 import com.linc.alteredaether.entity.golem.GolemPayloads;
 import com.linc.alteredaether.entity.golem.GravititeGolem;
+import com.linc.alteredaether.entity.golem.route.FlightPath;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Axis;
 import net.minecraft.client.Minecraft;
@@ -40,9 +41,10 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Items gliding between chests for golems that are sorting. Only a picture of what the server will do when the item
- * lands; each flight ends on its own timer even if word of its landing never comes. Drawn by the golem's renderer, so
- * shaderpacks treat it as part of the entity.
+ * Items flying between chests for golems that are sorting: out of a face of one chest, one axis at a time, into a face
+ * of the next, speeding up along each leg and easing round each corner. Only a picture of what the server will do when
+ * the item lands; each flight ends on its own timer even if word of its landing never comes. Drawn by the golem's
+ * renderer, so shaderpacks treat it as part of the entity.
  */
 public final class GolemFlights {
     /** Ticks past its end a flight is kept for its landing word, before it is dropped regardless. */
@@ -54,7 +56,8 @@ public final class GolemFlights {
         final List<Vec3> points;
         final long start;
         final int ticks;
-        final double[] cumulative;
+        /** Where the item is each tick, as the server timed it (see route/FlightPath). */
+        final double[][] table;
 
         View(GolemPayloads.Flight flight, long start) {
             id = flight.id();
@@ -62,44 +65,22 @@ public final class GolemFlights {
             item = flight.item();
             this.start = start;
             ticks = Math.max(1, flight.ticks());
-            points = new ArrayList<>();
-            points.add(flight.from());
-            if (flight.via().isEmpty()) {
-                // a single arc, peaking above the higher end
-                Vec3 mid = flight.from().lerp(flight.to(), 0.5);
-                double rise = Math.max(flight.from().y, flight.to().y) - mid.y + 0.8 + flight.from().distanceTo(flight.to()) * 0.15;
-                points.add(mid.add(0, rise, 0));
-            } else {
-                points.addAll(flight.via());
+            points = flight.points().isEmpty() ? List.of(Vec3.ZERO) : List.copyOf(flight.points());
+            List<double[]> raw = new ArrayList<>();
+            for (Vec3 point : points) {
+                raw.add(new double[]{point.x, point.y, point.z});
             }
-            points.add(flight.to());
-            cumulative = new double[points.size()];
-            for (int i = 1; i < points.size(); i++) {
-                cumulative[i] = cumulative[i - 1] + points.get(i - 1).distanceTo(points.get(i));
-            }
+            table = FlightPath.table(raw);
         }
 
-        /** Where the item is, {@code t} of the way along (0-1): a smooth curve through the points. */
-        Vec3 at(double t) {
-            double eased = t * t * (3 - 2 * t);
-            double length = cumulative[cumulative.length - 1];
-            if (length <= 1.0E-6) {
-                return points.get(0);
-            }
-            double d = eased * length;
-            int seg = 0;
-            while (seg < points.size() - 2 && cumulative[seg + 1] < d) {
-                seg++;
-            }
-            double segLength = cumulative[seg + 1] - cumulative[seg];
-            double u = segLength <= 1.0E-6 ? 0 : (d - cumulative[seg]) / segLength;
-            Vec3 p0 = points.get(Math.max(0, seg - 1)), p1 = points.get(seg), p2 = points.get(seg + 1);
-            Vec3 p3 = points.get(Math.min(points.size() - 1, seg + 2));
-            return catmullRom(p0, p1, p2, p3, u);
+        /** Where the item is {@code time} ticks after setting off, between the table's ticks. */
+        Vec3 at(double time) {
+            double[] at = FlightPath.at(table, ticks, time);
+            return new Vec3(at[0], at[1], at[2]);
         }
 
-        double progress(float now) {
-            return Mth.clamp((now - start) / ticks, 0, 1);
+        double elapsed(float now) {
+            return Mth.clamp(now - start, 0, ticks);
         }
 
         AABB bounds() {
@@ -109,14 +90,6 @@ public final class GolemFlights {
             }
             return box.inflate(1.0);
         }
-    }
-
-    private static Vec3 catmullRom(Vec3 p0, Vec3 p1, Vec3 p2, Vec3 p3, double t) {
-        double t2 = t * t, t3 = t2 * t;
-        return new Vec3(
-                0.5 * (2 * p1.x + (-p0.x + p2.x) * t + (2 * p0.x - 5 * p1.x + 4 * p2.x - p3.x) * t2 + (-p0.x + 3 * p1.x - 3 * p2.x + p3.x) * t3),
-                0.5 * (2 * p1.y + (-p0.y + p2.y) * t + (2 * p0.y - 5 * p1.y + 4 * p2.y - p3.y) * t2 + (-p0.y + 3 * p1.y - 3 * p2.y + p3.y) * t3),
-                0.5 * (2 * p1.z + (-p0.z + p2.z) * t + (2 * p0.z - 5 * p1.z + 4 * p2.z - p3.z) * t2 + (-p0.z + 3 * p1.z - 3 * p2.z + p3.z) * t3));
     }
 
     private static final Map<Integer, View> FLIGHTS = new HashMap<>();
@@ -143,7 +116,7 @@ public final class GolemFlights {
         if (view == null || mc.level == null) {
             return;
         }
-        Vec3 at = view.at(view.progress(ticks));
+        Vec3 at = view.at(view.elapsed(ticks));
         int count = AAClientConfig.GOLEM_REDUCED_EFFECTS.get() ? 3 : 10;
         for (int i = 0; i < count; i++) {
             mc.level.addParticle(new DustParticleOptions(end.landed() ? GravititeGolem.GRAVITITE : GravititeGolem.GRAVITITE_DARK, 0.8F),
@@ -185,7 +158,7 @@ public final class GolemFlights {
                 continue;
             }
             if (show && ticks % (reduced ? 6 : 2) == 0) {
-                Vec3 at = view.at(view.progress(ticks));
+                Vec3 at = view.at(view.elapsed(ticks));
                 mc.level.addParticle(new DustParticleOptions(GravititeGolem.GRAVITITE, 0.5F), at.x, at.y, at.z, 0, 0, 0);
             }
         }
@@ -203,7 +176,7 @@ public final class GolemFlights {
             if (view.golem != golem.getId()) {
                 continue;
             }
-            Vec3 at = view.at(view.progress(now)).subtract(origin);
+            Vec3 at = view.at(view.elapsed(now)).subtract(origin);
             poseStack.pushPose();
             poseStack.translate(at.x, at.y - 0.15, at.z);
             poseStack.mulPose(Axis.YP.rotationDegrees((now * 6 + view.id * 47) % 360));

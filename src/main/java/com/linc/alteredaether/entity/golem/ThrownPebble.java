@@ -18,6 +18,10 @@ import com.linc.alteredaether.registry.AARegistries;
 import net.minecraft.core.particles.DustParticleOptions;
 import net.minecraft.core.particles.ItemParticleOption;
 import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.syncher.EntityDataAccessor;
+import net.minecraft.network.syncher.EntityDataSerializers;
+import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
@@ -30,10 +34,14 @@ import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.HitResult;
 
 /**
- * A storage pebble in the air, thrown like a snowball. Being gravitite it falls upwards. It shatters on whatever it
- * hits, and bursts when it leaves the world's height, top or bottom.
+ * A storage pebble in the air, thrown like a snowball. A live one, being gravitite, falls upwards; an inert one (dull,
+ * or thrown out of reach of its network) falls like any stone. It shatters on whatever it hits, a golem too, and
+ * bursts when it leaves the world's height, top or bottom.
  */
 public class ThrownPebble extends ThrowableItemProjectile {
+    private static final EntityDataAccessor<Boolean> DATA_INERT = SynchedEntityData.defineId(ThrownPebble.class,
+            EntityDataSerializers.BOOLEAN);
+
     public ThrownPebble(EntityType<? extends ThrownPebble> type, Level level) {
         super(type, level);
     }
@@ -47,10 +55,36 @@ public class ThrownPebble extends ThrowableItemProjectile {
         return AARegistries.STORAGE_PEBBLE.get();
     }
 
-    /** A snowball's pull, upside down. */
+    @Override
+    protected void defineSynchedData(SynchedEntityData.Builder builder) {
+        super.defineSynchedData(builder);
+        builder.define(DATA_INERT, false);
+    }
+
+    public boolean isInert() {
+        return entityData.get(DATA_INERT);
+    }
+
+    public void setInert(boolean inert) {
+        entityData.set(DATA_INERT, inert);
+    }
+
+    /** A snowball's pull: upside down for a live pebble. */
     @Override
     protected double getDefaultGravity() {
-        return -0.03;
+        return isInert() ? 0.03 : -0.03;
+    }
+
+    @Override
+    public void addAdditionalSaveData(CompoundTag tag) {
+        super.addAdditionalSaveData(tag);
+        tag.putBoolean("inert", isInert());
+    }
+
+    @Override
+    public void readAdditionalSaveData(CompoundTag tag) {
+        super.readAdditionalSaveData(tag);
+        setInert(tag.getBoolean("inert"));
     }
 
     @Override

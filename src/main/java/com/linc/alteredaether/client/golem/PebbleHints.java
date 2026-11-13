@@ -28,6 +28,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.DustParticleOptions;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.InteractionHand;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.ChestBlock;
 import net.minecraft.world.level.block.state.BlockState;
@@ -37,14 +38,20 @@ import net.minecraft.world.phys.HitResult;
 import net.neoforged.neoforge.capabilities.Capabilities;
 
 import javax.annotation.Nullable;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
- * What a player holding a golem's pebble sees: a ring of motes at the edge of each of its network's golems' reach,
- * motes rising from the storage it has linked nearby, and whether the storage they look at is linked.
+ * What a player holding an active pebble sees: a ring of motes at the edge of each of its network's golems' reach, a
+ * faint outline on each inventory it has linked nearby (red where no golem can get at it, yellow where pinned
+ * strictly), a fuller glow on the linked storage or the network's golem under the crosshair, and whether the storage
+ * looked at is linked.
  */
 final class PebbleHints {
-    /** Linked storage further than this shows no motes. */
-    private static final double SPECK_RANGE = 24;
+    /** Linked storage further than this shows no outline; the outline fades over the last stretch. */
+    private static final double HELD_RANGE = 24, HELD_FADE = 6;
+    /** The held outline's strength: faint, as it never goes away. */
+    private static final float HELD_ALPHA = 0.25F;
     @Nullable
     private static BlockPos lookedAt;
     private static long lookedSince;
@@ -56,13 +63,14 @@ final class PebbleHints {
         Minecraft mc = Minecraft.getInstance();
         LocalPlayer player = mc.player;
         ClientLevel level = mc.level;
+        GolemGlow.HELD.clear();
         if (player == null || level == null) {
             lookedAt = null;
             return;
         }
         PebbleLink link = held(player);
-        PebbleInfo.Info info = link == null || link.dead() ? null : PebbleInfo.get(link.golem());
-        if (info == null) {
+        PebbleInfo.Info info = link == null || link.dead() ? null : PebbleInfo.get(link.network());
+        if (info == null || !PebbleInfo.bright(link, player.position())) {
             lookedAt = null;
             return;
         }
@@ -70,14 +78,8 @@ final class PebbleHints {
         if (player.tickCount % (reduced ? 12 : 4) == 0) {
             ring(level, player, info, reduced);
         }
-        if (player.tickCount % (reduced ? 20 : 10) == 0) {
-            for (BlockPos pos : info.links()) {
-                if (pos.distToCenterSqr(player.position()) < SPECK_RANGE * SPECK_RANGE) {
-                    level.addParticle(new DustParticleOptions(GravititeGolem.GRAVITITE, 0.6F),
-                            pos.getX() + 0.3 + level.random.nextDouble() * 0.4, pos.getY() + 1.02,
-                            pos.getZ() + 0.3 + level.random.nextDouble() * 0.4, 0, 0.03, 0);
-                }
-            }
+        if (AAClientConfig.GOLEM_HELD_LINKS.get()) {
+            outline(player, info);
         }
         look(mc, level, info);
     }
@@ -114,13 +116,47 @@ final class PebbleHints {
         }
     }
 
-    /** Says whether the storage looked at is linked, once each time the look lands on new storage. */
+    /** The faint outline on every linked inventory near the player. */
+    private static void outline(LocalPlayer player, PebbleInfo.Info info) {
+        int color = AAClientConfig.golemGlowColor();
+        for (BlockPos pos : info.links()) {
+            double distance = Math.sqrt(pos.distToCenterSqr(player.getEyePosition()));
+            if (distance > HELD_RANGE) {
+                continue;
+            }
+            float alpha = HELD_ALPHA * (float) Math.min(1, (HELD_RANGE - distance) / HELD_FADE);
+            int edge = info.blocked().contains(pos) ? GolemGlow.BLOCKED_COLOR
+                    : info.strict().contains(pos) ? GolemGlow.STRICT_COLOR : color;
+            GolemGlow.HELD.add(new GolemGlow.Held(pos, edge, alpha));
+        }
+    }
+
+    /**
+     * Glows the linked storage under the crosshair (both halves) or the network's golem under it, for as long as the
+     * look lasts; and says whether the storage looked at is linked, once each time the look lands on new storage.
+     */
     private static void look(Minecraft mc, ClientLevel level, PebbleInfo.Info info) {
+        int color = AAClientConfig.golemGlowColor();
+        Entity entity = mc.crosshairPickEntity;
+        if (entity instanceof GravititeGolem golem && info.members().contains(golem.getId())) {
+            GolemGlow.look(List.of(), golem.getId(), color);
+        }
         HitResult hit = mc.hitResult;
         BlockPos pos = hit instanceof BlockHitResult block && hit.getType() == HitResult.Type.BLOCK ? block.getBlockPos() : null;
         if (pos == null || level.getCapability(Capabilities.ItemHandler.BLOCK, pos, null) == null) {
             lookedAt = null;
             return;
+        }
+        BlockState state = level.getBlockState(pos);
+        BlockPos partner = partner(level, pos, state);
+        boolean linked = info.links().contains(pos) || partner != null && info.links().contains(partner);
+        if (linked) {
+            List<BlockPos> both = new ArrayList<>(List.of(pos));
+            if (partner != null) {
+                both.add(partner);
+            }
+            boolean blocked = info.blocked().contains(pos) || partner != null && info.blocked().contains(partner);
+            GolemGlow.look(both, -1, blocked ? GolemGlow.BLOCKED_COLOR : color);
         }
         long now = level.getGameTime();
         if (pos.equals(lookedAt) && now - lookedSince < 60) {
@@ -132,11 +168,10 @@ final class PebbleHints {
         if (!fresh) {
             return;
         }
-        BlockState state = level.getBlockState(pos);
-        BlockPos partner = partner(level, pos, state);
         String key;
-        if (info.links().contains(pos) || partner != null && info.links().contains(partner)) {
-            key = "hint.linked";
+        if (linked) {
+            key = info.blocked().contains(pos) || partner != null && info.blocked().contains(partner)
+                    ? "hint.linked_blocked" : "hint.linked";
         } else if (state.is(GolemStorage.BLACKLIST) && !state.is(GolemStorage.LINKABLE)) {
             key = "hint.cant_link";
         } else if (state.is(GolemStorage.EMPTY_ONLY) && !state.is(GolemStorage.LINKABLE)) {

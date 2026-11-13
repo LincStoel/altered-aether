@@ -157,9 +157,9 @@ public final class GolemTour {
             }
         }
         var holystone = AetherBlocks.HOLYSTONE.get().defaultBlockState();
-        // P1, the main floor; P2 across a gap to the east for the second golem; P3 a step up to the south; P4 past a gap
+        // P1, the main floor, running east to the second golem; P3 a step up to the south; P4 past a gap
         floor(level, o, -12, 12, -9, 12, -1, holystone);
-        floor(level, o, 22, 34, -8, 8, -1, holystone);
+        floor(level, o, 13, 34, -8, 8, -1, holystone);
         floor(level, o, -4, 4, 13, 19, 0, holystone);
         floor(level, o, -2, 2, 25, 29, 0, holystone);
 
@@ -170,7 +170,16 @@ public final class GolemTour {
         chest(level, o.offset(1, 0, -4));
         chest(level, o.offset(3, 0, -4));
         frame(level, o.offset(3, 0, -4), Direction.SOUTH, new ItemStack(Items.DIAMOND));
+        // a barrel with a block on top: items leave it through a side
         level.setBlockAndUpdate(o.offset(5, 0, -4), Blocks.BARREL.defaultBlockState());
+        fill(level, o.offset(5, 0, -4), new ItemStack(Items.OAK_LOG, 20), new ItemStack(Items.DIRT, 30));
+        level.setBlockAndUpdate(o.offset(5, 1, -4), holystone);
+        // a barrel walled in on every side: linked, it glows red and is never used
+        level.setBlockAndUpdate(o.offset(7, 0, 3), Blocks.BARREL.defaultBlockState());
+        fill(level, o.offset(7, 0, 3), new ItemStack(Items.COBBLESTONE, 64));
+        for (Direction side : new Direction[]{Direction.UP, Direction.NORTH, Direction.SOUTH, Direction.EAST, Direction.WEST}) {
+            level.setBlockAndUpdate(o.offset(7, 0, 3).relative(side), holystone);
+        }
         // a double chest to the west, and a chest behind a wall the camera never sees through
         level.setBlockAndUpdate(o.offset(-7, 0, 3), Blocks.CHEST.defaultBlockState().setValue(ChestBlock.TYPE, ChestType.LEFT));
         level.setBlockAndUpdate(o.offset(-6, 0, 3), Blocks.CHEST.defaultBlockState().setValue(ChestBlock.TYPE, ChestType.RIGHT));
@@ -187,9 +196,28 @@ public final class GolemTour {
         chest(level, o.offset(30, 0, -4));
         frame(level, o.offset(30, 0, -4), Direction.SOUTH, new ItemStack(Items.GOLD_INGOT));
 
+        unlinkStage(level, o);
         golemA = golem(level, o, 0).getUUID();
-        golemB = golem(level, o.offset(28, 0, 0), 0).getUUID();
+        golemB = golem(level, o.offset(16, 0, 0), 0).getUUID();
         golemC = golem(level, o.offset(0, 0, 9), 180).getUUID();
+    }
+
+    /**
+     * Unlinks everything on the stage from every network: the tour world keeps its networks, and an earlier tour's
+     * links would otherwise be toggled off by this one's pebble.
+     */
+    private static void unlinkStage(ServerLevel level, BlockPos o) {
+        GolemNetworks networks = GolemNetworks.get(level);
+        AABB area = new AABB(o.offset(-14, -3, -12).getCenter(), o.offset(38, 8, 34).getCenter());
+        for (GolemNetworks.Net net : new ArrayList<>(networks.all())) {
+            List<BlockPos> gone = new ArrayList<>();
+            for (BlockPos link : new ArrayList<>(net.links())) {
+                if (area.contains(link.getCenter()) && networks.unlink(net, link, null)) {
+                    gone.add(link);
+                }
+            }
+            GolemSorter.unlinked(level, net, gone);
+        }
     }
 
     private static void floor(ServerLevel level, BlockPos o, int x0, int x1, int z0, int z1, int y,
@@ -264,12 +292,16 @@ public final class GolemTour {
         ServerPlayer player = player(level);
         ItemStack held = player.getMainHandItem().copy();
         player.setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY);
+        player.setShiftKeyDown(false);
+        int before = player.getInventory().countItem(AARegistries.STORAGE_PEBBLE.get());
+        var result = golem(level, id).interact(player, InteractionHand.MAIN_HAND);
+        AlteredAether.LOGGER.info("Golem tour: took a pebble from {}: {}, pebbles {} -> {}", id.toString().substring(0, 8),
+                result, before, player.getInventory().countItem(AARegistries.STORAGE_PEBBLE.get()));
+        // what was held goes away only now: into an empty hand, it would have been used on the golem instead
+        holdCarried(level, id);
         if (!held.isEmpty()) {
             player.getInventory().add(held);
         }
-        player.setShiftKeyDown(false);
-        golem(level, id).interact(player, InteractionHand.MAIN_HAND);
-        holdCarried(level, id);
     }
 
     /** Holds a pebble for {@code id}, made fresh (taking one from a golem is tried once, in the link step). */
@@ -277,24 +309,27 @@ public final class GolemTour {
         ServerPlayer player = player(level);
         ItemStack pebble = new ItemStack(AARegistries.STORAGE_PEBBLE.get());
         GravititeGolem golem = golem(level, id);
-        pebble.set(AARegistries.PEBBLE_LINK.get(), new PebbleLink(id, level.dimension(),
-                golem == null ? "Gravitite Golem" : golem.getName().getString(), false));
+        GolemNetworks.Net net = GolemNetworks.get(level).netOf(id);
+        pebble.set(AARegistries.PEBBLE_LINK.get(), new PebbleLink(id, net == null ? PebbleLink.NO_NETWORK : net.id,
+                level.dimension(), golem == null ? "Gravitite Golem" : golem.getName().getString(),
+                golem == null ? GravititeGolem.DEFAULT_COLOR : golem.color(), false));
         ItemStack held = player.getMainHandItem();
         if (held.is(AARegistries.STORAGE_PEBBLE.get()) && held.get(AARegistries.PEBBLE_LINK.get()) != null
-                && held.get(AARegistries.PEBBLE_LINK.get()).golem().equals(id)) {
+                && net != null && net.id.equals(held.get(AARegistries.PEBBLE_LINK.get()).network())) {
             return;
         }
         player.setItemInHand(InteractionHand.MAIN_HAND, pebble);
     }
 
-    /** Holds the pebble already carried for {@code id}, as the player would pick it from their inventory. */
+    /** Holds the pebble already carried for {@code id}'s network, as the player would pick it from their inventory. */
     private static void holdCarried(ServerLevel level, UUID id) {
         ServerPlayer player = player(level);
         var inventory = player.getInventory();
+        GolemNetworks.Net net = GolemNetworks.get(level).netOf(id);
         for (int slot = 0; slot < inventory.getContainerSize(); slot++) {
             ItemStack stack = inventory.getItem(slot);
             PebbleLink link = stack.get(AARegistries.PEBBLE_LINK.get());
-            if (link != null && link.golem().equals(id)) {
+            if (link != null && !link.dead() && net != null && net.id.equals(link.network())) {
                 ItemStack pebble = stack.copy();
                 inventory.setItem(slot, ItemStack.EMPTY);
                 ItemStack held = player.getMainHandItem().copy();
@@ -339,10 +374,12 @@ public final class GolemTour {
             GolemSorter.Report report = GolemSorter.report(level, net);
             GravititeGolem golem = golem(level, id);
             AlteredAether.LOGGER.info("Golem tour [{}]: golem {} net {} mode {} members {} links {} status {} moves {} "
-                            + "unplaced {} away {} inUse {}; state {} paused {} home {} at {}", when, id.toString().substring(0, 8),
+                            + "unplaced {} away {} inUse {} blocked {}; state {} paused {} refused {} colour {} home {} at {}",
+                    when, id.toString().substring(0, 8),
                     net.id.toString().substring(0, 8), net.mode(), net.members().size(), net.links().size(), report.status(),
-                    report.movesLeft(), report.unplaced(), report.outOfReach(), report.inUse(),
-                    golem == null ? "-" : golem.state(), golem != null && golem.isPaused(),
+                    report.movesLeft(), report.unplaced(), report.outOfReach(), report.inUse(), report.blocked(),
+                    golem == null ? "-" : golem.state(), golem != null && golem.isPaused(), golem != null && golem.isRefused(),
+                    golem == null ? "-" : golem.color(),
                     golem == null || golem.home() == null ? "-" : golem.home().toShortString(),
                     golem == null ? "-" : golem.position());
         }
@@ -400,6 +437,7 @@ public final class GolemTour {
                     && !g.getUUID().equals(golemB) && !g.getUUID().equals(golemC))) {
                 entity.discard();
             }
+            unlinkStage(level, origin);
             logNetwork(level, "start");
             AlteredAether.LOGGER.info("Golem tour totals start: {}", totals(level));
         }, new Vec3(0.5, 7, 13), new Vec3(0.5, 0, -2), 40, false));
@@ -416,13 +454,15 @@ public final class GolemTour {
         }, new Vec3(-7.5, 2, 13.5), new Vec3(-7.5, 1.0, 9.5), 3, false));
         steps.add(new Step("build_done", level -> {
             List<GravititeGolem> built = level.getEntitiesOfClass(GravititeGolem.class, new AABB(at(-8, 0, 9)).inflate(1));
-            AlteredAether.LOGGER.info("Golem tour: built {} golem(s); blocks now {} {} {}", built.size(),
-                    level.getBlockState(at(-8, 0, 9)), level.getBlockState(at(-8, 1, 9)), level.getBlockState(at(-8, 2, 9)));
+            AlteredAether.LOGGER.info("Golem tour: built {} golem(s); blocks now {} {} {}; pebbles carried {}", built.size(),
+                    level.getBlockState(at(-8, 0, 9)), level.getBlockState(at(-8, 1, 9)), level.getBlockState(at(-8, 2, 9)),
+                    player(level).getInventory().countItem(AARegistries.STORAGE_PEBBLE.get()));
+            logNetwork(level, "built");
         }, new Vec3(-7.5, 2, 13.5), new Vec3(-7.5, 1.0, 9.5), 30, false));
         steps.add(new Step("link_glow", level -> {
             takePebble(level, golemA);
             for (BlockPos pos : new BlockPos[]{at(-5, 0, -4), at(-3, 0, -4), at(-1, 0, -4), at(1, 0, -4), at(3, 0, -4),
-                    at(5, 0, -4), at(-7, 0, 3), at(-10, 0, -2)}) {
+                    at(5, 0, -4), at(-7, 0, 3), at(-10, 0, -2), at(7, 0, 3)}) {
                 usePebble(level, pos, Direction.UP, false);
             }
             // a furnace is refused
@@ -430,22 +470,38 @@ public final class GolemTour {
             usePebble(level, at(-1, 0, 6), Direction.UP, false);
             logNetwork(level, "linked");
         }, new Vec3(0.5, 4.5, 5), new Vec3(-0.5, 0, -4), 8, true));
-        steps.add(new Step("sorting_1", level -> logNetwork(level, "sorting"), new Vec3(5, 3, 2.5), new Vec3(-1.5, 0.8, -4), 30, false,
+        // the sort waits its delay (3 s) after the last link
+        steps.add(new Step("sorting_1", level -> logNetwork(level, "sorting"), new Vec3(5, 3, 2.5), new Vec3(-1.5, 0.8, -4), 75, false,
                 GolemTour::logClient));
         for (int i = 0; i < 6; i++) {
             // items in the air, close, every quarter second
             steps.add(new Step("flight_" + i, level -> { }, new Vec3(1.5, 2.4, -0.5), new Vec3(-1.5, 1.2, -4), 5, false));
         }
+        // out of the side of the barrel with a block on top
+        steps.add(new Step("side_face_flight", level -> { }, new Vec3(7.5, 1.8, -1.5), new Vec3(5.0, 0.8, -4), 8, false));
         steps.add(new Step("sorting_2", level -> { }, new Vec3(5, 3, 2.5), new Vec3(-1.5, 0.8, -4), 12, false));
         steps.add(new Step("sorting_3", level -> { }, new Vec3(5, 3, 2.5), new Vec3(-1.5, 0.8, -4), 12, false, GolemTour::logClient));
         steps.add(new Step("sorting_close", level -> { }, new Vec3(-1, 1.8, -1.2), new Vec3(-3, 1.2, -4), 10, false));
         steps.add(new Step("sorting_golem", level -> { }, new Vec3(0.5, 1.8, 2.6), golemEye, 8, false, GolemTour::logClient));
         steps.add(new Step("concentrate_front", level -> { }, new Vec3(0.5, 1.8, 3.4), golemEye, 8, false));
         steps.add(new Step("concentrate_side", level -> { }, new Vec3(3.2, 1.8, 1.5), golemEye, 8, false));
-        steps.add(new Step("show_links", level -> {
+        steps.add(new Step("held_links", level -> hold(level, golemA), new Vec3(8, 5, 7), new Vec3(-2, 0, -1), 20, true,
+                GolemTour::logClient));
+        steps.add(new Step("held_beside_glow", level -> {
+            // one full link glow beside the faint held outline, to judge the outline's strength
+            hold(level, golemA);
+            usePebble(level, at(-1, 0, -4), Direction.UP, false);
+            usePebble(level, at(-1, 0, -4), Direction.UP, false);
+        }, new Vec3(0.5, 4.5, 3), new Vec3(-1, 0, -4), 8, true));
+        steps.add(new Step("look_chest", level -> hold(level, golemA), new Vec3(-2.5, 1.9, -1.5), new Vec3(-2.5, 0.5, -3.5), 15, true));
+        steps.add(new Step("look_blocked", level -> hold(level, golemA), new Vec3(7.5, 2.6, 0.5), new Vec3(7.5, 0.5, 3.0), 15, true));
+        steps.add(new Step("look_golem", level -> hold(level, golemA), new Vec3(0.5, 1.9, 2.6), new Vec3(0.5, 0.9, 0.5), 15, true));
+        steps.add(new Step("link_all", level -> {
             hold(level, golemA);
             useOnGolem(level, golemA, null, false);
-        }, new Vec3(8, 5, 7), new Vec3(-2, 0, -1), 10, false));
+            logNetwork(level, "link all");
+        }, new Vec3(0.5, 9, 14), new Vec3(0.5, 0, -1), 5, true));
+        steps.add(new Step("link_all_wave", level -> { }, new Vec3(0.5, 9, 14), new Vec3(0.5, 0, -1), 4, false));
         steps.add(new Step("hints_ring", level -> hold(level, golemA), new Vec3(-6, 5, 22), new Vec3(4, 0, 12), 30, true,
                 GolemTour::logClient));
         steps.add(new Step("hint_text_linked", level -> { }, new Vec3(-0.5, 2, -1.6), new Vec3(-0.5, 0.6, -3.5), 12, true));
@@ -463,18 +519,20 @@ public final class GolemTour {
         steps.add(new Step("jade_golem", level -> player(level).setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY),
                 new Vec3(0.5, 1.8, 2.2), new Vec3(0.5, 0.6, 0.5), 20, true));
         steps.add(new Step("jade_chest", level -> { }, new Vec3(3.5, 1.8, -2.0), new Vec3(3.5, 0.5, -3.5), 20, true));
-        steps.add(new Step("pair_link", level -> {
-            takePebble(level, golemB);
-            useOnGolem(level, golemA, null, false);
+        steps.add(new Step("relay_link", level -> {
             hold(level, golemA);
             usePebble(level, at(8, 0, -4), Direction.UP, false);
             usePebble(level, at(30, 0, -4), Direction.UP, false);
-            useOnGolem(level, golemA, null, false);
-            logNetwork(level, "paired");
+            logNetwork(level, "relay linked");
         }, new Vec3(14, 14, 20), new Vec3(14, 0, -2), 12, true));
-        steps.add(new Step("relay_1", level -> { }, new Vec3(18, 9, 12), new Vec3(18, 1, -3), 30, false));
+        steps.add(new Step("relay_1", level -> { }, new Vec3(18, 9, 12), new Vec3(18, 1, -3), 70, false));
         steps.add(new Step("relay_2", level -> { }, new Vec3(18, 9, 12), new Vec3(18, 1, -3), 15, false));
         steps.add(new Step("relay_3", level -> logNetwork(level, "relay"), new Vec3(18, 9, 12), new Vec3(18, 1, -3), 15, false));
+        steps.add(new Step("dye_blue", level -> {
+            useOnGolem(level, golemC, new ItemStack(Items.LIGHT_BLUE_DYE), false);
+            logNetwork(level, "dyed");
+        }, new Vec3(0.5, 1.9, 12.2), new Vec3(0.5, 0.9, 9.5), 10, true));
+        steps.add(new Step("dye_blue_side", level -> { }, new Vec3(3.2, 1.9, 10.5), new Vec3(0.5, 0.9, 9.5), 5, false));
         steps.add(new Step("repel_hit", level -> {
             Zombie zombie = EntityType.ZOMBIE.create(level);
             zombie.moveTo(at(0, 0, 9).getX() + 2.0, at(0, 0, 9).getY(), at(0, 0, 9).getZ() + 0.5, 90, 0);
@@ -530,7 +588,10 @@ public final class GolemTour {
             player.setGameMode(GameType.SURVIVAL);
         }, new Vec3(0.5, 7, 13), new Vec3(0.5, 0, -2), 25, true,
                 GolemTour::openInventory));
+        steps.add(new Step("tooltip_guide", level -> { }, new Vec3(0.5, 7, 13), new Vec3(0.5, 0, -2), 10, true,
+                GolemTour::guide));
         steps.add(new Step("jei_info", level -> {
+            Minecraft.getInstance().execute(() -> PebbleInfo.altDown = net.minecraft.client.gui.screens.Screen::hasAltDown);
             ServerPlayer player = player(level);
             player.setGameMode(GameType.CREATIVE);
             player.getAbilities().flying = true;
@@ -541,11 +602,10 @@ public final class GolemTour {
             logContents(level);
             AlteredAether.LOGGER.info("Golem tour totals end: {}", totals(level));
         }, new Vec3(0.5, 4.5, 4), new Vec3(-0.5, 0, -4), 20, false, () -> Minecraft.getInstance().setScreen(null)));
-        steps.add(new Step("night_show_links", level -> {
+        steps.add(new Step("night_held_links", level -> {
             level.setDayTime(18000);
             hold(level, golemA);
-            useOnGolem(level, golemA, null, false);
-        }, new Vec3(14, 12, 18), new Vec3(10, 0, -2), 12, false));
+        }, new Vec3(8, 5, 7), new Vec3(-2, 0, -1), 20, true));
         return steps;
     }
 
@@ -688,10 +748,11 @@ public final class GolemTour {
         ItemStack held = mc.player.getMainHandItem();
         PebbleLink link = held.get(AARegistries.PEBBLE_LINK.get());
         if (link != null) {
-            PebbleInfo.Info info = PebbleInfo.get(link.golem());
+            PebbleInfo.Info info = PebbleInfo.get(link.network());
             AlteredAether.LOGGER.info("Golem tour client: pebble info {}", info == null ? "none" : info.name() + " mode "
                     + info.mode() + " linked " + info.linked() + "/" + info.maxLinks() + " homes " + info.homes().size()
-                    + " links " + info.links().size() + " distance " + info.distance());
+                    + " links " + info.links().size() + " blocked " + info.blocked().size() + " bright "
+                    + PebbleInfo.bright(link, mc.player.position()));
         }
     }
 
@@ -718,7 +779,25 @@ public final class GolemTour {
         int selected = mc.player.getInventory().selected;
         int left = (screen.width - 176) / 2, top = (screen.height - 166) / 2;
         double scale = mc.getWindow().getGuiScale();
-        GLFW.glfwSetCursorPos(mc.getWindow().getWindow(), (left + 8 + selected * 18 + 8) * scale, (top + 142 + 8) * scale);
+        double x = (left + 8 + selected * 18 + 8) * scale, y = (top + 142 + 8) * scale;
+        GLFW.glfwSetCursorPos(mc.getWindow().getWindow(), x, y);
+        // moving the system cursor sends the game no event: tell its mouse handler directly
+        try {
+            var onMove = net.minecraft.client.MouseHandler.class.getDeclaredMethod("onMove", long.class, double.class, double.class);
+            onMove.setAccessible(true);
+            onMove.invoke(mc.mouseHandler, mc.getWindow().getWindow(), x, y);
+        } catch (ReflectiveOperationException e) {
+            AlteredAether.LOGGER.warn("Golem tour: couldn't move the mouse", e);
+        }
+    }
+
+    /**
+     * The inventory, with Alt taken as held, so the pebble's guide shows. (Changing the GUI scale here stops the
+     * world being drawn until the shot times out, so it is shot at the window's own scale.)
+     */
+    private static void guide() {
+        PebbleInfo.altDown = () -> true;
+        openInventory();
     }
 
     private static void showJei() {

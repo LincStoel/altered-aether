@@ -14,57 +14,65 @@
  */
 package com.linc.alteredaether.item;
 
+import com.linc.alteredaether.entity.golem.GravititeGolem;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
+import io.netty.buffer.ByteBuf;
 import net.minecraft.core.UUIDUtil;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.resources.ResourceKey;
+import net.minecraft.world.item.DyeColor;
 import net.minecraft.world.level.Level;
 
 import java.util.UUID;
 
 /**
- * The gravitite golem a storage pebble belongs to, the dimension it sits in, its name when the pebble was handed out,
- * and whether the golem is gone. Kept to what never changes while the golem lives, so a pebble in hand doesn't bob
- * each time its golem's links or mode change: the tooltip reads those from what the client is sent (see
- * GolemLinksPayload). The one thing here that does change is {@code far}: whether whoever carries the pebble is out of
- * reach of every golem of its network, which is when it goes dark.
+ * The golem network a storage pebble belongs to, the golem it came from ({@code origin}), the dimension they sit in,
+ * the network's name and colour when last seen, and whether the network is gone. The pebble follows its origin golem
+ * from network to network while that golem lives, and the network after. Whether it glows (its carrier within reach of
+ * the network) is worked out where it is drawn, from what the client is told (see PebbleTracker), so a pebble in a
+ * chest or on the ground never shows a stale glow and a pebble in hand doesn't bob when it changes.
+ *
+ * <p>Pebbles from before networks had ids of their own store only their golem ({@code golem}, read as the origin) and
+ * pick their network up from it.
  */
-public record PebbleLink(UUID golem, ResourceKey<Level> dimension, String name, boolean dead, boolean far) {
+public record PebbleLink(UUID origin, UUID network, ResourceKey<Level> dimension, String name, DyeColor color, boolean dead) {
+    /** The network of a pebble not yet told its own: one from before pebbles belonged to networks. */
+    public static final UUID NO_NETWORK = new UUID(0, 0);
+
+    private static final StreamCodec<ByteBuf, DyeColor> COLOR = ByteBufCodecs.VAR_INT.map(DyeColor::byId, DyeColor::getId);
+
     public static final Codec<PebbleLink> CODEC = RecordCodecBuilder.create(instance -> instance.group(
-            UUIDUtil.CODEC.fieldOf("golem").forGetter(PebbleLink::golem),
+            UUIDUtil.CODEC.fieldOf("golem").forGetter(PebbleLink::origin),
+            UUIDUtil.CODEC.optionalFieldOf("network", NO_NETWORK).forGetter(PebbleLink::network),
             ResourceKey.codec(Registries.DIMENSION).fieldOf("dimension").forGetter(PebbleLink::dimension),
             Codec.STRING.optionalFieldOf("name", "").forGetter(PebbleLink::name),
-            Codec.BOOL.optionalFieldOf("dead", false).forGetter(PebbleLink::dead),
-            Codec.BOOL.optionalFieldOf("far", false).forGetter(PebbleLink::far)
+            DyeColor.CODEC.optionalFieldOf("color", GravititeGolem.DEFAULT_COLOR).forGetter(PebbleLink::color),
+            Codec.BOOL.optionalFieldOf("dead", false).forGetter(PebbleLink::dead)
     ).apply(instance, PebbleLink::new));
 
     public static final StreamCodec<RegistryFriendlyByteBuf, PebbleLink> STREAM_CODEC = StreamCodec.composite(
-            UUIDUtil.STREAM_CODEC, PebbleLink::golem,
+            UUIDUtil.STREAM_CODEC, PebbleLink::origin,
+            UUIDUtil.STREAM_CODEC, PebbleLink::network,
             ResourceKey.streamCodec(Registries.DIMENSION), PebbleLink::dimension,
             ByteBufCodecs.STRING_UTF8, PebbleLink::name,
+            COLOR.cast(), PebbleLink::color,
             ByteBufCodecs.BOOL, PebbleLink::dead,
-            ByteBufCodecs.BOOL, PebbleLink::far,
             PebbleLink::new);
 
-    /** A pebble fresh from its golem, so within its reach. */
-    public PebbleLink(UUID golem, ResourceKey<Level> dimension, String name, boolean dead) {
-        this(golem, dimension, name, dead, false);
-    }
-
     public PebbleLink asDead() {
-        return new PebbleLink(golem, dimension, name, true, far);
+        return new PebbleLink(origin, network, dimension, name, color, true);
     }
 
-    public PebbleLink withFar(boolean far) {
-        return new PebbleLink(golem, dimension, name, dead, far);
+    /** The pebble now belonging to {@code network}, named {@code name} and dyed {@code color}. */
+    public PebbleLink in(UUID network, String name, DyeColor color) {
+        return new PebbleLink(origin, network, dimension, name, color, dead);
     }
 
-    /** Whether the pebble glows: its golem lives and is within reach. */
-    public boolean glows() {
-        return !dead && !far;
+    public boolean hasNetwork() {
+        return !NO_NETWORK.equals(network);
     }
 }

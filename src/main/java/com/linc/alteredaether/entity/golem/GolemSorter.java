@@ -16,10 +16,14 @@ package com.linc.alteredaether.entity.golem;
 
 import com.linc.alteredaether.AlteredAether;
 import com.linc.alteredaether.advancement.AAAdvancements;
+import com.linc.alteredaether.compat.QuarkSorting;
 import com.linc.alteredaether.config.AACommonConfig;
+import com.linc.alteredaether.entity.golem.route.FlightPath;
+import com.linc.alteredaether.entity.golem.route.Router;
 import com.linc.alteredaether.entity.golem.sort.Move;
 import com.linc.alteredaether.entity.golem.sort.Planner;
 import com.linc.alteredaether.entity.golem.sort.SortSnapshot;
+import com.linc.alteredaether.entity.golem.sort.SortTriggers;
 import com.linc.alteredaether.registry.AARegistries;
 import com.mojang.logging.LogUtils;
 import net.minecraft.core.BlockPos;
@@ -48,6 +52,7 @@ import org.slf4j.Logger;
 import javax.annotation.Nullable;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -65,30 +70,48 @@ import java.util.WeakHashMap;
  * at a time. A flight is only a picture: the item stays in its chest the whole way, and on landing it is taken out
  * and put in the target in the same tick, after checking both ends again. Anything the target won't take goes back.
  *
- * <p>All networks share a small time budget each tick for looking into storage and planning; flights in the air are
- * always seen through. Nothing here loads a chunk.
+ * <p>A network sorts what changed, not everything (see {@link SortTriggers}): a chest a player put things in is sorted
+ * a moment after, and the chests those things went to after that. A whole-network sort comes only from a mode switch,
+ * a redstone pulse, a newly linked container or two networks joining. What it saw in each inventory is kept
+ * ({@link InvCache}), so only what changed is read again.
+ *
+ * <p>An item leaves its chest through an open face and flies one axis at a time round whatever is in the way
+ * ({@link Router}); a chest with no open face can't be used. The nearest golem that reaches a chest lifts from it.
+ *
+ * <p>All networks share a small time budget each tick for looking into storage and planning, and one route search;
+ * flights in the air are always seen through. Nothing here loads a chunk.
  */
 @EventBusSubscriber(modid = AlteredAether.MOD_ID)
 public final class GolemSorter {
     private static final Logger LOGGER = LogUtils.getLogger();
     /** Time all networks may spend looking and planning each tick. */
     private static final long BUDGET_NANOS = 500_000;
-    /** Plans in a row, with nothing changed from outside, before a network decides it is going round in circles. */
-    private static final int MAX_ROUNDS = 12;
     /** Moves looked at past the first when the first can't start yet. */
     private static final int LOOKAHEAD = 8;
     /** Ticks between checks that both ends of a flight still work. */
     private static final int RECHECK = 5;
+    /** Ticks over which a network's scans cover all its storage. */
+    private static final int SCAN_SPAN = 40;
+    /** Ticks a route is trusted before it is worked out again. */
+    private static final int ROUTE_TTL = 100;
+    /** How near a player closing storage must be to a linked inventory for it to be looked at at once. */
+    private static final int CLOSE_RANGE = 12;
 
     private static final Map<ServerLevel, Map<UUID, Runtime>> RUNTIMES = new WeakHashMap<>();
+    /** The tick each level last ran a route search in: one a tick, across all its networks. */
+    private static final Map<ServerLevel, Long> SEARCHED = new WeakHashMap<>();
     private static int nextFlightId = 1;
     private static int rotation;
 
     /** What a network is doing, for Jade and for messages. */
     public enum Status { SORTED, SORTING, PAUSED, NO_SPACE, IDLE }
 
-    /** A status and the numbers that go with it. */
-    public record Report(Status status, int movesLeft, int unplaced, int outOfReach, int inUse) {
+    /**
+     * A status and the numbers that go with it; {@code waiting} is whether a sort is due or under way, and
+     * {@code flightTargets} where the items in the air are going.
+     */
+    public record Report(Status status, int movesLeft, int unplaced, int outOfReach, int inUse, int blocked,
+                         boolean waiting, List<BlockPos> flightTargets) {
     }
 
     private GolemSorter() {
@@ -104,20 +127,61 @@ public final class GolemSorter {
         return map == null ? null : map.get(net);
     }
 
-    /** Has the network look at everything again soon: something was linked, unlinked, opened or switched. */
-    public static void markDirty(ServerLevel level, GolemNetworks.Net net) {
+    private static int delay() {
+        return AACommonConfig.GOLEM_SORT_DELAY.get();
+    }
+
+    /**
+     * Has the network sort all its storage after the delay: for a mode switch, a redstone pulse, a newly linked
+     * container, or networks joining. Several asked for within the delay make one sort.
+     */
+    public static void requestFullSort(ServerLevel level, GolemNetworks.Net net) {
+        runtime(level, net.id).triggers.requestFullSort(level.getGameTime(), delay());
+    }
+
+    /**
+     * Storage newly linked to {@code net}: what it holds now is taken as seen (so linking alone sorts nothing new on
+     * its own account), room may have freed for stuck items, and the whole network is sorted after the delay.
+     */
+    public static void linked(ServerLevel level, GolemNetworks.Net net, Collection<BlockPos> positions) {
         Runtime runtime = runtime(level, net.id);
-        runtime.dirty = true;
-        runtime.rounds = 0;
+        for (BlockPos pos : positions) {
+            if (level.isLoaded(pos)) {
+                runtime.cache.read(level, pos, GolemStorage.inventoryKey(level, pos), GolemStorage.role(level, pos));
+            }
+        }
+        long now = level.getGameTime();
+        runtime.triggers.spaceFreed(now, delay());
+        runtime.triggers.requestFullSort(now, delay());
+        runtime.contentsChanged = true;
+    }
+
+    /** Storage unlinked from {@code net}: forgotten, and nothing is sorted on its account. */
+    public static void unlinked(ServerLevel level, GolemNetworks.Net net, Collection<BlockPos> positions) {
+        Runtime runtime = existing(level, net.id);
+        if (runtime == null) {
+            return;
+        }
+        for (BlockPos pos : positions) {
+            long key = level.isLoaded(pos) ? GolemStorage.inventoryKey(level, pos) : pos.asLong();
+            runtime.cache.forget(key);
+            runtime.triggers.forget(key);
+            runtime.claims.remove(key);
+        }
+        runtime.contentsChanged = true;
     }
 
     public static Report report(ServerLevel level, GolemNetworks.Net net) {
         Runtime runtime = existing(level, net.id);
         if (runtime == null) {
-            return new Report(Status.IDLE, 0, 0, 0, 0);
+            return new Report(Status.IDLE, 0, 0, 0, 0, 0, false, List.of());
         }
+        List<BlockPos> targets = new ArrayList<>();
+        runtime.flights.forEach(flight -> targets.add(flight.dst));
         return new Report(runtime.status, runtime.queue.size() + runtime.flights.size(), runtime.unplaced,
-                runtime.outOfReach, runtime.inUse);
+                runtime.outOfReach, runtime.inUse, runtime.blocked,
+                runtime.triggers.pending() || !runtime.queue.isEmpty() || !runtime.flights.isEmpty() || runtime.finishPending,
+                targets);
     }
 
     /** Calls off every flight {@code golem} takes part in; the items stay where they are. */
@@ -135,6 +199,36 @@ public final class GolemSorter {
                 runtime.cancel(level, flight);
             }
         }
+    }
+
+    /**
+     * What a comparator reads from {@code net}: how full its storage is, all of it together, as a comparator reads a
+     * chest. Worked out at most once a tick, from what the network last saw.
+     */
+    public static int signal(ServerLevel level, GolemNetworks.Net net) {
+        Runtime runtime = runtime(level, net.id);
+        long now = level.getGameTime();
+        if (runtime.signalTick != now) {
+            runtime.signalTick = now;
+            runtime.signal = runtime.computeSignal(level, net);
+        }
+        return runtime.signal;
+    }
+
+    /** {@code net}'s storage as one read-only inventory: every loaded linked inventory an item can get at. */
+    public static IItemHandler networkView(ServerLevel level, GolemNetworks.Net net) {
+        List<IItemHandler> handlers = new ArrayList<>();
+        Set<Long> seen = new HashSet<>();
+        for (BlockPos pos : net.links()) {
+            if (!level.isLoaded(pos) || !seen.add(GolemStorage.inventoryKey(level, pos)) || GolemAccess.encased(level, pos)) {
+                continue;
+            }
+            IItemHandler handler = GolemStorage.handler(level, pos);
+            if (handler != null) {
+                handlers.add(handler);
+            }
+        }
+        return new NetworkInventory(handlers);
     }
 
     @SubscribeEvent
@@ -156,7 +250,8 @@ public final class GolemSorter {
                 GolemNetworks.Net net = nets.get((start + i) % nets.size());
                 runtime(level, net.id).tick(level, networks, net, deadline);
             }
-            if (runtimes != null) {
+            runtimes = RUNTIMES.get(level);
+            if (runtimes != null && runtimes.size() > nets.size()) {
                 Set<UUID> live = new HashSet<>();
                 for (GolemNetworks.Net net : nets) {
                     live.add(net.id);
@@ -172,13 +267,35 @@ public final class GolemSorter {
         }
     }
 
-    /** A player closing a linked chest is the quickest sign something changed. */
+    /**
+     * A player closing storage is the quickest sign something changed: linked storage near them that changed, or
+     * changed while they had it open, is sorted after the delay.
+     */
     @SubscribeEvent
     public static void onContainerClose(PlayerContainerEvent.Close event) {
-        if (event.getEntity() instanceof ServerPlayer player && player.level() instanceof ServerLevel level) {
-            for (GolemNetworks.Net net : GolemNetworks.get(level).near(player.blockPosition(),
-                    AACommonConfig.GOLEM_RANGE.get() * 2 + 8)) {
-                markDirty(level, net);
+        if (!(event.getEntity() instanceof ServerPlayer player) || !(player.level() instanceof ServerLevel level)) {
+            return;
+        }
+        long now = level.getGameTime();
+        BlockPos at = player.blockPosition();
+        GolemNetworks networks = GolemNetworks.get(level);
+        for (GolemNetworks.Net net : networks.near(at, AACommonConfig.GOLEM_RANGE.get() + CLOSE_RANGE)) {
+            Runtime runtime = runtime(level, net.id);
+            Set<Long> seen = new HashSet<>();
+            for (BlockPos pos : net.links()) {
+                if (pos.distSqr(at) > CLOSE_RANGE * CLOSE_RANGE || !level.isLoaded(pos)) {
+                    continue;
+                }
+                long key = GolemStorage.inventoryKey(level, pos);
+                if (!seen.add(key)) {
+                    continue;
+                }
+                if (runtime.triggers.waitingForClose(key)) {
+                    runtime.triggers.closed(key, now, delay());
+                    runtime.cache.read(level, pos, key, GolemStorage.role(level, pos));
+                    continue;
+                }
+                runtime.noticed(level, pos, key, runtime.cache.read(level, pos, key, GolemStorage.role(level, pos)), false, now);
             }
         }
     }
@@ -198,7 +315,7 @@ public final class GolemSorter {
             return;
         }
         GolemNetworks networks = GolemNetworks.get(level);
-        for (GolemNetworks.Net net : networks.near(player.blockPosition(), AACommonConfig.GOLEM_RANGE.get() * 2 + 8)) {
+        for (GolemNetworks.Net net : networks.near(player.blockPosition(), AACommonConfig.GOLEM_RANGE.get() + CLOSE_RANGE)) {
             Runtime runtime = runtimes.get(net.id);
             if (runtime != null) {
                 runtime.landOpened(level, net);
@@ -213,6 +330,7 @@ public final class GolemSorter {
             if (runtimes != null) {
                 runtimes.values().forEach(runtime -> runtime.cancelAll(level));
             }
+            SEARCHED.remove(level);
         }
     }
 
@@ -252,34 +370,66 @@ public final class GolemSorter {
         }
     }
 
-    /** The items a snapshot names, by key, and where each inventory in it is. */
+    /** A snapshot and, for each inventory in it, where it is and its key. */
     private record Snap(SortSnapshot snapshot, List<ItemStack> items, List<BlockPos> positions, List<Long> keys) {
+        int indexOf(long key) {
+            return keys.indexOf(key);
+        }
+    }
+
+    /** A route worked out for a pair of chests and golems: its points, or null if there is none, and its cells. */
+    private record CachedRoute(@Nullable List<Vec3> points, List<BlockPos> cells, long expiry) {
+    }
+
+    /** What looking for a route came to: points to fly along, none at all, or a wait for next tick's search. */
+    private record Routed(@Nullable List<Vec3> points, boolean waiting) {
+        static final Routed NONE = new Routed(null, false);
+        static final Routed WAIT = new Routed(null, true);
     }
 
     /** One network's sorting, kept while the server runs. */
     private static final class Runtime {
         final UUID netId;
-        final Map<Long, Integer> hashes = new HashMap<>();
+        final InvCache cache = new InvCache();
+        final SortTriggers triggers = new SortTriggers();
         final Deque<Planned> queue = new ArrayDeque<>();
         final List<Flight> flights = new ArrayList<>();
         final Map<Long, Integer> lifted = new HashMap<>();
-        boolean dirty = true, verify, working;
-        int rounds, cursor, version = -1;
+        final Map<String, CachedRoute> routes = new HashMap<>();
+        /** The family each inventory was judged to be for, by key; saved with the network. */
+        final Map<Long, Integer> claims = new HashMap<>();
+        /** Every inventory this sort has looked at or moved items into, to tidy within once it is done. */
+        final Set<Long> touched = new HashSet<>();
+        boolean working, claimsLoaded, finishPending, contentsChanged;
+        int cursor;
         Status status = Status.IDLE;
-        int unplaced, outOfReach, inUse;
-        long lastNoSpace = Long.MIN_VALUE;
+        int unplaced, outOfReach, inUse, blocked;
+        long lastNoSpace = Long.MIN_VALUE / 2;
+        long signalTick = -1;
+        int signal;
 
         Runtime(UUID netId) {
             this.netId = netId;
         }
 
         void tick(ServerLevel level, GolemNetworks networks, GolemNetworks.Net net, long deadline) {
-            if (net.version() != version) {
-                version = net.version();
-                dirty = true;
-                rounds = 0;
-            }
             long now = level.getGameTime();
+            if (!claimsLoaded) {
+                claimsLoaded = true;
+                net.claims().forEach((key, name) -> {
+                    int group = GolemGroups.byName(name);
+                    if (group >= 0) {
+                        claims.put(key, group);
+                    }
+                });
+            }
+            boolean idle = flights.isEmpty() && queue.isEmpty() && !finishPending && !triggers.pending();
+            int interval = AACommonConfig.GOLEM_SCAN_INTERVAL.get();
+            boolean scanTick = now % interval == 0;
+            if (idle && !scanTick && !contentsChanged) {
+                // nothing to do this tick: no flights, nothing waiting, no scan due
+                return;
+            }
             Map<UUID, GravititeGolem> loaded = new LinkedHashMap<>();
             for (UUID id : net.members().keySet()) {
                 if (level.getEntity(id) instanceof GravititeGolem golem && golem.isAlive()) {
@@ -321,16 +471,23 @@ public final class GolemSorter {
 
             if (team.isEmpty()) {
                 queue.clear();
+                triggers.stopCascade();
+                finishPending = false;
                 status = loaded.values().stream().anyMatch(GravititeGolem::isPaused) ? Status.PAUSED : Status.IDLE;
+                flushSignal(level, net);
                 return;
             }
 
-            int interval = AACommonConfig.GOLEM_SCAN_INTERVAL.get();
-            if (now % interval == 0 && System.nanoTime() < deadline) {
-                scanNext(level, networks, net);
+            if (scanTick && System.nanoTime() < deadline) {
+                scan(level, networks, net, team, interval, now);
             }
-            if (queue.isEmpty() && flights.isEmpty() && (dirty || verify) && System.nanoTime() < deadline) {
-                plan(level, networks, net, team, now);
+            if (queue.isEmpty() && flights.isEmpty() && System.nanoTime() < deadline) {
+                if (finishPending) {
+                    finishPending = false;
+                    finish(level, net, team);
+                } else {
+                    round(level, networks, net, team, now);
+                }
             }
             if (!queue.isEmpty()) {
                 startFlights(level, team, now);
@@ -338,14 +495,14 @@ public final class GolemSorter {
             if (!queue.isEmpty() || !flights.isEmpty()) {
                 status = Status.SORTING;
             }
+            flushSignal(level, net);
         }
 
-        /** The working golems that can reach each other, starting from the first: the rest wait their turn. */
+        /** The working golems that reach each other, starting from the first: the rest wait their turn. */
         private static List<GravititeGolem> team(List<GravititeGolem> active) {
             if (active.isEmpty()) {
                 return active;
             }
-            int range = AACommonConfig.GOLEM_RANGE.get();
             List<GravititeGolem> team = new ArrayList<>();
             team.add(active.get(0));
             boolean grew = true;
@@ -356,7 +513,7 @@ public final class GolemSorter {
                         continue;
                     }
                     for (GravititeGolem member : team) {
-                        if (neighbours(golem, member, range)) {
+                        if (neighbours(golem, member)) {
                             team.add(golem);
                             grew = true;
                             break;
@@ -367,57 +524,134 @@ public final class GolemSorter {
             return team;
         }
 
-        private static boolean neighbours(GravititeGolem a, GravititeGolem b, int range) {
-            BlockPos ha = Objects.requireNonNull(a.home()), hb = Objects.requireNonNull(b.home());
-            double dx = ha.getX() - hb.getX(), dz = ha.getZ() - hb.getZ();
-            return dx * dx + dz * dz <= 4.0 * range * range && Math.abs(ha.getY() - hb.getY()) <= range;
+        private static boolean neighbours(GravititeGolem a, GravititeGolem b) {
+            return GolemNetworks.withinLinkDistance(Objects.requireNonNull(a.home()), Objects.requireNonNull(b.home()));
         }
 
         // -----------------------------------------------------------------------------------------------------------
         // Noticing change
 
-        private void scanNext(ServerLevel level, GolemNetworks networks, GolemNetworks.Net net) {
+        /** Looks into enough linked storage that the whole network is covered every {@link #SCAN_SPAN} ticks. */
+        private void scan(ServerLevel level, GolemNetworks networks, GolemNetworks.Net net, List<GravititeGolem> team,
+                          int interval, long now) {
             List<BlockPos> links = new ArrayList<>(net.links());
             if (links.isEmpty()) {
                 return;
             }
-            cursor = Math.floorMod(cursor, links.size());
-            BlockPos pos = links.get(cursor++);
-            if (!level.isLoaded(pos)) {
-                return;
-            }
-            if (GolemStorage.role(level, pos) == GolemStorage.Role.NONE) {
-                networks.prune(net, pos);
-                return;
-            }
-            IItemHandler handler = GolemStorage.handler(level, pos);
-            if (handler == null) {
-                return;
-            }
-            long key = GolemStorage.inventoryKey(level, pos);
-            int hash = GolemStorage.contentHash(handler);
-            Integer old = hashes.put(key, hash);
-            if (old == null || old != hash) {
-                dirty = true;
-                rounds = 0;
+            int count = Math.max(1, (int) Math.ceil(links.size() * (double) interval / SCAN_SPAN));
+            for (int i = 0; i < Math.min(count, links.size()); i++) {
+                cursor = Math.floorMod(cursor, links.size());
+                BlockPos pos = links.get(cursor++);
+                if (!level.isLoaded(pos)) {
+                    continue;
+                }
+                GolemStorage.Role role = GolemStorage.role(level, pos);
+                if (role == GolemStorage.Role.NONE) {
+                    networks.prune(net, pos);
+                    cache.forget(pos.asLong());
+                    triggers.forget(pos.asLong());
+                    continue;
+                }
+                long key = GolemStorage.inventoryKey(level, pos);
+                InvCache.Seen seen = cache.read(level, pos, key, role);
+                boolean open = GolemStorage.inUse(level, pos);
+                if (!open && triggers.waitingForClose(key)) {
+                    // closed without word of it (a player left, say): sorted as if they had closed it
+                    triggers.closed(key, now, delay());
+                }
+                noticed(level, pos, key, seen, open, now);
             }
         }
 
+        /** Acts on what reading an inventory found: a change is sorted after the delay, and freed room retried. */
+        void noticed(ServerLevel level, BlockPos pos, long key, InvCache.Seen seen, boolean inUse, long now) {
+            if (!seen.changed()) {
+                return;
+            }
+            contentsChanged = true;
+            if (triggers.changed(key, now, delay(), inUse, seen.pins()) && !inUse) {
+                acknowledge(level, pos);
+            }
+            if (seen.fewer()) {
+                triggers.spaceFreed(now, delay());
+            }
+        }
+
+        /** The nearest working golem turns to the storage that changed and pulses: it has noticed. */
+        private void acknowledge(ServerLevel level, BlockPos pos) {
+            GolemNetworks.Net net = GolemNetworks.get(level).net(netId);
+            if (net == null) {
+                return;
+            }
+            GravititeGolem nearest = null;
+            double best = Double.MAX_VALUE;
+            for (UUID id : net.members().keySet()) {
+                if (level.getEntity(id) instanceof GravititeGolem golem && golem.isWorking() && golem.home() != null
+                        && GolemStorage.inReach(golem.home(), pos, AACommonConfig.GOLEM_RANGE.get())) {
+                    double d = golem.home().distSqr(pos);
+                    if (d < best) {
+                        best = d;
+                        nearest = golem;
+                    }
+                }
+            }
+            if (nearest != null) {
+                nearest.face(pos);
+                nearest.event(GolemTiming.EVENT_LINK_PULSE);
+            }
+        }
+
+        /** Takes the golem's own changes as seen, so its work never sets off another sort. */
         private void rehash(ServerLevel level, BlockPos pos) {
-            IItemHandler handler = GolemStorage.handler(level, pos);
-            if (handler != null) {
-                hashes.put(GolemStorage.inventoryKey(level, pos), GolemStorage.contentHash(handler));
+            if (level.isLoaded(pos)) {
+                cache.read(level, pos, GolemStorage.inventoryKey(level, pos), GolemStorage.role(level, pos));
+                contentsChanged = true;
             }
         }
 
         // -----------------------------------------------------------------------------------------------------------
         // Planning
 
-        private void plan(ServerLevel level, GolemNetworks networks, GolemNetworks.Net net, List<GravititeGolem> team,
-                          long now) {
+        /** Plans the next round of a sort, if one is due. */
+        private void round(ServerLevel level, GolemNetworks networks, GolemNetworks.Net net, List<GravititeGolem> team,
+                           long now) {
+            SortTriggers.Round round = triggers.next(now);
+            if (round == null) {
+                if (status == Status.SORTING) {
+                    status = unplaced > 0 ? Status.NO_SPACE : Status.SORTED;
+                }
+                return;
+            }
+            cache.trim();
             Snap snap = snapshot(level, networks, net, team);
-            dirty = false;
-            Planner.Plan plan = Planner.plan(snap.snapshot, net.mode().sort());
+            Set<Integer> sources = round.full() ? null : new HashSet<>();
+            Set<Integer> gather = new HashSet<>();
+            for (int i = 0; i < snap.keys.size(); i++) {
+                long key = snap.keys.get(i);
+                if (sources != null && round.focus().contains(key)) {
+                    sources.add(i);
+                }
+                if (round.gather().contains(key)) {
+                    gather.add(i);
+                }
+            }
+            if (sources != null && sources.isEmpty() && gather.isEmpty()) {
+                triggers.planned(round, Set.of(), false);
+                return;
+            }
+            Planner.Plan plan = Planner.plan(snap.snapshot, net.mode().sort(), new Planner.Focus(sources, gather),
+                    AACommonConfig.GOLEM_MAJORITY_TOLERANCE.get());
+            saveClaims(networks, net, snap, plan);
+            Set<Long> stuck = new HashSet<>();
+            for (int i : plan.stuck()) {
+                stuck.add(snap.keys.get(i));
+            }
+            triggers.stuck(stuck);
+            for (int i = 0; i < snap.keys.size(); i++) {
+                if (sources == null || sources.contains(i)) {
+                    touched.add(snap.keys.get(i));
+                }
+            }
             unplaced = plan.unplaced();
             if (unplaced > 0 && now - lastNoSpace > 1200) {
                 lastNoSpace = now;
@@ -428,53 +662,67 @@ public final class GolemSorter {
                         team.get(0).getName(), unplaced));
             }
             if (plan.isEmpty()) {
-                verify = false;
-                if (reorder(level, snap)) {
-                    verify = true;
-                    working = true;
-                    return;
-                }
-                status = unplaced > 0 ? Status.NO_SPACE : Status.SORTED;
-                if (working) {
-                    working = false;
-                    for (GravititeGolem golem : team) {
-                        level.playSound(null, golem.blockPosition(), AARegistries.GOLEM_CHIME.get(), SoundSource.NEUTRAL,
-                                0.8F, 1.0F);
-                    }
-                    if (snap.positions.size() >= 16) {
-                        for (ServerPlayer player : level.players()) {
-                            if (team.stream().anyMatch(golem -> golem.distanceToSqr(player) < 32 * 32)) {
-                                AAAdvancements.award(player, AAAdvancements.PERFECTLY_ORGANIZED, "sorted");
-                            }
-                        }
-                    }
-                }
-                rounds = 0;
+                triggers.planned(round, Set.of(), false);
+                finish(level, net, team);
                 return;
             }
-            if (++rounds > MAX_ROUNDS) {
-                // going round in circles: rest until something changes from outside
-                LOGGER.debug("Golem network {} stopped after {} plans without settling", netId, MAX_ROUNDS);
-                verify = false;
-                status = Status.SORTED;
-                return;
-            }
+            Set<Long> destinations = new HashSet<>();
             for (Move move : plan.moves()) {
                 queue.add(new Planned(snap.positions.get(move.srcInv()), move.srcSlot(), snap.positions.get(move.dstInv()),
                         move.dstSlot(), snap.items.get(move.key()), move.count(), snap.keys.get(move.srcInv()),
                         snap.keys.get(move.dstInv())));
+                destinations.add(snap.keys.get(move.dstInv()));
             }
-            verify = true;
+            touched.addAll(destinations);
+            finishPending = !triggers.planned(round, destinations, true);
             working = true;
             status = Status.SORTING;
+        }
+
+        /** A sort is done: storage tidied within, and a chime if the golems had work to do. */
+        private void finish(ServerLevel level, GolemNetworks.Net net, List<GravititeGolem> team) {
+            int reordered = reorder(level);
+            touched.clear();
+            status = unplaced > 0 ? Status.NO_SPACE : Status.SORTED;
+            if (working || reordered > 0) {
+                working = false;
+                for (GravititeGolem golem : team) {
+                    level.playSound(null, golem.blockPosition(), AARegistries.GOLEM_CHIME.get(), SoundSource.NEUTRAL,
+                            0.8F, 1.0F);
+                }
+                if (GolemNetworks.inventories(net, p -> level.isLoaded(p) ? GolemStorage.inventoryKey(level, p) : p.asLong()) >= 16) {
+                    for (ServerPlayer player : level.players()) {
+                        if (team.stream().anyMatch(golem -> golem.distanceToSqr(player) < 32 * 32)) {
+                            AAAdvancements.award(player, AAAdvancements.PERFECTLY_ORGANIZED, "sorted");
+                        }
+                    }
+                }
+            }
+        }
+
+        /** Keeps the family each inventory was judged to be for, for next time and across restarts. */
+        private void saveClaims(GolemNetworks networks, GolemNetworks.Net net, Snap snap, Planner.Plan plan) {
+            for (int i = 0; i < snap.keys.size(); i++) {
+                int claim = plan.claims()[i];
+                if (claim >= 0) {
+                    claims.put(snap.keys.get(i), claim);
+                } else {
+                    claims.remove(snap.keys.get(i));
+                }
+            }
+            Map<Long, String> named = new HashMap<>();
+            claims.forEach((key, group) -> {
+                String name = GolemGroups.name(group);
+                if (!name.isEmpty()) {
+                    named.put(key, name);
+                }
+            });
+            networks.setClaims(net, named);
         }
 
         private Snap snapshot(ServerLevel level, GolemNetworks networks, GolemNetworks.Net net, List<GravititeGolem> team) {
             int range = AACommonConfig.GOLEM_RANGE.get();
             int maxSlots = AACommonConfig.GOLEM_MAX_SLOTS.get();
-            List<SortSnapshot.Key> keys = new ArrayList<>();
-            List<ItemStack> items = new ArrayList<>();
-            Map<ItemKey, Integer> index = new HashMap<>();
             List<SortSnapshot.Inv> invs = new ArrayList<>();
             List<BlockPos> positions = new ArrayList<>();
             List<Long> invKeys = new ArrayList<>();
@@ -483,6 +731,8 @@ public final class GolemSorter {
             int slots = 0;
             outOfReach = 0;
             inUse = 0;
+            blocked = 0;
+            long now = level.getGameTime();
             for (BlockPos pos : net.links()) {
                 if (!level.isLoaded(pos) || !level.shouldTickBlocksAt(pos)) {
                     continue;
@@ -496,102 +746,91 @@ public final class GolemSorter {
                 if (!seen.add(key)) {
                     continue;
                 }
-                if (team.stream().noneMatch(golem -> GolemStorage.inReach(Objects.requireNonNull(golem.home()), pos, range))) {
-                    outOfReach++;
+                boolean open = GolemStorage.inUse(level, pos);
+                // read it now if it changed since the last scan; a change is also sorted in its own turn
+                noticed(level, pos, key, cache.read(level, pos, key, role), open, now);
+                InvCache.Entry entry = cache.get(key);
+                if (entry == null) {
                     continue;
                 }
-                if (GolemStorage.inUse(level, pos)) {
-                    inUse++;
-                    continue;
-                }
-                IItemHandler handler = GolemStorage.handler(level, pos);
-                if (handler == null) {
-                    continue;
-                }
-                int n = handler.getSlots();
-                if (slots + n > maxSlots) {
+                if (slots + entry.inv.size() > maxSlots) {
                     break;
                 }
-                slots += n;
-                int[] limit = new int[n], slotKey = new int[n], count = new int[n];
-                for (int slot = 0; slot < n; slot++) {
-                    limit[slot] = handler.getSlotLimit(slot);
-                    ItemStack stack = handler.getStackInSlot(slot);
-                    if (stack.isEmpty()) {
-                        slotKey[slot] = -1;
-                    } else {
-                        slotKey[slot] = keyOf(stack, keys, items, index);
-                        count[slot] = stack.getCount();
-                    }
+                slots += entry.inv.size();
+                boolean frozen = false;
+                if (team.stream().noneMatch(golem -> GolemStorage.inReach(Objects.requireNonNull(golem.home()), pos, range))) {
+                    outOfReach++;
+                    frozen = true;
+                } else if (open) {
+                    inUse++;
+                    frozen = true;
+                } else if (GolemAccess.encased(level, pos)) {
+                    blocked++;
+                    frozen = true;
                 }
-                Set<Integer> pins = new HashSet<>();
-                GolemStorage.Pins pinned = GolemStorage.pins(level, pos);
-                for (ItemStack pin : pinned.items()) {
-                    pins.add(keyOf(pin, keys, items, index));
-                }
-                boolean plain = GolemStorage.plainContainer(level, pos) != null;
-                invs.add(new SortSnapshot.Inv(role == GolemStorage.Role.SOURCE, plain, limit, slotKey, count, pins,
-                        pinned.strict()));
+                invs.add(entry.inv.with(frozen, claims.getOrDefault(key, -1)));
                 positions.add(pos);
                 invKeys.add(key);
-                hashes.put(key, GolemStorage.contentHash(handler));
             }
             for (BlockPos pos : gone) {
                 networks.prune(net, pos);
             }
-            return new Snap(new SortSnapshot(keys, invs), items, positions, invKeys);
+            return new Snap(new SortSnapshot(List.copyOf(cache.keys), invs), cache.items, positions, invKeys);
         }
 
-        /** The key for {@code stack}, numbering it if it is new. */
-        private static int keyOf(ItemStack stack, List<SortSnapshot.Key> keys, List<ItemStack> items, Map<ItemKey, Integer> index) {
-            ItemKey key = new ItemKey(stack);
-            Integer known = index.get(key);
-            if (known != null) {
-                return known;
+        /**
+         * Tidies within each plain container this sort touched, as one read and write: with Quark's own sort when
+         * Quark is there, else into full stacks grouped by family. Returns how many it changed.
+         */
+        private int reorder(ServerLevel level) {
+            GolemNetworks.Net net = GolemNetworks.get(level).net(netId);
+            if (net == null || touched.isEmpty()) {
+                return 0;
             }
-            int id = keys.size();
-            keys.add(new SortSnapshot.Key(stack.getMaxStackSize(), GolemGroups.group(stack), GolemGroups.order(stack)));
-            items.add(stack.copyWithCount(1));
-            index.put(new ItemKey(items.get(id)), id);
-            return id;
-        }
-
-        /** Reorders each plain container in place, as one read and write; true if any changed. */
-        private boolean reorder(ServerLevel level, Snap snap) {
-            boolean any = false;
-            for (int i = 0; i < snap.positions.size(); i++) {
-                SortSnapshot.Inv inv = snap.snapshot.invs().get(i);
-                if (!inv.plain()) {
+            int changed = 0;
+            Set<Long> done = new HashSet<>();
+            for (BlockPos pos : net.links()) {
+                if (!level.isLoaded(pos)) {
                     continue;
                 }
-                BlockPos pos = snap.positions.get(i);
-                if (GolemStorage.inUse(level, pos)) {
+                long key = GolemStorage.inventoryKey(level, pos);
+                if (!touched.contains(key) || !done.add(key) || GolemStorage.inUse(level, pos)) {
                     continue;
                 }
                 Container container = GolemStorage.plainContainer(level, pos);
-                if (container == null || container.getContainerSize() != inv.size()) {
+                InvCache.Entry entry = cache.get(key);
+                if (container == null || entry == null || container.getContainerSize() != entry.inv.size()
+                        || GolemStorage.role(level, pos) != GolemStorage.Role.STORAGE) {
                     continue;
                 }
-                // read it again: it must still be as the snapshot saw it
-                if (!sameAs(container, inv, snap.items)) {
-                    dirty = true;
+                // it must still be as last read
+                cache.read(level, pos, key, GolemStorage.Role.STORAGE);
+                entry = cache.get(key);
+                if (entry == null || !sameAs(container, entry.inv, cache.items)) {
                     continue;
                 }
-                SortSnapshot.Inv ordered = Planner.orderWithin(inv, snap.snapshot.keys());
-                if (ordered == null) {
+                int before = GolemStorage.contentHash(Objects.requireNonNull(GolemStorage.handler(level, pos)));
+                if (!QuarkSorting.sort(container)) {
+                    SortSnapshot.Inv ordered = Planner.orderWithin(entry.inv, cache.keys);
+                    if (ordered == null) {
+                        continue;
+                    }
+                    for (int slot = 0; slot < ordered.size(); slot++) {
+                        int k = ordered.key()[slot];
+                        container.setItem(slot, k < 0 ? ItemStack.EMPTY : cache.items.get(k).copyWithCount(ordered.count()[slot]));
+                    }
+                    container.setChanged();
+                }
+                IItemHandler after = GolemStorage.handler(level, pos);
+                if (after == null || GolemStorage.contentHash(after) == before) {
                     continue;
                 }
-                for (int slot = 0; slot < ordered.size(); slot++) {
-                    int key = ordered.key()[slot];
-                    container.setItem(slot, key < 0 ? ItemStack.EMPTY : snap.items.get(key).copyWithCount(ordered.count()[slot]));
-                }
-                container.setChanged();
                 level.sendParticles(new DustParticleOptions(GravititeGolem.GRAVITITE, 0.8F), pos.getX() + 0.5,
                         pos.getY() + 1.0, pos.getZ() + 0.5, 6, 0.3, 0.1, 0.3, 0);
                 rehash(level, pos);
-                any = true;
+                changed++;
             }
-            return any;
+            return changed;
         }
 
         private static boolean sameAs(Container container, SortSnapshot.Inv inv, List<ItemStack> items) {
@@ -619,21 +858,14 @@ public final class GolemSorter {
                 if (busy(move)) {
                     continue;
                 }
-                GravititeGolem lifter = null, setter = null;
-                for (GravititeGolem golem : team) {
-                    BlockPos home = Objects.requireNonNull(golem.home());
-                    if (lifter == null && GolemStorage.inReach(home, move.src, range) && inFlight(golem) < perGolem) {
-                        lifter = golem;
-                    }
-                    if (setter == null && GolemStorage.inReach(home, move.dst, range)) {
-                        setter = golem;
-                    }
+                // the nearest golems that reach each end lift and set down
+                GravititeGolem lifter = nearest(team, move.src, range, perGolem, true);
+                GravititeGolem setter = nearest(team, move.dst, range, perGolem, false);
+                if (setter == null || nearest(team, move.src, range, perGolem, false) == null) {
+                    it.remove();
+                    continue;
                 }
-                if (lifter == null || setter == null) {
-                    if (team.stream().noneMatch(g -> GolemStorage.inReach(Objects.requireNonNull(g.home()), move.src, range))
-                            || setter == null) {
-                        it.remove();
-                    }
+                if (lifter == null) {
                     continue;
                 }
                 IItemHandler src = GolemStorage.handler(level, move.src);
@@ -641,7 +873,6 @@ public final class GolemSorter {
                 if (src == null || dst == null || move.srcSlot >= src.getSlots()
                         || GolemStorage.inUse(level, move.src) || GolemStorage.inUse(level, move.dst)) {
                     it.remove();
-                    dirty = true;
                     continue;
                 }
                 ItemStack there = src.getStackInSlot(move.srcSlot);
@@ -649,7 +880,6 @@ public final class GolemSorter {
                         ? ItemStack.EMPTY : src.extractItem(move.srcSlot, move.count, true);
                 if (lifted.isEmpty() || !ItemStack.isSameItemSameComponents(lifted, move.item)) {
                     it.remove();
-                    dirty = true;
                     continue;
                 }
                 int dstSlot = move.dstSlot;
@@ -663,39 +893,68 @@ public final class GolemSorter {
                     accepted = lifted.getCount() - ItemHandlerHelper.insertItemStacked(dst, lifted, true).getCount();
                     if (accepted <= 0) {
                         it.remove();
-                        dirty = true;
                         continue;
                     }
                 }
+                List<GravititeGolem> path = path(team, lifter, setter);
+                Routed routed = route(level, move, path, now);
+                if (routed.waiting()) {
+                    continue;
+                }
                 it.remove();
-                List<UUID> path = path(team, lifter, setter, range);
-                int ticks = AACommonConfig.GOLEM_MOVE_TICKS.get();
-                Flight flight = new Flight(nextFlightId++, move, dstSlot, accepted, now, now + ticks, path);
+                if (routed.points() == null) {
+                    // no way through: the items stay, and the chest is looked at again when something changes
+                    continue;
+                }
+                List<double[]> points = new ArrayList<>();
+                for (Vec3 point : routed.points()) {
+                    points.add(new double[]{point.x, point.y, point.z});
+                }
+                int ticks = FlightPath.ticks(points, AACommonConfig.GOLEM_MOVE_TICKS.get());
+                List<UUID> ids = new ArrayList<>();
+                path.forEach(golem -> ids.add(golem.getUUID()));
+                Flight flight = new Flight(nextFlightId++, move, dstSlot, accepted, now, now + ticks, ids);
                 flights.add(flight);
                 lifter.face(move.src);
                 lift(level, move.src);
                 lift(level, move.dst);
-                List<Vec3> via = new ArrayList<>();
-                if (path.size() > 1) {
-                    for (UUID id : path) {
-                        Entity golem = level.getEntity(id);
-                        if (golem != null) {
-                            via.add(golem.position().add(0, golem.getBbHeight() + 0.6, 0));
-                        }
-                    }
-                }
                 PacketDistributor.sendToPlayersTrackingEntity(lifter, new GolemPayloads.Flight(flight.id, lifter.getId(),
-                        move.item.copyWithCount(accepted), top(move.src), top(move.dst), via, ticks));
+                        move.item.copyWithCount(accepted), routed.points(), ticks));
                 if (flights.size() >= perGolem * team.size()) {
                     break;
                 }
             }
         }
 
+        /** The team golem sitting nearest {@code pos} that reaches it (with room for another lift, if lifting). */
+        @Nullable
+        private GravititeGolem nearest(List<GravititeGolem> team, BlockPos pos, int range, int perGolem, boolean lifting) {
+            GravititeGolem best = null;
+            double bestDist = Double.MAX_VALUE;
+            for (GravititeGolem golem : team) {
+                BlockPos home = Objects.requireNonNull(golem.home());
+                if (!GolemStorage.inReach(home, pos, range) || lifting && inFlight(golem) >= perGolem) {
+                    continue;
+                }
+                double d = home.distSqr(pos);
+                if (d < bestDist) {
+                    bestDist = d;
+                    best = golem;
+                }
+            }
+            return best;
+        }
+
+        /**
+         * Whether {@code move} must wait for a flight in the air: one lifting from the same slot, one filling the slot
+         * it would fill or take from, or one going wherever its target takes it, which needs the target to itself.
+         */
         private boolean busy(Planned move) {
             for (Flight flight : flights) {
-                if (flight.src.equals(move.src) && flight.srcSlot == move.srcSlot || flight.dstKey == move.dstKey
-                        || flight.srcKey == move.dstKey && flight.srcSlot == move.dstSlot) {
+                if (flight.srcKey == move.srcKey && flight.srcSlot == move.srcSlot
+                        || flight.dstKey == move.dstKey && (flight.dstSlot == move.dstSlot || flight.dstSlot < 0)
+                        || flight.srcKey == move.dstKey && flight.srcSlot == move.dstSlot
+                        || flight.dstKey == move.srcKey && flight.dstSlot == move.srcSlot) {
                     return true;
                 }
             }
@@ -713,9 +972,9 @@ public final class GolemSorter {
         }
 
         /** The golems an item passes from {@code from} to {@code to}, each within reach of the next. */
-        private static List<UUID> path(List<GravititeGolem> team, GravititeGolem from, GravititeGolem to, int range) {
+        private static List<GravititeGolem> path(List<GravititeGolem> team, GravititeGolem from, GravititeGolem to) {
             if (from == to) {
-                return List.of(from.getUUID());
+                return List.of(from);
             }
             Map<GravititeGolem, GravititeGolem> previous = new HashMap<>();
             Deque<GravititeGolem> open = new ArrayDeque<>();
@@ -727,15 +986,15 @@ public final class GolemSorter {
                     break;
                 }
                 for (GravititeGolem next : team) {
-                    if (!previous.containsKey(next) && neighbours(at, next, range)) {
+                    if (!previous.containsKey(next) && neighbours(at, next)) {
                         previous.put(next, at);
                         open.add(next);
                     }
                 }
             }
-            List<UUID> path = new ArrayList<>();
+            List<GravititeGolem> path = new ArrayList<>();
             for (GravititeGolem at = to; ; at = previous.get(at)) {
-                path.add(0, at.getUUID());
+                path.add(0, at);
                 if (at == from || previous.get(at) == null) {
                     break;
                 }
@@ -743,8 +1002,106 @@ public final class GolemSorter {
             return path;
         }
 
-        private static Vec3 top(BlockPos pos) {
-            return new Vec3(pos.getX() + 0.5, pos.getY() + 0.9, pos.getZ() + 0.5);
+        /**
+         * The way an item flies for {@code move}: out of an open face of its chest, past the head of each golem that
+         * relays it (when more than one does), in through an open face of the target. Kept a while, and checked
+         * still clear before it is used again.
+         */
+        private Routed route(ServerLevel level, Planned move, List<GravititeGolem> path, long now) {
+            StringBuilder name = new StringBuilder().append(move.srcKey).append(':').append(move.dstKey);
+            path.forEach(golem -> name.append(':').append(golem.getId()));
+            String key = name.toString();
+            CachedRoute cached = routes.get(key);
+            if (cached != null && now < cached.expiry()) {
+                if (cached.points() == null) {
+                    return Routed.NONE;
+                }
+                if (cached.cells().stream().allMatch(cell -> GolemAccess.open(level, cell))) {
+                    return new Routed(cached.points(), false);
+                }
+            }
+            if (routes.size() > 512) {
+                routes.values().removeIf(r -> now >= r.expiry());
+            }
+            List<GolemAccess.Face> from = GolemAccess.openFaces(level, move.src), to = GolemAccess.openFaces(level, move.dst);
+            if (from.isEmpty() || to.isEmpty()) {
+                routes.put(key, new CachedRoute(null, List.of(), now + ROUTE_TTL));
+                return Routed.NONE;
+            }
+            List<BlockPos> homes = new ArrayList<>();
+            path.forEach(golem -> homes.add(Objects.requireNonNull(golem.home())));
+            Router.Bounds bounds = GolemAccess.bounds(homes);
+            Router.CellGrid grid = GolemAccess.grid(level);
+            List<List<Router.Cell>> stops = new ArrayList<>();
+            stops.add(from.stream().map(face -> GolemAccess.cell(face.cell())).toList());
+            if (path.size() > 1) {
+                for (BlockPos home : homes) {
+                    stops.add(List.of(GolemAccess.cell(home.above())));
+                }
+            }
+            stops.add(to.stream().map(face -> GolemAccess.cell(face.cell())).toList());
+            List<Vec3> points = new ArrayList<>();
+            List<BlockPos> cells = new ArrayList<>();
+            Router.Cell at = null;
+            for (int i = 0; i + 1 < stops.size(); i++) {
+                List<Router.Cell> starts = at == null ? stops.get(i) : List.of(at);
+                List<Router.Cell> corners = Router.straight(grid, starts, stops.get(i + 1), bounds);
+                if (corners == null) {
+                    Long last = SEARCHED.get(level);
+                    if (last != null && last == now) {
+                        return Routed.WAIT;
+                    }
+                    SEARCHED.put(level, now);
+                    corners = Router.search(grid, starts, stops.get(i + 1), bounds);
+                }
+                if (corners == null) {
+                    routes.put(key, new CachedRoute(null, List.of(), now + ROUTE_TTL));
+                    return Routed.NONE;
+                }
+                if (at == null) {
+                    BlockPos first = GolemAccess.pos(corners.get(0));
+                    from.stream().filter(face -> face.cell().equals(first)).findFirst()
+                            .ifPresent(face -> points.add(face.centre()));
+                }
+                for (int c = 0; c < corners.size(); c++) {
+                    BlockPos cell = GolemAccess.pos(corners.get(c));
+                    points.add(Vec3.atCenterOf(cell));
+                    if (c > 0) {
+                        BlockPos prev = GolemAccess.pos(corners.get(c - 1));
+                        for (BlockPos p : BlockPos.betweenClosed(prev, cell)) {
+                            cells.add(p.immutable());
+                        }
+                    } else {
+                        cells.add(cell);
+                    }
+                }
+                at = corners.get(corners.size() - 1);
+            }
+            BlockPos last = GolemAccess.pos(at);
+            to.stream().filter(face -> face.cell().equals(last)).findFirst().ifPresent(face -> points.add(face.centre()));
+            List<Vec3> simple = simplify(points);
+            routes.put(key, new CachedRoute(simple, cells, now + ROUTE_TTL));
+            return new Routed(simple, false);
+        }
+
+        /** The points without repeats or points in the middle of a straight run. */
+        private static List<Vec3> simplify(List<Vec3> points) {
+            List<Vec3> out = new ArrayList<>();
+            for (Vec3 point : points) {
+                if (!out.isEmpty() && out.get(out.size() - 1).distanceToSqr(point) < 1.0E-6) {
+                    continue;
+                }
+                if (out.size() >= 2) {
+                    Vec3 a = out.get(out.size() - 2), b = out.get(out.size() - 1);
+                    Vec3 ab = b.subtract(a).normalize(), bc = point.subtract(b).normalize();
+                    if (ab.dot(bc) > 0.9999) {
+                        out.set(out.size() - 1, point);
+                        continue;
+                    }
+                }
+                out.add(point);
+            }
+            return out;
         }
 
         /** Whether both ends of a flight still work: the item is still there, the target still has room. */
@@ -752,7 +1109,8 @@ public final class GolemSorter {
             IItemHandler src = GolemStorage.handler(level, flight.src);
             IItemHandler dst = GolemStorage.handler(level, flight.dst);
             if (src == null || dst == null || flight.srcSlot >= src.getSlots()
-                    || GolemStorage.inUse(level, flight.src) || GolemStorage.inUse(level, flight.dst)) {
+                    || GolemStorage.inUse(level, flight.src) || GolemStorage.inUse(level, flight.dst)
+                    || GolemAccess.encased(level, flight.src) || GolemAccess.encased(level, flight.dst)) {
                 return false;
             }
             ItemStack there = src.getStackInSlot(flight.srcSlot);
@@ -768,7 +1126,8 @@ public final class GolemSorter {
         private void land(ServerLevel level, GolemNetworks.Net net, Flight flight) {
             IItemHandler src = GolemStorage.handler(level, flight.src);
             IItemHandler dst = GolemStorage.handler(level, flight.dst);
-            if (src == null || dst == null || flight.srcSlot >= src.getSlots()) {
+            if (src == null || dst == null || flight.srcSlot >= src.getSlots()
+                    || GolemAccess.encased(level, flight.src) || GolemAccess.encased(level, flight.dst)) {
                 cancel(level, flight);
                 return;
             }
@@ -853,7 +1212,8 @@ public final class GolemSorter {
                 drop(level, flight.src);
                 drop(level, flight.dst);
                 sendEnd(level, flight, false);
-                dirty = true;
+                // what it was moving is looked at again soon
+                triggers.changed(flight.srcKey, level.getGameTime(), delay(), false, false);
             }
         }
 
@@ -871,6 +1231,52 @@ public final class GolemSorter {
                 PacketDistributor.sendToPlayersTrackingEntity(lifter, end);
             } else {
                 PacketDistributor.sendToPlayersNear(level, null, flight.src.getX(), flight.src.getY(), flight.src.getZ(), 64, end);
+            }
+        }
+
+        // -----------------------------------------------------------------------------------------------------------
+        // Comparators
+
+        int computeSignal(ServerLevel level, GolemNetworks.Net net) {
+            double fill = 0;
+            int slots = 0;
+            boolean any = false;
+            Set<Long> seen = new HashSet<>();
+            for (BlockPos pos : net.links()) {
+                if (!level.isLoaded(pos)) {
+                    continue;
+                }
+                long key = GolemStorage.inventoryKey(level, pos);
+                if (!seen.add(key)) {
+                    continue;
+                }
+                InvCache.Entry entry = cache.get(key);
+                if (entry == null) {
+                    cache.read(level, pos, key, GolemStorage.role(level, pos));
+                    entry = cache.get(key);
+                }
+                if (entry == null) {
+                    continue;
+                }
+                fill += entry.fill;
+                slots += entry.slots;
+                any |= entry.total > 0;
+            }
+            return slots == 0 ? 0 : (int) Math.floor(fill / slots * 14.0) + (any ? 1 : 0);
+        }
+
+        /** Tells comparators behind the golems' seats that the network's contents changed, at most once a tick. */
+        private void flushSignal(ServerLevel level, GolemNetworks.Net net) {
+            if (!contentsChanged) {
+                return;
+            }
+            contentsChanged = false;
+            signalTick = -1;
+            for (GolemNetworks.Member member : net.members().values()) {
+                BlockPos floor = member.home().below();
+                if (level.isLoaded(floor)) {
+                    level.updateNeighbourForOutputSignal(floor, level.getBlockState(floor).getBlock());
+                }
             }
         }
 
@@ -912,27 +1318,6 @@ public final class GolemSorter {
                     player.displayClientMessage(message, true);
                 }
             }
-        }
-    }
-
-    /** An item without its count, compared and hashed as stacks are merged. */
-    private static final class ItemKey {
-        final ItemStack stack;
-        final int hash;
-
-        ItemKey(ItemStack stack) {
-            this.stack = stack;
-            this.hash = ItemStack.hashItemAndComponents(stack);
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            return o instanceof ItemKey other && ItemStack.isSameItemSameComponents(stack, other.stack);
-        }
-
-        @Override
-        public int hashCode() {
-            return hash;
         }
     }
 }

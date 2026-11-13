@@ -43,15 +43,15 @@ public final class GolemPayloads {
     private GolemPayloads() {
     }
 
-    /** Kinds of glow. */
-    public static final byte LINK = 0, UNLINK = 1, SHOW = 2, SEARCH = 3, MARK = 4;
+    /** Kinds of glow; {@link #REFUSE} marks a golem a full network turned away, in red. */
+    public static final byte LINK = 0, UNLINK = 1, SEARCH = 3, MARK = 4, REFUSE = 5;
 
     /**
-     * Makes blocks and golems glow for the player it is sent to: {@code bright} blocks fully, {@code dim} ones
-     * faintly (links out of reach), the {@code golems} by entity id, and a thread of particles between each pair in
-     * {@code threads}. Those of the blocks in {@code strict} (storage pinned strictly) glow in their own colour.
+     * Makes blocks and golems glow for the player it is sent to: {@code bright} blocks fully, {@code blocked} ones in
+     * red (linked, but no golem can get at them), the {@code golems} by entity id, and a thread of particles between
+     * each pair in {@code threads}. Those of the blocks in {@code strict} (storage pinned strictly) glow yellow.
      */
-    public record Glow(byte kind, int ticks, List<BlockPos> bright, List<BlockPos> dim, List<Integer> golems,
+    public record Glow(byte kind, int ticks, List<BlockPos> bright, List<BlockPos> blocked, List<Integer> golems,
                        List<Integer> threads, List<BlockPos> strict) implements CustomPacketPayload {
         public static final Type<Glow> TYPE = new Type<>(AlteredAether.id("golem_glow"));
         public static final StreamCodec<ByteBuf, Glow> STREAM_CODEC = new StreamCodec<>() {
@@ -66,7 +66,7 @@ public final class GolemPayloads {
                 buf.writeByte(glow.kind());
                 ByteBufCodecs.VAR_INT.encode(buf, glow.ticks());
                 POSITIONS.encode(buf, glow.bright());
-                POSITIONS.encode(buf, glow.dim());
+                POSITIONS.encode(buf, glow.blocked());
                 INTS.encode(buf, glow.golems());
                 INTS.encode(buf, glow.threads());
                 POSITIONS.encode(buf, glow.strict());
@@ -81,6 +81,10 @@ public final class GolemPayloads {
             return new Glow(kind, ticks, bright, List.of(), List.of(), List.of(), strict);
         }
 
+        public static Glow golems(byte kind, int ticks, List<Integer> golems) {
+            return new Glow(kind, ticks, List.of(), List.of(), golems, List.of(), List.of());
+        }
+
         @Override
         public Type<? extends CustomPacketPayload> type() {
             return TYPE;
@@ -88,30 +92,38 @@ public final class GolemPayloads {
     }
 
     /**
-     * A golem network as its pebble's holder sees it: the golem's name, mode, range, links and where each golem
-     * sits. Sent while the player holds that golem's pebble.
+     * A golem network as a pebble's carrier sees it: its name, mode, colour, range and cap, its links (with those no
+     * golem can get at, and those pinned strictly), where each golem sits, and the entity ids of those loaded. Sent
+     * while the player carries one of its pebbles.
      */
-    public record Links(UUID golem, String name, byte mode, int range, int linked, int maxLinks, List<BlockPos> links,
-                        List<BlockPos> homes) implements CustomPacketPayload {
+    public record Links(UUID network, String name, byte mode, int color, int range, int linked, int maxLinks,
+                        int maxGolems, List<BlockPos> links, List<BlockPos> homes, List<Integer> members,
+                        List<BlockPos> blocked, List<BlockPos> strict) implements CustomPacketPayload {
         public static final Type<Links> TYPE = new Type<>(AlteredAether.id("golem_links"));
         public static final StreamCodec<ByteBuf, Links> STREAM_CODEC = new StreamCodec<>() {
             @Override
             public Links decode(ByteBuf buf) {
                 return new Links(UUIDUtil.STREAM_CODEC.decode(buf), ByteBufCodecs.STRING_UTF8.decode(buf), buf.readByte(),
-                        ByteBufCodecs.VAR_INT.decode(buf), ByteBufCodecs.VAR_INT.decode(buf),
-                        ByteBufCodecs.VAR_INT.decode(buf), POSITIONS.decode(buf), POSITIONS.decode(buf));
+                        buf.readInt(), ByteBufCodecs.VAR_INT.decode(buf), ByteBufCodecs.VAR_INT.decode(buf),
+                        ByteBufCodecs.VAR_INT.decode(buf), ByteBufCodecs.VAR_INT.decode(buf), POSITIONS.decode(buf),
+                        POSITIONS.decode(buf), INTS.decode(buf), POSITIONS.decode(buf), POSITIONS.decode(buf));
             }
 
             @Override
             public void encode(ByteBuf buf, Links links) {
-                UUIDUtil.STREAM_CODEC.encode(buf, links.golem());
+                UUIDUtil.STREAM_CODEC.encode(buf, links.network());
                 ByteBufCodecs.STRING_UTF8.encode(buf, links.name());
                 buf.writeByte(links.mode());
+                buf.writeInt(links.color());
                 ByteBufCodecs.VAR_INT.encode(buf, links.range());
                 ByteBufCodecs.VAR_INT.encode(buf, links.linked());
                 ByteBufCodecs.VAR_INT.encode(buf, links.maxLinks());
+                ByteBufCodecs.VAR_INT.encode(buf, links.maxGolems());
                 POSITIONS.encode(buf, links.links());
                 POSITIONS.encode(buf, links.homes());
+                INTS.encode(buf, links.members());
+                POSITIONS.encode(buf, links.blocked());
+                POSITIONS.encode(buf, links.strict());
             }
         };
 
@@ -122,12 +134,11 @@ public final class GolemPayloads {
     }
 
     /**
-     * An item starting to fly for golem {@code golem} from {@code from} to {@code to}, over each point in {@code via}
-     * (the heads of the golems that relay it), taking {@code ticks}. Only a picture: the item stays in its chest until
-     * the server moves it on landing.
+     * An item starting to fly for golem {@code golem} along {@code points} (out of a face of its chest, one axis at a
+     * time, into a face of the next), taking {@code ticks}: the client times it along the same path the server did
+     * (see route/FlightPath). Only a picture: the item stays in its chest until the server moves it on landing.
      */
-    public record Flight(int id, int golem, ItemStack item, Vec3 from, Vec3 to, List<Vec3> via, int ticks)
-            implements CustomPacketPayload {
+    public record Flight(int id, int golem, ItemStack item, List<Vec3> points, int ticks) implements CustomPacketPayload {
         public static final Type<Flight> TYPE = new Type<>(AlteredAether.id("golem_flight"));
         public static final StreamCodec<RegistryFriendlyByteBuf, Flight> STREAM_CODEC = new StreamCodec<>() {
             @Override
@@ -135,10 +146,8 @@ public final class GolemPayloads {
                 int id = buf.readVarInt();
                 int golem = buf.readVarInt();
                 ItemStack item = ItemStack.STREAM_CODEC.decode(buf);
-                Vec3 from = VEC3.decode(buf);
-                Vec3 to = VEC3.decode(buf);
-                List<Vec3> via = VEC3.apply(ByteBufCodecs.list()).decode(buf);
-                return new Flight(id, golem, item, from, to, via, buf.readVarInt());
+                List<Vec3> points = VEC3.apply(ByteBufCodecs.list()).decode(buf);
+                return new Flight(id, golem, item, points, buf.readVarInt());
             }
 
             @Override
@@ -146,9 +155,7 @@ public final class GolemPayloads {
                 buf.writeVarInt(flight.id());
                 buf.writeVarInt(flight.golem());
                 ItemStack.STREAM_CODEC.encode(buf, flight.item());
-                VEC3.encode(buf, flight.from());
-                VEC3.encode(buf, flight.to());
-                VEC3.apply(ByteBufCodecs.list()).encode(buf, flight.via());
+                VEC3.apply(ByteBufCodecs.list()).encode(buf, flight.points());
                 buf.writeVarInt(flight.ticks());
             }
         };
@@ -175,7 +182,7 @@ public final class GolemPayloads {
     public static final class Registration {
         @SubscribeEvent
         public static void register(RegisterPayloadHandlersEvent event) {
-            PayloadRegistrar registrar = event.registrar("1");
+            PayloadRegistrar registrar = event.registrar("2");
             // the handlers run only on clients; the client classes load only when one does
             registrar.playToClient(Glow.TYPE, Glow.STREAM_CODEC, (payload, context) -> GolemClientHooks.glow(payload));
             registrar.playToClient(Links.TYPE, Links.STREAM_CODEC, (payload, context) -> GolemClientHooks.links(payload));

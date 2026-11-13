@@ -12,6 +12,8 @@
     "AerwhaleDeckFloatingMixin",
     "AirshipVillageSetMixin",
     "AirshipVillageSpawnExclusionMixin",
+    "ComparatorInputMixin",
+    "CreateThresholdSwitchMixin",
     "DeepAetherHeightChecksMixin",
     "DeepAetherWhaleCargoMixin",
     "GleamVinesMixins$BeeGrow",

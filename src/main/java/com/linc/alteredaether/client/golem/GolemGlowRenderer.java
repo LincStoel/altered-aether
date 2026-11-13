@@ -34,8 +34,9 @@ import java.util.OptionalDouble;
 
 /**
  * Draws {@link GolemGlow}'s glows: a softly pulsing pane over each block or golem with a brighter edge, in gravitite
- * pink, hidden by walls unless the client config says otherwise. Drawn as Spectral Enchantments draws its bookshelf
- * glow: after particles, into the item-entity target, without depth writes.
+ * pink, hidden by walls unless the client config says otherwise; and the faint outline of a held pebble's links, edges
+ * only and never through walls. Drawn as Spectral Enchantments draws its bookshelf glow: after particles, into the
+ * item-entity target, without depth writes.
  */
 final class GolemGlowRenderer {
     private static final float FILL_ALPHA = 0.35F;
@@ -44,6 +45,8 @@ final class GolemGlowRenderer {
     private static final int FILL_COLOR = 0xBD42B2;
     /** The fill under a strictly pinned chest's yellow edge. */
     private static final int STRICT_FILL_COLOR = 0xD9A520;
+    /** The fill under the red edge of storage no golem can get at. */
+    private static final int BLOCKED_FILL_COLOR = 0xA82626;
 
     private static final RenderType FILL_THROUGH = fill("golem_glow_fill_through", RenderStateShard.NO_DEPTH_TEST, ThroughWalls.SHARD);
     private static final RenderType FILL = fill("golem_glow_fill", RenderStateShard.LEQUAL_DEPTH_TEST, RenderStateShard.NO_LAYERING);
@@ -82,7 +85,8 @@ final class GolemGlowRenderer {
     }
 
     static void render(RenderLevelStageEvent event) {
-        if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_PARTICLES || GolemGlow.GLOWS.isEmpty()) {
+        if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_PARTICLES
+                || GolemGlow.GLOWS.isEmpty() && GolemGlow.HELD.isEmpty()) {
             return;
         }
         Minecraft mc = Minecraft.getInstance();
@@ -104,7 +108,8 @@ final class GolemGlowRenderer {
             float alpha = FILL_ALPHA * pulse * GolemGlow.fade(glow, now);
             AABB box = alpha > 0 ? GolemGlow.box(mc.level, glow, partial) : null;
             if (box != null) {
-                int color = glow.color() == GolemGlow.STRICT_COLOR ? STRICT_FILL_COLOR : FILL_COLOR;
+                int color = glow.color() == GolemGlow.STRICT_COLOR ? STRICT_FILL_COLOR
+                        : glow.color() == GolemGlow.BLOCKED_COLOR ? BLOCKED_FILL_COLOR : FILL_COLOR;
                 fillBox(poseStack.last(), fill, box.move(-cam.x, -cam.y, -cam.z), color, alpha);
             }
         }
@@ -122,6 +127,20 @@ final class GolemGlowRenderer {
             }
         }
         buffers.endBatch(edgeType);
+
+        // a held pebble's links: thin edges only, hidden by walls whatever the setting
+        if (!GolemGlow.HELD.isEmpty()) {
+            VertexConsumer held = buffers.getBuffer(EDGE);
+            for (GolemGlow.Held outline : GolemGlow.HELD) {
+                AABB box = GolemGlow.blockBox(mc.level, outline.pos());
+                if (box != null) {
+                    int color = outline.color();
+                    edges(poseStack.last(), held, box.move(-cam.x, -cam.y, -cam.z), FastColor.ARGB32.red(color) / 255F,
+                            FastColor.ARGB32.green(color) / 255F, FastColor.ARGB32.blue(color) / 255F, outline.alpha());
+                }
+            }
+            buffers.endBatch(EDGE);
+        }
     }
 
     private static void fillBox(PoseStack.Pose pose, VertexConsumer consumer, AABB box, int color, float alpha) {

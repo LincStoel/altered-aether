@@ -14,6 +14,7 @@
  */
 package com.linc.alteredaether.entity.golem;
 
+import com.linc.alteredaether.item.PebbleLink;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.phys.Vec3;
@@ -21,36 +22,41 @@ import net.minecraft.world.phys.Vec3;
 import javax.annotation.Nullable;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 
 /**
- * What a client last heard about the golem networks whose pebbles its player held (see PebbleTracker), for the
- * pebble's tooltip and the hints shown while holding it. Empty on a server.
+ * What a client last heard about the golem networks whose pebbles its player carries (see PebbleTracker), for the
+ * pebble's look and tooltip and the hints shown while holding one. Empty on a server.
  */
 public final class PebbleInfo {
     private static final Map<UUID, Info> INFO = new ConcurrentHashMap<>();
     /** Where the client's player is; set by the client, so this class needs nothing client-only. */
     public static volatile Supplier<Vec3> viewer = () -> null;
+    /** Whether Alt is held, for the pebble's guide; set by the client. */
+    public static volatile BooleanSupplier altDown = () -> false;
+    /** The most golems a network holds, as the server last said (the client's own config until it does). */
+    public static volatile int maxGolems = -1;
 
-    public record Info(UUID golem, String name, GolemMode mode, int range, int linked, int maxLinks,
-                       List<BlockPos> links, List<BlockPos> homes) {
+    public record Info(UUID network, String name, GolemMode mode, int color, int range, int linked, int maxLinks,
+                       List<BlockPos> links, List<BlockPos> homes, List<Integer> members, Set<BlockPos> blocked,
+                       Set<BlockPos> strict) {
         public Component modeTitle() {
             return mode.title();
         }
 
-        /** Blocks from the client's player to the nearest golem of the network, or -1 if unknown. */
-        public double distance() {
-            Vec3 at = viewer.get();
-            if (at == null || homes.isEmpty()) {
-                return -1;
-            }
-            double best = Double.MAX_VALUE;
+        /** Whether a pebble at {@code at} is within reach of one of the network's golems. */
+        public boolean reaches(Vec3 at) {
+            BlockPos pos = BlockPos.containing(at);
             for (BlockPos home : homes) {
-                best = Math.min(best, Math.sqrt(home.getBottomCenter().distanceToSqr(at)));
+                if (GolemStorage.inReach(home, pos, range)) {
+                    return true;
+                }
             }
-            return best;
+            return false;
         }
     }
 
@@ -58,13 +64,28 @@ public final class PebbleInfo {
     }
 
     public static void put(GolemPayloads.Links links) {
-        INFO.put(links.golem(), new Info(links.golem(), links.name(), GolemMode.byId(links.mode()), links.range(),
-                links.linked(), links.maxLinks(), List.copyOf(links.links()), List.copyOf(links.homes())));
+        INFO.put(links.network(), new Info(links.network(), links.name(), GolemMode.byId(links.mode()), links.color(),
+                links.range(), links.linked(), links.maxLinks(), List.copyOf(links.links()), List.copyOf(links.homes()),
+                List.copyOf(links.members()), Set.copyOf(links.blocked()), Set.copyOf(links.strict())));
+        maxGolems = links.maxGolems();
     }
 
     @Nullable
-    public static Info get(UUID golem) {
-        return INFO.get(golem);
+    public static Info get(UUID network) {
+        return INFO.get(network);
+    }
+
+    /**
+     * Whether a pebble glows: its network lives and the one carrying it ({@code at}, else the client's player) is
+     * within reach of one of its golems. A pebble of a network the client hasn't heard about glows unless dead.
+     */
+    public static boolean bright(@Nullable PebbleLink link, @Nullable Vec3 at) {
+        if (link == null || link.dead()) {
+            return false;
+        }
+        Info info = INFO.get(link.network());
+        Vec3 where = at != null ? at : viewer.get();
+        return info == null || where == null || info.reaches(where);
     }
 
     public static void clear() {

@@ -45,8 +45,8 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * Building a gravitite golem (a carved pumpkin or squash on enchanted gravitite on holystone), and what keeps it out
- * of fights: monsters don't take it as a target, and a player's sweep doesn't catch it.
+ * Building a gravitite golem (a carved pumpkin or squash on enchanted gravitite on holystone), which hands its builder
+ * a pebble, and what keeps it out of fights: monsters don't take it as a target, and a player's sweep doesn't catch it.
  */
 @EventBusSubscriber(modid = AlteredAether.MOD_ID)
 public final class GolemEvents {
@@ -116,10 +116,14 @@ public final class GolemEvents {
         golem.setYHeadRot(yaw);
         golem.yBodyRot = yaw;
         golem.finalizeSpawn(level, level.getCurrentDifficultyAt(base), MobSpawnType.TRIGGERED, null);
-        golem.setHome(base);
+        golem.setHome(base, builder);
         level.addFreshEntity(golem);
         for (BlockPos pos : new BlockPos[]{head, head.below(), base}) {
             level.blockUpdated(pos, Blocks.AIR);
+        }
+        // its builder is handed a pebble straight away: the first thing to learn is already in hand
+        if (builder instanceof ServerPlayer player) {
+            GolemInteractions.givePebble(golem, player, level, true);
         }
         golem.event(GolemTiming.EVENT_LINK_PULSE);
         level.playSound(null, base, AARegistries.GOLEM_CHIME.get(), net.minecraft.sounds.SoundSource.NEUTRAL, 1.0F, 1.0F);

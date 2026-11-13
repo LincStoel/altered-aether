@@ -14,8 +14,11 @@
 Draws the gravitite golem's pebble. The golem's own texture (gravitite_golem.png) comes from Blockbench with its
 model, and gravitite_golem_glow.py derives its glow layers from it; this draws:
 
-- textures/item/storage_pebble.png and storage_pebble_dull.png (16x16): a chip of gravitite, and the same gone grey
-  once its golem is gone.
+- textures/item/storage_pebble.png (16x16): a chip of gravitite in grey, which the game tints its network's colour
+  (gravitite's own purple for a golem left undyed); the shades are the purple's, divided by GRAV_LIGHT, so tinted
+  purple it looks as it always has;
+- textures/item/storage_pebble_glint.png: the white glint drawn over it, untinted;
+- textures/item/storage_pebble_dull.png: the chip gone grey, out of reach of its network or once the network is gone.
 
 The pixels are drawn here, not copied from the Aether.
 
@@ -39,6 +42,12 @@ GRAV_DEEP = (0x87, 0x1F, 0x7E)
 rng = random.Random(4242)
 
 
+def grey(color):
+    """A purple shade as the grey that, tinted GRAV_LIGHT, gives it back (as near as one grey can)."""
+    v = min(255, round(color[0] * 255 / GRAV_LIGHT[0]))
+    return (v, v, v)
+
+
 def main():
     # the pebble: a rounded chip of gravitite with a highlight and a dark underside
     shape = [
@@ -60,7 +69,7 @@ def main():
         "................",
     ]
     for name, light, mid, dark, deep in (
-            ("storage_pebble", GRAV_LIGHT, GRAV[0], GRAV_DARK, GRAV_DEEP),
+            ("storage_pebble", grey(GRAV_LIGHT), grey(GRAV[0]), grey(GRAV_DARK), grey(GRAV_DEEP)),
             ("storage_pebble_dull", (0xA8, 0x9F, 0xA6), (0x8C, 0x84, 0x8A), (0x6E, 0x67, 0x6C), (0x58, 0x52, 0x57))):
         pebble = Image.new("RGBA", (16, 16), (0, 0, 0, 0))
         for y, row in enumerate(shape):
@@ -73,9 +82,14 @@ def main():
                 if not edge and not top and rng.random() < 0.15:
                     color = dark
                 pebble.putpixel((x, y), color + (255,))
-        # a glint
-        pebble.putpixel((5, 5), (0xFF, 0xF0, 0xFC, 255) if name == "storage_pebble" else light + (255,))
         ITEM.mkdir(parents=True, exist_ok=True)
+        if name == "storage_pebble":
+            # the glint is its own untinted layer
+            glint = Image.new("RGBA", (16, 16), (0, 0, 0, 0))
+            glint.putpixel((5, 5), (0xFF, 0xF0, 0xFC, 255))
+            glint.save(ITEM / "storage_pebble_glint.png")
+        else:
+            pebble.putpixel((5, 5), light + (255,))
         pebble.save(ITEM / (name + ".png"))
     print("wrote", ITEM)
 
