@@ -588,10 +588,7 @@ public final class GolemTour {
             player.setGameMode(GameType.SURVIVAL);
         }, new Vec3(0.5, 7, 13), new Vec3(0.5, 0, -2), 25, true,
                 GolemTour::openInventory));
-        steps.add(new Step("tooltip_guide", level -> { }, new Vec3(0.5, 7, 13), new Vec3(0.5, 0, -2), 10, true,
-                GolemTour::guide));
         steps.add(new Step("jei_info", level -> {
-            Minecraft.getInstance().execute(() -> PebbleInfo.altDown = net.minecraft.client.gui.screens.Screen::hasAltDown);
             ServerPlayer player = player(level);
             player.setGameMode(GameType.CREATIVE);
             player.getAbilities().flying = true;
@@ -789,15 +786,6 @@ public final class GolemTour {
         } catch (ReflectiveOperationException e) {
             AlteredAether.LOGGER.warn("Golem tour: couldn't move the mouse", e);
         }
-    }
-
-    /**
-     * The inventory, with Alt taken as held, so the pebble's guide shows. (Changing the GUI scale here stops the
-     * world being drawn until the shot times out, so it is shot at the window's own scale.)
-     */
-    private static void guide() {
-        PebbleInfo.altDown = () -> true;
-        openInventory();
     }
 
     private static void showJei() {

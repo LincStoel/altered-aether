@@ -107,35 +107,6 @@ public final class AAGolemProvider extends JsonDataProvider {
         lang.put(PEBBLE + ".mode", "Mode: %s");
         lang.put(PEBBLE + ".links", "Linked storage: %s / %s");
         lang.put("entity." + AlteredAether.MOD_ID + ".storage_pebble", "Storage Pebble");
-        // the golem guide, while Alt is held
-        String guide = PEBBLE + ".guide.";
-        lang.put(guide + "hint", "Hold [Alt] for the golem guide");
-        lang.put(guide + "build.title", "Build: ");
-        lang.put(guide + "build", "pumpkin on enchanted gravitite on holystone");
-        lang.put(guide + "hand.title", "Empty hand: ");
-        lang.put(guide + "hand", "take a pebble; sneak to switch mode");
-        lang.put(guide + "pebble.storage.title", "Pebble on storage: ");
-        lang.put(guide + "pebble.storage", "link or unlink it");
-        lang.put(guide + "pebble.golem.title", "Pebble on the golem: ");
-        lang.put(guide + "pebble.golem", "link all in reach; sneak: unlink all");
-        lang.put(guide + "pebble.send.title", "Sneak, pebble on ground: ");
-        lang.put(guide + "pebble.send", "send the golem there");
-        lang.put(guide + "search.title", "Any item on the golem: ");
-        lang.put(guide + "search", "find where it's kept");
-        lang.put(guide + "dye.title", "Dye: ");
-        lang.put(guide + "dye", "same colours in reach team up (up to %s)");
-        lang.put(guide + "frames.title", "Item frame on a chest: ");
-        lang.put(guide + "frames", "home for that item's kind");
-        lang.put(guide + "frames.strict.title", "Glow item frame: ");
-        lang.put(guide + "frames.strict", "that item only");
-        lang.put(guide + "frames.strict_create.title", "Glow frame or placard: ");
-        lang.put(guide + "frames.strict_create", "that item only");
-        lang.put(guide + "redstone.title", "Redstone: ");
-        lang.put(guide + "redstone", "pauses it; a pulse re-sorts all");
-        lang.put(guide + "comparator.title", "Comparator by its floor: ");
-        lang.put(guide + "comparator", "reads how full storage is");
-        lang.put(guide + "source.title", "Hoppers, depots: ");
-        lang.put(guide + "source", "only emptied");
 
         lang.put(M + "mode.tidy", "Tidy");
         lang.put(M + "mode.compact", "Compact");
@@ -214,9 +185,36 @@ public final class AAGolemProvider extends JsonDataProvider {
         lang.put(tips + "golem_frames", "An item frame on a chest tells a gravitite golem what that chest is for. A glow item frame keeps everything else out.");
 
         String jei = "jei." + AlteredAether.MOD_ID + ".golem.";
-        lang.put(jei + "build", "Gravitite golems sort storage by telekinesis. Build one by placing a carved pumpkin (or a Deep Aether carved squash) on a block of enchanted gravitite standing on holystone. It sits where it was built.");
-        lang.put(jei + "pebble", "A golem hands its builder a storage pebble; use the golem with an empty hand for another. Use the pebble on chests, barrels and other storage to link them, and again to unlink; use it on the golem to link everything around it, or sneak to unlink it all. Hoppers and depots are only ever emptied. Machines, and storage walled in on every side, can't be used.");
-        lang.put(jei + "controls", "Sneak and use the golem with an empty hand to switch modes: Tidy keeps each kind of item to its own chest, Compact packs everything into as few as it fits in. A golem sorts what changes, a moment after, and everything when its mode switches or a redstone pulse tells it to. Use the golem with any item to find where it is stored.");
-        lang.put(jei + "more", "An item frame on a chest pins that item (and its family) to the chest. A glow item frame or Create placard pins only that item, and the golem moves everything else out wherever it has room. Sneak and use the pebble on the top of a block to send the golem there; that becomes its new seat. A redstone signal makes it rest. Golems dyed one colour that sit within reach of each other work together. A golem heals sitting at home. A comparator reading the block under it reads how full its storage is.");
+        lang.put(jei + "guide.intro", "Gravitite golems sort storage by telekinesis. What they answer to:");
+        lang.put(jei + "guide.build.title", "Build: ");
+        lang.put(jei + "guide.build", "a carved pumpkin (or a Deep Aether carved squash) on a block of enchanted gravitite standing on holystone. It sits where it was built, and hands its builder a storage pebble.");
+        lang.put(jei + "guide.hand.title", "Empty hand on the golem: ");
+        lang.put(jei + "guide.hand", "take a pebble. Sneak to switch between Tidy (each kind of item to its own chest) and Compact (everything in as few chests as it fits).");
+        lang.put(jei + "guide.pebble.storage.title", "Pebble on storage: ");
+        lang.put(jei + "guide.pebble.storage", "link it, or unlink it, without opening it. Hoppers and depots are only ever emptied.");
+        lang.put(jei + "guide.pebble.golem.title", "Pebble on the golem: ");
+        lang.put(jei + "guide.pebble.golem", "link all the storage within its reach. Sneak to unlink it all.");
+        lang.put(jei + "guide.pebble.send.title", "Sneak, pebble on the top of a block: ");
+        lang.put(jei + "guide.pebble.send", "send the golem to sit there.");
+        lang.put(jei + "guide.search.title", "Any other item on the golem: ");
+        lang.put(jei + "guide.search", "shows which chests hold it, and how many there are.");
+        lang.put(jei + "guide.sorting.title", "Sorting: ");
+        lang.put(jei + "guide.sorting", "a chest is sorted a few seconds after it changes, never while someone has it open. Items fly out of an open side of one chest and into the next.");
+        lang.put(jei + "guide.dye.title", "Dye on the golem: ");
+        lang.put(jei + "guide.dye", "recolours it. Golems of one colour sitting within reach of each other work as one network, up to %s; one more rests until there is room.");
+        lang.put(jei + "guide.frames.title", "Item frame on a chest: ");
+        lang.put(jei + "guide.frames", "makes it the home for that item and its kind.");
+        lang.put(jei + "guide.frames.strict.title", "Glow item frame on a chest: ");
+        lang.put(jei + "guide.frames.strict", "it holds only that item, and everything else is moved out.");
+        lang.put(jei + "guide.frames.strict_create.title", "Glow item frame or Create placard on a chest: ");
+        lang.put(jei + "guide.frames.strict_create", "it holds only that item, and everything else is moved out.");
+        lang.put(jei + "guide.redstone.title", "Redstone: ");
+        lang.put(jei + "guide.redstone", "power makes the golem rest; a pulse has it sort everything again.");
+        lang.put(jei + "guide.comparator.title", "Comparator facing the block under a golem: ");
+        lang.put(jei + "guide.comparator", "reads how full its network's storage is.");
+        lang.put(jei + "guide.source.title", "Can't be used: ");
+        lang.put(jei + "guide.source", "machines, and storage walled in on every side (it shows red).");
+        lang.put(jei + "guide.health.title", "Health: ");
+        lang.put(jei + "guide.health", "a golem heals slowly while sitting at home. Struck, it pushes everything around it away.");
     }
 }

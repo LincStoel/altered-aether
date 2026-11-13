@@ -92,12 +92,12 @@ public final class GolemPayloads {
     }
 
     /**
-     * A golem network as a pebble's carrier sees it: its name, mode, colour, range and cap, its links (with those no
+     * A golem network as a pebble's carrier sees it: its name, mode, colour and range, its links (with those no
      * golem can get at, and those pinned strictly), where each golem sits, and the entity ids of those loaded. Sent
      * while the player carries one of its pebbles.
      */
     public record Links(UUID network, String name, byte mode, int color, int range, int linked, int maxLinks,
-                        int maxGolems, List<BlockPos> links, List<BlockPos> homes, List<Integer> members,
+                        List<BlockPos> links, List<BlockPos> homes, List<Integer> members,
                         List<BlockPos> blocked, List<BlockPos> strict) implements CustomPacketPayload {
         public static final Type<Links> TYPE = new Type<>(AlteredAether.id("golem_links"));
         public static final StreamCodec<ByteBuf, Links> STREAM_CODEC = new StreamCodec<>() {
@@ -105,7 +105,7 @@ public final class GolemPayloads {
             public Links decode(ByteBuf buf) {
                 return new Links(UUIDUtil.STREAM_CODEC.decode(buf), ByteBufCodecs.STRING_UTF8.decode(buf), buf.readByte(),
                         buf.readInt(), ByteBufCodecs.VAR_INT.decode(buf), ByteBufCodecs.VAR_INT.decode(buf),
-                        ByteBufCodecs.VAR_INT.decode(buf), ByteBufCodecs.VAR_INT.decode(buf), POSITIONS.decode(buf),
+                        ByteBufCodecs.VAR_INT.decode(buf), POSITIONS.decode(buf),
                         POSITIONS.decode(buf), INTS.decode(buf), POSITIONS.decode(buf), POSITIONS.decode(buf));
             }
 
@@ -118,7 +118,6 @@ public final class GolemPayloads {
                 ByteBufCodecs.VAR_INT.encode(buf, links.range());
                 ByteBufCodecs.VAR_INT.encode(buf, links.linked());
                 ByteBufCodecs.VAR_INT.encode(buf, links.maxLinks());
-                ByteBufCodecs.VAR_INT.encode(buf, links.maxGolems());
                 POSITIONS.encode(buf, links.links());
                 POSITIONS.encode(buf, links.homes());
                 INTS.encode(buf, links.members());

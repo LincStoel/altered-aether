@@ -117,7 +117,7 @@ public final class PebbleTracker {
         int linked = GolemNetworks.inventories(net, pos -> level.isLoaded(pos) ? GolemStorage.inventoryKey(level, pos) : pos.asLong());
         PacketDistributor.sendToPlayer(player, new GolemPayloads.Links(net.id, net.name(), (byte) net.mode().ordinal(),
                 net.color().getTextureDiffuseColor(), AACommonConfig.GOLEM_RANGE.get(), linked, net.maxLinks(),
-                AACommonConfig.GOLEM_MAX_NETWORK.get(), new ArrayList<>(net.links()), homes, members, blocked, strict));
+                new ArrayList<>(net.links()), homes, members, blocked, strict));
         SENT.computeIfAbsent(player.getUUID(), k -> new HashMap<>()).put(net.id, new Sent(net.version(), level.getGameTime()));
     }
 

@@ -16,6 +16,7 @@ package com.linc.alteredaether.compat.jei;
 
 import com.linc.alteredaether.AlteredAether;
 import com.linc.alteredaether.compat.CreateCompat;
+import com.linc.alteredaether.config.AACommonConfig;
 import mezz.jei.api.IModPlugin;
 import mezz.jei.api.JeiPlugin;
 import mezz.jei.api.recipe.category.IRecipeCategory;
@@ -23,21 +24,24 @@ import mezz.jei.api.registration.IRecipeCatalystRegistration;
 import mezz.jei.api.registration.IRecipeCategoryRegistration;
 import mezz.jei.api.registration.IRecipeRegistration;
 import com.linc.alteredaether.registry.AARegistries;
+import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.fml.ModList;
 
 import javax.annotation.Nullable;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
  * JEI pages for what this mod adds to other mods' machines: so far Create's bulk enchanting through an ambrosium
  * campfire ({@link FanEnchantingCategory}). Nothing here names a Create type, so the plugin loads without Create. Also
- * the gravitite golem's how-to, on its pebble and spawn egg.
+ * the gravitite golem's guide, on its pebble and spawn egg.
  */
 @JeiPlugin
 public final class AAJeiPlugin implements IModPlugin {
+    private static final String GUIDE = "jei." + AlteredAether.MOD_ID + ".golem.guide.";
     @Nullable
     private IRecipeCategory<?> fanEnchanting;
 
@@ -60,14 +64,23 @@ public final class AAJeiPlugin implements IModPlugin {
         if (fanEnchanting != null) {
             FanEnchantingCategory.registerRecipes(fanEnchanting, registration);
         }
-        // how to build and use a gravitite golem, on its pebble and spawn egg
-        Component[] golem = {info("build"), info("pebble"), info("controls"), info("more")};
+        // the gravitite golem guide, on its pebble and spawn egg: everything a golem answers to
         registration.addItemStackInfo(List.of(new ItemStack(AARegistries.STORAGE_PEBBLE.get()),
-                new ItemStack(AARegistries.GRAVITITE_GOLEM_SPAWN_EGG.get())), golem);
+                new ItemStack(AARegistries.GRAVITITE_GOLEM_SPAWN_EGG.get())), golemGuide());
     }
 
-    private static Component info(String key) {
-        return Component.translatable("jei." + AlteredAether.MOD_ID + ".golem." + key);
+    /** The guide: a line of what a golem is, then one entry for each thing it answers to, a heading and what it does. */
+    private static Component[] golemGuide() {
+        List<Component> lines = new ArrayList<>();
+        lines.add(Component.translatable(GUIDE + "intro"));
+        for (String key : List.of("build", "hand", "pebble.storage", "pebble.golem", "pebble.send", "search", "sorting",
+                "dye", "frames", ModList.get().isLoaded(CreateCompat.MOD) ? "frames.strict_create" : "frames.strict",
+                "redstone", "comparator", "source", "health")) {
+            // heading and text side by side, so the text keeps the page's own colour
+            lines.add(Component.empty().append(Component.translatable(GUIDE + key + ".title").withStyle(ChatFormatting.DARK_PURPLE))
+                    .append(Component.translatable(GUIDE + key, AACommonConfig.GOLEM_MAX_NETWORK.get())));
+        }
+        return lines.toArray(Component[]::new);
     }
 
     @Override

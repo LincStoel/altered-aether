@@ -15,7 +15,6 @@
 package com.linc.alteredaether.item;
 
 import com.linc.alteredaether.AlteredAether;
-import com.linc.alteredaether.compat.CreateCompat;
 import com.linc.alteredaether.config.AACommonConfig;
 import com.linc.alteredaether.entity.golem.GolemAccess;
 import com.linc.alteredaether.entity.golem.GolemNetworks;
@@ -46,7 +45,6 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.Level;
-import net.neoforged.fml.ModList;
 import net.neoforged.neoforge.network.PacketDistributor;
 
 import javax.annotation.Nullable;
@@ -280,35 +278,5 @@ public class StoragePebbleItem extends Item {
                 tooltip.add(Component.translatable(TIP + "links", info.linked(), info.maxLinks()).withStyle(ChatFormatting.GRAY));
             }
         }
-        if (!PebbleInfo.altDown.getAsBoolean()) {
-            tooltip.add(Component.translatable(TIP + "guide.hint").withStyle(ChatFormatting.DARK_GRAY));
-            return;
-        }
-        guide(tooltip);
-    }
-
-    /**
-     * Everything a gravitite golem answers to, for the pebble's tooltip while Alt is held: one line each, a heading
-     * then what it does, so it fits on screen at large GUI scales.
-     */
-    private static void guide(List<Component> tooltip) {
-        int cap = PebbleInfo.maxGolems > 0 ? PebbleInfo.maxGolems : AACommonConfig.GOLEM_MAX_NETWORK.get();
-        entry(tooltip, "build");
-        entry(tooltip, "hand");
-        entry(tooltip, "pebble.storage");
-        entry(tooltip, "pebble.golem");
-        entry(tooltip, "pebble.send");
-        entry(tooltip, "search");
-        entry(tooltip, "dye", cap);
-        entry(tooltip, "frames");
-        entry(tooltip, ModList.get().isLoaded(CreateCompat.MOD) ? "frames.strict_create" : "frames.strict");
-        entry(tooltip, "redstone");
-        entry(tooltip, "comparator");
-        entry(tooltip, "source");
-    }
-
-    private static void entry(List<Component> tooltip, String key, Object... args) {
-        tooltip.add(Component.translatable(TIP + "guide." + key + ".title").withStyle(ChatFormatting.LIGHT_PURPLE)
-                .append(Component.translatable(TIP + "guide." + key, args).withStyle(ChatFormatting.GRAY)));
     }
 }

@@ -25,7 +25,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 
 /**
@@ -36,10 +35,6 @@ public final class PebbleInfo {
     private static final Map<UUID, Info> INFO = new ConcurrentHashMap<>();
     /** Where the client's player is; set by the client, so this class needs nothing client-only. */
     public static volatile Supplier<Vec3> viewer = () -> null;
-    /** Whether Alt is held, for the pebble's guide; set by the client. */
-    public static volatile BooleanSupplier altDown = () -> false;
-    /** The most golems a network holds, as the server last said (the client's own config until it does). */
-    public static volatile int maxGolems = -1;
 
     public record Info(UUID network, String name, GolemMode mode, int color, int range, int linked, int maxLinks,
                        List<BlockPos> links, List<BlockPos> homes, List<Integer> members, Set<BlockPos> blocked,
@@ -67,7 +62,6 @@ public final class PebbleInfo {
         INFO.put(links.network(), new Info(links.network(), links.name(), GolemMode.byId(links.mode()), links.color(),
                 links.range(), links.linked(), links.maxLinks(), List.copyOf(links.links()), List.copyOf(links.homes()),
                 List.copyOf(links.members()), Set.copyOf(links.blocked()), Set.copyOf(links.strict())));
-        maxGolems = links.maxGolems();
     }
 
     @Nullable

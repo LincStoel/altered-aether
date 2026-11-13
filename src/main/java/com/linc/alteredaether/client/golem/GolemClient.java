@@ -20,7 +20,6 @@ import com.linc.alteredaether.entity.golem.PebbleInfo;
 import com.linc.alteredaether.item.PebbleLink;
 import com.linc.alteredaether.registry.AARegistries;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.renderer.entity.ThrownItemRenderer;
 import net.minecraft.client.renderer.item.ItemProperties;
 import net.minecraft.world.entity.Entity;
@@ -65,7 +64,6 @@ public final class GolemClient {
                 Entity player = Minecraft.getInstance().player;
                 return player == null ? null : player.position();
             };
-            PebbleInfo.altDown = Screen::hasAltDown;
         }
 
         /** A live pebble takes its network's colour; a dull one stays grey. */
