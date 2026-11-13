@@ -480,8 +480,10 @@ public final class GolemTour {
             zombie.moveTo(at(0, 0, 9).getX() + 2.0, at(0, 0, 9).getY(), at(0, 0, 9).getZ() + 0.5, 90, 0);
             level.addFreshEntity(zombie);
             golem(level, golemC).hurt(level.damageSources().mobAttack(zombie), 1);
-        }, new Vec3(0.5, 2.5, 14), new Vec3(1.0, 0.8, 9.5), 2, false));
-        steps.add(new Step("repel_after", level -> { }, new Vec3(0.5, 2.5, 14), new Vec3(1.0, 0.8, 9.5), 10, false));
+        }, new Vec3(0.5, 2.5, 14), new Vec3(1.0, 0.8, 9.5), 6, false));
+        // the push peaks at ~6 ticks, the arms are held up to ~13, and settle by ~21
+        steps.add(new Step("repel_held", level -> { }, new Vec3(0.5, 2.5, 14), new Vec3(1.0, 0.8, 9.5), 5, false));
+        steps.add(new Step("repel_after", level -> { }, new Vec3(0.5, 2.5, 14), new Vec3(1.0, 0.8, 9.5), 14, false));
         steps.add(new Step("paused", level -> {
             level.getEntitiesOfClass(Zombie.class, new AABB(at(0, 0, 9)).inflate(20)).forEach(Entity::discard);
             level.setBlockAndUpdate(at(-1, 0, 9), Blocks.REDSTONE_BLOCK.defaultBlockState());
@@ -494,17 +496,25 @@ public final class GolemTour {
             takePebble(level, golemC);
             usePebble(level, at(0, 0, 16), Direction.UP, true);
         }, new Vec3(6, 4, 11), new Vec3(0.5, 0.8, 13), 6, true));
-        steps.add(new Step("walk_1", level -> { }, new Vec3(6, 2.5, 12), new Vec3(0.5, 1, 12.5), 14, false, GolemTour::logClient));
+        // the stand-up takes 4 s before it sets off, and the sit-down 4 s more once it arrives
+        Vec3 standCam = new Vec3(3.5, 2.5, 7.5), standLook = new Vec3(0.5, 1, 9.5);
+        steps.add(new Step("stand_up_1", level -> { }, standCam, standLook, 20, false, GolemTour::logClient));
+        steps.add(new Step("stand_up_2", level -> { }, standCam, standLook, 20, false, GolemTour::logClient));
+        steps.add(new Step("stand_up_3", level -> { }, standCam, standLook, 25, false, GolemTour::logClient));
+        steps.add(new Step("walk_1", level -> { }, new Vec3(6, 2.5, 12), new Vec3(0.5, 1, 12.5), 20, false, GolemTour::logClient));
         steps.add(new Step("walk_2", level -> { }, new Vec3(6, 2.5, 12), new Vec3(0.5, 1, 12.5), 14, false, GolemTour::logClient));
         steps.add(new Step("walk_3", level -> { }, new Vec3(6, 2.5, 12), new Vec3(0.5, 1, 12.5), 14, false, GolemTour::logClient));
-        steps.add(new Step("step_arrived", level -> logNetwork(level, "stepped"), new Vec3(6, 3, 15), new Vec3(0.5, 1, 16.5), 80, false));
+        Vec3 sitCam = new Vec3(4, 2.5, 15), sitLook = new Vec3(0.5, 1, 16.5);
+        steps.add(new Step("sit_down_1", level -> { }, sitCam, sitLook, 30, false, GolemTour::logClient));
+        steps.add(new Step("sit_down_2", level -> { }, sitCam, sitLook, 30, false, GolemTour::logClient));
+        steps.add(new Step("step_arrived", level -> logNetwork(level, "stepped"), new Vec3(6, 3, 15), new Vec3(0.5, 1, 16.5), 60, false));
         steps.add(new Step("float_1", level -> {
             hold(level, golemC);
             usePebble(level, at(0, 0, 27), Direction.UP, true);
-        }, new Vec3(8, 4, 22), new Vec3(0.5, 1.5, 22), 45, false, GolemTour::logClient));
+        }, new Vec3(8, 4, 22), new Vec3(0.5, 1.5, 22), 100, false, GolemTour::logClient));
         steps.add(new Step("float_2", level -> { }, new Vec3(8, 4, 22), new Vec3(0.5, 1.5, 22), 25, false, GolemTour::logClient));
         steps.add(new Step("float_3", level -> { }, new Vec3(8, 4, 22), new Vec3(0.5, 1.5, 22), 25, false, GolemTour::logClient));
-        steps.add(new Step("float_arrived", level -> { }, new Vec3(6, 4, 31), new Vec3(0.5, 1, 27.5), 80, false,
+        steps.add(new Step("float_arrived", level -> { }, new Vec3(6, 4, 31), new Vec3(0.5, 1, 27.5), 140, false,
                 GolemTour::logClient));
         steps.add(new Step("dull_pebble", level -> {
             logNetwork(level, "before kill");
@@ -668,9 +678,9 @@ public final class GolemTour {
                 continue;
             }
             AlteredAether.LOGGER.info("Golem tour client: {} state {} floating {} rising {} paused {} pose {} meditate {} "
-                            + "concentrate {} walk {} levitate {} flightBounds {} at {}", id.toString().substring(0, 8),
+                            + "concentrate {} floating {} flightBounds {} at {}", id.toString().substring(0, 8),
                     golem.state(), golem.isFloating(), golem.isRising(), golem.isPaused(), golem.getPose(),
-                    golem.meditate, golem.concentrate, golem.walk, golem.levitate, golem.flightBounds != null,
+                    golem.meditate, golem.concentrate, golem.floating, golem.flightBounds != null,
                     golem.position());
         }
         AlteredAether.LOGGER.info("Golem tour client: hums playing {}",

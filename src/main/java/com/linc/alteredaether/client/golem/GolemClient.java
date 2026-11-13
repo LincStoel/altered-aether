@@ -20,6 +20,7 @@ import com.linc.alteredaether.entity.golem.PebbleInfo;
 import com.linc.alteredaether.item.PebbleLink;
 import com.linc.alteredaether.registry.AARegistries;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.entity.ThrownItemRenderer;
 import net.minecraft.client.renderer.item.ItemProperties;
 import net.minecraft.world.entity.Entity;
 import net.neoforged.api.distmarker.Dist;
@@ -49,6 +50,7 @@ public final class GolemClient {
         @SubscribeEvent
         public static void registerRenderers(EntityRenderersEvent.RegisterRenderers event) {
             event.registerEntityRenderer(AARegistries.GRAVITITE_GOLEM.get(), GravititeGolemRenderer::new);
+            event.registerEntityRenderer(AARegistries.THROWN_PEBBLE.get(), ThrownItemRenderer::new);
         }
 
         @SubscribeEvent
@@ -56,7 +58,7 @@ public final class GolemClient {
             event.enqueueWork(() -> ItemProperties.register(AARegistries.STORAGE_PEBBLE.get(), AlteredAether.id("dull"),
                     (stack, level, entity, seed) -> {
                         PebbleLink link = stack.get(AARegistries.PEBBLE_LINK.get());
-                        return link == null || link.dead() ? 1 : 0;
+                        return link == null || !link.glows() ? 1 : 0;
                     }));
             PebbleInfo.viewer = () -> {
                 Entity player = Minecraft.getInstance().player;

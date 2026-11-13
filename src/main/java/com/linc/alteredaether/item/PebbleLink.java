@@ -30,14 +30,16 @@ import java.util.UUID;
  * The gravitite golem a storage pebble belongs to, the dimension it sits in, its name when the pebble was handed out,
  * and whether the golem is gone. Kept to what never changes while the golem lives, so a pebble in hand doesn't bob
  * each time its golem's links or mode change: the tooltip reads those from what the client is sent (see
- * GolemLinksPayload).
+ * GolemLinksPayload). The one thing here that does change is {@code far}: whether whoever carries the pebble is out of
+ * reach of every golem of its network, which is when it goes dark.
  */
-public record PebbleLink(UUID golem, ResourceKey<Level> dimension, String name, boolean dead) {
+public record PebbleLink(UUID golem, ResourceKey<Level> dimension, String name, boolean dead, boolean far) {
     public static final Codec<PebbleLink> CODEC = RecordCodecBuilder.create(instance -> instance.group(
             UUIDUtil.CODEC.fieldOf("golem").forGetter(PebbleLink::golem),
             ResourceKey.codec(Registries.DIMENSION).fieldOf("dimension").forGetter(PebbleLink::dimension),
             Codec.STRING.optionalFieldOf("name", "").forGetter(PebbleLink::name),
-            Codec.BOOL.optionalFieldOf("dead", false).forGetter(PebbleLink::dead)
+            Codec.BOOL.optionalFieldOf("dead", false).forGetter(PebbleLink::dead),
+            Codec.BOOL.optionalFieldOf("far", false).forGetter(PebbleLink::far)
     ).apply(instance, PebbleLink::new));
 
     public static final StreamCodec<RegistryFriendlyByteBuf, PebbleLink> STREAM_CODEC = StreamCodec.composite(
@@ -45,9 +47,24 @@ public record PebbleLink(UUID golem, ResourceKey<Level> dimension, String name, 
             ResourceKey.streamCodec(Registries.DIMENSION), PebbleLink::dimension,
             ByteBufCodecs.STRING_UTF8, PebbleLink::name,
             ByteBufCodecs.BOOL, PebbleLink::dead,
+            ByteBufCodecs.BOOL, PebbleLink::far,
             PebbleLink::new);
 
+    /** A pebble fresh from its golem, so within its reach. */
+    public PebbleLink(UUID golem, ResourceKey<Level> dimension, String name, boolean dead) {
+        this(golem, dimension, name, dead, false);
+    }
+
     public PebbleLink asDead() {
-        return new PebbleLink(golem, dimension, name, true);
+        return new PebbleLink(golem, dimension, name, true, far);
+    }
+
+    public PebbleLink withFar(boolean far) {
+        return new PebbleLink(golem, dimension, name, dead, far);
+    }
+
+    /** Whether the pebble glows: its golem lives and is within reach. */
+    public boolean glows() {
+        return !dead && !far;
     }
 }

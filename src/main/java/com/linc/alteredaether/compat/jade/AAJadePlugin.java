@@ -25,7 +25,6 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import snownee.jade.api.BlockAccessor;
@@ -40,10 +39,11 @@ import snownee.jade.api.IWailaPlugin;
 import snownee.jade.api.WailaPlugin;
 import snownee.jade.api.config.IPluginConfig;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Jade lines for gravitite golems: a golem's mode, links, network and what it is doing (naming what holds it up), and
+ * Jade lines for gravitite golems: a golem's mode, links, the golems linked to it and what it is doing (naming what holds it up), and
  * on linked storage which golem it belongs to and what is pinned to it. Loaded only by Jade.
  */
 @WailaPlugin(AlteredAether.MOD_ID)
@@ -84,7 +84,13 @@ public final class AAJadePlugin implements IWailaPlugin {
             tag.putInt("mode", net.mode().ordinal());
             tag.putInt("linked", GolemNetworks.inventories(net, pos -> GolemStorage.inventoryKey(level, pos)));
             tag.putInt("max", net.maxLinks());
-            tag.putInt("golems", net.members().size());
+            List<String> others = new ArrayList<>();
+            net.members().forEach((id, member) -> {
+                if (!id.equals(golem.getUUID())) {
+                    others.add(member.name());
+                }
+            });
+            tag.putString("others", String.join(", ", others));
             GolemSorter.Report report = GolemSorter.report(level, net);
             tag.putString("status", golem.isPaused() ? "paused" : !golem.isSeated() ? "moving"
                     : report.status().name().toLowerCase());
@@ -103,8 +109,8 @@ public final class AAJadePlugin implements IWailaPlugin {
             }
             tooltip.add(line("mode", GolemMode.byId(tag.getInt("mode")).title()));
             tooltip.add(line("links", tag.getInt("linked"), tag.getInt("max")));
-            if (tag.getInt("golems") > 1) {
-                tooltip.add(line("network", tag.getInt("golems")));
+            if (!tag.getString("others").isEmpty()) {
+                tooltip.add(line("linked_golems", tag.getString("others")));
             }
             String status = tag.getString("status");
             tooltip.add(switch (status) {
@@ -150,9 +156,10 @@ public final class AAJadePlugin implements IWailaPlugin {
             CompoundTag tag = new CompoundTag();
             tag.putString("name", net.name());
             tag.putBoolean("source", GolemStorage.role(level, pos) == GolemStorage.Role.SOURCE);
-            List<ItemStack> pins = GolemStorage.pins(level, pos);
+            GolemStorage.Pins pins = GolemStorage.pins(level, pos);
             if (!pins.isEmpty()) {
-                tag.putString("pin", pins.get(0).getHoverName().getString());
+                tag.putString("pin", pins.items().get(0).getHoverName().getString());
+                tag.putBoolean("strict", pins.strict());
             }
             data.put("golem_link", tag);
         }
@@ -168,7 +175,7 @@ public final class AAJadePlugin implements IWailaPlugin {
                 tooltip.add(line("source"));
             }
             if (tag.contains("pin")) {
-                tooltip.add(line("pinned", tag.getString("pin")));
+                tooltip.add(line(tag.getBoolean("strict") ? "pinned_only" : "pinned", tag.getString("pin")));
             }
         }
 

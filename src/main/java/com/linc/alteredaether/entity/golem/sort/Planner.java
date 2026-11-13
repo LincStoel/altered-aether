@@ -30,7 +30,8 @@ import java.util.Set;
  * again finds nothing left to do and stops.
  *
  * <p>Every inventory starts each plan with an identity read off what it holds. A <b>pinned</b> one (an item frame or
- * placard on it) belongs to its pinned items and their groups, whatever it holds. Otherwise the group filling the
+ * placard on it) belongs to its pinned items and their groups, whatever it holds; a <b>strict</b> pinned one belongs to
+ * its pinned items alone, and anything else in it is sent to wherever else has room. Otherwise the group filling the
  * most of its slots is its <b>dominant</b> group; a group with only one slot in the whole network ("a singleton")
  * claims nothing.
  *
@@ -87,8 +88,10 @@ public final class Planner {
         for (int i = 0; i < n; i++) {
             SortSnapshot.Inv inv = w.invs.get(i);
             Set<Integer> groups = new HashSet<>();
-            for (int key : inv.pins()) {
-                groups.add(w.group(key));
+            if (!inv.strict()) {
+                for (int key : inv.pins()) {
+                    groups.add(w.group(key));
+                }
             }
             pinGroups.add(groups);
             if (inv.source()) {
@@ -190,18 +193,26 @@ public final class Planner {
                 if (singleton(groupSlots, group) && misc >= 0 && !homes.contains(misc)) {
                     homes.add(misc);
                 }
+                // a strict chest never takes what isn't pinned to it, even as its group's dominant or misc chest
+                homes.removeIf(j -> w.invs.get(j).refuses(key));
                 int at = homes.indexOf(i);
                 if (at == 0) {
                     continue;
                 }
                 List<Integer> better = at > 0 ? homes.subList(0, at) : homes;
-                if (inv.source()) {
+                boolean evicting = inv.refuses(key);
+                if (inv.source() || evicting) {
+                    // anywhere else will do: the misc chest, then unpinned chests, then ones pinned for something else
                     better = new ArrayList<>(better);
-                    if (misc >= 0 && !better.contains(misc)) {
+                    if (misc >= 0 && misc != i && !better.contains(misc) && !w.invs.get(misc).refuses(key)) {
                         better.add(misc);
                     }
-                    for (int j = 0; j < n; j++) {
-                        if (type[j] != SOURCE && !better.contains(j)) {
+                    for (int pass = 0; pass < 2; pass++) {
+                        for (int j = 0; j < n; j++) {
+                            if (j == i || type[j] == SOURCE || better.contains(j) || w.invs.get(j).refuses(key)
+                                    || (pass == 0) == (type[j] == PINNED)) {
+                                continue;
+                            }
                             better.add(j);
                         }
                     }
@@ -287,6 +298,25 @@ public final class Planner {
             }
         }
 
+        // 2b. strict chests send away what isn't pinned to them, wherever it fits
+        for (int i : storage) {
+            SortSnapshot.Inv inv = w.invs.get(i);
+            for (int slot = 0; slot < inv.size() && !w.full(); slot++) {
+                int key = inv.key()[slot];
+                if (key < 0 || !inv.refuses(key)) {
+                    continue;
+                }
+                List<Integer> pref = w.preference(storage, key, true);
+                pref.remove(Integer.valueOf(i));
+                for (int j : pref) {
+                    w.place(i, slot, j, Integer.MAX_VALUE, true, false);
+                }
+                for (int j : pref) {
+                    w.place(i, slot, j, Integer.MAX_VALUE, false, true);
+                }
+            }
+        }
+
         // 3. partial stacks merged, into the chests that rank first for the item
         for (int key = 0; key < w.keys.size() && !w.full(); key++) {
             List<Integer> pref = w.preference(storage, key, true);
@@ -306,7 +336,9 @@ public final class Planner {
             if (partials.size() < 2) {
                 continue;
             }
-            partials.sort(Comparator.<int[]>comparingInt(p -> rank.get(p[0])).thenComparingInt(p -> p[1]));
+            // a strict chest it is stuck in (nowhere else had room) ranks last, so it only gives
+            partials.sort(Comparator.<int[]>comparingInt(p -> rank.getOrDefault(p[0], Integer.MAX_VALUE))
+                    .thenComparingInt(p -> p[1]));
             int to = 0, from = partials.size() - 1;
             while (to < from && !w.full()) {
                 int[] dst = partials.get(to), src = partials.get(from);
@@ -562,7 +594,9 @@ public final class Planner {
                         continue;
                     }
                     int g = group(k);
-                    boolean home = type[i] == PINNED ? pinGroups.get(i).contains(g) : type[i] == DOMINANT && dominant[i] == g;
+                    boolean home = type[i] == PINNED
+                            ? pinGroups.get(i).contains(g) || invs.get(i).pins().contains(k)
+                            : type[i] == DOMINANT && dominant[i] == g;
                     if (!home) {
                         return true;
                     }
@@ -578,7 +612,7 @@ public final class Planner {
             return sorted;
         }
 
-        /** Storage pinned for {@code key}, then pinned for its group. */
+        /** Storage pinned for {@code key}, then pinned (not strictly) for its group. */
         List<Integer> pinnedFor(List<Integer> storage, int key) {
             List<Integer> pinned = new ArrayList<>();
             for (int i : storage) {
@@ -588,7 +622,7 @@ public final class Planner {
             }
             int group = group(key);
             for (int i : storage) {
-                if (pinned.contains(i)) {
+                if (pinned.contains(i) || invs.get(i).strict()) {
                     continue;
                 }
                 for (int pin : invs.get(i).pins()) {
@@ -603,14 +637,15 @@ public final class Planner {
 
         /**
          * Where {@code key} best goes in compact mode: chests pinned for it, then chests by how many they held of it.
-         * With {@code respectPins}, chests pinned for something else come last.
+         * With {@code respectPins}, chests pinned for something else come last. Strict chests not pinned for it are
+         * left out.
          */
         List<Integer> preference(List<Integer> storage, int key, boolean respectPins) {
             List<Integer> pref = pinnedFor(storage, key);
             List<Integer> rest = new ArrayList<>();
             List<Integer> otherPinned = new ArrayList<>();
             for (int i : storage) {
-                if (pref.contains(i)) {
+                if (pref.contains(i) || invs.get(i).refuses(key)) {
                     continue;
                 }
                 if (respectPins && !invs.get(i).pins().isEmpty()) {

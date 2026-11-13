@@ -42,6 +42,8 @@ final class GolemGlowRenderer {
     private static final float EDGE_ALPHA = 0.9F;
     /** The fill is drawn in gravitite's deeper tone, the edges in the configured (lighter) one. */
     private static final int FILL_COLOR = 0xBD42B2;
+    /** The fill under a strictly pinned chest's yellow edge. */
+    private static final int STRICT_FILL_COLOR = 0xD9A520;
 
     private static final RenderType FILL_THROUGH = fill("golem_glow_fill_through", RenderStateShard.NO_DEPTH_TEST, ThroughWalls.SHARD);
     private static final RenderType FILL = fill("golem_glow_fill", RenderStateShard.LEQUAL_DEPTH_TEST, RenderStateShard.NO_LAYERING);
@@ -102,7 +104,8 @@ final class GolemGlowRenderer {
             float alpha = FILL_ALPHA * pulse * GolemGlow.fade(glow, now);
             AABB box = alpha > 0 ? GolemGlow.box(mc.level, glow, partial) : null;
             if (box != null) {
-                fillBox(poseStack.last(), fill, box.move(-cam.x, -cam.y, -cam.z), FILL_COLOR, alpha);
+                int color = glow.color() == GolemGlow.STRICT_COLOR ? STRICT_FILL_COLOR : FILL_COLOR;
+                fillBox(poseStack.last(), fill, box.move(-cam.x, -cam.y, -cam.z), color, alpha);
             }
         }
         buffers.endBatch(fillType);

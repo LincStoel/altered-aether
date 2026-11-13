@@ -26,6 +26,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.CompoundContainer;
 import net.minecraft.world.Container;
+import net.minecraft.world.entity.decoration.GlowItemFrame;
 import net.minecraft.world.entity.decoration.ItemFrame;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
@@ -51,6 +52,7 @@ import net.neoforged.neoforge.items.IItemHandler;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 /**
@@ -187,24 +189,51 @@ public final class GolemStorage {
     }
 
     /**
+     * What is pinned to an inventory.
+     *
+     * @param items  the pinned items
+     * @param strict true if any pin is a glow item frame or a placard: then the inventory takes only its pinned items,
+     *               not their families, and the golem sends everything else away
+     */
+    public record Pins(List<ItemStack> items, boolean strict) {
+        public boolean isEmpty() {
+            return items.isEmpty();
+        }
+    }
+
+    /**
      * What is pinned to the inventory at {@code pos} (and its other half): the items in item frames hanging on it,
      * and on Create's placards.
      */
-    public static List<ItemStack> pins(ServerLevel level, BlockPos pos) {
+    public static Pins pins(ServerLevel level, BlockPos pos) {
         List<ItemStack> pins = new ArrayList<>();
-        addPins(level, pos, pins);
+        boolean strict = addPins(level, pos, pins);
         BlockPos other = partner(level, pos);
         if (other != null) {
-            addPins(level, other, pins);
+            strict |= addPins(level, other, pins);
         }
-        return pins;
+        return new Pins(pins, strict && !pins.isEmpty());
     }
 
-    private static void addPins(ServerLevel level, BlockPos pos, List<ItemStack> pins) {
+    /** Those of {@code positions} that are storage pinned strictly, for their glow. */
+    public static List<BlockPos> strict(ServerLevel level, Collection<BlockPos> positions) {
+        List<BlockPos> strict = new ArrayList<>();
+        for (BlockPos pos : positions) {
+            if (level.isLoaded(pos) && pins(level, pos).strict()) {
+                strict.add(pos);
+            }
+        }
+        return strict;
+    }
+
+    /** Adds what is pinned to the block at {@code pos}; true if a pin there is strict. */
+    private static boolean addPins(ServerLevel level, BlockPos pos, List<ItemStack> pins) {
+        boolean strict = false;
         for (ItemFrame frame : level.getEntitiesOfClass(ItemFrame.class, new AABB(pos).inflate(0.75))) {
             BlockPos attached = frame.getPos().relative(frame.getDirection().getOpposite());
             if (attached.equals(pos) && !frame.getItem().isEmpty()) {
                 pins.add(frame.getItem());
+                strict |= frame instanceof GlowItemFrame;
             }
         }
         if (ModList.get().isLoaded(CreateCompat.MOD) && AACommonConfig.compat(CreateCompat.MOD)) {
@@ -212,9 +241,11 @@ public final class GolemStorage {
                 ItemStack held = CreatePlacards.heldOn(level, pos, side);
                 if (!held.isEmpty()) {
                     pins.add(held);
+                    strict = true;
                 }
             }
         }
+        return strict;
     }
 
     /** Whether {@code pos} is within reach of a golem sitting at {@code home}: {@code range} out, half that up and down. */

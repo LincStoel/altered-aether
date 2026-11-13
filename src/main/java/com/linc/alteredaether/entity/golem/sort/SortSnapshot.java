@@ -46,14 +46,27 @@ public record SortSnapshot(List<Key> keys, List<Inv> invs) {
      * @param key    the key in each slot, -1 when empty
      * @param count  how many are in each slot
      * @param pins   keys pinned to this inventory by an item frame or placard on it
+     * @param strict true when it takes only its pinned items, not their families, and sends everything else away
+     *               (a glow item frame or a placard pinned them)
      */
-    public record Inv(boolean source, boolean plain, int[] limit, int[] key, int[] count, Set<Integer> pins) {
+    public record Inv(boolean source, boolean plain, int[] limit, int[] key, int[] count, Set<Integer> pins,
+                      boolean strict) {
+        /** An inventory whose pins, if any, take their families too. */
+        public Inv(boolean source, boolean plain, int[] limit, int[] key, int[] count, Set<Integer> pins) {
+            this(source, plain, limit, key, count, pins, false);
+        }
+
+        /** Whether this is strict and {@code key} isn't pinned to it, so it has no place here. */
+        public boolean refuses(int key) {
+            return strict && !pins.contains(key);
+        }
+
         public int size() {
             return key.length;
         }
 
         public Inv copy() {
-            return new Inv(source, plain, limit.clone(), key.clone(), count.clone(), pins);
+            return new Inv(source, plain, limit.clone(), key.clone(), count.clone(), pins, strict);
         }
 
         public boolean isEmpty() {
@@ -69,7 +82,7 @@ public record SortSnapshot(List<Key> keys, List<Inv> invs) {
         public boolean equals(Object o) {
             return o instanceof Inv other && source == other.source && plain == other.plain
                     && Arrays.equals(limit, other.limit) && Arrays.equals(key, other.key)
-                    && Arrays.equals(count, other.count) && pins.equals(other.pins);
+                    && Arrays.equals(count, other.count) && pins.equals(other.pins) && strict == other.strict;
         }
 
         @Override

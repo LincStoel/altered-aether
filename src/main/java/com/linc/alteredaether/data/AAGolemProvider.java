@@ -106,6 +106,8 @@ public final class AAGolemProvider extends JsonDataProvider {
         lang.put(PEBBLE + ".distance", "%s blocks away");
         lang.put(PEBBLE + ".use", "Use on storage to link or unlink it");
         lang.put(PEBBLE + ".send", "Sneak and use on the top of a block to send the golem there");
+        lang.put(PEBBLE + ".throw", "Use in the air to throw it, and it shatters");
+        lang.put("entity." + AlteredAether.MOD_ID + ".storage_pebble", "Storage Pebble");
 
         lang.put(M + "mode.tidy", "Tidy");
         lang.put(M + "mode.compact", "Compact");
@@ -157,7 +159,7 @@ public final class AAGolemProvider extends JsonDataProvider {
         String status = "jade." + AlteredAether.MOD_ID + ".golem.";
         lang.put(status + "mode", "Mode: %s");
         lang.put(status + "links", "Linked: %s / %s");
-        lang.put(status + "network", "Network: %s golems");
+        lang.put(status + "linked_golems", "Linked golems: %s");
         lang.put(status + "sorted", "Sorted");
         lang.put(status + "sorting", "Sorting: %s moves left");
         lang.put(status + "paused", "Paused by redstone");
@@ -169,17 +171,18 @@ public final class AAGolemProvider extends JsonDataProvider {
         lang.put(status + "linked_to", "Linked to %s");
         lang.put(status + "source", "Emptied only");
         lang.put(status + "pinned", "Pinned: %s");
+        lang.put(status + "pinned_only", "Only for: %s");
 
         String tips = "aether.pro_tips.line." + AlteredAether.MOD_ID + ".";
         lang.put(tips + "golem_build", "A carved pumpkin on enchanted gravitite on holystone wakes a gravitite golem.");
         lang.put(tips + "golem_pebble", "Take a storage pebble from a gravitite golem and use it on chests to have the golem sort them.");
         lang.put(tips + "golem_modes", "Sneak and use a gravitite golem with an empty hand to switch between Tidy and Compact sorting.");
-        lang.put(tips + "golem_frames", "An item frame on a chest tells a gravitite golem what that chest is for.");
+        lang.put(tips + "golem_frames", "An item frame on a chest tells a gravitite golem what that chest is for. A glow item frame keeps everything else out.");
 
         String jei = "jei." + AlteredAether.MOD_ID + ".golem.";
         lang.put(jei + "build", "Gravitite golems sort storage by telekinesis. Build one by placing a carved pumpkin (or a Deep Aether carved squash) on a block of enchanted gravitite standing on holystone. It sits where it was built.");
         lang.put(jei + "pebble", "Use a golem with an empty hand to take its storage pebble. Use the pebble on chests, barrels and other storage to link them; use it again to unlink. Hoppers and depots are only ever emptied. Machines can't be linked.");
         lang.put(jei + "controls", "Sneak and use the golem with an empty hand to switch modes: Tidy keeps each kind of item to its own chest, Compact packs everything into as few as it fits in. Use the golem with any item to find where it is stored; use its own pebble on it to see everything linked.");
-        lang.put(jei + "more", "An item frame or Create placard on a chest pins that item (and its family) to the chest. Sneak and use the pebble on the top of a block to send the golem there; that becomes its new seat. A redstone signal makes it rest. Use another golem's pebble on a golem to make them work together. Ambrosium heals it.");
+        lang.put(jei + "more", "An item frame on a chest pins that item (and its family) to the chest. A glow item frame or Create placard pins only that item, and the golem moves everything else out wherever it has room. Sneak and use the pebble on the top of a block to send the golem there; that becomes its new seat. A redstone signal makes it rest. Use another golem's pebble on a golem to make them work together. Ambrosium heals it.");
     }
 }

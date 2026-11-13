@@ -25,10 +25,13 @@ import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
+import org.joml.Vector3f;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * What glows for the gravitite golem's player: linked storage when it is linked, everything linked when its pebble is
@@ -38,6 +41,9 @@ import java.util.List;
 public final class GolemGlow {
     static final int FADE_IN_TICKS = 4;
     static final int FADE_OUT_TICKS = 20;
+    /** The edge colour of storage pinned strictly (by a glow item frame or placard): glow-ink yellow. */
+    static final int STRICT_COLOR = 0xFFE14A;
+    private static final Vector3f STRICT_MOTE = Vec3.fromRGB24(STRICT_COLOR).toVector3f();
 
     /**
      * A block ({@code pos}) or golem ({@code entity}, else -1) glowing {@code color} at {@code strength} (1 bright,
@@ -80,12 +86,13 @@ public final class GolemGlow {
             THREADS.clear();
         }
         int color = AAClientConfig.golemGlowColor();
+        Set<BlockPos> strict = new HashSet<>(payload.strict());
         float strength = kind == GolemPayloads.UNLINK ? 0.6F : 1.0F;
         for (BlockPos pos : payload.bright()) {
-            GLOWS.add(new Glow(kind, pos, -1, color, strength, ticks, end));
+            GLOWS.add(new Glow(kind, pos, -1, strict.contains(pos) ? STRICT_COLOR : color, strength, ticks, end));
         }
         for (BlockPos pos : payload.dim()) {
-            GLOWS.add(new Glow(kind, pos, -1, color, 0.3F, ticks, end));
+            GLOWS.add(new Glow(kind, pos, -1, strict.contains(pos) ? STRICT_COLOR : color, 0.3F, ticks, end));
         }
         for (int id : payload.golems()) {
             GLOWS.add(new Glow(kind, null, id, color, strength, ticks, end));
@@ -122,7 +129,8 @@ public final class GolemGlow {
                 }
                 Vec3 at = new Vec3(box.minX + random.nextDouble() * box.getXsize(), box.maxY,
                         box.minZ + random.nextDouble() * box.getZsize());
-                mc.level.addParticle(new DustParticleOptions(GravititeGolem.GRAVITITE, 0.7F), at.x, at.y, at.z, 0, 0.02, 0);
+                mc.level.addParticle(new DustParticleOptions(glow.color() == STRICT_COLOR ? STRICT_MOTE : GravititeGolem.GRAVITITE,
+                        0.7F), at.x, at.y, at.z, 0, 0.02, 0);
             }
         }
         if (ticks % (reduced ? 8 : 3) == 0) {

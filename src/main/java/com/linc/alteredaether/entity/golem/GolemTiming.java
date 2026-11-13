@@ -26,9 +26,10 @@ public final class GolemTiming {
     public static final byte EVENT_SHAKE_HEAD = 73;
     public static final byte EVENT_LINK_PULSE = 74;
 
-    public static final int SIT_DOWN_TICKS = 15;
-    public static final int STAND_UP_TICKS = 15;
-    public static final int REPEL_TICKS = 10;
+    public static final int SIT_DOWN_TICKS = 80;
+    public static final int STAND_UP_TICKS = 80;
+    /** The repel's 0.42 s, plus the model's hold and ease-out of its end pose. */
+    public static final int REPEL_TICKS = 21;
     public static final int SHAKE_HEAD_TICKS = 16;
     public static final int LINK_PULSE_TICKS = 10;
 

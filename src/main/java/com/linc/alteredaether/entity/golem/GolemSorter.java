@@ -183,6 +183,29 @@ public final class GolemSorter {
         }
     }
 
+    /**
+     * A player opening a chest a flight is coming to or leaving lands that flight at once, so what they see in the
+     * chest matches what they just watched fly. Without this the flight is called off at its next check and the item
+     * never arrives, though it was seen to leave. The menu is open by now, so the chest counts as in use.
+     */
+    @SubscribeEvent
+    public static void onContainerOpen(PlayerContainerEvent.Open event) {
+        if (!(event.getEntity() instanceof ServerPlayer player) || !(player.level() instanceof ServerLevel level)) {
+            return;
+        }
+        Map<UUID, Runtime> runtimes = RUNTIMES.get(level);
+        if (runtimes == null || runtimes.isEmpty()) {
+            return;
+        }
+        GolemNetworks networks = GolemNetworks.get(level);
+        for (GolemNetworks.Net net : networks.near(player.blockPosition(), AACommonConfig.GOLEM_RANGE.get() * 2 + 8)) {
+            Runtime runtime = runtimes.get(net.id);
+            if (runtime != null) {
+                runtime.landOpened(level, net);
+            }
+        }
+    }
+
     @SubscribeEvent
     public static void onLevelUnload(LevelEvent.Unload event) {
         if (event.getLevel() instanceof ServerLevel level) {
@@ -502,11 +525,13 @@ public final class GolemSorter {
                     }
                 }
                 Set<Integer> pins = new HashSet<>();
-                for (ItemStack pin : GolemStorage.pins(level, pos)) {
+                GolemStorage.Pins pinned = GolemStorage.pins(level, pos);
+                for (ItemStack pin : pinned.items()) {
                     pins.add(keyOf(pin, keys, items, index));
                 }
                 boolean plain = GolemStorage.plainContainer(level, pos) != null;
-                invs.add(new SortSnapshot.Inv(role == GolemStorage.Role.SOURCE, plain, limit, slotKey, count, pins));
+                invs.add(new SortSnapshot.Inv(role == GolemStorage.Role.SOURCE, plain, limit, slotKey, count, pins,
+                        pinned.strict()));
                 positions.add(pos);
                 invKeys.add(key);
                 hashes.put(key, GolemStorage.contentHash(handler));
@@ -647,6 +672,7 @@ public final class GolemSorter {
                 int ticks = AACommonConfig.GOLEM_MOVE_TICKS.get();
                 Flight flight = new Flight(nextFlightId++, move, dstSlot, accepted, now, now + ticks, path);
                 flights.add(flight);
+                lifter.face(move.src);
                 lift(level, move.src);
                 lift(level, move.dst);
                 List<Vec3> via = new ArrayList<>();
@@ -784,6 +810,16 @@ public final class GolemSorter {
             rehash(level, flight.src);
             rehash(level, flight.dst);
             sendEnd(level, flight, true);
+        }
+
+        /** Lands every flight whose source or target a player has just opened. */
+        void landOpened(ServerLevel level, GolemNetworks.Net net) {
+            for (Flight flight : new ArrayList<>(flights)) {
+                if (level.isLoaded(flight.src) && level.isLoaded(flight.dst)
+                        && (GolemStorage.inUse(level, flight.src) || GolemStorage.inUse(level, flight.dst))) {
+                    land(level, net, flight);
+                }
+            }
         }
 
         /**

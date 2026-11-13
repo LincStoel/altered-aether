@@ -35,7 +35,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * The golem's planner settles (planning again after its moves finds nothing), never makes or loses an item, respects
- * slot sizes, un-mixes a dump chest, follows pins, and empties source inventories.
+ * slot sizes, un-mixes a dump chest, follows pins (strict ones too), and empties source inventories.
  */
 class PlannerTest {
     /** Keys 0-1 stone (group 0), 2-3 logs (group 1), 4-9 one-offs (groups 10-15), 10 a tool (stack 1, group 2). */
@@ -183,6 +183,46 @@ class PlannerTest {
         }
     }
 
+    private static SortSnapshot.Inv strict(Set<Integer> pins, int... keyCount) {
+        SortSnapshot.Inv inv = inv(27, false, pins, keyCount);
+        return new SortSnapshot.Inv(false, true, inv.limit(), inv.key(), inv.count(), pins, true);
+    }
+
+    @Test
+    void aStrictChestTakesOnlyItsItemAndSendsTheRestAway() {
+        for (SortMode mode : SortMode.values()) {
+            SortSnapshot snapshot = new SortSnapshot(KEYS, List.of(
+                    chest(0, 64, 1, 32, 2, 64),
+                    strict(Set.of(0), 3, 10, 4, 1, 1, 5),
+                    chest()));
+            assertTrue(settle(snapshot, mode) <= 4, mode + " didn't settle");
+            SortSnapshot.Inv pinned = snapshot.invs().get(1);
+            assertEquals(Set.of(0), keysIn(pinned), mode + ": " + snapshot.invs());
+            assertEquals(64, count(pinned, 0), mode + ": the pinned item");
+        }
+    }
+
+    @Test
+    void aStrictChestKeepsWhatHasNowhereElseToGo() {
+        for (SortMode mode : SortMode.values()) {
+            SortSnapshot snapshot = new SortSnapshot(KEYS, List.of(
+                    inv(1, false, Set.of(), 4, 64),
+                    strict(Set.of(0), 0, 10, 2, 7)));
+            assertTrue(settle(snapshot, mode) <= 2, mode + " didn't settle");
+            assertEquals(7, count(snapshot.invs().get(1), 2), mode + ": the logs had nowhere to go");
+        }
+    }
+
+    @Test
+    void aStrictChestIsNoHomeForItsItemsFamily() {
+        SortSnapshot snapshot = new SortSnapshot(KEYS, List.of(
+                chest(1, 64, 1, 64),
+                strict(Set.of(0), 0, 5)));
+        settle(snapshot, SortMode.TIDY);
+        assertEquals(128, count(snapshot.invs().get(0), 1));
+        assertEquals(Set.of(0), keysIn(snapshot.invs().get(1)));
+    }
+
     @Test
     void aPinBeatsAMajority() {
         SortSnapshot snapshot = new SortSnapshot(KEYS, List.of(
@@ -256,7 +296,8 @@ class PlannerTest {
                         }
                     }
                     Set<Integer> pins = random.nextInt(6) == 0 ? Set.of(random.nextInt(KEYS.size())) : Set.of();
-                    invs.add(new SortSnapshot.Inv(random.nextInt(8) == 0, random.nextBoolean(), limit, key, count, pins));
+                    invs.add(new SortSnapshot.Inv(random.nextInt(8) == 0, random.nextBoolean(), limit, key, count, pins,
+                            !pins.isEmpty() && random.nextBoolean()));
                 }
                 SortSnapshot snapshot = new SortSnapshot(KEYS, invs);
                 int rounds = settle(snapshot, mode);

@@ -97,8 +97,10 @@ public class GravititeGolem extends PathfinderMob {
     private static final int MOVE_TIMEOUT = 600;
     /** How far below its home, with nothing under it, a golem floats straight back up. */
     private static final int VOID_DROP = 16;
+    /** Degrees a tick it turns, seated, to face the storage it lifts from. */
+    private static final float TURN_SPEED = 9.0F;
 
-    private static final EntityDimensions SEATED_SIZE = EntityDimensions.scalable(0.7F, 1.15F).withEyeHeight(0.9F);
+    private static final EntityDimensions SEATED_SIZE = EntityDimensions.scalable(0.9F, 1.5F).withEyeHeight(1.2F);
 
     @Nullable
     private BlockPos home;
@@ -107,6 +109,9 @@ public class GravititeGolem extends PathfinderMob {
     private BlockPos order;
     @Nullable
     private UUID orderedBy;
+    /** Server: the storage it is turning to face, until it faces it. */
+    @Nullable
+    private BlockPos facing;
     private long lastRepel = -100_000;
     /** Ticks without ground under it, to tell a stumble from being knocked off its seat. */
     private int airborne;
@@ -124,7 +129,11 @@ public class GravititeGolem extends PathfinderMob {
     private final Clip shakeHead = clip(shakeHeadAnim, GolemTiming.SHAKE_HEAD_TICKS);
     private final Clip linkPulse = clip(linkPulseAnim, GolemTiming.LINK_PULSE_TICKS);
     /** Smoothed weights of the held animations, now and last tick, for the model. */
-    public float meditate = 1, meditateO = 1, concentrate, concentrateO, walk, walkO, levitate, levitateO;
+    public float meditate = 1, meditateO = 1, concentrate, concentrateO, floating, floatingO;
+    /** The tick its stand-up ended, so the floating cycle starts where the stand-up leaves it. */
+    public int floatSince;
+    /** Server: ticks left of its sit-down, before it starts work. */
+    private int settling;
 
     /** Client only: the space this golem's flying items cover, so it isn't culled while they're on screen. */
     @Nullable
@@ -206,6 +215,7 @@ public class GravititeGolem extends PathfinderMob {
         }
         entityData.set(DATA_STATE, (byte) state);
         if (old == MOVING) {
+            settling = GolemTiming.SIT_DOWN_TICKS;
             event(GolemTiming.EVENT_SIT_DOWN);
         } else if (state == MOVING) {
             event(GolemTiming.EVENT_STAND_UP);
@@ -255,7 +265,7 @@ public class GravititeGolem extends PathfinderMob {
 
     /** Whether it sits on its home (or as near it as can be sat), ready to work. */
     public boolean isWorking() {
-        return isSeated() && home != null && !isPaused() && onGround() && closeTo(sitSpot(), 1.0);
+        return isSeated() && settling == 0 && home != null && !isPaused() && onGround() && closeTo(sitSpot(), 1.0);
     }
 
     private boolean closeTo(BlockPos spot, double reach) {
@@ -354,6 +364,35 @@ public class GravititeGolem extends PathfinderMob {
             }
         }
         airborne = onGround() || isFloating() ? 0 : airborne + 1;
+        if (settling > 0) {
+            settling--;
+        }
+        turnToFace();
+    }
+
+    /** Has it turn, where it sits, to face the storage at {@code pos}: the one it is lifting an item out of. */
+    public void face(BlockPos pos) {
+        facing = pos.immutable();
+    }
+
+    private void turnToFace() {
+        if (facing == null) {
+            return;
+        }
+        double dx = facing.getX() + 0.5 - getX(), dz = facing.getZ() + 0.5 - getZ();
+        if (!isSeated() || dx * dx + dz * dz < 0.01) {
+            facing = null;
+            return;
+        }
+        float wanted = (float) (Mth.atan2(dz, dx) * Mth.RAD_TO_DEG) - 90.0F;
+        float left = Mth.wrapDegrees(wanted - getYRot());
+        float yaw = getYRot() + Mth.clamp(left, -TURN_SPEED, TURN_SPEED);
+        setYRot(yaw);
+        yBodyRot = yaw;
+        yHeadRot = yaw;
+        if (Math.abs(left) <= TURN_SPEED) {
+            facing = null;
+        }
     }
 
     @Override
@@ -375,18 +414,19 @@ public class GravititeGolem extends PathfinderMob {
         for (Clip clip : clips) {
             if (clip.state.isStarted() && tickCount - clip.started > clip.length) {
                 clip.state.stop();
+                if (clip == standUp) {
+                    floatSince = tickCount;
+                }
             }
         }
         meditateO = meditate;
         concentrateO = concentrate;
-        walkO = walk;
-        levitateO = levitate;
+        floatingO = floating;
         int state = state();
-        boolean floating = isFloating() || isRising();
+        // up and about it always floats; the stand-up and sit-down carry it between that and sitting
         meditate = approach(meditate, state == SEATED ? 1 : 0, 0.08F);
         concentrate = approach(concentrate, state == CONCENTRATING ? 1 : 0, 0.08F);
-        levitate = approach(levitate, state == MOVING && floating ? 1 : 0, 0.15F);
-        walk = approach(walk, state == MOVING && !floating ? 1 : 0, 0.15F);
+        floating = approach(floating, state == MOVING ? 1 : 0, 0.15F);
     }
 
     private static float approach(float value, float target, float step) {
@@ -406,6 +446,12 @@ public class GravititeGolem extends PathfinderMob {
     }
 
     private void start(Clip clip) {
+        // one transition at a time: each carries the whole pose
+        if (clip == sitDown) {
+            standUp.state.stop();
+        } else if (clip == standUp) {
+            sitDown.state.stop();
+        }
         clip.state.start(tickCount);
         clip.started = tickCount;
     }

@@ -23,6 +23,7 @@ import com.linc.alteredaether.entity.golem.GolemStorage;
 import com.linc.alteredaether.entity.golem.GravititeGolem;
 import com.linc.alteredaether.entity.golem.PebbleInfo;
 import com.linc.alteredaether.entity.golem.PebbleTracker;
+import com.linc.alteredaether.entity.golem.ThrownPebble;
 import com.linc.alteredaether.registry.AARegistries;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
@@ -30,8 +31,12 @@ import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
+import net.minecraft.stats.Stats;
+import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
+import net.minecraft.world.InteractionResultHolder;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
@@ -47,7 +52,8 @@ import java.util.List;
 /**
  * A storage pebble: a chip of a golem's gravitite that answers to it. Used on storage it links that storage to the
  * golem's network (the chest doesn't open), or unlinks it; used crouching on the top of a block it sends the golem
- * there; used on golems it shows links and links golems (see GolemInteractions). It is never used up.
+ * there; used on golems it shows links and links golems (see GolemInteractions). None of that uses it up. Used on
+ * nothing it is thrown, and shatters. It glows only within reach of its golem's network.
  */
 public class StoragePebbleItem extends Item {
     public StoragePebbleItem(Properties properties) {
@@ -134,7 +140,8 @@ public class StoragePebbleItem extends Item {
         switch (networks.toggleLink(net, pos, partner, p -> GolemStorage.inventoryKey(level, p))) {
             case LINKED -> {
                 level.playSound(null, pos, AARegistries.GOLEM_LINK.get(), SoundSource.BLOCKS, 0.8F, 1.0F);
-                PacketDistributor.sendToPlayer(player, GolemPayloads.Glow.blocks(GolemPayloads.LINK, -1, both));
+                PacketDistributor.sendToPlayer(player, GolemPayloads.Glow.blocks(GolemPayloads.LINK, -1, both,
+                        GolemStorage.strict(level, both)));
                 int linked = GolemNetworks.inventories(net, p -> GolemStorage.inventoryKey(level, p));
                 player.displayClientMessage(message(role == GolemStorage.Role.SOURCE ? "linked_source" : "linked",
                         link.name(), linked, net.maxLinks()), true);
@@ -153,10 +160,30 @@ public class StoragePebbleItem extends Item {
         PebbleTracker.sendNow(player, link.golem());
     }
 
-    /** A pebble whose golem is gone turns dull. */
+    /** Used on nothing, the pebble is thrown like a snowball (see ThrownPebble), and that is the end of it. */
+    @Override
+    public InteractionResultHolder<ItemStack> use(Level level, Player player, InteractionHand hand) {
+        ItemStack stack = player.getItemInHand(hand);
+        level.playSound(null, player.getX(), player.getY(), player.getZ(), SoundEvents.SNOWBALL_THROW, SoundSource.NEUTRAL,
+                0.5F, 0.4F / (level.getRandom().nextFloat() * 0.4F + 0.8F));
+        if (!level.isClientSide) {
+            ThrownPebble pebble = new ThrownPebble(level, player);
+            pebble.setItem(stack);
+            pebble.shootFromRotation(player, player.getXRot(), player.getYRot(), 0.0F, 1.5F, 1.0F);
+            level.addFreshEntity(pebble);
+        }
+        player.awardStat(Stats.ITEM_USED.get(this));
+        stack.consume(1, player);
+        return InteractionResultHolder.sidedSuccess(stack, level.isClientSide());
+    }
+
+    /**
+     * A pebble whose golem is gone turns dull for good; one carried out of reach of every golem of its network goes
+     * dark until it is brought back.
+     */
     @Override
     public void inventoryTick(ItemStack stack, Level level, Entity entity, int slot, boolean selected) {
-        if (level.isClientSide || entity.tickCount % 40 != 0 || !(level instanceof ServerLevel server)) {
+        if (level.isClientSide || entity.tickCount % 10 != 0 || !(level instanceof ServerLevel server)) {
             return;
         }
         PebbleLink link = stack.get(AARegistries.PEBBLE_LINK.get());
@@ -164,14 +191,32 @@ public class StoragePebbleItem extends Item {
             return;
         }
         ServerLevel home = server.getServer().getLevel(link.dimension());
-        if (home == null || GolemNetworks.get(home).netOf(link.golem()) == null) {
+        GolemNetworks.Net net = home == null ? null : GolemNetworks.get(home).netOf(link.golem());
+        if (net == null) {
             stack.set(AARegistries.PEBBLE_LINK.get(), link.asDead());
+            return;
+        }
+        boolean far = home != server || !net.reaches(entity.blockPosition());
+        if (far != link.far()) {
+            stack.set(AARegistries.PEBBLE_LINK.get(), link.withFar(far));
         }
     }
 
+    /** Going dark or lighting up again doesn't make the pebble bob in the hand. */
+    @Override
+    public boolean shouldCauseReequipAnimation(ItemStack oldStack, ItemStack newStack, boolean slotChanged) {
+        if (slotChanged || !newStack.is(oldStack.getItem())) {
+            return true;
+        }
+        PebbleLink before = oldStack.get(AARegistries.PEBBLE_LINK.get()), after = newStack.get(AARegistries.PEBBLE_LINK.get());
+        return before == null || after == null || !before.golem().equals(after.golem());
+    }
+
+    /** A pebble that answers to its golem from here shimmers; a dull, dark or unlinked one doesn't. */
     @Override
     public boolean isFoil(ItemStack stack) {
-        return false;
+        PebbleLink link = stack.get(AARegistries.PEBBLE_LINK.get());
+        return link != null && link.glows();
     }
 
     @Override
@@ -198,6 +243,7 @@ public class StoragePebbleItem extends Item {
         }
         tooltip.add(Component.translatable(prefix + "use").withStyle(ChatFormatting.DARK_GRAY));
         tooltip.add(Component.translatable(prefix + "send").withStyle(ChatFormatting.DARK_GRAY));
+        tooltip.add(Component.translatable(prefix + "throw").withStyle(ChatFormatting.DARK_GRAY));
     }
 
     /** Whether {@code player} holds a pebble for {@code golem}. */

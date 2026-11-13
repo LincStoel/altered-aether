@@ -24,6 +24,7 @@ import com.linc.alteredaether.compat.ModEnabled;
 import com.linc.alteredaether.entity.Squall;
 import com.linc.alteredaether.entity.TamedAerwhale;
 import com.linc.alteredaether.entity.golem.GravititeGolem;
+import com.linc.alteredaether.entity.golem.ThrownPebble;
 import com.linc.alteredaether.item.PebbleLink;
 import com.linc.alteredaether.item.StoragePebbleItem;
 import com.linc.alteredaether.item.WhaleWhistleItem;
@@ -148,9 +149,13 @@ public final class AARegistries {
     /** Sorts the storage linked to it; see entity/golem/GravititeGolem. Seated, it is smaller (see its dimensions). */
     public static final DeferredHolder<EntityType<?>, EntityType<GravititeGolem>> GRAVITITE_GOLEM = ENTITY_TYPES.register(
             "gravitite_golem", () -> EntityType.Builder.<GravititeGolem>of(GravititeGolem::new, MobCategory.MISC)
-                    .sized(0.6F, 1.45F).eyeHeight(1.15F).clientTrackingRange(10).build("gravitite_golem"));
+                    .sized(0.9F, 2.0F).eyeHeight(1.75F).clientTrackingRange(10).build("gravitite_golem"));
     public static final DeferredItem<DeferredSpawnEggItem> GRAVITITE_GOLEM_SPAWN_EGG = ITEMS.register(
             "gravitite_golem_spawn_egg", () -> new DeferredSpawnEggItem(GRAVITITE_GOLEM, 0x8A8F94, 0xBD42B2, new Item.Properties()));
+    /** A thrown storage pebble, sized and tracked like a snowball; see entity/golem/ThrownPebble. */
+    public static final DeferredHolder<EntityType<?>, EntityType<ThrownPebble>> THROWN_PEBBLE = ENTITY_TYPES.register(
+            "storage_pebble", () -> EntityType.Builder.<ThrownPebble>of(ThrownPebble::new, MobCategory.MISC)
+                    .sized(0.25F, 0.25F).clientTrackingRange(4).updateInterval(10).build("storage_pebble"));
 
     public static final DeferredRegister.DataComponents DATA_COMPONENTS =
             DeferredRegister.createDataComponents(Registries.DATA_COMPONENT_TYPE, AlteredAether.MOD_ID);

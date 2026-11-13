@@ -26,17 +26,23 @@ import net.minecraft.client.renderer.entity.layers.EyesLayer;
 import net.minecraft.resources.ResourceLocation;
 
 /**
- * Draws the gravitite golem, its glowing eyes (dark while redstone holds it still), and the items it has in the air,
- * which ride along with the golem so shaderpacks treat them as part of it.
+ * Draws the gravitite golem, its glowing gravitite (every purple pixel fullbright, the nose brighter still, all dark
+ * while redstone holds it still), and the items it has in the air, which ride along with the golem so shaderpacks treat
+ * them as part of it. The glow textures come from tools/textures/gravitite_golem_glow.py.
  */
 public class GravititeGolemRenderer extends MobRenderer<GravititeGolem, GravititeGolemModel> {
     private static final ResourceLocation TEXTURE = AlteredAether.id("textures/entity/mobs/gravitite_golem/gravitite_golem.png");
-    private static final RenderType EYES = RenderType.eyes(
-            AlteredAether.id("textures/entity/mobs/gravitite_golem/gravitite_golem_eyes.png"));
+    /** The purple pixels drawn unlit over the body, in their own colours. */
+    private static final RenderType GLOW = RenderType.entityTranslucentEmissive(
+            AlteredAether.id("textures/entity/mobs/gravitite_golem/gravitite_golem_glow.png"));
+    /** The nose's purple added on top again, so it outshines the rest. */
+    private static final RenderType NOSE_GLOW = RenderType.eyes(
+            AlteredAether.id("textures/entity/mobs/gravitite_golem/gravitite_golem_nose_glow.png"));
 
     public GravititeGolemRenderer(EntityRendererProvider.Context context) {
-        super(context, new GravititeGolemModel(context.bakeLayer(GravititeGolemModel.LAYER)), 0.35F);
-        addLayer(new Eyes(this));
+        super(context, new GravititeGolemModel(context.bakeLayer(GravititeGolemModel.LAYER)), 0.5F);
+        addLayer(new Glow(this, GLOW));
+        addLayer(new Glow(this, NOSE_GLOW));
     }
 
     @Override
@@ -50,9 +56,12 @@ public class GravititeGolemRenderer extends MobRenderer<GravititeGolem, Gravitit
         GolemFlights.render(golem, partial, poseStack, buffers);
     }
 
-    private static final class Eyes extends EyesLayer<GravititeGolem, GravititeGolemModel> {
-        Eyes(RenderLayerParent<GravititeGolem, GravititeGolemModel> parent) {
+    private static final class Glow extends EyesLayer<GravititeGolem, GravititeGolemModel> {
+        private final RenderType type;
+
+        Glow(RenderLayerParent<GravititeGolem, GravititeGolemModel> parent, RenderType type) {
             super(parent);
+            this.type = type;
         }
 
         @Override
@@ -65,7 +74,7 @@ public class GravititeGolemRenderer extends MobRenderer<GravititeGolem, Gravitit
 
         @Override
         public RenderType renderType() {
-            return EYES;
+            return type;
         }
     }
 }

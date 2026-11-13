@@ -49,17 +49,36 @@ public final class GolemPayloads {
     /**
      * Makes blocks and golems glow for the player it is sent to: {@code bright} blocks fully, {@code dim} ones
      * faintly (links out of reach), the {@code golems} by entity id, and a thread of particles between each pair in
-     * {@code threads}.
+     * {@code threads}. Those of the blocks in {@code strict} (storage pinned strictly) glow in their own colour.
      */
     public record Glow(byte kind, int ticks, List<BlockPos> bright, List<BlockPos> dim, List<Integer> golems,
-                       List<Integer> threads) implements CustomPacketPayload {
+                       List<Integer> threads, List<BlockPos> strict) implements CustomPacketPayload {
         public static final Type<Glow> TYPE = new Type<>(AlteredAether.id("golem_glow"));
-        public static final StreamCodec<ByteBuf, Glow> STREAM_CODEC = StreamCodec.composite(
-                ByteBufCodecs.BYTE, Glow::kind, ByteBufCodecs.VAR_INT, Glow::ticks, POSITIONS, Glow::bright,
-                POSITIONS, Glow::dim, INTS, Glow::golems, INTS, Glow::threads, Glow::new);
+        public static final StreamCodec<ByteBuf, Glow> STREAM_CODEC = new StreamCodec<>() {
+            @Override
+            public Glow decode(ByteBuf buf) {
+                return new Glow(buf.readByte(), ByteBufCodecs.VAR_INT.decode(buf), POSITIONS.decode(buf),
+                        POSITIONS.decode(buf), INTS.decode(buf), INTS.decode(buf), POSITIONS.decode(buf));
+            }
+
+            @Override
+            public void encode(ByteBuf buf, Glow glow) {
+                buf.writeByte(glow.kind());
+                ByteBufCodecs.VAR_INT.encode(buf, glow.ticks());
+                POSITIONS.encode(buf, glow.bright());
+                POSITIONS.encode(buf, glow.dim());
+                INTS.encode(buf, glow.golems());
+                INTS.encode(buf, glow.threads());
+                POSITIONS.encode(buf, glow.strict());
+            }
+        };
 
         public static Glow blocks(byte kind, int ticks, List<BlockPos> bright) {
-            return new Glow(kind, ticks, bright, List.of(), List.of(), List.of());
+            return blocks(kind, ticks, bright, List.of());
+        }
+
+        public static Glow blocks(byte kind, int ticks, List<BlockPos> bright, List<BlockPos> strict) {
+            return new Glow(kind, ticks, bright, List.of(), List.of(), List.of(), strict);
         }
 
         @Override

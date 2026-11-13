@@ -21,6 +21,7 @@ import com.linc.alteredaether.entity.golem.GolemNetworks;
 import com.linc.alteredaether.entity.golem.GolemSorter;
 import com.linc.alteredaether.entity.golem.GolemStorage;
 import com.linc.alteredaether.entity.golem.GravititeGolem;
+import com.linc.alteredaether.entity.golem.ThrownPebble;
 import com.linc.alteredaether.registry.AARegistries;
 import com.mojang.authlib.GameProfile;
 import net.minecraft.core.BlockPos;
@@ -28,6 +29,7 @@ import net.minecraft.core.Direction;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.util.Mth;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
@@ -47,6 +49,7 @@ import net.neoforged.neoforge.common.util.FakePlayerFactory;
 import net.neoforged.neoforge.gametest.GameTestHolder;
 import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -439,6 +442,86 @@ public final class GravititeGolemTests {
                 .thenExecute(() -> helper.setBlock(HOME.east(), Blocks.AIR))
                 .thenWaitUntil(() -> helper.assertTrue(!golem.isPaused(), "still resting"))
                 .thenSucceed();
+    }
+
+    /** Used on nothing the pebble is thrown and used up; it falls upwards, and bursts on leaving the world's height. */
+    @GameTest(template = "arena", timeoutTicks = 200)
+    public static void aThrownPebbleFallsUpAndBursts(GameTestHelper helper) {
+        floor(helper);
+        GravititeGolem golem = golem(helper, HOME);
+        FakePlayer player = player(helper, "golem-thrower");
+        ServerLevel level = helper.getLevel();
+        ThrownPebble[] thrown = new ThrownPebble[2];
+        double[] startY = new double[1];
+        helper.startSequence().thenIdle(5).thenExecute(() -> {
+            ItemStack pebble = takePebble(golem, player);
+            pebble.use(level, player, InteractionHand.MAIN_HAND);
+            helper.assertTrue(player.getMainHandItem().isEmpty(), "throwing didn't use the pebble up");
+            List<ThrownPebble> flying = level.getEntitiesOfClass(ThrownPebble.class, player.getBoundingBox().inflate(4));
+            helper.assertTrue(flying.size() == 1, "no pebble was thrown");
+            thrown[0] = flying.get(0);
+            helper.assertTrue(thrown[0].getItem().get(AARegistries.PEBBLE_LINK.get()) != null, "the thrown pebble lost its link");
+            thrown[0].setDeltaMovement(Vec3.ZERO);
+            thrown[0].setPos(thrown[0].getX(), level.getMaxBuildHeight() + 0.5, thrown[0].getZ());
+            thrown[1] = helper.spawn(AARegistries.THROWN_PEBBLE.get(), new Vec3(10.5, 3, 10.5));
+            startY[0] = thrown[1].getY();
+        }).thenIdle(8).thenExecute(() -> {
+            helper.assertTrue(thrown[0].isRemoved(), "a pebble above the world's height didn't burst");
+            helper.assertTrue(thrown[1].isRemoved() || thrown[1].getY() > startY[0] + 0.5,
+                    "a pebble left in the air didn't fall upwards: " + (thrown[1].getY() - startY[0]));
+            thrown[1].discard();
+            leave(helper, player);
+        }).thenSucceed();
+    }
+
+    /** A pebble carried out of reach of its golem's network goes dark, and lights up again when brought back. */
+    @GameTest(template = "arena", timeoutTicks = 100)
+    public static void aPebbleGoesDarkOutOfReach(GameTestHelper helper) {
+        floor(helper);
+        GravititeGolem golem = golem(helper, HOME);
+        FakePlayer player = player(helper, "golem-wanderer");
+        ServerLevel level = helper.getLevel();
+        helper.startSequence().thenIdle(5).thenExecute(() -> {
+            ItemStack pebble = takePebble(golem, player);
+            Vec3 near = player.position();
+            // the pebble looks every tenth tick of whoever carries it
+            player.tickCount = 0;
+            pebble.inventoryTick(level, player, 0, true);
+            helper.assertTrue(pebble.hasFoil(), "the pebble is dark beside its golem");
+            player.moveTo(near.add(1000, 0, 0));
+            player.tickCount = 0;
+            pebble.inventoryTick(level, player, 0, true);
+            helper.assertTrue(!pebble.hasFoil(), "the pebble still glows far from its golem");
+            helper.assertTrue(!pebble.get(AARegistries.PEBBLE_LINK.get()).dead(), "the pebble went dead, not dark");
+            player.moveTo(near);
+            player.tickCount = 0;
+            pebble.inventoryTick(level, player, 0, true);
+            helper.assertTrue(pebble.hasFoil(), "the pebble stayed dark back beside its golem");
+            leave(helper, player);
+        }).thenSucceed();
+    }
+
+    /** While it lifts an item out of a chest the golem turns to face that chest. */
+    @GameTest(template = "arena", timeoutTicks = 600)
+    public static void itFacesTheChestItLiftsFrom(GameTestHelper helper) {
+        floor(helper);
+        GravititeGolem golem = golem(helper, HOME);
+        BlockPos a = new BlockPos(12, 2, 12), b = new BlockPos(20, 2, 12);
+        chest(helper, a, new ItemStack(Items.COBBLESTONE, 64), new ItemStack(Items.COBBLESTONE, 64),
+                new ItemStack(Items.COBBLESTONE, 64), new ItemStack(Items.OAK_LOG, 64));
+        chest(helper, b);
+        FakePlayer player = player(helper, "golem-watcher");
+        helper.startSequence().thenIdle(5).thenExecute(() -> {
+            golem.setYRot(-90);
+            takePebble(golem, player);
+            use(helper, player, a, Direction.UP);
+            use(helper, player, b, Direction.UP);
+        }).thenWaitUntil(() -> {
+            // the chest is 4 west and 4 north of it
+            float off = Mth.wrapDegrees(golem.getYRot() - 135);
+            helper.assertTrue(Math.abs(off) < 2 && Math.abs(Mth.wrapDegrees(golem.yBodyRot - 135)) < 12,
+                    "the golem isn't facing the chest it lifts from: " + golem.getYRot());
+        }).thenExecute(() -> leave(helper, player)).thenSucceed();
     }
 
     @GameTest(template = "arena", timeoutTicks = 600)

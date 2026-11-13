@@ -187,7 +187,7 @@ public final class GolemInteractions {
     private static void glowGolems(ServerPlayer player, List<GravititeGolem> golems, byte kind) {
         List<Integer> ids = golems.stream().map(GravititeGolem::getId).toList();
         PacketDistributor.sendToPlayer(player, new GolemPayloads.Glow(kind, 40, List.of(), List.of(), ids,
-                ids.size() == 2 ? ids : List.of()));
+                ids.size() == 2 ? ids : List.of(), List.of()));
     }
 
     /** Everything the golem's network has linked glows for a while: what it reaches brightly, the rest faintly. */
@@ -212,7 +212,9 @@ public final class GolemInteractions {
             threads.add(golems.get(i + 1));
         }
         golem.event(GolemTiming.EVENT_LINK_PULSE);
-        PacketDistributor.sendToPlayer(player, new GolemPayloads.Glow(GolemPayloads.SHOW, -1, bright, dim, golems, threads));
+        List<BlockPos> strict = GolemStorage.strict(level, net.links());
+        PacketDistributor.sendToPlayer(player, new GolemPayloads.Glow(GolemPayloads.SHOW, -1, bright, dim, golems, threads,
+                strict));
         int inventories = GolemNetworks.inventories(net, pos -> GolemStorage.inventoryKey(level, pos));
         player.displayClientMessage(message("links", golem.getName(), inventories, net.maxLinks(), net.mode().title()), true);
     }
@@ -256,7 +258,8 @@ public final class GolemInteractions {
             player.displayClientMessage(message("none_stored", wanted.getHoverName()), true);
             return;
         }
-        PacketDistributor.sendToPlayer(player, GolemPayloads.Glow.blocks(GolemPayloads.SEARCH, -1, found));
+        PacketDistributor.sendToPlayer(player, GolemPayloads.Glow.blocks(GolemPayloads.SEARCH, -1, found,
+                GolemStorage.strict(level, found)));
         int chests = (int) found.stream().map(pos -> GolemStorage.inventoryKey(level, pos)).distinct().count();
         player.displayClientMessage(message(chests == 1 ? "found_one" : "found", wanted.getHoverName(),
                 NumberFormat.getIntegerInstance().format(total), chests), true);
