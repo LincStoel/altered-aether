@@ -36,7 +36,7 @@ public final class AAClientConfig {
     public static final BooleanValue GOLEM_SHOW_FLIGHTS;
     public static final BooleanValue GOLEM_REDUCED_EFFECTS;
     public static final IntValue GOLEM_LINK_GLOW_SECONDS;
-    public static final IntValue GOLEM_SHOW_LINKS_SECONDS;
+    public static final BooleanValue GOLEM_HELD_LINKS;
     public static final IntValue GOLEM_SEARCH_SECONDS;
 
     public enum ShaderMode {
@@ -76,8 +76,8 @@ public final class AAClientConfig {
                 .define("reduced_effects", false);
         GOLEM_LINK_GLOW_SECONDS = b.comment("Seconds a block glows after it is linked.")
                 .defineInRange("link_glow_seconds", 2, 1, 30);
-        GOLEM_SHOW_LINKS_SECONDS = b.comment("Seconds everything linked glows after using a pebble on its own golem.")
-                .defineInRange("show_links_seconds", 15, 1, 120);
+        GOLEM_HELD_LINKS = b.comment("While a storage pebble is held, faintly outline the storage its network has linked.")
+                .define("held_pebble_links", true);
         GOLEM_SEARCH_SECONDS = b.comment("Seconds storage holding a searched item glows.")
                 .defineInRange("search_seconds", 15, 1, 120);
         b.pop();

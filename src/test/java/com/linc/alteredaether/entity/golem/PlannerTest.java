@@ -334,4 +334,113 @@ class PlannerTest {
             assertTrue(ms < 25, mode + " took " + ms + " ms");
         }
     }
+
+    // ---------------------------------------------------------------------------------------------------------------
+    // Focus, claims, frozen chests, shared strict chests
+
+    @Test
+    void aFocusedPlanOnlyMovesItemsOutOfTheFocus() {
+        for (SortMode mode : SortMode.values()) {
+            SortSnapshot snapshot = new SortSnapshot(KEYS, List.of(
+                    chest(0, 64, 0, 64, 2, 10),
+                    chest(2, 64, 2, 64, 0, 5),
+                    chest(4, 1, 2, 3)));
+            Planner.Plan plan = Planner.plan(snapshot, mode, new Planner.Focus(Set.of(0), Set.of()), 0);
+            assertFalse(plan.isEmpty(), mode + ": nothing planned");
+            for (Move move : plan.moves()) {
+                assertEquals(0, move.srcInv(), mode + ": moved out of a chest outside the focus: " + move);
+            }
+        }
+    }
+
+    @Test
+    void gatheringPullsPinnedItemsFromAnywhere() {
+        SortSnapshot snapshot = new SortSnapshot(KEYS, List.of(
+                chest(0, 64, 2, 20),
+                chest(4, 1, 2, 30),
+                inv(27, false, Set.of(2))));
+        Planner.Plan plan = Planner.plan(snapshot, SortMode.TIDY, new Planner.Focus(Set.of(2), Set.of(2)), 0);
+        long logs = 0;
+        for (Move move : plan.moves()) {
+            assertEquals(2, move.dstInv(), "gathered somewhere else: " + move);
+            logs += move.count();
+        }
+        assertEquals(50, logs, "not every log was gathered");
+    }
+
+    private static SortSnapshot.Inv claimed(int claim, int... keyCount) {
+        return chest(keyCount).with(false, claim);
+    }
+
+    @Test
+    void aClaimHoldsAgainstARivalUnderTheTolerance() {
+        // stone fills 2 slots, logs 4: under a tolerance of 3 the chest stays stone's, and the logs go
+        SortSnapshot keep = new SortSnapshot(KEYS, List.of(
+                claimed(0, 0, 64, 0, 64, 2, 64, 2, 64, 2, 64, 2, 64), chest()));
+        Planner.Plan plan = Planner.plan(keep, SortMode.TIDY, Planner.Focus.ALL, 3);
+        assertEquals(0, plan.claims()[0], "the claim was lost");
+        for (Move move : plan.moves()) {
+            assertEquals(2, move.key(), "stone moved out of its own chest: " + move);
+        }
+        // with a fifth stack of logs the logs fill the tolerance more, and take the chest
+        SortSnapshot flip = new SortSnapshot(KEYS, List.of(
+                claimed(0, 0, 64, 0, 64, 2, 64, 2, 64, 2, 64, 2, 64, 2, 64), chest()));
+        plan = Planner.plan(flip, SortMode.TIDY, Planner.Focus.ALL, 3);
+        assertEquals(1, plan.claims()[0], "the logs didn't take the chest");
+        for (Move move : plan.moves()) {
+            assertEquals(0, move.key(), "logs moved out of what is now their chest: " + move);
+        }
+    }
+
+    @Test
+    void aFrozenChestKeepsItsClaimAndNothingMovesThroughIt() {
+        for (SortMode mode : SortMode.values()) {
+            List<SortSnapshot.Inv> invs = List.of(
+                    chest(0, 64, 0, 64, 0, 64, 2, 5).with(true, -1),
+                    chest(0, 30, 2, 64, 2, 64),
+                    chest());
+            Planner.Plan plan = Planner.plan(new SortSnapshot(KEYS, invs), mode);
+            for (Move move : plan.moves()) {
+                assertTrue(move.srcInv() != 0 && move.dstInv() != 0, mode + ": moved through a frozen chest: " + move);
+                if (mode == SortMode.TIDY) {
+                    // stone's chest is the frozen one, so the stray stone has nowhere better: it stays
+                    assertTrue(move.key() != 0, "stone given a new home though its own is only frozen: " + move);
+                }
+            }
+            if (mode == SortMode.TIDY) {
+                assertTrue(plan.stuck().contains(1), "the stray stone isn't reported stuck");
+            }
+        }
+    }
+
+    @Test
+    void chestsSharingAStrictPinAreEvenedOut() {
+        for (SortMode mode : SortMode.values()) {
+            SortSnapshot snapshot = new SortSnapshot(KEYS, List.of(
+                    strict(Set.of(0), 0, 64, 0, 64, 0, 64, 0, 64, 0, 64, 0, 64, 0, 64, 0, 64, 0, 64, 0, 64),
+                    strict(Set.of(0)),
+                    strict(Set.of(0), 0, 64)));
+            assertTrue(settle(snapshot, mode) <= 3, mode + " didn't settle");
+            long total = 11 * 64, average = total / 3;
+            for (SortSnapshot.Inv inv : snapshot.invs()) {
+                long here = count(inv, 0);
+                assertTrue(Math.abs(here - average) <= 64, mode + ": not within a stack of the average: " + here);
+            }
+        }
+    }
+
+    @Test
+    void newItemsGoToTheSharedChestHoldingFewest() {
+        for (SortMode mode : SortMode.values()) {
+            SortSnapshot snapshot = new SortSnapshot(KEYS, List.of(
+                    strict(Set.of(0), 0, 64, 0, 64, 0, 64),
+                    strict(Set.of(0), 0, 64, 0, 64),
+                    chest(0, 40)));
+            Planner.Plan plan = Planner.plan(snapshot, mode, new Planner.Focus(Set.of(2), Set.of()), 0);
+            assertFalse(plan.isEmpty(), mode + ": the stone stayed put");
+            for (Move move : plan.moves()) {
+                assertEquals(1, move.dstInv(), mode + ": stone went to the fuller chest: " + move);
+            }
+        }
+    }
 }

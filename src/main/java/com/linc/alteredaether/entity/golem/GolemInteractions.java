@@ -14,7 +14,6 @@
  */
 package com.linc.alteredaether.entity.golem;
 
-import com.aetherteam.aether.item.AetherItems;
 import com.linc.alteredaether.AlteredAether;
 import com.linc.alteredaether.advancement.AAAdvancements;
 import com.linc.alteredaether.config.AACommonConfig;
@@ -71,10 +70,6 @@ public final class GolemInteractions {
                 switchMode(golem, serverPlayer, level);
             } else {
                 givePebble(golem, serverPlayer, level);
-            }
-        } else if (stack.is(AetherItems.AMBROSIUM_SHARD.get())) {
-            if (!golem.heal(player, stack)) {
-                search(golem, serverPlayer, level, stack);
             }
         } else {
             search(golem, serverPlayer, level, stack);

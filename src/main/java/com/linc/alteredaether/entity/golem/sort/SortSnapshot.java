@@ -48,12 +48,20 @@ public record SortSnapshot(List<Key> keys, List<Inv> invs) {
      * @param pins   keys pinned to this inventory by an item frame or placard on it
      * @param strict true when it takes only its pinned items, not their families, and sends everything else away
      *               (a glow item frame or a placard pinned them)
+     * @param frozen true when it can't be used just now (a player has it open, it is walled in, no golem reaches it):
+     *               it still says what it is for, but nothing moves into or out of it
+     * @param claim  the group it was for last time it was planned, or -1; it keeps that group until another fills
+     *               clearly more of it (see {@link Planner#plan(SortSnapshot, SortMode, Planner.Focus, int)})
      */
     public record Inv(boolean source, boolean plain, int[] limit, int[] key, int[] count, Set<Integer> pins,
-                      boolean strict) {
+                      boolean strict, boolean frozen, int claim) {
         /** An inventory whose pins, if any, take their families too. */
         public Inv(boolean source, boolean plain, int[] limit, int[] key, int[] count, Set<Integer> pins) {
             this(source, plain, limit, key, count, pins, false);
+        }
+
+        public Inv(boolean source, boolean plain, int[] limit, int[] key, int[] count, Set<Integer> pins, boolean strict) {
+            this(source, plain, limit, key, count, pins, strict, false, -1);
         }
 
         /** Whether this is strict and {@code key} isn't pinned to it, so it has no place here. */
@@ -66,7 +74,12 @@ public record SortSnapshot(List<Key> keys, List<Inv> invs) {
         }
 
         public Inv copy() {
-            return new Inv(source, plain, limit.clone(), key.clone(), count.clone(), pins, strict);
+            return new Inv(source, plain, limit.clone(), key.clone(), count.clone(), pins, strict, frozen, claim);
+        }
+
+        /** The same inventory, frozen or not, claiming {@code claim}. */
+        public Inv with(boolean frozen, int claim) {
+            return new Inv(source, plain, limit, key, count, pins, strict, frozen, claim);
         }
 
         public boolean isEmpty() {
@@ -82,7 +95,8 @@ public record SortSnapshot(List<Key> keys, List<Inv> invs) {
         public boolean equals(Object o) {
             return o instanceof Inv other && source == other.source && plain == other.plain
                     && Arrays.equals(limit, other.limit) && Arrays.equals(key, other.key)
-                    && Arrays.equals(count, other.count) && pins.equals(other.pins) && strict == other.strict;
+                    && Arrays.equals(count, other.count) && pins.equals(other.pins) && strict == other.strict
+                    && frozen == other.frozen && claim == other.claim;
         }
 
         @Override

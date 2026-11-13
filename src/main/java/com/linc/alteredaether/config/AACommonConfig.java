@@ -131,7 +131,8 @@ public final class AACommonConfig {
     public static final DoubleValue GOLEM_REPEL_MOBS;
     public static final DoubleValue GOLEM_REPEL_PLAYERS;
     public static final IntValue GOLEM_REPEL_COOLDOWN;
-    public static final IntValue GOLEM_HEAL;
+    public static final IntValue GOLEM_SORT_DELAY;
+    public static final IntValue GOLEM_MAJORITY_TOLERANCE;
     public static final IntValue GOLEM_MAX_MOVE;
 
     // [tall_mode]
@@ -387,14 +388,15 @@ public final class AACommonConfig {
                         "an item never leaves its chest until it lands in the next one.")
                 .push("gravitite_golem");
         GOLEM_RANGE = b.comment("How far a golem reaches from where it sits: this many blocks out, and half as many up",
-                        "and down. Golems can link when they sit within twice this of each other.")
+                        "and down. Golems of one colour that sit within reach of each other work as one network.")
                 .defineInRange("range", 16, 8, 32);
-        GOLEM_MAX_NETWORK = b.comment("Most golems one network can hold.")
-                .defineInRange("max_network_golems", 2, 1, 8);
+        GOLEM_MAX_NETWORK = b.comment("Most golems one network can hold. A golem that would take a network past this",
+                        "rests until there is room.")
+                .defineInRange("max_network_golems", 6, 1, 16);
         GOLEM_MAX_LINKS = b.comment("Most storage blocks each golem in a network adds to what it can link.")
                 .defineInRange("max_links", 32, 1, 256);
         GOLEM_MAX_SLOTS = b.comment("Most inventory slots a network reads when it plans. Storage past this waits.")
-                .defineInRange("max_slots_scanned", 4096, 64, 65536);
+                .defineInRange("max_slots_scanned", 16384, 64, 65536);
         GOLEM_MOVE_TICKS = b.comment("Ticks an item takes to fly from one chest to the next.")
                 .defineInRange("move_ticks", 30, 5, 200);
         GOLEM_MAX_IN_FLIGHT = b.comment("Most items one golem keeps in the air at once.")
@@ -404,12 +406,18 @@ public final class AACommonConfig {
                 .defineInRange("scan_interval", 10, 1, 200);
         GOLEM_REPEL_RADIUS = b.comment("How far a struck golem pushes everything away.")
                 .defineInRange("repel_radius", 3.0, 0.0, 8.0);
-        GOLEM_REPEL_MOBS = b.comment("How hard it pushes mobs.").defineInRange("repel_strength_mobs", 1.2, 0.0, 4.0);
+        GOLEM_REPEL_MOBS = b.comment("How hard it pushes mobs.").defineInRange("repel_strength_mobs", 2.0, 0.0, 4.0);
         GOLEM_REPEL_PLAYERS = b.comment("How hard it pushes players; gentle by default, so no one is thrown off an island.")
                 .defineInRange("repel_strength_players", 0.4, 0.0, 4.0);
         GOLEM_REPEL_COOLDOWN = b.comment("Ticks before a golem can push again.")
                 .defineInRange("repel_cooldown", 20, 0, 1200);
-        GOLEM_HEAL = b.comment("Health an ambrosium shard gives back.").defineInRange("heal_amount", 4, 0, 12);
+        GOLEM_SORT_DELAY = b.comment("Ticks a golem waits after storage changes before sorting it, so a chest being",
+                        "filled is sorted once, when the filling stops (but never more than five times this after the first",
+                        "change).")
+                .defineInRange("sort_delay", 60, 0, 1200);
+        GOLEM_MAJORITY_TOLERANCE = b.comment("Slots another family must fill beyond a chest's own before tidy mode gives",
+                        "the chest to it, so chests don't change hands over a stack or two.")
+                .defineInRange("majority_tolerance", 3, 0, 27);
         GOLEM_MAX_MOVE = b.comment("Furthest a golem can be sent with a pebble, in blocks.")
                 .defineInRange("max_move_distance", 48, 4, 256);
         b.pop();

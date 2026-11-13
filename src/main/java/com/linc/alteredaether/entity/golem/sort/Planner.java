@@ -14,6 +14,7 @@
  */
 package com.linc.alteredaether.entity.golem.sort;
 
+import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -45,16 +46,42 @@ import java.util.Set;
  *
  * <p>In both, a source inventory (a hopper, say) is emptied into storage, and nothing is moved into one. A plain
  * container is then reordered in place by {@link #orderWithin}, without moves.
+ *
+ * <p>A plan can be <b>focused</b> on a few inventories (see {@link Focus}): only items in those are moved, though what
+ * every chest is for is still judged on the whole network. A <b>frozen</b> inventory (one in use, say) keeps what it is
+ * for but nothing moves into or out of it. An item pinned strictly to two or more chests is shared out between them:
+ * new ones go to the chest holding fewest, and the chests are kept within a stack of each other.
  */
 public final class Planner {
     /** Moves planned at most at once; the rest wait for the next plan. */
     public static final int MAX_MOVES = 512;
 
     /**
+     * Which inventories a plan moves items out of.
+     *
+     * @param sources the inventories (by index) whose items may move, or null for every one
+     * @param gather  inventories whose pins just changed: the items pinned to them are pulled in from anywhere
+     */
+    public record Focus(@Nullable Set<Integer> sources, Set<Integer> gather) {
+        /** Everything may move: a whole-network sort. */
+        public static final Focus ALL = new Focus(null, Set.of());
+
+        public boolean all() {
+            return sources == null;
+        }
+
+        boolean has(int inv) {
+            return sources == null || sources.contains(inv);
+        }
+    }
+
+    /**
      * @param moves    the moves, in the order to make them
      * @param unplaced items a source inventory holds that no storage has room for
+     * @param claims   the group each inventory was judged to be for (-1 for none), to pass back as its claim next time
+     * @param stuck    inventories holding items that belong elsewhere but found no room there
      */
-    public record Plan(List<Move> moves, int unplaced) {
+    public record Plan(List<Move> moves, int unplaced, int[] claims, Set<Integer> stuck) {
         public boolean isEmpty() {
             return moves.isEmpty();
         }
@@ -63,14 +90,24 @@ public final class Planner {
     private Planner() {
     }
 
+    /** A whole-network plan with no tolerance for claims. */
     public static Plan plan(SortSnapshot snapshot, SortMode mode) {
-        Work work = new Work(snapshot);
+        return plan(snapshot, mode, Focus.ALL, 0);
+    }
+
+    /**
+     * @param focus     which inventories' items may move
+     * @param tolerance slots another group must fill beyond a chest's claimed group before tidy mode gives the chest
+     *                  to it
+     */
+    public static Plan plan(SortSnapshot snapshot, SortMode mode, Focus focus, int tolerance) {
+        Work work = new Work(snapshot, focus, tolerance);
         if (mode == SortMode.TIDY) {
             tidy(work);
         } else {
             compact(work);
         }
-        return new Plan(List.copyOf(work.moves), work.unplaced);
+        return new Plan(List.copyOf(work.moves), work.unplaced, work.claims, Set.copyOf(work.stuck));
     }
 
     // ---------------------------------------------------------------------------------------------------------------
@@ -104,7 +141,9 @@ public final class Planner {
                 dominant[i] = w.dominantGroup(i, groupSlots);
                 type[i] = singleton(groupSlots, dominant[i]) ? MISC : DOMINANT;
             }
+            w.claims[i] = dominant[i];
         }
+        Map<Integer, List<Integer>> exclusive = w.exclusiveHomes();
 
         // groups no chest claims, biggest first, each take an empty chest
         Set<Integer> claimed = new HashSet<>();
@@ -124,7 +163,7 @@ public final class Planner {
         unclaimed.sort(Comparator.<Integer>comparingInt(g -> -groupSlots.get(g)).thenComparingInt(g -> g));
         List<Integer> empties = new ArrayList<>();
         for (int i = 0; i < n; i++) {
-            if (type[i] == EMPTY) {
+            if (type[i] == EMPTY && !w.invs.get(i).frozen()) {
                 empties.add(i);
             }
         }
@@ -160,38 +199,51 @@ public final class Planner {
         }
         for (int i : order) {
             SortSnapshot.Inv inv = w.invs.get(i);
+            if (inv.frozen()) {
+                continue;
+            }
             for (int slot = 0; slot < inv.size() && !w.full(); slot++) {
                 int key = inv.key()[slot];
-                if (key < 0) {
+                if (key < 0 || !w.consider(i, key)) {
                     continue;
                 }
                 int group = w.group(key);
                 List<Integer> homes = new ArrayList<>();
-                for (int j = 0; j < n; j++) {
-                    if (type[j] == PINNED && w.invs.get(j).pins().contains(key)) {
-                        homes.add(j);
+                List<Integer> shared = exclusive.get(key);
+                if (shared != null) {
+                    // pinned strictly to several chests: it stays in any of them (they are evened out below), and
+                    // from anywhere else it goes to the one holding fewest
+                    if (shared.contains(i)) {
+                        continue;
                     }
-                }
-                List<Integer> tier = new ArrayList<>();
-                for (int j = 0; j < n; j++) {
-                    if (type[j] == PINNED && !homes.contains(j) && pinGroups.get(j).contains(group)) {
-                        tier.add(j);
+                    homes.addAll(w.byFewest(shared, key));
+                } else {
+                    for (int j = 0; j < n; j++) {
+                        if (type[j] == PINNED && w.invs.get(j).pins().contains(key)) {
+                            homes.add(j);
+                        }
                     }
-                }
-                homes.addAll(w.byHeld(tier, key));
-                tier.clear();
-                for (int j = 0; j < n; j++) {
-                    if (type[j] == DOMINANT && dominant[j] == group) {
-                        tier.add(j);
+                    List<Integer> tier = new ArrayList<>();
+                    for (int j = 0; j < n; j++) {
+                        if (type[j] == PINNED && !homes.contains(j) && pinGroups.get(j).contains(group)) {
+                            tier.add(j);
+                        }
                     }
-                }
-                homes.addAll(w.byHeld(tier, key));
-                Integer fresh = newHome.get(group);
-                if (homes.isEmpty() && fresh != null) {
-                    homes.add(fresh);
-                }
-                if (singleton(groupSlots, group) && misc >= 0 && !homes.contains(misc)) {
-                    homes.add(misc);
+                    homes.addAll(w.byHeld(tier, key));
+                    tier.clear();
+                    for (int j = 0; j < n; j++) {
+                        if (type[j] == DOMINANT && dominant[j] == group) {
+                            tier.add(j);
+                        }
+                    }
+                    homes.addAll(w.byHeld(tier, key));
+                    Integer fresh = newHome.get(group);
+                    if (homes.isEmpty() && fresh != null) {
+                        homes.add(fresh);
+                    }
+                    if (singleton(groupSlots, group) && misc >= 0 && !homes.contains(misc)) {
+                        homes.add(misc);
+                    }
                 }
                 // a strict chest never takes what isn't pinned to it, even as its group's dominant or misc chest
                 homes.removeIf(j -> w.invs.get(j).refuses(key));
@@ -223,15 +275,19 @@ public final class Planner {
                     }
                     w.place(i, slot, j, Integer.MAX_VALUE, true, true);
                 }
+                if (inv.key()[slot] >= 0 && !better.isEmpty()) {
+                    w.stuck.add(i);
+                }
                 if (inv.source() && inv.key()[slot] >= 0) {
                     w.unplaced += inv.count()[slot];
                 }
             }
         }
 
+        w.balance(exclusive);
         // partial stacks of one item within a chest are merged; a plain chest does that itself (see orderWithin)
         for (int i = 0; i < n; i++) {
-            if (type[i] != SOURCE && !w.invs.get(i).plain()) {
+            if (type[i] != SOURCE && !w.invs.get(i).plain() && w.touched(i)) {
                 w.mergeWithin(i);
             }
         }
@@ -246,22 +302,26 @@ public final class Planner {
 
     private static void compact(Work w) {
         int n = w.invs.size();
+        for (int i = 0; i < n; i++) {
+            w.claims[i] = w.invs.get(i).claim();
+        }
         List<Integer> storage = new ArrayList<>();
         for (int i = 0; i < n; i++) {
             if (!w.invs.get(i).source()) {
                 storage.add(i);
             }
         }
+        Map<Integer, List<Integer>> exclusive = w.exclusiveHomes();
 
         // 1. sources into storage
         for (int i = 0; i < n; i++) {
             SortSnapshot.Inv inv = w.invs.get(i);
-            if (!inv.source()) {
+            if (!inv.source() || inv.frozen()) {
                 continue;
             }
             for (int slot = 0; slot < inv.size() && !w.full(); slot++) {
                 int key = inv.key()[slot];
-                if (key < 0) {
+                if (key < 0 || !w.consider(i, key)) {
                     continue;
                 }
                 List<Integer> pref = w.preference(storage, key, true);
@@ -273,6 +333,7 @@ public final class Planner {
                 }
                 if (inv.key()[slot] >= 0) {
                     w.unplaced += inv.count()[slot];
+                    w.stuck.add(i);
                 }
             }
         }
@@ -280,9 +341,12 @@ public final class Planner {
         // 2. pinned chests take their items
         for (int i : storage) {
             SortSnapshot.Inv inv = w.invs.get(i);
+            if (inv.frozen()) {
+                continue;
+            }
             for (int slot = 0; slot < inv.size() && !w.full(); slot++) {
                 int key = inv.key()[slot];
-                if (key < 0) {
+                if (key < 0 || !w.consider(i, key)) {
                     continue;
                 }
                 List<Integer> pinned = w.pinnedFor(storage, key);
@@ -301,9 +365,12 @@ public final class Planner {
         // 2b. strict chests send away what isn't pinned to them, wherever it fits
         for (int i : storage) {
             SortSnapshot.Inv inv = w.invs.get(i);
+            if (inv.frozen()) {
+                continue;
+            }
             for (int slot = 0; slot < inv.size() && !w.full(); slot++) {
                 int key = inv.key()[slot];
-                if (key < 0 || !inv.refuses(key)) {
+                if (key < 0 || !inv.refuses(key) || !w.consider(i, key)) {
                     continue;
                 }
                 List<Integer> pref = w.preference(storage, key, true);
@@ -314,19 +381,43 @@ public final class Planner {
                 for (int j : pref) {
                     w.place(i, slot, j, Integer.MAX_VALUE, false, true);
                 }
+                if (inv.key()[slot] >= 0) {
+                    w.stuck.add(i);
+                }
             }
         }
 
-        // 3. partial stacks merged, into the chests that rank first for the item
-        for (int key = 0; key < w.keys.size() && !w.full(); key++) {
-            List<Integer> pref = w.preference(storage, key, true);
-            Map<Integer, Integer> rank = new HashMap<>();
-            for (int r = 0; r < pref.size(); r++) {
-                rank.put(pref.get(r), r);
+        // 3. partial stacks merged, into the chests that rank first for the item: every item on a whole sort, else
+        // those in the focus
+        Set<Integer> keys = new HashSet<>();
+        for (int i = 0; i < n; i++) {
+            if (w.focus.has(i)) {
+                for (int k : w.invs.get(i).key()) {
+                    if (k >= 0) {
+                        keys.add(k);
+                    }
+                }
             }
+        }
+        for (int k = 0; k < w.keys.size(); k++) {
+            if (w.gathered(k)) {
+                keys.add(k);
+            }
+        }
+        List<Integer> keyOrder = new ArrayList<>(keys);
+        keyOrder.sort(null);
+        for (int key : keyOrder) {
+            if (w.full()) {
+                break;
+            }
+            List<Integer> shared = exclusive.getOrDefault(key, List.of());
             List<int[]> partials = new ArrayList<>();
             for (int i : storage) {
                 SortSnapshot.Inv inv = w.invs.get(i);
+                // the chests one item is shared between are evened out instead (see balance)
+                if (inv.frozen() || shared.contains(i)) {
+                    continue;
+                }
                 for (int slot = 0; slot < inv.size(); slot++) {
                     if (inv.key()[slot] == key && inv.count()[slot] < w.cap(i, slot, key)) {
                         partials.add(new int[]{i, slot});
@@ -336,21 +427,26 @@ public final class Planner {
             if (partials.size() < 2) {
                 continue;
             }
+            List<Integer> pref = w.preference(storage, key, true);
+            Map<Integer, Integer> rank = new HashMap<>();
+            for (int r = 0; r < pref.size(); r++) {
+                rank.put(pref.get(r), r);
+            }
             // a strict chest it is stuck in (nowhere else had room) ranks last, so it only gives
             partials.sort(Comparator.<int[]>comparingInt(p -> rank.getOrDefault(p[0], Integer.MAX_VALUE))
                     .thenComparingInt(p -> p[1]));
-            int to = 0, from = partials.size() - 1;
-            while (to < from && !w.full()) {
-                int[] dst = partials.get(to), src = partials.get(from);
-                int space = w.cap(dst[0], dst[1], key) - w.invs.get(dst[0]).count()[dst[1]];
-                if (space <= 0) {
-                    to++;
+            // the last-ranked give to the first-ranked; only stacks in the focus give
+            for (int from = partials.size() - 1; from > 0 && !w.full(); from--) {
+                int[] src = partials.get(from);
+                if (!w.consider(src[0], key)) {
                     continue;
                 }
-                int amount = Math.min(space, w.invs.get(src[0]).count()[src[1]]);
-                w.transfer(src[0], src[1], dst[0], dst[1], amount);
-                if (w.invs.get(src[0]).key()[src[1]] < 0) {
-                    from--;
+                for (int to = 0; to < from && !w.full() && w.invs.get(src[0]).key()[src[1]] == key; to++) {
+                    int[] dst = partials.get(to);
+                    int space = w.cap(dst[0], dst[1], key) - w.invs.get(dst[0]).count()[dst[1]];
+                    if (space > 0) {
+                        w.transfer(src[0], src[1], dst[0], dst[1], Math.min(space, w.invs.get(src[0]).count()[src[1]]));
+                    }
                 }
             }
         }
@@ -359,7 +455,8 @@ public final class Planner {
         Set<Integer> freed = new HashSet<>();
         List<Integer> candidates = new ArrayList<>();
         for (int i : storage) {
-            if (w.invs.get(i).pins().isEmpty() && !w.invs.get(i).isEmpty()) {
+            SortSnapshot.Inv inv = w.invs.get(i);
+            if (inv.pins().isEmpty() && !inv.isEmpty() && !inv.frozen() && w.focus.has(i)) {
                 candidates.add(i);
             }
         }
@@ -372,7 +469,7 @@ public final class Planner {
             List<Integer> others = new ArrayList<>();
             for (int i : storage) {
                 // only into chests already in use: emptying one into an empty one saves nothing
-                if (i != c && !freed.contains(i) && !w.invs.get(i).isEmpty()) {
+                if (i != c && !freed.contains(i) && !w.invs.get(i).isEmpty() && !w.invs.get(i).frozen()) {
                     others.add(i);
                 }
             }
@@ -382,6 +479,8 @@ public final class Planner {
             w.adopt(trial);
             freed.add(c);
         }
+
+        w.balance(exclusive);
     }
 
     // ---------------------------------------------------------------------------------------------------------------
@@ -424,7 +523,8 @@ public final class Planner {
         if (Arrays.equals(key, inv.key()) && Arrays.equals(count, inv.count())) {
             return null;
         }
-        return new SortSnapshot.Inv(inv.source(), inv.plain(), inv.limit(), key, count, inv.pins());
+        return new SortSnapshot.Inv(inv.source(), inv.plain(), inv.limit(), key, count, inv.pins(), inv.strict(),
+                inv.frozen(), inv.claim());
     }
 
     /** Applies {@code move} to {@code snapshot}'s slots, as the network does; false if it doesn't fit what is there. */
@@ -455,12 +555,33 @@ public final class Planner {
         List<SortSnapshot.Inv> invs;
         /** How many of each key each inventory held when planning began; what "holds the most" is judged on. */
         final List<Map<Integer, Integer>> held;
+        final Focus focus;
+        final int tolerance;
+        /** Keys, and groups, pinned to the inventories being gathered for: those move from anywhere. */
+        final Set<Integer> gatherKeys = new HashSet<>(), gatherGroups = new HashSet<>();
+        final int[] claims;
         List<Move> moves = new ArrayList<>();
         int unplaced;
+        Set<Integer> stuck = new HashSet<>();
+        /** Inventories items were moved into. */
+        Set<Integer> received = new HashSet<>();
 
-        Work(SortSnapshot snapshot) {
+        Work(SortSnapshot snapshot, Focus focus, int tolerance) {
             keys = snapshot.keys();
             invs = snapshot.copy().invs();
+            this.focus = focus;
+            this.tolerance = tolerance;
+            claims = new int[invs.size()];
+            Arrays.fill(claims, -1);
+            for (int g : focus.gather()) {
+                SortSnapshot.Inv inv = invs.get(g);
+                for (int pin : inv.pins()) {
+                    gatherKeys.add(pin);
+                    if (!inv.strict()) {
+                        gatherGroups.add(keys.get(pin).group());
+                    }
+                }
+            }
             held = new ArrayList<>(invs.size());
             for (SortSnapshot.Inv inv : invs) {
                 Map<Integer, Integer> counts = new HashMap<>();
@@ -477,8 +598,15 @@ public final class Planner {
             keys = other.keys;
             invs = other.invs.stream().map(SortSnapshot.Inv::copy).toList();
             held = other.held;
+            focus = other.focus;
+            tolerance = other.tolerance;
+            gatherKeys.addAll(other.gatherKeys);
+            gatherGroups.addAll(other.gatherGroups);
+            claims = other.claims;
             moves = new ArrayList<>(other.moves);
             unplaced = other.unplaced;
+            stuck = new HashSet<>(other.stuck);
+            received = new HashSet<>(other.received);
         }
 
         Work copy() {
@@ -489,6 +617,114 @@ public final class Planner {
             invs = other.invs;
             moves = other.moves;
             unplaced = other.unplaced;
+            stuck = other.stuck;
+            received = other.received;
+        }
+
+        /** Whether the item in a slot of {@code inv} may move in this plan. */
+        boolean consider(int inv, int key) {
+            return focus.has(inv) || gathered(key);
+        }
+
+        /** Whether {@code key} is pinned to an inventory being gathered for. */
+        boolean gathered(int key) {
+            return gatherKeys.contains(key) || gatherGroups.contains(group(key));
+        }
+
+        /** Whether {@code inv} is in the focus or had items moved into it, so is worth tidying within. */
+        boolean touched(int inv) {
+            return focus.has(inv) || received.contains(inv);
+        }
+
+        /** How many of {@code key} {@code inv} holds now. */
+        long amount(int inv, int key) {
+            long total = 0;
+            SortSnapshot.Inv in = invs.get(inv);
+            for (int slot = 0; slot < in.size(); slot++) {
+                if (in.key()[slot] == key) {
+                    total += in.count()[slot];
+                }
+            }
+            return total;
+        }
+
+        /** {@code list} ordered by how many of {@code key} each holds now, fewest first, then by index. */
+        List<Integer> byFewest(List<Integer> list, int key) {
+            List<Integer> sorted = new ArrayList<>(list);
+            sorted.sort(Comparator.<Integer>comparingLong(i -> amount(i, key)).thenComparingInt(i -> i));
+            return sorted;
+        }
+
+        /** Each key pinned strictly to two or more inventories, and those inventories. */
+        Map<Integer, List<Integer>> exclusiveHomes() {
+            Map<Integer, List<Integer>> homes = new HashMap<>();
+            for (int i = 0; i < invs.size(); i++) {
+                SortSnapshot.Inv inv = invs.get(i);
+                if (inv.strict() && !inv.source()) {
+                    for (int pin : inv.pins()) {
+                        homes.computeIfAbsent(pin, k -> new ArrayList<>()).add(i);
+                    }
+                }
+            }
+            homes.values().removeIf(list -> list.size() < 2);
+            for (List<Integer> list : homes.values()) {
+                list.sort(null);
+            }
+            return homes;
+        }
+
+        /**
+         * Evens out each item shared between strict chests, when one of them is in the focus: from the fullest into
+         * the emptiest until every one is within a stack of the average.
+         */
+        void balance(Map<Integer, List<Integer>> exclusive) {
+            List<Integer> shared = new ArrayList<>(exclusive.keySet());
+            shared.sort(null);
+            for (int key : shared) {
+                List<Integer> homes = new ArrayList<>();
+                boolean inFocus = false;
+                for (int i : exclusive.get(key)) {
+                    if (!invs.get(i).frozen()) {
+                        homes.add(i);
+                        inFocus |= focus.has(i) || received.contains(i);
+                    }
+                }
+                if (homes.size() < 2 || !inFocus) {
+                    continue;
+                }
+                int stack = Math.max(1, keys.get(key).maxStack());
+                for (int step = 0; step < 256 && !full(); step++) {
+                    long total = 0;
+                    int fullest = homes.get(0), emptiest = homes.get(0);
+                    for (int i : homes) {
+                        long here = amount(i, key);
+                        total += here;
+                        if (here > amount(fullest, key)) {
+                            fullest = i;
+                        }
+                        if (here < amount(emptiest, key)) {
+                            emptiest = i;
+                        }
+                    }
+                    double average = (double) total / homes.size();
+                    long hi = amount(fullest, key), lo = amount(emptiest, key);
+                    if (hi - average <= stack && average - lo <= stack) {
+                        break;
+                    }
+                    int slot = -1;
+                    SortSnapshot.Inv from = invs.get(fullest);
+                    for (int s = from.size() - 1; s >= 0; s--) {
+                        if (from.key()[s] == key) {
+                            slot = s;
+                            break;
+                        }
+                    }
+                    int want = (int) Math.max(1, Math.min(Integer.MAX_VALUE, (hi - lo) / 2));
+                    if (slot < 0 || place(fullest, slot, emptiest, want, true, true) == 0) {
+                        break;
+                    }
+                }
+            }
         }
 
         boolean full() {
@@ -568,6 +804,11 @@ public final class Planner {
                     best = g;
                 }
             }
+            // the group it was for keeps it while that group is still there and no other fills clearly more
+            int claim = invs.get(inv).claim();
+            if (claim >= 0 && claim != best && slots.containsKey(claim) && slots.get(best) < slots.get(claim) + tolerance) {
+                return claim;
+            }
             return best;
         }
 
@@ -615,10 +856,19 @@ public final class Planner {
         /** Storage pinned for {@code key}, then pinned (not strictly) for its group. */
         List<Integer> pinnedFor(List<Integer> storage, int key) {
             List<Integer> pinned = new ArrayList<>();
+            int strict = 0;
             for (int i : storage) {
                 if (invs.get(i).pins().contains(key)) {
                     pinned.add(i);
+                    if (invs.get(i).strict()) {
+                        strict++;
+                    }
                 }
+            }
+            if (strict >= 2) {
+                // shared strictly between chests: the one holding fewest first
+                pinned.sort(Comparator.<Integer>comparingInt(i -> invs.get(i).strict() ? 0 : 1)
+                        .thenComparingLong(i -> invs.get(i).strict() ? amount(i, key) : 0).thenComparingInt(i -> i));
             }
             int group = group(key);
             for (int i : storage) {
@@ -667,7 +917,7 @@ public final class Planner {
             SortSnapshot.Inv from = invs.get(src);
             SortSnapshot.Inv to = invs.get(dst);
             int key = from.key()[srcSlot];
-            if (key < 0 || to.source()) {
+            if (key < 0 || to.source() || from.frozen() || to.frozen()) {
                 return 0;
             }
             int left = Math.min(max, from.count()[srcSlot]);
@@ -702,6 +952,9 @@ public final class Planner {
             SortSnapshot.Inv to = invs.get(dst);
             int key = from.key()[srcSlot];
             moves.add(new Move(src, srcSlot, dst, dstSlot, key, amount));
+            if (dst != src) {
+                received.add(dst);
+            }
             from.count()[srcSlot] -= amount;
             if (from.count()[srcSlot] <= 0) {
                 from.count()[srcSlot] = 0;

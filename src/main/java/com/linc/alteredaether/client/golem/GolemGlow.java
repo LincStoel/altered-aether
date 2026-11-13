@@ -73,7 +73,7 @@ public final class GolemGlow {
         syncLevel(mc.level);
         byte kind = payload.kind();
         int seconds = switch (kind) {
-            case GolemPayloads.SHOW -> AAClientConfig.GOLEM_SHOW_LINKS_SECONDS.get();
+            case GolemPayloads.SHOW -> AAClientConfig.GOLEM_SEARCH_SECONDS.get();
             case GolemPayloads.SEARCH -> AAClientConfig.GOLEM_SEARCH_SECONDS.get();
             case GolemPayloads.UNLINK -> 1;
             default -> AAClientConfig.GOLEM_LINK_GLOW_SECONDS.get();

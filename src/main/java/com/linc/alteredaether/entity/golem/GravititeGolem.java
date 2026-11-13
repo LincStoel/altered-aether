@@ -600,20 +600,6 @@ public class GravititeGolem extends PathfinderMob {
         event(GolemTiming.EVENT_REPEL);
     }
 
-    /** An ambrosium shard heals it. */
-    boolean heal(Player player, net.minecraft.world.item.ItemStack stack) {
-        if (getHealth() >= getMaxHealth()) {
-            return false;
-        }
-        heal(AACommonConfig.GOLEM_HEAL.get());
-        stack.consume(1, player);
-        if (level() instanceof ServerLevel server) {
-            server.sendParticles(ParticleTypes.HEART, getX(), getY() + getBbHeight(), getZ(), 3, 0.3, 0.2, 0.3, 0);
-        }
-        playSound(SoundEvents.AMETHYST_BLOCK_RESONATE, 1.0F, 1.2F);
-        return true;
-    }
-
     @Override
     public void remove(RemovalReason reason) {
         if (!level().isClientSide && level() instanceof ServerLevel server
