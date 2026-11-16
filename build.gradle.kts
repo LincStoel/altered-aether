@@ -127,12 +127,14 @@ fun modrinth(project: String, versionProperty: String) = "maven.modrinth:$projec
 val devMods: Configuration by configurations.creating
 // Create, compiled against for the ambrosium campfire's fan processing (see CreateCompat).
 val createMod: Configuration by configurations.creating
+// Sable, compiled against for falling boulders (see compat/boulder).
+val sableMod: Configuration by configurations.creating
 // Optional mods taken from Modrinth Maven rather than libs/optional/; selected with -PoptionalMods like the rest.
 val optionalMaven: Configuration by configurations.creating
 val optionalMavenModules = listOf("deep-aether", "lithium")
 
 configurations.compileOnly {
-    extendsFrom(devMods, createMod)
+    extendsFrom(devMods, createMod, sableMod)
 }
 // The dev source set compiles and runs against everything main does, and main itself.
 configurations.named(dev.compileOnlyConfigurationName) { extendsFrom(configurations.compileOnly.get()) }
@@ -152,6 +154,12 @@ dependencies {
     createMod(modrinth("create", "create_version")) { isTransitive = false }
     compileOnly(files(createMod.files.map { jar ->
         zipTree(jar).matching { include("META-INF/jarjar/ponder-*.jar", "META-INF/jarjar/flywheel-*.jar") }
+    }))
+    // Sable, for falling boulders; its sub-levels' classes extend
+    // Sable Companion's, a jar-in-jar, which is taken out for compiling too. Only the Sable-only classes name it.
+    sableMod(modrinth("sable", "sable_version")) { isTransitive = false }
+    compileOnly(files(sableMod.files.map { jar ->
+        zipTree(jar).matching { include("META-INF/jarjar/sable-companion-*.jar") }
     }))
     // JEI, for that page (see compat/jei); it runs only in client runs, from libs/client.
     compileOnly(modrinth("jei", "jei_version")) { isTransitive = false }

@@ -114,6 +114,11 @@ public final class AADecorationProvider extends FeatureData {
         boulder("aseterite", Substitutes.provider("deep_aether:aseterite"), 2, 4, 0.7, 0.3, null, false);
         boulder("clorite", Substitutes.provider("deep_aether:clorite"), 2, 4, 0.7, 0.3, null, false);
         placed("boulder/aseterite", "boulder/aseterite", surface(1 / 26.0, "boulders"));
+        // Long-fallen boulders, in every Aether biome, with or without Sable (see worldgen/boulder/BoulderOres).
+        configured("boulder/ancient", "ancient_boulder", new JsonObject());
+        placed("boulder/ancient", "boulder/ancient", Placement.list(Placement.configCount(1 / 300.0, "ancient_boulders"),
+                Placement.inSquare(), Placement.heightmap(SURFACE), Placement.biome()));
+        addFeature("boulder/ancient", List.of(IS_AETHER), "local_modifications");
         placed("boulder/clorite", "boulder/clorite", surface(1 / 26.0, "boulders"));
     }
 

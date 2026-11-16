@@ -82,6 +82,16 @@ public final class DebugCommands {
                                         .executes(ctx -> report(ctx, IntegerArgumentType.getInteger(ctx, "radius"),
                                                 IntegerArgumentType.getInteger(ctx, "step"))))))
                 .then(Commands.literal("debug").executes(DebugCommands::here))
+                .then(Commands.literal("boulder")
+                        .executes(ctx -> BoulderDebug.drop(ctx.getSource(), null, null))
+                        .then(Commands.argument("stone", net.minecraft.commands.arguments.blocks.BlockStateArgument.block(event.getBuildContext()))
+                                .executes(ctx -> BoulderDebug.drop(ctx.getSource(),
+                                        net.minecraft.commands.arguments.blocks.BlockStateArgument.getBlock(ctx, "stone").getState(), null))
+                                .then(Commands.argument("ore", net.minecraft.commands.arguments.blocks.BlockStateArgument.block(event.getBuildContext()))
+                                        .executes(ctx -> BoulderDebug.drop(ctx.getSource(),
+                                                net.minecraft.commands.arguments.blocks.BlockStateArgument.getBlock(ctx, "stone").getState(),
+                                                net.minecraft.commands.arguments.blocks.BlockStateArgument.getBlock(ctx, "ore").getState())))))
+                .then(Commands.literal("boulderores").executes(ctx -> BoulderDebug.ores(ctx.getSource())))
                 .then(Commands.literal("rumourwarm").executes(DebugCommands::rumourWarm))
                 .then(Commands.literal("rumourbiomes").executes(DebugCommands::rumourBiomes))
                 .then(Commands.literal("fly")

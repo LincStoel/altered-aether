@@ -149,6 +149,9 @@ public final class AAAdvancementProvider extends JsonDataProvider {
         advancement(all, "to_me", "toot_toot", "aether:aerwhale_spawn_egg", "task", 0, "To me!",
                 "Whistle for your aerwhale and have it come to you", Map.of("summoned", criterion("minecraft:impossible")));
         // Gravitite golems, awarded in code (GolemEvents, GolemInteractions, GolemSorter).
+        // Awarded in code by FallingBoulders, to everyone near enough when a boulder lands.
+        advancement(all, "rockfall", ROOT, "aether:holystone", "task", 0, "Rockfall",
+                "Be near when a boulder falls out of the sky and lands", Map.of("landed", criterion("minecraft:impossible")));
         advancement(all, "mind_over_matter", ROOT, "aether:enchanted_gravitite", "task", 0, "Mind over Matter",
                 "Wake a gravitite golem", Map.of("built", criterion("minecraft:impossible")));
         advancement(all, "hive_mind", "mind_over_matter", AlteredAether.MOD_ID + ":storage_pebble", "task", 0,

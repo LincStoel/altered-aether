@@ -48,6 +48,11 @@ public final class AAMixinPlugin implements IMixinConfigPlugin {
             // the golem network as a threshold switch's inventory, only with Create there to have one
             return LoadingModList.get().getModFileById("create") != null;
         }
+        if (mixinClassName.endsWith(".SimulatedEndSeaMixin")) {
+            // falling boulders pass through Create Simulated's end sea, only with it and Sable there
+            return LoadingModList.get().getModFileById("simulated") != null
+                    && LoadingModList.get().getModFileById("sable") != null;
+        }
         return true;
     }
 

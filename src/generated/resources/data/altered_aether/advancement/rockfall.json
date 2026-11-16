@@ -1,0 +1,26 @@
+{
+  "parent": "altered_aether:root",
+  "criteria": {
+    "landed": {
+      "conditions": {},
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "display": {
+    "description": {
+      "translate": "advancements.altered_aether.rockfall.description"
+    },
+    "frame": "task",
+    "icon": {
+      "id": "aether:holystone"
+    },
+    "title": {
+      "translate": "advancements.altered_aether.rockfall.title"
+    }
+  },
+  "requirements": [
+    [
+      "landed"
+    ]
+  ]
+}

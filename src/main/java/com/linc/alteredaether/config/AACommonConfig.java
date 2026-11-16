@@ -106,6 +106,9 @@ public final class AACommonConfig {
     public static final BooleanValue STORM_LIGHTNING_RODS;
     public static final DoubleValue STORM_METAL_STRIKE_CHANCE;
     public static final BooleanValue STORM_COPPER_STRIKES;
+    public static final DoubleValue BOULDER_INTERVAL_MINUTES;
+    public static final IntValue BOULDER_MAX_ACTIVE;
+    public static final DoubleValue BOULDER_DAMAGE;
     public static final IntValue STORM_PLAYER_WARNING_TICKS;
     public static final IntValue STORM_PLAYER_COOLDOWN_MIN;
     public static final IntValue STORM_PLAYER_COOLDOWN_MAX;
@@ -149,11 +152,11 @@ public final class AACommonConfig {
             List.of("pool", "deep_lake", "cascading_lake", "frozen_pool", "poison_pool", "atoll_lagoon");
     public static final List<String> FEATURE_FAMILIES =
             List.of("boulders", "copper_spikes", "aerclouds", "rift_debris", "totems", "ruins", "craters",
-                    "dried_ghast_fields", "snow_drifts", "hanging_chains", "vegetation");
+                    "dried_ghast_fields", "snow_drifts", "hanging_chains", "vegetation", "ancient_boulders");
     public static final List<String> COMPAT_MODS =
             List.of("ars_nouveau", "ars_elemental", "deep_aether", "aether_overworld_ores", "create", "oreganized",
                     "dried_ghast", "snuffles", "mowziesmobs", "integrated_villages", "immersiveengineering",
-                    "aether_beyond_parity");
+                    "aether_beyond_parity", "sable", "simulated", "ftbchunks");
 
     /** Per-mob spawn settings. */
     public record MobSettings(BooleanValue enabled, BooleanValue aetherExclusive, DoubleValue weightMultiplier,
@@ -427,6 +430,18 @@ public final class AACommonConfig {
                 .push("tall_mode");
         TALL_MODE_EXCLUSIONS = b.comment("Placed feature and structure ids whose heights must not be rescaled.")
                 .defineListAllowEmpty("exclusions", List.of("deep_aether:brass_dungeon"), () -> "", o -> o instanceof String);
+        b.pop();
+
+        b.comment("Boulders that fall out of the sky (needs Sable). How many long-fallen ones lie in the terrain is",
+                        "\"ancient_boulders\" under [features].")
+                .push("boulders");
+        BOULDER_INTERVAL_MINUTES = b.comment("Average minutes between boulders falling near each player in the Aether, with a",
+                        "random spread. 0 turns falling boulders off.")
+                .defineInRange("interval_minutes", 10.0, 0.0, 1440.0);
+        BOULDER_MAX_ACTIVE = b.comment("Most boulders falling or rolling in one dimension at once.")
+                .defineInRange("max_active", 3, 1, 32);
+        BOULDER_DAMAGE = b.comment("Multiplier on the damage a moving boulder does to what it hits. 0 for none.")
+                .defineInRange("damage", 1.0, 0.0, 10.0);
         b.pop();
 
         b.comment("Optional mod integrations. Each only takes effect when that mod is loaded.").push("compat");

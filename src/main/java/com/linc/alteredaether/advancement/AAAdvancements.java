@@ -33,6 +33,8 @@ public final class AAAdvancements {
     public static final ResourceLocation MIND_OVER_MATTER = AlteredAether.id("mind_over_matter");
     public static final ResourceLocation HIVE_MIND = AlteredAether.id("hive_mind");
     public static final ResourceLocation PERFECTLY_ORGANIZED = AlteredAether.id("perfectly_organized");
+    /** Watched a boulder fall and land, awarded by compat/boulder. */
+    public static final ResourceLocation ROCKFALL = AlteredAether.id("rockfall");
 
     /** Grants {@code criterion} of {@code id} to a server player; does nothing on the client. */
     public static void award(Player player, ResourceLocation id, String criterion) {

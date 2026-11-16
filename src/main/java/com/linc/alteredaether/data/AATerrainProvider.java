@@ -100,8 +100,25 @@ public final class AATerrainProvider extends JsonDataProvider {
             dimensionType();
             quicksoilShelf();
             aetherStructures();
+            endSea();
             packMeta();
         }
+    }
+
+    /**
+     * Create Simulated's "end sea" keeps Sable bodies out of the void: below {@code start_y} they are slowed and pushed
+     * back up. Its own file for the Aether puts that one block above the stock floor (Y=1), which in the tall Aether is
+     * mid-world, so this replaces it (same id, and this pack sits on top) with one that starts below the world floor,
+     * at -64. Harmless without Simulated: nothing reads the file.
+     */
+    private void endSea() {
+        JsonObject json = new JsonObject();
+        json.addProperty("dimension", "aether:the_aether");
+        json.addProperty("priority", 1);
+        json.addProperty("start_y", -64);
+        json.addProperty("depth_gradient", 1.0);
+        json.addProperty("drag", 1.0);
+        data("end_sea", ResourceLocation.fromNamespaceAndPath("simulated", "the_aether"), json);
     }
 
     private void packMeta() {

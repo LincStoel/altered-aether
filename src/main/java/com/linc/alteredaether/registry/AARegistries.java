@@ -49,6 +49,7 @@ import com.linc.alteredaether.worldgen.feature.StrikeCraterFeature;
 import com.linc.alteredaether.worldgen.feature.TotemFeature;
 import com.linc.alteredaether.worldgen.feature.SpawnEntityFeature;
 import com.linc.alteredaether.worldgen.feature.LandmarkFeature;
+import com.linc.alteredaether.worldgen.feature.AncientBoulderFeature;
 import com.linc.alteredaether.worldgen.feature.BoulderFeature;
 import com.linc.alteredaether.worldgen.feature.CopperSpikeFeature;
 import com.linc.alteredaether.worldgen.feature.CopperVeinFeature;
@@ -291,6 +292,8 @@ public final class AARegistries {
             FEATURES.register("edge_spring", EdgeSpringFeature::new);
     public static final DeferredHolder<Feature<?>, BoulderFeature> BOULDER =
             FEATURES.register("boulder", BoulderFeature::new);
+    public static final DeferredHolder<Feature<?>, AncientBoulderFeature> ANCIENT_BOULDER =
+            FEATURES.register("ancient_boulder", AncientBoulderFeature::new);
     public static final DeferredHolder<Feature<?>, CopperSpikeFeature> COPPER_SPIKE =
             FEATURES.register("copper_spike", CopperSpikeFeature::new);
     public static final DeferredHolder<Feature<?>, CopperVeinFeature> COPPER_VEIN =

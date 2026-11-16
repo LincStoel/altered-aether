@@ -23,6 +23,9 @@ import net.minecraft.world.level.block.Block;
 
 /** Tags this mod reads. */
 public final class AATags {
+    /** Ores that falling and long-fallen boulders never carry, whatever the Aether's biomes generate. */
+    public static final TagKey<Block> BOULDER_ORE_BLACKLIST =
+            TagKey.create(Registries.BLOCK, AlteredAether.id("boulder_ore_blacklist"));
     /** Blocks breezes may spawn on naturally. */
     public static final TagKey<Block> BREEZE_SPAWNABLE_ON =
             TagKey.create(Registries.BLOCK, AlteredAether.id("breeze_spawnable_on"));

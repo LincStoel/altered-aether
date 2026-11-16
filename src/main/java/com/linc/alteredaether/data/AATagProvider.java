@@ -40,6 +40,8 @@ public final class AATagProvider extends JsonDataProvider {
     @Override
     protected void generate() {
         tag("block", AlteredAether.id("breeze_spawnable_on"), "aether:cold_aercloud");
+        // empty: a place for packs to name ores boulders must never carry
+        tag("block", AlteredAether.id("boulder_ore_blacklist"));
         // Every Aether soil is in #minecraft:dirt (aether grass and dirt, enchanted grass, and Deep Aether's coarse
         // dirt, mud and golden grass), so familiars follow the groves' varied surfaces without a list of their own.
         tag("block", AlteredAether.id("familiar_spawnable_on"), "#minecraft:dirt");

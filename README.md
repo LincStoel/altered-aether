@@ -166,6 +166,26 @@ meditation. That spot is its home.
 - With Jade installed, looking at a golem shows its mode, links and what it is doing or waiting on; looking at
   linked storage shows its golem and pin. JEI has a page on the pebble and spawn egg.
 
+### Boulders
+
+Stone breaks off the islands above and falls. Some of it did long ago, and some still does.
+
+- **Ancient boulders.** Half-buried in the ground, their stone mossed over, in every Aether biome, with or without Sable.
+  Each holds an ore (see below).
+- **Falling boulders (with Sable).** Now and then, about every half hour for each player in the Aether (configurable),
+  a boulder is made at the top of the world some way from them, after a rumble and a fall of grit, and drops under
+  Sable's physics. It hurts what it hits, heavily but not always fatally, and when it comes to rest it is ordinary
+  blocks again, set on the block grid; whatever doesn't fit is dropped as an item. It rarely falls over the void, and
+  with Create Simulated it falls through the "end sea" that holds ships up while everything else is treated as before
+  (the tall Aether moves that sea down to the world's floor). A boulder someone breaks a block of is let go and is just
+  another Sable body. Watching one land earns the *Rockfall* advancement.
+- **What is in them.** Mostly holystone, sometimes icestone and, with Deep Aether, aseterite and clorite. Each carries
+  one ore: one of the Aether's own, or more often one that another Aether biome generates and the one it lands in
+  doesn't. Gravitite is only ever buried deep inside, since exposed gravitite floats away. The tag
+  `#altered_aether:boulder_ore_blacklist` keeps ores out.
+- **Claims.** With FTB Chunks, a boulder never drops on, settles in or hurts anyone in a claim whose team has turned off
+  mob griefing or explosion damage, and neither does it touch a structure; one that rolls into such land vanishes in dust.
+
 ## The tall Aether
 
 The built-in datapack **Altered Aether: Tall Aether** (on by default) makes the Aether -64..319 like the Overworld,
@@ -196,6 +216,9 @@ With the tall pack, other mods' Aether structures and ores are moved to the matc
 | Mowzie's Mobs | nagas in Deep Aether's Yagroot Swamp; lanterns in the Skyroot Cathedral and Deep Aether's Luminescent Forest                                                                                                                                                           |
 | Integrated Villages | its airship village in the Aether, and no longer in the overworld (configurable)                                                                                                                                                                      |
 | Aether: Beyond Parity | its ambrosium campfire is replaced                                                                                                                                                                                                                    |
+| Sable | falling boulders |
+| Create Simulated (Create Aeronautics) | falling boulders pass through its void-holding "end sea" while ships don't; the tall Aether's end sea is lowered to the world's floor                                                                                                              |
+| FTB Chunks | falling boulders keep out of claims protected from griefing                                                                                                                                                                                          |
 
 Mobs added to the Aether from other mods spawn only in the Aether by default (each has an `aether_exclusive`
 switch). Breezes are the exception: they spawn in the Aether as well as anywhere vanilla puts them, and only standing
@@ -222,6 +245,9 @@ on cold aerclouds.
 - `[gravitite_golem]`: reach, golems per network, links per golem, how many slots a network reads, flight time,
   items in the air at once, how often storage is checked, the push when struck, healing and how far a golem can be
   sent.
+- `[boulders]`: minutes between falling boulders per player (0 turns them off), how many at once, the chance one is
+  dropped over the void, and the damage they do. How many ancient boulders there are is `ancient_boulders` under
+  `[features]`.
 - `[tall_mode]`: structures the tall Aether should leave at their own heights.
 - `[compat]`: one switch per optional mod, the Beyond Parity campfire swap, and `disable_overworld_archwood`.
 

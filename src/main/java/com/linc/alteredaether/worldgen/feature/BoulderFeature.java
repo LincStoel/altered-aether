@@ -14,10 +14,10 @@
  */
 package com.linc.alteredaether.worldgen.feature;
 
+import com.linc.alteredaether.worldgen.boulder.BoulderShape;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.Direction;
 import net.minecraft.util.RandomSource;
 import net.minecraft.util.valueproviders.IntProvider;
 import net.minecraft.world.level.WorldGenLevel;
@@ -46,7 +46,7 @@ import java.util.Optional;
  * <p>The radius is capped at 10 so a boulder stays within the area a feature may write to.
  */
 public final class BoulderFeature extends Feature<BoulderFeature.Config> {
-    private static final int MAX_RADIUS = 10;
+    private static final int MAX_RADIUS = BoulderShape.MAX_RADIUS;
     private static final int MAX_FILL = 6;
 
     public record Config(BlockStateProvider state, IntProvider radius, float squash, float burial,
@@ -84,45 +84,14 @@ public final class BoulderFeature extends Feature<BoulderFeature.Config> {
         }
 
         int radius = config.radius().sample(random);
-        double height = Math.max(1.2, radius * config.squash());
+        double height = BoulderShape.height(radius, config.squash());
         BlockPos center = origin.below((int) Math.round(height * config.burial()))
                 .above(config.floating() ? 0 : (int) Math.round(height * 0.5));
 
-        List<double[]> lobes = new ArrayList<>();
-        lobes.add(new double[]{0, 0, 0, radius, height});
-        for (int i = random.nextInt(3) + 1; i > 0 && radius > 1; i--) {
-            double angle = random.nextDouble() * Math.PI * 2;
-            double offset = radius * (0.35 + random.nextDouble() * 0.45);
-            double lobeRadius = radius * (0.5 + random.nextDouble() * 0.4);
-            lobes.add(new double[]{Math.cos(angle) * offset, (random.nextDouble() - 0.5) * height * 0.4,
-                    Math.sin(angle) * offset, lobeRadius, Math.max(1, lobeRadius * config.squash())});
-        }
-
-        Map<BlockPos, BlockState> shape = new HashMap<>();
+        List<double[]> lobes = BoulderShape.lobes(random, radius, height, config.squash());
         double reach = Math.min(15, radius * 2 + 2);
-        for (double[] lobe : lobes) {
-            int extent = (int) Math.ceil(lobe[3]) + 1;
-            int vertical = (int) Math.ceil(lobe[4]) + 1;
-            BlockPos lobeCenter = center.offset((int) Math.round(lobe[0]), (int) Math.round(lobe[1]),
-                    (int) Math.round(lobe[2]));
-            for (int dx = -extent; dx <= extent; dx++) {
-                for (int dz = -extent; dz <= extent; dz++) {
-                    for (int dy = -vertical; dy <= vertical; dy++) {
-                        double distance = (dx * dx) / (lobe[3] * lobe[3]) + (dy * dy) / (lobe[4] * lobe[4])
-                                + (dz * dz) / (lobe[3] * lobe[3]);
-                        // A rough surface: the threshold wobbles per block, more on larger boulders.
-                        if (distance > 1.0 - random.nextDouble() * Math.min(0.35, 0.08 * radius)) {
-                            continue;
-                        }
-                        BlockPos at = lobeCenter.offset(dx, dy, dz);
-                        if (Math.abs(at.getX() - origin.getX()) <= reach && Math.abs(at.getZ() - origin.getZ()) <= reach
-                                && replaceable(level, at)) {
-                            shape.put(at, config.state().getState(random, at));
-                        }
-                    }
-                }
-            }
-        }
+        Map<BlockPos, BlockState> shape = BoulderShape.carve(random, lobes, center, origin, reach, radius,
+                at -> replaceable(level, at), at -> config.state().getState(random, at));
         if (shape.isEmpty()) {
             return false;
         }
@@ -138,7 +107,7 @@ public final class BoulderFeature extends Feature<BoulderFeature.Config> {
             if (cover && !shape.containsKey(entry.getKey().above()) && random.nextFloat() < 0.65f) {
                 state = config.topCover().get().getState(random, entry.getKey());
             } else if (config.ore().isPresent() && random.nextFloat() < config.oreChance()
-                    && enclosed(shape, entry.getKey())) {
+                    && BoulderShape.enclosed(shape, entry.getKey())) {
                 state = config.ore().get().getState(random, entry.getKey());
                 FeatureStats.placed("boulder_ore");
             }
@@ -191,15 +160,6 @@ public final class BoulderFeature extends Feature<BoulderFeature.Config> {
                 }
             }
         }
-    }
-
-    private static boolean enclosed(Map<BlockPos, BlockState> shape, BlockPos pos) {
-        for (Direction side : Direction.values()) {
-            if (!shape.containsKey(pos.relative(side))) {
-                return false;
-            }
-        }
-        return true;
     }
 
     private static boolean replaceable(WorldGenLevel level, BlockPos pos) {
