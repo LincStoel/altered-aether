@@ -226,7 +226,7 @@ public final class GolemInteractions {
             return;
         }
         PacketDistributor.sendToPlayer(player, GolemPayloads.Glow.blocks(GolemPayloads.SEARCH, -1, found,
-                GolemStorage.strict(level, found)));
+                GolemStorage.strict(level, found)).in(golem.color()));
         int chests = (int) found.stream().map(pos -> GolemStorage.inventoryKey(level, pos)).distinct().count();
         player.displayClientMessage(message(chests == 1 ? "found_one" : "found", wanted.getHoverName(),
                 NumberFormat.getIntegerInstance().format(total), chests), true);

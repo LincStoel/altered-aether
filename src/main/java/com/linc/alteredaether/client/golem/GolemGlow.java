@@ -38,7 +38,8 @@ import java.util.Set;
  * What glows for the gravitite golem's player: linked storage when it is linked, storage holding a searched item, a
  * spot a golem was sent to, a golem a full network turned away (red), and what the player looks at while holding a
  * pebble. Each glow fades in, holds, and fades out, with gravitite motes drifting off it so it still reads under a
- * shaderpack. Storage no golem can get at glows red, storage pinned strictly yellow.
+ * shaderpack. Blocks get a pane; a golem gets no box, only motes streaming off its body. All of it is the colour its
+ * network is dyed; storage no golem can get at glows red, storage pinned strictly yellow.
  *
  * <p>Apart from those, {@link #HELD} is the faint outline of a held pebble's linked storage, drawn while it is held.
  */
@@ -53,8 +54,6 @@ public final class GolemGlow {
     static final int STRICT_COLOR = 0xFFE14A;
     /** The edge colour of storage no golem can get at, and of a golem a full network turned away. */
     static final int BLOCKED_COLOR = 0xFF4A4A;
-    private static final Vector3f STRICT_MOTE = Vec3.fromRGB24(STRICT_COLOR).toVector3f();
-    private static final Vector3f BLOCKED_MOTE = Vec3.fromRGB24(BLOCKED_COLOR).toVector3f();
 
     /**
      * A block ({@code pos}) or golem ({@code entity}, else -1) glowing {@code color} at {@code strength} (1 bright,
@@ -64,8 +63,8 @@ public final class GolemGlow {
                 int fadeOut) {
     }
 
-    /** Two golems joined by a thread of motes until {@code endTick}. */
-    record Thread(int a, int b, long endTick) {
+    /** Two golems joined by a thread of motes of {@code color} until {@code endTick}. */
+    record Thread(int a, int b, int color, long endTick) {
     }
 
     /** A faint outline on a held pebble's linked storage: never through walls, fading with distance. */
@@ -101,7 +100,7 @@ public final class GolemGlow {
             GLOWS.removeIf(glow -> glow.kind() == GolemPayloads.SEARCH);
             THREADS.clear();
         }
-        int color = AAClientConfig.golemGlowColor();
+        int color = color(payload.dye().getTextureDiffuseColor());
         Set<BlockPos> strict = new HashSet<>(payload.strict());
         float strength = kind == GolemPayloads.UNLINK ? 0.6F : 1.0F;
         for (BlockPos pos : payload.bright()) {
@@ -115,7 +114,7 @@ public final class GolemGlow {
             GLOWS.add(new Glow(kind, null, id, golemColor, strength, ticks, end, FADE_OUT_TICKS));
         }
         for (int i = 0; i + 1 < payload.threads().size(); i += 2) {
-            THREADS.add(new Thread(payload.threads().get(i), payload.threads().get(i + 1), end));
+            THREADS.add(new Thread(payload.threads().get(i), payload.threads().get(i + 1), deep(color), end));
         }
     }
 
@@ -150,6 +149,25 @@ public final class GolemGlow {
         GLOWS.add(new Glow(LOOK, pos, entity, color, 1.0F, ticks, end, LOOK_LINGER));
     }
 
+    /**
+     * The colour a network dyed {@code dyeRgb} (its dye's texture colour) glows: the dye's, or for an undyed
+     * (magenta) one the client's configured gravitite glow.
+     */
+    static int color(int dyeRgb) {
+        return dyeRgb == GravititeGolem.DEFAULT_COLOR.getTextureDiffuseColor() ? AAClientConfig.golemGlowColor()
+                : dyeRgb & 0xFFFFFF;
+    }
+
+    /** A glow colour's deeper tone, for fills and threads. */
+    static int deep(int rgb) {
+        return (int) ((rgb >> 16 & 0xFF) * 0.75F) << 16 | (int) ((rgb >> 8 & 0xFF) * 0.75F) << 8 | (int) ((rgb & 0xFF) * 0.75F);
+    }
+
+    /** A glow colour as dust particles take it. */
+    static Vector3f mote(int rgb) {
+        return Vec3.fromRGB24(rgb & 0xFFFFFF).toVector3f();
+    }
+
     static float fade(Glow glow, float now) {
         float in = Math.clamp((now - glow.startTick()) / FADE_IN_TICKS, 0F, 1F);
         float out = Math.clamp((glow.endTick() - now) / glow.fadeOut(), 0F, 1F);
@@ -168,19 +186,31 @@ public final class GolemGlow {
         THREADS.removeIf(thread -> ticks >= thread.endTick());
         boolean reduced = AAClientConfig.GOLEM_REDUCED_EFFECTS.get();
         RandomSource random = mc.level.random;
-        int every = reduced ? 16 : 6;
-        if (ticks % every == 0) {
-            for (Glow glow : GLOWS) {
-                AABB box = box(mc.level, glow, 1);
-                if (box == null || glow.strength() < 0.5F || glow.kind() == LOOK) {
+        boolean blocks = ticks % (reduced ? 16 : 6) == 0, golems = ticks % (reduced ? 6 : 2) == 0;
+        for (Glow glow : GLOWS) {
+            boolean golem = glow.entity() >= 0;
+            if (!(golem ? golems : blocks) || !golem && (glow.strength() < 0.5F || glow.kind() == LOOK)) {
+                continue;
+            }
+            AABB box = box(mc.level, glow, 1);
+            if (box == null) {
+                continue;
+            }
+            if (golem) {
+                // in place of a box: motes all over its body, drifting up, thinning as the glow fades
+                if (random.nextFloat() > fade(glow, ticks) + 0.2F) {
                     continue;
                 }
-                Vec3 at = new Vec3(box.minX + random.nextDouble() * box.getXsize(), box.maxY,
-                        box.minZ + random.nextDouble() * box.getZsize());
-                Vector3f mote = glow.color() == STRICT_COLOR ? STRICT_MOTE : glow.color() == BLOCKED_COLOR ? BLOCKED_MOTE
-                        : GravititeGolem.GRAVITITE;
-                mc.level.addParticle(new DustParticleOptions(mote, 0.7F), at.x, at.y, at.z, 0, 0.02, 0);
+                for (int i = reduced ? 1 : 2; i > 0; i--) {
+                    mc.level.addParticle(new DustParticleOptions(mote(glow.color()), 0.9F),
+                            box.minX + random.nextDouble() * box.getXsize(), box.minY + random.nextDouble() * box.getYsize(),
+                            box.minZ + random.nextDouble() * box.getZsize(), 0, 0.04, 0);
+                }
+                continue;
             }
+            Vec3 at = new Vec3(box.minX + random.nextDouble() * box.getXsize(), box.maxY,
+                    box.minZ + random.nextDouble() * box.getZsize());
+            mc.level.addParticle(new DustParticleOptions(mote(glow.color()), 0.7F), at.x, at.y, at.z, 0, 0.02, 0);
         }
         if (ticks % (reduced ? 8 : 3) == 0) {
             for (Thread thread : THREADS) {
@@ -194,7 +224,7 @@ public final class GolemGlow {
                 for (int i = 0; i <= points; i++) {
                     double t = (i + random.nextDouble() * 0.5) / points;
                     Vec3 at = from.lerp(to, Math.min(1, t)).add(0, Math.sin(Math.min(1, t) * Math.PI) * length * 0.08, 0);
-                    mc.level.addParticle(new DustParticleOptions(GravititeGolem.GRAVITITE_DARK, 0.6F), at.x, at.y, at.z, 0, 0, 0);
+                    mc.level.addParticle(new DustParticleOptions(mote(thread.color()), 0.6F), at.x, at.y, at.z, 0, 0, 0);
                 }
             }
         }

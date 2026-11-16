@@ -37,15 +37,17 @@ import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.neoforged.neoforge.capabilities.Capabilities;
 
+import org.joml.Vector3f;
+
 import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 
 /**
- * What a player holding an active pebble sees: a ring of motes at the edge of each of its network's golems' reach, a
- * faint outline on each inventory it has linked nearby (red where no golem can get at it, yellow where pinned
- * strictly), a fuller glow on the linked storage or the network's golem under the crosshair, and whether the storage
- * looked at is linked.
+ * What a player holding an active pebble sees, all in the network's colour: a ring of motes at the edge of each of
+ * its golems' reach, a faint outline on each inventory it has linked nearby (red where no golem can get at it, yellow
+ * where pinned strictly), a fuller glow on the linked storage under the crosshair, motes off the network's golem
+ * under it, and whether the storage looked at is linked.
  */
 final class PebbleHints {
     /** Linked storage further than this shows no outline; the outline fades over the last stretch. */
@@ -102,6 +104,7 @@ final class PebbleHints {
     private static void ring(ClientLevel level, LocalPlayer player, PebbleInfo.Info info, boolean reduced) {
         double range = info.range();
         int points = (int) (Math.PI * 2 * range / (reduced ? 2.5 : 1.0));
+        Vector3f mote = GolemGlow.mote(GolemGlow.color(info.color()));
         for (BlockPos home : info.homes()) {
             double cx = home.getX() + 0.5, cz = home.getZ() + 0.5, y = home.getY() + 0.15;
             for (int i = 0; i < points; i++) {
@@ -111,14 +114,14 @@ final class PebbleHints {
                 if (dx * dx + dz * dz > 40 * 40) {
                     continue;
                 }
-                level.addParticle(new DustParticleOptions(GravititeGolem.GRAVITITE, 1.5F), x, y + 0.1, z, 0, 0.005, 0);
+                level.addParticle(new DustParticleOptions(mote, 1.5F), x, y + 0.1, z, 0, 0.005, 0);
             }
         }
     }
 
     /** The faint outline on every linked inventory near the player. */
     private static void outline(LocalPlayer player, PebbleInfo.Info info) {
-        int color = AAClientConfig.golemGlowColor();
+        int color = GolemGlow.color(info.color());
         for (BlockPos pos : info.links()) {
             double distance = Math.sqrt(pos.distToCenterSqr(player.getEyePosition()));
             if (distance > HELD_RANGE) {
@@ -136,7 +139,7 @@ final class PebbleHints {
      * look lasts; and says whether the storage looked at is linked, once each time the look lands on new storage.
      */
     private static void look(Minecraft mc, ClientLevel level, PebbleInfo.Info info) {
-        int color = AAClientConfig.golemGlowColor();
+        int color = GolemGlow.color(info.color());
         Entity entity = mc.crosshairPickEntity;
         if (entity instanceof GravititeGolem golem && info.members().contains(golem.getId())) {
             GolemGlow.look(List.of(), golem.getId(), color);

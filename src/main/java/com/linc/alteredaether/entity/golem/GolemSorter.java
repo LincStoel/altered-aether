@@ -672,6 +672,10 @@ public final class GolemSorter {
                         move.dstSlot(), snap.items.get(move.key()), move.count(), snap.keys.get(move.srcInv()),
                         snap.keys.get(move.dstInv())));
                 destinations.add(snap.keys.get(move.dstInv()));
+                if (QuarkSorting.available()) {
+                    // with Quark, the chest items were taken out of is tidied too
+                    touched.add(snap.keys.get(move.srcInv()));
+                }
             }
             touched.addAll(destinations);
             finishPending = !triggers.planned(round, destinations, true);
@@ -825,7 +829,7 @@ public final class GolemSorter {
                 if (after == null || GolemStorage.contentHash(after) == before) {
                     continue;
                 }
-                level.sendParticles(new DustParticleOptions(GravititeGolem.GRAVITITE, 0.8F), pos.getX() + 0.5,
+                level.sendParticles(new DustParticleOptions(GravititeGolem.mote(net.color(), false), 0.8F), pos.getX() + 0.5,
                         pos.getY() + 1.0, pos.getZ() + 0.5, 6, 0.3, 0.1, 0.3, 0);
                 rehash(level, pos);
                 changed++;
@@ -897,7 +901,13 @@ public final class GolemSorter {
                     }
                 }
                 List<GravititeGolem> path = path(team, lifter, setter);
+                long routeStart = System.nanoTime();
                 Routed routed = route(level, move, path, now);
+                double routeMs = (System.nanoTime() - routeStart) / 1.0E6;
+                if (routeMs > 2.0) {
+                    LOGGER.info("[golem timing] route {} -> {}: {} ms, {}", move.src, move.dst, routeMs,
+                            routed.waiting() ? "waiting" : routed.points() == null ? "no route" : routed.points().size() + " points");
+                }
                 if (routed.waiting()) {
                     continue;
                 }
@@ -914,8 +924,18 @@ public final class GolemSorter {
                 List<UUID> ids = new ArrayList<>();
                 path.forEach(golem -> ids.add(golem.getUUID()));
                 Flight flight = new Flight(nextFlightId++, move, dstSlot, accepted, now, now + ticks, ids);
+                if (routed.points().size() > 3) {
+                    LOGGER.info("[golem timing] flight {} starts at tick {}: {} points, {} ticks", flight.id, now,
+                            routed.points().size(), ticks);
+                }
                 flights.add(flight);
                 lifter.face(move.src);
+                // it concentrates from the moment it looks at the chest, not a tick later
+                for (GravititeGolem golem : path) {
+                    if (golem.isSeated()) {
+                        golem.setState(GravititeGolem.CONCENTRATING);
+                    }
+                }
                 lift(level, move.src);
                 lift(level, move.dst);
                 PacketDistributor.sendToPlayersTrackingEntity(lifter, new GolemPayloads.Flight(flight.id, lifter.getId(),
@@ -1290,7 +1310,9 @@ public final class GolemSorter {
                 if (level.getBlockEntity(pos) instanceof ChestBlockEntity) {
                     level.blockEvent(pos, state.getBlock(), 1, ChestBlockEntity.getOpenCount(level, pos) + 1);
                 } else {
-                    level.sendParticles(new DustParticleOptions(GravititeGolem.GRAVITITE_DARK, 0.7F), pos.getX() + 0.5,
+                    GolemNetworks.Net net = GolemNetworks.get(level).net(netId);
+                    level.sendParticles(new DustParticleOptions(GravititeGolem.mote(
+                                    net == null ? GravititeGolem.DEFAULT_COLOR : net.color(), true), 0.7F), pos.getX() + 0.5,
                             pos.getY() + 1.05, pos.getZ() + 0.5, 4, 0.25, 0.05, 0.25, 0);
                 }
             }

@@ -33,15 +33,15 @@ import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
 import java.util.OptionalDouble;
 
 /**
- * Draws {@link GolemGlow}'s glows: a softly pulsing pane over each block or golem with a brighter edge, in gravitite
- * pink, hidden by walls unless the client config says otherwise; and the faint outline of a held pebble's links, edges
+ * Draws {@link GolemGlow}'s glows: a softly pulsing pane over each block with a brighter edge, in its network's
+ * colour (gravitite pink undyed), hidden by walls unless the client config says otherwise; and the faint outline of a held pebble's links, edges
  * only and never through walls. Drawn as Spectral Enchantments draws its bookshelf glow: after particles, into the
  * item-entity target, without depth writes.
  */
 final class GolemGlowRenderer {
     private static final float FILL_ALPHA = 0.35F;
     private static final float EDGE_ALPHA = 0.9F;
-    /** The fill is drawn in gravitite's deeper tone, the edges in the configured (lighter) one. */
+    /** The fill is drawn in gravitite's deeper tone, the edges in the configured (lighter) one; a dye's is deepened. */
     private static final int FILL_COLOR = 0xBD42B2;
     /** The fill under a strictly pinned chest's yellow edge. */
     private static final int STRICT_FILL_COLOR = 0xD9A520;
@@ -102,14 +102,17 @@ final class GolemGlowRenderer {
         float pulse = 0.7F + 0.3F * Mth.sin(now * 0.2F);
         MultiBufferSource.BufferSource buffers = mc.renderBuffers().bufferSource();
 
+        int own = AAClientConfig.golemGlowColor();
         RenderType fillType = through ? FILL_THROUGH : FILL;
         VertexConsumer fill = buffers.getBuffer(fillType);
         for (GolemGlow.Glow glow : GolemGlow.GLOWS) {
             float alpha = FILL_ALPHA * pulse * GolemGlow.fade(glow, now);
-            AABB box = alpha > 0 ? GolemGlow.box(mc.level, glow, partial) : null;
+            // a golem has no pane: it gives off motes instead (see GolemGlow)
+            AABB box = alpha > 0 && glow.entity() < 0 ? GolemGlow.box(mc.level, glow, partial) : null;
             if (box != null) {
                 int color = glow.color() == GolemGlow.STRICT_COLOR ? STRICT_FILL_COLOR
-                        : glow.color() == GolemGlow.BLOCKED_COLOR ? BLOCKED_FILL_COLOR : FILL_COLOR;
+                        : glow.color() == GolemGlow.BLOCKED_COLOR ? BLOCKED_FILL_COLOR
+                        : glow.color() == own ? FILL_COLOR : GolemGlow.deep(glow.color());
                 fillBox(poseStack.last(), fill, box.move(-cam.x, -cam.y, -cam.z), color, alpha);
             }
         }
@@ -119,7 +122,7 @@ final class GolemGlowRenderer {
         VertexConsumer edge = buffers.getBuffer(edgeType);
         for (GolemGlow.Glow glow : GolemGlow.GLOWS) {
             float alpha = EDGE_ALPHA * GolemGlow.fade(glow, now);
-            AABB box = alpha > 0 ? GolemGlow.box(mc.level, glow, partial) : null;
+            AABB box = alpha > 0 && glow.entity() < 0 ? GolemGlow.box(mc.level, glow, partial) : null;
             if (box != null) {
                 int color = glow.color();
                 edges(poseStack.last(), edge, box.move(-cam.x, -cam.y, -cam.z), FastColor.ARGB32.red(color) / 255F,

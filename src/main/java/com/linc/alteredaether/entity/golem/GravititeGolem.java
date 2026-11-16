@@ -105,7 +105,11 @@ public class GravititeGolem extends PathfinderMob {
             EntityDataSerializers.OPTIONAL_BLOCK_POS);
 
     /** How fast it rises when it levitates up a step or across a gap, and the fastest it falls. */
-    private static final double RISE_SPEED = 0.08, FLOAT_SPEED = 0.15, MAX_FALL = 0.12;
+    private static final double RISE_SPEED = 0.12, FLOAT_SPEED = 0.15, MAX_FALL = 0.12;
+    /** How far above a step's top it rises before it lets go, so it clears the edge in one leap. */
+    private static final double STEP_CLEARANCE = 0.5;
+    /** Ticks it holds that height, crossing onto the step, before it lets go regardless. */
+    private static final int HOVER_TICKS = 30;
     /** Ticks a move may take before the golem gives up. */
     private static final int MOVE_TIMEOUT = 600;
     /** How far below its home, with nothing under it, a golem floats straight back up. */
@@ -471,7 +475,7 @@ public class GravititeGolem extends PathfinderMob {
         }
         if (tickCount % REGEN_TICKS == 0 && getHealth() < getMaxHealth() && isSeated() && closeTo(sitSpot(), 1.0)) {
             heal(1);
-            server.sendParticles(new DustParticleOptions(GRAVITITE, 0.7F), getX(), getY() + getBbHeight() * 0.7, getZ(),
+            server.sendParticles(new DustParticleOptions(mote(), 0.7F), getX(), getY() + getBbHeight() * 0.7, getZ(),
                     3, 0.25, 0.25, 0.25, 0);
         }
         if (waveTicks > 0) {
@@ -497,7 +501,7 @@ public class GravititeGolem extends PathfinderMob {
         BlockPos at = home != null ? home : blockPosition();
         for (int i = 0; i < points; i++) {
             double angle = i * Math.PI * 2 / points;
-            server.sendParticles(new DustParticleOptions(GRAVITITE, 1.3F), at.getX() + 0.5 + Math.cos(angle) * r,
+            server.sendParticles(new DustParticleOptions(mote(), 1.3F), at.getX() + 0.5 + Math.cos(angle) * r,
                     at.getY() + 0.2, at.getZ() + 0.5 + Math.sin(angle) * r, 1, 0, 0.05, 0, 0);
         }
     }
@@ -537,7 +541,7 @@ public class GravititeGolem extends PathfinderMob {
         }
         resetFallDistance();
         if (level().isClientSide && (isFloating() || isRising()) && random.nextInt(3) == 0) {
-            level().addParticle(new DustParticleOptions(GRAVITITE, 0.8F), getRandomX(0.4), getY() + 0.05,
+            level().addParticle(new DustParticleOptions(mote(), 0.8F), getRandomX(0.4), getY() + 0.05,
                     getRandomZ(0.4), 0, -0.02, 0);
         }
         if (level().isClientSide) {
@@ -554,16 +558,28 @@ public class GravititeGolem extends PathfinderMob {
         }
         int count = 2 + random.nextInt(2);
         for (int i = 0; i < count; i++) {
-            level().addParticle(new DustParticleOptions(color() == DEFAULT_COLOR ? GRAVITITE : dyeMote(), 0.7F),
+            level().addParticle(new DustParticleOptions(mote(), 0.7F),
                     at.getX() + 0.2 + random.nextDouble() * 0.6, at.getY() + 0.05, at.getZ() + 0.2 + random.nextDouble() * 0.6,
                     0, 0.03, 0);
         }
     }
 
-    /** Its dye's colour, as dust particles take it. */
-    public Vector3f dyeMote() {
-        int rgb = color().getTextureDiffuseColor();
-        return new Vector3f((rgb >> 16 & 0xFF) / 255F, (rgb >> 8 & 0xFF) / 255F, (rgb & 0xFF) / 255F);
+    /** Its gravitite's colour, as dust particles take it: its dye's, or gravitite's own undyed. */
+    public Vector3f mote() {
+        return mote(color(), false);
+    }
+
+    /**
+     * Gravitite dyed {@code dye}, as dust particles take it ({@code dark} for its deeper tone): every mote of a
+     * network is its golems' colour.
+     */
+    public static Vector3f mote(DyeColor dye, boolean dark) {
+        if (dye == DEFAULT_COLOR) {
+            return dark ? GRAVITITE_DARK : GRAVITITE;
+        }
+        int rgb = dye.getTextureDiffuseColor();
+        float shade = dark ? 0.75F / 255F : 1F / 255F;
+        return new Vector3f((rgb >> 16 & 0xFF) * shade, (rgb >> 8 & 0xFF) * shade, (rgb & 0xFF) * shade);
     }
 
     private void animationTick() {
@@ -765,7 +781,7 @@ public class GravititeGolem extends PathfinderMob {
     void repelVisual(ServerLevel server) {
         for (int i = 0; i < 24; i++) {
             double angle = i * Math.PI * 2 / 24;
-            server.sendParticles(new DustParticleOptions(GRAVITITE, 1.2F), getX() + Math.cos(angle) * 0.6,
+            server.sendParticles(new DustParticleOptions(mote(), 1.2F), getX() + Math.cos(angle) * 0.6,
                     getY() + 0.6, getZ() + Math.sin(angle) * 0.6, 1, Math.cos(angle), 0.05, Math.sin(angle), 0.3);
         }
         playSound(AARegistries.GOLEM_REPEL.get(), 1.0F, 1.0F);
@@ -855,11 +871,16 @@ public class GravititeGolem extends PathfinderMob {
     // Movement
 
     /**
-     * Steering like vanilla's, without jumping: a step up is climbed by turning gravity off and rising until level
-     * with it.
+     * Steering like vanilla's, without jumping: a step up is climbed in one leap, by turning gravity off, rising
+     * until well clear of its top, and holding that height until it is over the step. (Letting go level with the
+     * top had it sink against the edge and bob there until it happened to clear it.)
      */
     static final class GolemMoveControl extends MoveControl {
         private final GravititeGolem golem;
+        /** Part-way through a leap, the height it rises to, and the ticks it has held there. */
+        private boolean climbing;
+        private double climbTo;
+        private int hover;
 
         GolemMoveControl(GravititeGolem golem) {
             super(golem);
@@ -871,6 +892,7 @@ public class GravititeGolem extends PathfinderMob {
             if (golem.isFloating()) {
                 // the float steers itself; a climb it was part-way through is over
                 golem.setRising(false);
+                climbing = false;
                 operation = Operation.WAIT;
                 mob.setZza(0);
                 return;
@@ -890,22 +912,46 @@ public class GravititeGolem extends PathfinderMob {
             float yaw = (float) (Mth.atan2(dz, dx) * Mth.RAD_TO_DEG) - 90.0F;
             mob.setYRot(rotlerp(mob.getYRot(), yaw, 20.0F));
             float speed = (float) (speedModifier * mob.getAttributeValue(Attributes.MOVEMENT_SPEED));
-            boolean climb = dy > 0.55 || mob.horizontalCollision && dy > -0.5 && flat < 2.25;
-            if (climb) {
-                golem.setRising(true);
-                mob.setNoGravity(true);
-                Vec3 motion = mob.getDeltaMovement();
-                mob.setDeltaMovement(motion.x * 0.5, RISE_SPEED, motion.z * 0.5);
-                mob.setSpeed(speed * 0.4F);
-            } else {
-                if (dy <= 0.05 || mob.onGround()) {
-                    stopRising();
+            boolean blocked = mob.horizontalCollision && dy > -0.5 && flat < 2.25;
+            if (dy > 0.55 || blocked) {
+                // over the step ahead; or, bumping something no path node is above, a little higher each tick
+                double top = (blocked ? Math.max(wantedY, mob.getY() + RISE_SPEED) : wantedY) + STEP_CLEARANCE;
+                if (!climbing) {
+                    climbing = true;
+                    climbTo = top;
+                    hover = 0;
+                } else {
+                    climbTo = Math.max(climbTo, top);
                 }
-                mob.setSpeed(speed);
             }
+            if (!climbing) {
+                mob.setSpeed(speed);
+                return;
+            }
+            double left = climbTo - mob.getY();
+            boolean up = left > 0.02;
+            // under a ceiling it can't rise through, the hold runs out as it would at full height
+            if (!up && overStep() || (!up || mob.verticalCollision && !mob.onGround()) && ++hover > HOVER_TICKS) {
+                stopRising();
+                mob.setSpeed(speed);
+                return;
+            }
+            golem.setRising(true);
+            mob.setNoGravity(true);
+            Vec3 motion = mob.getDeltaMovement();
+            // against the step's face it mostly rises; clear of it, it carries on forward at full pace
+            double keep = blocked ? 0.5 : 1.0;
+            mob.setDeltaMovement(motion.x * keep, up ? Math.min(RISE_SPEED, left) : 0, motion.z * keep);
+            mob.setSpeed(blocked ? speed * 0.4F : speed);
+        }
+
+        /** Whether something to land on is under it, within the height it rose clear by. */
+        private boolean overStep() {
+            return !mob.level().noCollision(mob, mob.getBoundingBox().move(0, -(STEP_CLEARANCE + 0.2), 0));
         }
 
         private void stopRising() {
+            climbing = false;
             if (golem.isRising()) {
                 golem.setRising(false);
                 if (!golem.isFloating()) {

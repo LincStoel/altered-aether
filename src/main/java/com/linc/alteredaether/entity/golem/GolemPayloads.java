@@ -23,6 +23,7 @@ import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.minecraft.world.item.DyeColor;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -49,16 +50,18 @@ public final class GolemPayloads {
     /**
      * Makes blocks and golems glow for the player it is sent to: {@code bright} blocks fully, {@code blocked} ones in
      * red (linked, but no golem can get at them), the {@code golems} by entity id, and a thread of particles between
-     * each pair in {@code threads}. Those of the blocks in {@code strict} (storage pinned strictly) glow yellow.
+     * each pair in {@code threads}. Those of the blocks in {@code strict} (storage pinned strictly) glow yellow; the
+     * rest glow the colour of {@code dye}, the network's.
      */
     public record Glow(byte kind, int ticks, List<BlockPos> bright, List<BlockPos> blocked, List<Integer> golems,
-                       List<Integer> threads, List<BlockPos> strict) implements CustomPacketPayload {
+                       List<Integer> threads, List<BlockPos> strict, DyeColor dye) implements CustomPacketPayload {
         public static final Type<Glow> TYPE = new Type<>(AlteredAether.id("golem_glow"));
         public static final StreamCodec<ByteBuf, Glow> STREAM_CODEC = new StreamCodec<>() {
             @Override
             public Glow decode(ByteBuf buf) {
                 return new Glow(buf.readByte(), ByteBufCodecs.VAR_INT.decode(buf), POSITIONS.decode(buf),
-                        POSITIONS.decode(buf), INTS.decode(buf), INTS.decode(buf), POSITIONS.decode(buf));
+                        POSITIONS.decode(buf), INTS.decode(buf), INTS.decode(buf), POSITIONS.decode(buf),
+                        DyeColor.byId(buf.readByte()));
             }
 
             @Override
@@ -70,6 +73,7 @@ public final class GolemPayloads {
                 INTS.encode(buf, glow.golems());
                 INTS.encode(buf, glow.threads());
                 POSITIONS.encode(buf, glow.strict());
+                buf.writeByte(glow.dye().getId());
             }
         };
 
@@ -78,11 +82,16 @@ public final class GolemPayloads {
         }
 
         public static Glow blocks(byte kind, int ticks, List<BlockPos> bright, List<BlockPos> strict) {
-            return new Glow(kind, ticks, bright, List.of(), List.of(), List.of(), strict);
+            return new Glow(kind, ticks, bright, List.of(), List.of(), List.of(), strict, GravititeGolem.DEFAULT_COLOR);
         }
 
         public static Glow golems(byte kind, int ticks, List<Integer> golems) {
-            return new Glow(kind, ticks, List.of(), List.of(), golems, List.of(), List.of());
+            return new Glow(kind, ticks, List.of(), List.of(), golems, List.of(), List.of(), GravititeGolem.DEFAULT_COLOR);
+        }
+
+        /** This glow in the colour of a network dyed {@code dye}. */
+        public Glow in(DyeColor dye) {
+            return new Glow(kind, ticks, bright, blocked, golems, threads, strict, dye);
         }
 
         @Override
@@ -181,7 +190,7 @@ public final class GolemPayloads {
     public static final class Registration {
         @SubscribeEvent
         public static void register(RegisterPayloadHandlersEvent event) {
-            PayloadRegistrar registrar = event.registrar("2");
+            PayloadRegistrar registrar = event.registrar("3");
             // the handlers run only on clients; the client classes load only when one does
             registrar.playToClient(Glow.TYPE, Glow.STREAM_CODEC, (payload, context) -> GolemClientHooks.glow(payload));
             registrar.playToClient(Links.TYPE, Links.STREAM_CODEC, (payload, context) -> GolemClientHooks.links(payload));

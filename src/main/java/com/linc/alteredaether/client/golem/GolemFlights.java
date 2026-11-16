@@ -119,11 +119,17 @@ public final class GolemFlights {
         Vec3 at = view.at(view.elapsed(ticks));
         int count = AAClientConfig.GOLEM_REDUCED_EFFECTS.get() ? 3 : 10;
         for (int i = 0; i < count; i++) {
-            mc.level.addParticle(new DustParticleOptions(end.landed() ? GravititeGolem.GRAVITITE : GravititeGolem.GRAVITITE_DARK, 0.8F),
+            mc.level.addParticle(new DustParticleOptions(mote(mc.level, view.golem, !end.landed()), 0.8F),
                     at.x + (mc.level.random.nextDouble() - 0.5) * 0.4, at.y + (mc.level.random.nextDouble() - 0.5) * 0.4,
                     at.z + (mc.level.random.nextDouble() - 0.5) * 0.4, 0, end.landed() ? -0.05 : 0.02, 0);
         }
         rebound(mc.level, view.golem);
+    }
+
+    /** The colour of the motes on a flight of the golem {@code golemId}: its network's. */
+    private static org.joml.Vector3f mote(ClientLevel level, int golemId, boolean dark) {
+        return GravititeGolem.mote(level.getEntity(golemId) instanceof GravititeGolem golem ? golem.color()
+                : GravititeGolem.DEFAULT_COLOR, dark);
     }
 
     /** Widens a golem's culling box to its flights, so they're drawn while on screen. */
@@ -159,7 +165,7 @@ public final class GolemFlights {
             }
             if (show && ticks % (reduced ? 6 : 2) == 0) {
                 Vec3 at = view.at(view.elapsed(ticks));
-                mc.level.addParticle(new DustParticleOptions(GravititeGolem.GRAVITITE, 0.5F), at.x, at.y, at.z, 0, 0, 0);
+                mc.level.addParticle(new DustParticleOptions(mote(mc.level, view.golem, false), 0.5F), at.x, at.y, at.z, 0, 0, 0);
             }
         }
     }

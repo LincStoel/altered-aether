@@ -114,7 +114,9 @@ public class ThrownPebble extends ThrowableItemProjectile {
     private void burst(ServerLevel level) {
         level.sendParticles(new ItemParticleOption(ParticleTypes.ITEM, getItem()), getX(), getY(), getZ(), 8,
                 0.1, 0.1, 0.1, 0.08);
-        level.sendParticles(new DustParticleOptions(GravititeGolem.GRAVITITE, 1.0F), getX(), getY(), getZ(), 6,
+        var link = getItem().get(AARegistries.PEBBLE_LINK.get());
+        level.sendParticles(new DustParticleOptions(GravititeGolem.mote(
+                        link == null ? GravititeGolem.DEFAULT_COLOR : link.color(), false), 1.0F), getX(), getY(), getZ(), 6,
                 0.15, 0.15, 0.15, 0);
         level.playSound(null, getX(), getY(), getZ(), SoundEvents.AMETHYST_BLOCK_BREAK, SoundSource.NEUTRAL, 0.8F,
                 1.3F + random.nextFloat() * 0.3F);

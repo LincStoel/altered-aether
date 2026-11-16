@@ -160,7 +160,8 @@ public class StoragePebbleItem extends Item {
         }
         golem.sendTo(target, player);
         level.playSound(null, target, AARegistries.GOLEM_LINK.get(), SoundSource.NEUTRAL, 0.6F, 0.8F);
-        PacketDistributor.sendToPlayer(player, GolemPayloads.Glow.blocks(GolemPayloads.MARK, 60, List.of(target.below())));
+        PacketDistributor.sendToPlayer(player, GolemPayloads.Glow.blocks(GolemPayloads.MARK, 60, List.of(target.below()))
+                .in(golem.color()));
         player.displayClientMessage(message("on_its_way", golem.getName()), true);
     }
 
@@ -185,8 +186,10 @@ public class StoragePebbleItem extends Item {
                 level.playSound(null, pos, AARegistries.GOLEM_LINK.get(), SoundSource.BLOCKS, 0.8F, 1.0F);
                 boolean blocked = GolemAccess.encased(level, pos);
                 PacketDistributor.sendToPlayer(player, blocked
-                        ? new GolemPayloads.Glow(GolemPayloads.LINK, -1, List.of(), both, List.of(), List.of(), List.of())
-                        : GolemPayloads.Glow.blocks(GolemPayloads.LINK, -1, both, GolemStorage.strict(level, both)));
+                        ? new GolemPayloads.Glow(GolemPayloads.LINK, -1, List.of(), both, List.of(), List.of(), List.of(),
+                                net.color())
+                        : GolemPayloads.Glow.blocks(GolemPayloads.LINK, -1, both, GolemStorage.strict(level, both))
+                                .in(net.color()));
                 int linked = GolemNetworks.inventories(net, p -> GolemStorage.inventoryKey(level, p));
                 String key = blocked ? "linked_blocked" : role == GolemStorage.Role.SOURCE ? "linked_source" : "linked";
                 player.displayClientMessage(message(key, net.name(), linked, net.maxLinks()), true);
@@ -194,7 +197,7 @@ public class StoragePebbleItem extends Item {
             }
             case UNLINKED -> {
                 level.playSound(null, pos, AARegistries.GOLEM_UNLINK.get(), SoundSource.BLOCKS, 0.8F, 1.0F);
-                PacketDistributor.sendToPlayer(player, GolemPayloads.Glow.blocks(GolemPayloads.UNLINK, -1, both));
+                PacketDistributor.sendToPlayer(player, GolemPayloads.Glow.blocks(GolemPayloads.UNLINK, -1, both).in(net.color()));
                 player.displayClientMessage(message("unlinked", net.name()), true);
                 GolemSorter.unlinked(level, net, both);
             }

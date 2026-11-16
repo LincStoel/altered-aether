@@ -86,7 +86,8 @@ public final class GolemLinkAll {
             GolemSorter.linked(level, net, linked);
         }
         int count = (int) linked.stream().map(pos -> GolemStorage.inventoryKey(level, pos)).distinct().count();
-        feedback(golem, level, GolemPayloads.Glow.blocks(GolemPayloads.LINK, -1, glow, GolemStorage.strict(level, glow)));
+        feedback(golem, level, GolemPayloads.Glow.blocks(GolemPayloads.LINK, -1, glow, GolemStorage.strict(level, glow))
+                .in(golem.color()));
         player.displayClientMessage(Component.translatable("message." + AlteredAether.MOD_ID + ".golem.linked_all",
                 golem.getName(), count, GolemNetworks.inventories(net, p -> GolemStorage.inventoryKey(level, p)),
                 net.maxLinks()), true);
@@ -126,7 +127,7 @@ public final class GolemLinkAll {
             GolemSorter.unlinked(level, net, unlinked);
             level.playSound(null, golem.blockPosition(), AARegistries.GOLEM_UNLINK.get(), SoundSource.NEUTRAL, 0.9F, 0.9F);
         }
-        feedback(golem, level, GolemPayloads.Glow.blocks(GolemPayloads.UNLINK, -1, unlinked));
+        feedback(golem, level, GolemPayloads.Glow.blocks(GolemPayloads.UNLINK, -1, unlinked).in(golem.color()));
         player.displayClientMessage(Component.translatable("message." + AlteredAether.MOD_ID + ".golem.unlinked_all",
                 golem.getName(), inventories.size()), true);
         PebbleTracker.send(player, net);
