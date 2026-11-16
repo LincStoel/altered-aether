@@ -40,11 +40,15 @@ import java.util.Optional;
 
 /**
  * A boulder dropped onto a stone platform, built in the sky near the world's origin (Sable struggles with the GameTest
- * arena's coordinates, millions of blocks out). It must come to rest and turn back into blocks: as many blocks above the
- * platform as it was made of, counting any that were dropped as items. Its fall is logged under "Boulder check".
+ * arena's coordinates, millions of blocks out). It must come to rest and turn back into blocks: as many blocks as it was
+ * made of, counting any that were dropped as items. One that lands fast buries itself, so its blocks are counted
+ * through the platform and below it too, as whatever isn't the platform's stone. Its fall is logged under "Boulder
+ * check".
  */
 final class FallingBoulderCheck {
     private static final int FLOOR = 200;
+    /** How far below the platform a boulder that buries itself can reach. */
+    private static final int SUNK = 8;
     private static final int X = 256;
 
     static void settles(GameTestHelper helper) {
@@ -59,7 +63,7 @@ final class FallingBoulderCheck {
                 level.setChunkForced(cx, cz, true);
             }
         }
-        clear(level, X - 24, X + 24, FLOOR, FLOOR + 45, -24, 24);
+        clear(level, X - 24, X + 24, FLOOR - SUNK, FLOOR + 45, -24, 24);
         for (int x = X - 24; x <= X + 24; x++) {
             for (int z = -24; z <= 24; z++) {
                 level.setBlock(new BlockPos(x, FLOOR, z), Blocks.STONE.defaultBlockState(), Block.UPDATE_ALL);
@@ -85,23 +89,24 @@ final class FallingBoulderCheck {
                             + ", speed " + String.format("%.2f", sub.latestLinearVelocity.length()));
                 }
                 if (ticks[0] > 1400) {
-                    clear(level, X - 24, X + 24, FLOOR, FLOOR + 45, -24, 24);
+                    clear(level, X - 24, X + 24, FLOOR - SUNK, FLOOR + 45, -24, 24);
                     release(level);
                     helper.fail("the boulder never settled");
                 }
                 return;
             }
             int solid = 0;
-            for (BlockPos pos : BlockPos.betweenClosed(X - 24, FLOOR + 1, -24, X + 24, FLOOR + 40, 24)) {
-                if (!level.getBlockState(pos).isAir()) {
+            for (BlockPos pos : BlockPos.betweenClosed(X - 24, FLOOR - SUNK, -24, X + 24, FLOOR + 40, 24)) {
+                net.minecraft.world.level.block.state.BlockState there = level.getBlockState(pos);
+                if (!there.isAir() && !there.is(Blocks.STONE)) {
                     solid++;
                 }
             }
             int dropped = level.getEntitiesOfClass(ItemEntity.class,
-                    new AABB(X - 24, FLOOR, -24, X + 24, FLOOR + 40, 24)).size();
+                    new AABB(X - 24, FLOOR - SUNK, -24, X + 24, FLOOR + 40, 24)).size();
             log("settled after " + ticks[0] + " ticks, fastest " + String.format("%.1f", fastest[0]) + " blocks/s: "
                     + solid + " blocks in the world, " + dropped + " dropped, of " + blocks);
-            clear(level, X - 24, X + 24, FLOOR, FLOOR + 45, -24, 24);
+            clear(level, X - 24, X + 24, FLOOR - SUNK, FLOOR + 45, -24, 24);
             release(level);
             if (solid + dropped != blocks) {
                 helper.fail("the boulder had " + blocks + " blocks and left " + solid + " (" + dropped + " dropped)");

@@ -1,4 +1,4 @@
-// 1.21.1	2026-11-10T23:05:09.809463	Altered Aether advancements
+// 1.21.1	2026-11-15T21:32:55.6362158	Altered Aether advancements
 6b0bbdb4842ffb603caf7f8239d078d0bbdfd92b data/altered_aether/advancement/aether_plateau.json
 f6a6daf0bf94dfcc310fd3a41f538ba65b795ad5 data/altered_aether/advancement/airborne_cargo.json
 3ab50013a2ad5a4a75448d9f017ef245d5b1e340 data/altered_aether/advancement/altered_cartographer.json
@@ -17,6 +17,7 @@ c68e600897e15563d3541176a0684fd8de7761eb data/altered_aether/advancement/mind_ov
 a90e570671d65d1e4b767b01eecbc4bda5668d23 data/altered_aether/advancement/nurselog_hollow.json
 2d901a1403ed0591b7565a03b01ab28998bed8a3 data/altered_aether/advancement/perfectly_organized.json
 cd66135b92d6de1859324e79fa98bf967d65503d data/altered_aether/advancement/ride_the_storm.json
+7c2d4c3900e9fa24b8553f90ce4ce9cf091d43be data/altered_aether/advancement/rockfall.json
 7400f45c217e350957c90ac0556b6c9364eda08c data/altered_aether/advancement/root.json
 c85bb7040168616ee3d6a3207d3bd897ef4910f3 data/altered_aether/advancement/rumour.json
 88e6824f902c84172171314a62310ae2e9ebcda9 data/altered_aether/advancement/seven_wonders.json

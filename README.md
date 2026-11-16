@@ -181,7 +181,7 @@ Stone breaks off the islands above and falls. Some of it did long ago, and some 
   another Sable body. Watching one land earns the *Rockfall* advancement.
 - **What is in them.** Mostly holystone, sometimes icestone and, with Deep Aether, aseterite and clorite. Each carries
   one ore: one of the Aether's own, or more often one that another Aether biome generates and the one it lands in
-  doesn't. Gravitite is only ever buried deep inside, since exposed gravitite floats away. The tag
+  doesn't. Gravitite ore is never one of them. The tag
   `#altered_aether:boulder_ore_blacklist` keeps ores out.
 - **Claims.** With FTB Chunks, a boulder never drops on, settles in or hurts anyone in a claim whose team has turned off
   mob griefing or explosion damage, and neither does it touch a structure; one that rolls into such land vanishes in dust.

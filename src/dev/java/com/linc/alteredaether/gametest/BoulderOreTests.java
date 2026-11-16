@@ -34,8 +34,8 @@ import java.util.Set;
 
 /**
  * What a boulder carries (see BoulderOres), on hand-built tables, since the Aether isn't there to scan: never an ore
- * its own biome has, other biomes' ores most of the time with the precious ones rarer, the Aether's own three always
- * possible, and with nothing from elsewhere only those three.
+ * its own biome has, other biomes' ores most of the time with the precious ones rarer, the Aether's own two
+ * (ambrosium and zanite; gravitite is left out) always possible, and with nothing from elsewhere only those two.
  */
 @GameTestHolder(AlteredAether.MOD_ID)
 @PrefixGameTestTemplate(false)
@@ -67,9 +67,9 @@ public final class BoulderOreTests {
         BoulderOres.Table table = new BoulderOres.Table(Map.of(HOME, Set.of(Blocks.IRON_ORE)), Set.of(Blocks.IRON_ORE));
         Map<Block, Integer> seen = tally(table, HOME);
         if (stock(seen) != SAMPLES) {
-            helper.fail("with no other biome's ore only the Aether's three are possible: " + seen);
-        } else if (seen.size() != 3) {
-            helper.fail("all three of the Aether's ores should turn up: " + seen);
+            helper.fail("with no other biome's ore only the Aether's two are possible: " + seen);
+        } else if (seen.size() != 2) {
+            helper.fail("both of the Aether's ores should turn up: " + seen);
         } else {
             helper.succeed();
         }
