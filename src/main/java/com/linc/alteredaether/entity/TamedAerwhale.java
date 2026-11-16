@@ -2422,6 +2422,12 @@ public class TamedAerwhale extends Aerwhale
 
         @Override
         public void tick() {
+            if (rider == null || !hasPassenger(rider)) {
+                // Thrown off (or gone) since the selector last checked: it only re-checks every other tick, and until
+                // it stops this goal there is nothing left to decide. Deciding again would roll the temper the buck
+                // just raised, and could take the rider it has just thrown as its owner.
+                return;
+            }
             if (buckDive) {
                 if (!diving()) {
                     buck(rider);
