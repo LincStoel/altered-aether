@@ -14,8 +14,12 @@
  */
 package com.linc.alteredaether.compat.jade;
 
+import com.aetherteam.aether.block.AetherBlocks;
+import com.aetherteam.aether.block.miscellaneous.FloatingBlock;
 import com.linc.alteredaether.AlteredAether;
+import com.linc.alteredaether.compat.GravititeRework;
 import com.linc.alteredaether.entity.golem.GolemMode;
+import net.neoforged.fml.ModList;
 import com.linc.alteredaether.entity.golem.GolemNetworks;
 import com.linc.alteredaether.entity.golem.GolemSorter;
 import com.linc.alteredaether.entity.golem.GolemStorage;
@@ -60,6 +64,32 @@ public final class AAJadePlugin implements IWailaPlugin {
     public void registerClient(IWailaClientRegistration registration) {
         registration.registerEntityComponent(Golem.INSTANCE, GravititeGolem.class);
         registration.registerBlockComponent(Storage.INSTANCE, Block.class);
+        registration.registerBlockComponent(GravititeLift.INSTANCE, FloatingBlock.class);
+    }
+
+    /**
+     * With Sable, whether an enchanted gravitite block lifts: it does only while it has a redstone signal (see
+     * compat/SableLift). Signals are block states, so the client can tell on its own.
+     */
+    enum GravititeLift implements IBlockComponentProvider {
+        INSTANCE;
+
+        private static final ResourceLocation UID = AlteredAether.id("gravitite_lift");
+
+        @Override
+        public void appendTooltip(ITooltip tooltip, BlockAccessor accessor, IPluginConfig config) {
+            if (!accessor.getBlockState().is(AetherBlocks.ENCHANTED_GRAVITITE.get()) || !ModList.get().isLoaded("sable")
+                    || !GravititeRework.active()) {
+                return;
+            }
+            boolean powered = accessor.getLevel().hasNeighborSignal(accessor.getPosition());
+            tooltip.add(Component.translatable("jade." + AlteredAether.MOD_ID + ".gravitite." + (powered ? "lifting" : "inert")));
+        }
+
+        @Override
+        public ResourceLocation getUid() {
+            return UID;
+        }
     }
 
     private static Component line(String key, Object... args) {

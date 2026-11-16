@@ -243,7 +243,9 @@ public final class AALootProvider extends JsonDataProvider {
     /** The prize of a colossal stump's buried cache: the one thing worth the dig. */
     private static JsonArray stump() {
         return entries(
-                entry("aether:enchanted_gravitite", 4, 2, 5),
+                // ingots with the gravitite rework, the Aether's blocks without it
+                gravititeRework(entry("altered_aether:enchanted_gravitite_ingot", 4, 2, 5), true),
+                gravititeRework(entry("aether:enchanted_gravitite", 4, 2, 5), false),
                 entry("aether:zanite_gloves", 3, 1, 1),
                 entry("aether:golden_gloves", 3, 1, 1),
                 entry("aether:agility_cape", 2, 1, 1),
@@ -282,6 +284,22 @@ public final class AALootProvider extends JsonDataProvider {
             list.add(entry);
         }
         return list;
+    }
+
+    /** Limits an entry to when the gravitite rework is on, or to when it's off (see GravititeReworkCondition). */
+    static JsonObject gravititeRework(JsonObject entry, boolean on) {
+        JsonObject condition = new JsonObject();
+        condition.addProperty("condition", "altered_aether:gravitite_rework");
+        if (!on) {
+            JsonObject inverted = new JsonObject();
+            inverted.addProperty("condition", "minecraft:inverted");
+            inverted.add("term", condition);
+            condition = inverted;
+        }
+        JsonArray conditions = new JsonArray();
+        conditions.add(condition);
+        entry.add("conditions", conditions);
+        return entry;
     }
 
     private static JsonObject entry(String item, int weight, int min, int max) {

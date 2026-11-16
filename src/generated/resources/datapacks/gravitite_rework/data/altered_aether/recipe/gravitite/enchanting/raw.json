@@ -1,0 +1,13 @@
+{
+  "type": "aether:enchanting",
+  "category": "enchanting_misc",
+  "cookingtime": 750,
+  "experience": 1.0,
+  "ingredient": {
+    "tag": "c:raw_materials/gravitite"
+  },
+  "result": {
+    "count": 1,
+    "id": "altered_aether:enchanted_gravitite_ingot"
+  }
+}

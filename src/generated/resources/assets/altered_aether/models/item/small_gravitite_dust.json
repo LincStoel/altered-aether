@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "altered_aether:item/small_gravitite_dust"
+  }
+}

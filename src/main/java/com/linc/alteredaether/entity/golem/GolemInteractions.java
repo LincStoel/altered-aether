@@ -74,10 +74,27 @@ public final class GolemInteractions {
             }
         } else if (stack.getItem() instanceof DyeItem dye && dye.getDyeColor() != golem.color()) {
             dye(golem, serverPlayer, level, stack, dye);
+        } else if (heals(stack) > 0 && golem.getHealth() < golem.getMaxHealth()) {
+            heal(golem, serverPlayer, level, stack);
         } else {
             search(golem, serverPlayer, level, stack);
         }
         return InteractionResult.CONSUME;
+    }
+
+    /** How much an enchanted gravitite ingot or nugget mends a golem, as iron mends an iron golem: half its health, or a ninth of that. */
+    private static float heals(ItemStack stack) {
+        if (stack.is(AARegistries.ENCHANTED_GRAVITITE_INGOT.get())) {
+            return 6.0F;
+        }
+        return stack.is(AARegistries.ENCHANTED_GRAVITITE_NUGGET.get()) ? 6.0F / 9 : 0;
+    }
+
+    private static void heal(GravititeGolem golem, ServerPlayer player, ServerLevel level, ItemStack stack) {
+        golem.heal(heals(stack));
+        stack.consume(1, player);
+        level.playSound(null, golem.blockPosition(), AARegistries.GOLEM_CHIME.get(), SoundSource.NEUTRAL, 0.8F,
+                0.8F + golem.getRandom().nextFloat() * 0.4F);
     }
 
     private static Component message(String key, Object... args) {

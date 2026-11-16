@@ -1,0 +1,12 @@
+{
+  "neoforge:conditions": [
+    {
+      "type": "altered_aether:mod_enabled",
+      "modid": "sable"
+    }
+  ],
+  "properties": {
+    "sable:floating_material": "altered_aether:enchanted_gravitite"
+  },
+  "selector": "aether:enchanted_gravitite"
+}

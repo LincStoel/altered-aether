@@ -1,0 +1,16 @@
+{
+  "neoforge:conditions": [
+    {
+      "type": "altered_aether:mod_enabled",
+      "modid": "sable"
+    }
+  ],
+  "fast_horizontal_friction": 0.03,
+  "fast_vertical_friction": 0.05,
+  "lift_strength": 5.0,
+  "prevent_self_lift": true,
+  "scale_friction_with_gravity": true,
+  "slow_horizontal_friction": 0.8,
+  "slow_vertical_friction": 1.0,
+  "transition_speed": 2.5
+}
