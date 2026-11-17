@@ -148,6 +148,10 @@ public final class Tour {
                     whaleShots(spawn, shots);
                     continue;
                 }
+                if (stop.startsWith("sea")) {
+                    seaShots(stop, spawn, shots);
+                    continue;
+                }
                 if (stop.startsWith("skirt")) {
                     skirtShots(stop, spawn, shots);
                     continue;
@@ -289,6 +293,42 @@ public final class Tour {
                         y - 5, z, 6000, false, false));
             }
             shots.add(new Shot("skirt_above", x + 70, y + 55, z + 70, x, y - 4, z, 6000, false, false));
+        }
+
+        /**
+         * A cloud sea: {@code sea} or {@code sea:dx:dz} searches outward from spawn plus that offset (default 6000,6000,
+         * so its chunks are new) for open sea, then looks across it from four sides at the height of its islands' ground,
+         * and down on it from high above.
+         */
+        private static void seaShots(String stop, BlockPos spawn, List<Shot> shots) {
+            String[] parts = stop.split(":");
+            int dx = parts.length == 3 ? Integer.parseInt(parts[1]) : 6000;
+            int dz = parts.length == 3 ? Integer.parseInt(parts[2]) : 6000;
+            com.linc.alteredaether.worldgen.sea.CloudSea sea = com.linc.alteredaether.worldgen.sea.CloudSea.terrain(THE_AETHER);
+            int[] found = null;
+            for (int r = 0; r < 100 && sea != null && found == null; r++) {
+                for (int i = -r; i <= r && found == null; i++) {
+                    for (int[] p : new int[][]{{i, -r}, {i, r}, {-r, i}, {r, i}}) {
+                        int x = spawn.getX() + dx + p[0] * 128, z = spawn.getZ() + dz + p[1] * 128;
+                        if (sea.weight(x, z) > 0.98 && sea.weight(x + 120, z + 120) > 0.98) {
+                            found = new int[]{x, z};
+                            break;
+                        }
+                    }
+                }
+            }
+            if (found == null) {
+                AlteredAether.LOGGER.error("Tour: no cloud sea found{}", sea == null ? " (no cloud sea)" : "");
+                return;
+            }
+            AlteredAether.LOGGER.info("Tour: cloud sea at {} {}", found[0], found[1]);
+            double x = found[0] + 0.5, z = found[1] + 0.5;
+            for (int i = 0; i < 4; i++) {
+                double angle = Math.PI * 0.25 + i * Math.PI / 2;
+                shots.add(new Shot("sea_" + i, x + Math.cos(angle) * 60, 20, z + Math.sin(angle) * 60,
+                        x - Math.cos(angle) * 60, -14, z - Math.sin(angle) * 60, 6000, false, false));
+            }
+            shots.add(new Shot("sea_above", x + 90, 110, z + 90, x, -20, z, 6000, false, false));
         }
 
         /** Walks from a point toward where the biome is widest, so the shots sit well inside it. */

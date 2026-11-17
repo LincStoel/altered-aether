@@ -40,6 +40,7 @@ import com.linc.alteredaether.worldgen.grove.Mire;
 import com.linc.alteredaether.worldgen.landmark.Landmark;
 import com.linc.alteredaether.worldgen.landmark.LandmarkField;
 import com.linc.alteredaether.worldgen.landmark.LandmarkType;
+import com.linc.alteredaether.worldgen.sea.CloudSea;
 import com.linc.alteredaether.worldgen.skirt.SkirtField;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.levelgen.Heightmap;
@@ -276,6 +277,46 @@ public final class DebugCommands {
     }
 
     /**
+     * What the cloud sea made of the chunks: its cloud blocks, how many sat with solid rock straight above them (a cave
+     * or an overhang it crept under), and columns of open sea whose ground lies in or just above the sheet's band.
+     */
+    private static void seaTally(ServerLevel aether, List<ChunkPos> positions) {
+        CloudSea sea = CloudSea.terrain(THE_AETHER);
+        if (sea == null) {
+            return;
+        }
+        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
+        long cloud = 0, covered = 0, columns = 0, lowGround = 0;
+        for (ChunkPos chunk : positions) {
+            for (int dx = 0; dx < 16; dx++) {
+                for (int dz = 0; dz < 16; dz++) {
+                    int x = chunk.getMinBlockX() + dx, z = chunk.getMinBlockZ() + dz;
+                    boolean open = sea.weight(x, z) > 0.9;
+                    columns += open ? 1 : 0;
+                    boolean low = false;
+                    for (int y = -40; y <= 8; y++) {
+                        var state = aether.getBlockState(pos.set(x, y, z));
+                        if (state.is(com.aetherteam.aether.block.AetherBlocks.COLD_AERCLOUD.get())) {
+                            cloud++;
+                            var above = aether.getBlockState(pos.set(x, y + 1, z));
+                            if (!above.isAir() && !above.is(com.aetherteam.aether.block.AetherBlocks.COLD_AERCLOUD.get())
+                                    && above.isSolidRender(aether, pos)) {
+                                covered++;
+                            }
+                        } else if (open && !state.isAir() && state.getFluidState().isEmpty()
+                                && aether.getBlockState(pos.set(x, y + 1, z)).isAir()) {
+                            low = true;
+                        }
+                    }
+                    lowGround += low ? 1 : 0;
+                }
+            }
+        }
+        AlteredAether.LOGGER.info("Cloud sea: {} cloud blocks at y -40..8, {} under solid rock; {} open-sea columns, "
+                + "{} with ground at y -40..8", cloud, covered, columns, lowGround);
+    }
+
+    /**
      * Pictures of the cloud skirt round one spot: the area from above and from the sides, the cloud alone, sections
      * east-west and north-south through it, and the skirt field's own grid there ({@link #skirtGrid}).
      */
@@ -459,6 +500,31 @@ public final class DebugCommands {
                 }
                 origin = new BlockPos(rim[0], rim[1], rim[2]);
                 AlteredAether.LOGGER.info("Worldgen benchmark: centred on a low island's rim at {}", origin.toShortString());
+            } else if (biome != null && (biome.equals("sea") || biome.equals("sea:edge"))) {
+                // Open cloud sea, or its border where the sheet breaks up, searched outward on a 128-block spiral.
+                CloudSea sea = CloudSea.terrain(THE_AETHER);
+                boolean edge = biome.equals("sea:edge");
+                BlockPos found = null;
+                for (int r = 0; r < 100 && sea != null && found == null; r++) {
+                    for (int i = -r; i <= r && found == null; i++) {
+                        for (int[] p : new int[][]{{i, -r}, {i, r}, {-r, i}, {r, i}}) {
+                            int x = origin.getX() + p[0] * 128, z = origin.getZ() + p[1] * 128;
+                            double w = sea.weight(x, z);
+                            if (edge ? w > 0.25 && w < 0.6 : w > 0.98 && sea.weight(x + 160, z) > 0.98
+                                    && sea.weight(x - 160, z) > 0.98) {
+                                found = new BlockPos(x, -20, z);
+                                break;
+                            }
+                        }
+                    }
+                }
+                if (found == null) {
+                    AlteredAether.LOGGER.error("Worldgen benchmark: no {} found{}", biome,
+                            sea == null ? " (no cloud sea: is this the tall Aether?)" : "");
+                    return;
+                }
+                origin = found;
+                AlteredAether.LOGGER.info("Worldgen benchmark: centred on {} at {}", biome, origin.toShortString());
             } else if (biome != null && biome.matches("-?\\d+:-?\\d+")) {
                 String[] xz = biome.split(":");
                 origin = new BlockPos(Integer.parseInt(xz[0]), 64, Integer.parseInt(xz[1]));
@@ -572,6 +638,22 @@ public final class DebugCommands {
                 if (biome != null && biome.startsWith("core:")) {
                     skirtRenders(server, aether, "core", origin.atY(0));
                 }
+            }
+            if (Boolean.getBoolean("altered_aether.render") && biome != null && biome.startsWith("sea")) {
+                // The sea from above, the cloud alone, a plan through the sheet's band, and sections east-west and
+                // north-south from the roots to the ground above.
+                int sx = origin.getX(), sz = origin.getZ(), r = Math.min(radius * 16, 160);
+                server.submit(() -> WorldRender.render(aether, "sea", sx - r, sz - r, sx + r, sz + r, -64, 127, 2))
+                        .join();
+                server.submit(() -> WorldRender.render(aether, "sea_cloud", sx - r, sz - r, sx + r, sz + r, -64, 127, 2,
+                        state -> state.is(com.aetherteam.aether.block.AetherBlocks.COLD_AERCLOUD.get()))).join();
+                server.submit(() -> WorldRender.render(aether, "sea_plan", sx - r, sz - r, sx + r, sz + r, -36, -6, 2))
+                        .join();
+                server.submit(() -> WorldRender.render(aether, "sea_slice_x", sx - r, sz, sx + r, sz, -64, 100, 3))
+                        .join();
+                server.submit(() -> WorldRender.render(aether, "sea_slice_z", sx, sz - r, sx, sz + r, -64, 100, 3))
+                        .join();
+                server.submit(() -> seaTally(aether, positions)).join();
             }
             if (Boolean.getBoolean("altered_aether.render") && biome != null && biome.equals("skirt")) {
                 // Sections through the rim, east-west and north-south, a plan cut through the collar, and the same

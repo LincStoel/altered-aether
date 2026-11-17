@@ -290,6 +290,7 @@ public final class AARegistries {
         DENSITY_FUNCTIONS.register("basin_carve", () -> BasinCarve.MAP_CODEC);
         DENSITY_FUNCTIONS.register("grove_break", () -> com.linc.alteredaether.worldgen.density.GroveBreak.MAP_CODEC);
         DENSITY_FUNCTIONS.register("atoll", () -> Atoll.MAP_CODEC);
+        DENSITY_FUNCTIONS.register("cloud_sea", () -> com.linc.alteredaether.worldgen.density.CloudSeaMarker.MAP_CODEC);
     }
 
     public static final DeferredRegister<SoundEvent> SOUND_EVENTS =
@@ -330,6 +331,8 @@ public final class AARegistries {
             FEATURES.register("understory", UnderstoryFeature::new);
     public static final DeferredHolder<Feature<?>, CloudSkirtFeature> CLOUD_SKIRT =
             FEATURES.register("cloud_skirt", CloudSkirtFeature::new);
+    public static final DeferredHolder<Feature<?>, com.linc.alteredaether.worldgen.feature.CloudSeaFeature> CLOUD_SEA =
+            FEATURES.register("cloud_sea", com.linc.alteredaether.worldgen.feature.CloudSeaFeature::new);
     public static final DeferredHolder<Feature<?>, EdgeSpringFeature> EDGE_SPRING =
             FEATURES.register("edge_spring", EdgeSpringFeature::new);
     public static final DeferredHolder<Feature<?>, BoulderFeature> BOULDER =

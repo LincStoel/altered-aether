@@ -1,6 +1,9 @@
 {
   "type": "neoforge:add_features",
   "biomes": "#aether:is_aether",
-  "features": "altered_aether:cloud_skirt",
+  "features": [
+    "altered_aether:cloud_sea",
+    "altered_aether:cloud_skirt"
+  ],
   "step": "top_layer_modification"
 }

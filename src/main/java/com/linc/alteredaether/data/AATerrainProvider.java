@@ -79,7 +79,8 @@ public final class AATerrainProvider extends JsonDataProvider {
     private static final Set<String> HEIGHT_DEPENDENT =
             Set.of("crag_3d_noise", "jag", "crags", "tempest", "tempest_spires", "dune_ridges", "dune_centre", "dune_sheet",
                     "plateau", "plateau_terraced", "island", "tall_base_3d_noise", "rift",
-                    "grove_land", "grove_land_broken");
+                    "grove_land", "grove_land_broken", "island_sea", "island_high", "cloud_sea_mask", "cloud_sea_sheet",
+                    "cloud_sea_land");
 
     private final HeightMode mode;
 
@@ -164,6 +165,13 @@ public final class AATerrainProvider extends JsonDataProvider {
         noise("path_region", -6, 1.0);
         noise("plateau_path", -8, 1.0, 1.2, 0.7, 1.2, 1.0);
         noise("plateau_quicksoil_vein", -7, 1.0, 0.5, 0.0, 0.5, 1.0);
+        // The tall Aether's cloud seas: the rift's recipe an octave broader and stretched, for seas a couple of thousand blocks
+        // across; the sea's landmasses, their heights, and the roots hanging from them.
+        noise("cloud_sea", -10, 1.0, 1.5, 1.2, 0.6);
+        noise("cloud_sea_footprint", -8, 1.0, 0.5, 0.25);
+        noise("cloud_sea_level", -8, 1.0, 0.5);
+        noise("cloud_sea_roll", -7, 1.0, 0.5);
+        noise("cloud_sea_root", -5, 1.0, 0.5);
     }
 
     private void noise(String name, int firstOctave, double... amplitudes) {
@@ -400,8 +408,14 @@ public final class AATerrainProvider extends JsonDataProvider {
         }
         // The island expression gets a file of its own, so every blend below refers to it rather than copying it.
         df("island", island);
+        // In the tall Aether, the island given over to the cloud seas; the stock Aether has none.
+        if (mode == HeightMode.TALL) {
+            cloudSea(island);
+        } else {
+            df("island_sea", terrain("island"));
+        }
         // The island given over to the dune sheets.
-        df("island_dunes", Df.choose(terrain("dune_weight"), terrain("island"), terrain("dune_sheet")));
+        df("island_dunes", Df.choose(terrain("dune_weight"), terrain("island_sea"), terrain("dune_sheet")));
         // The grove islands broken apart where the Nurselog Hollow's have drifted (see BreakField).
         JsonObject broken = Df.type(NS + "grove_break");
         broken.add("argument", terrain("grove_land"));
@@ -457,13 +471,55 @@ public final class AATerrainProvider extends JsonDataProvider {
         df("rift", fracture);
     }
 
+    /**
+     * The tall Aether's cloud seas, an overlay on the plain islands of every region. Inside a sea the islands are built
+     * round a sheet of cloud at about y -35..-8 (laid by {@code CloudSea}): broad landmasses whose ground stays well
+     * above it and whose bodies, with roots hanging beneath, plunge right through it, and the Aether's own islands
+     * lifted clear above. The landforms above the plain islands in the chain (dunes, groves, rift, crags, plateau)
+     * keep their own terrain, and the sheet thins away where they take over ({@code cloud_sea_sheet}).
+     */
+    private void cloudSea(JsonElement island) {
+        // Seas a couple of thousand blocks across over about an eighth of the Aether, unbound by our region: the stock
+        // Aether's and Deep Aether's islands get them too. The mask rises across noise 0.26..0.38.
+        df("cloud_sea_mask", flatCache(ramp(flatCache(shiftedNoise(NS + "cloud_sea", 0.18, 0.0)), -2.17, 8.3)));
+        JsonObject sheet = mul(terrain("cloud_sea_mask"), 1.0);
+        for (String landform : new String[]{"dune", "grove", "rift", "crag", "plateau"}) {
+            sheet = mul(sheet, add(1.0, mul(-1.0, terrain(landform + "_weight"))));
+        }
+        df("cloud_sea_sheet", flatCache(sheet));
+
+        // The landmasses: slabs whose ground rolls between y 8 and about 70, on bodies reaching down to y -32..-44,
+        // with roots hanging deeper, so every cliff runs down through the sheet. Their footprint leaves broad
+        // channels of open cloud between them.
+        JsonObject roll = shiftedNoise(NS + "cloud_sea_roll", 1.0, 0.0);
+        JsonObject summit = clamp(add(add(30.0, mul(22.0, flatCache(shiftedNoise(NS + "cloud_sea_level", 1.0, 0.0)))),
+                add(mul(6.0, roll), mul(3.0, shiftedNoise(NS + "grove_hummock", 1.0, 0.0)))), 8.0, 120.0);
+        JsonObject root = square(clamp(add(mul(2.0, shiftedNoise(NS + "cloud_sea_root", 1.0, 0.0)), -0.6), 0.0, 1.0));
+        JsonObject underside = add(add(-38.0, mul(6.0, roll)), mul(-24.0, root));
+        JsonObject footprint = mul(6.0, flatCache(shiftedNoise(NS + "cloud_sea_footprint", 1.0, 0.0)));
+        JsonObject landmass = add(min(min(mul(0.125, add(summit, mul(-1.0, Df.y()))),
+                mul(1.0 / 6, add(Df.y(), mul(-1.0, underside)))), footprint), mul(0.3, terrain("jag")));
+        // The Aether's own islands, lifted to float above the sheet: fading in from y 8 to 40 rather than -52 to -4.
+        df("island_high", reanchor(island, Map.of(-52, 8, -4, 40, 20, 40, 128, 128)));
+        df("cloud_sea_land", max(landmass, terrain("island_high")));
+
+        JsonObject marker = Df.type(NS + "cloud_sea");
+        marker.add("argument", terrain("cloud_sea_mask"));
+        marker.add("sheet", terrain("cloud_sea_sheet"));
+        df("island_sea", Df.choose(marker, terrain("island"), terrain("cloud_sea_land")));
+    }
+
     /** The island expression's height anchors, remapped to the tall band, and its base noise stretched to match. */
     private static JsonElement remapIsland(JsonElement node) {
-        Map<Integer, Integer> anchors = Map.of(8, -52, 40, -4, 56, 20, 128, 128);
+        return restretch(reanchor(node, Map.of(8, -52, 40, -4, 56, 20, 128, 128)));
+    }
+
+    /** A copy of a function with its y gradients' heights moved, each by the map. */
+    private static JsonElement reanchor(JsonElement node, Map<Integer, Integer> anchors) {
         if (node instanceof JsonObject object) {
             JsonObject copy = new JsonObject();
             for (Map.Entry<String, JsonElement> entry : object.entrySet()) {
-                copy.add(entry.getKey(), remapIsland(entry.getValue()));
+                copy.add(entry.getKey(), reanchor(entry.getValue(), anchors));
             }
             if (copy.has("type") && copy.get("type").getAsString().equals("minecraft:y_clamped_gradient")) {
                 for (String key : new String[]{"from_y", "to_y"}) {
@@ -476,13 +532,30 @@ public final class AATerrainProvider extends JsonDataProvider {
             }
             return copy;
         }
+        if (node instanceof JsonArray array) {
+            JsonArray copy = new JsonArray();
+            array.forEach(e -> copy.add(reanchor(e, anchors)));
+            return copy;
+        }
+        return node.deepCopy();
+    }
+
+    /** A copy of the island expression on the tall Aether's stretched base noise. */
+    private static JsonElement restretch(JsonElement node) {
+        if (node instanceof JsonObject object) {
+            JsonObject copy = new JsonObject();
+            for (Map.Entry<String, JsonElement> entry : object.entrySet()) {
+                copy.add(entry.getKey(), restretch(entry.getValue()));
+            }
+            return copy;
+        }
         if (node instanceof JsonPrimitive primitive && primitive.isString()
                 && primitive.getAsString().equals("aether:base_3d_noise_aether")) {
             return terrain("tall_base_3d_noise");
         }
         if (node instanceof JsonArray array) {
             JsonArray copy = new JsonArray();
-            array.forEach(e -> copy.add(remapIsland(e)));
+            array.forEach(e -> copy.add(restretch(e)));
             return copy;
         }
         return node.deepCopy();

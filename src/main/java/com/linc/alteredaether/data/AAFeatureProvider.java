@@ -40,6 +40,8 @@ public final class AAFeatureProvider extends JsonDataProvider {
     static final String UNDERSTORY = NS + "grove/understory";
     /** The cloud skirts round the tall Aether's low islands. */
     static final String CLOUD_SKIRT = NS + "cloud_skirt";
+    /** The sheet of cloud over the tall Aether's cloud seas. */
+    static final String CLOUD_SEA = NS + "cloud_sea";
     /** The ruins in the groves, and the rare stone heads of the plateau. */
     static final String RUIN = NS + "grove/ruin", STONE_HEAD = NS + "plateau/stone_heads";
     /** The hand-built camps and farms, which the biome modifiers add at the surface structures step. */
@@ -67,6 +69,8 @@ public final class AAFeatureProvider extends JsonDataProvider {
         placed("grove/understory", UNDERSTORY, new JsonArray());
         configured("cloud_skirt", NS + "cloud_skirt", new JsonObject());
         placed("cloud_skirt", CLOUD_SKIRT, new JsonArray());
+        configured("cloud_sea", NS + "cloud_sea", new JsonObject());
+        placed("cloud_sea", CLOUD_SEA, new JsonArray());
         ruins();
         camps();
     }

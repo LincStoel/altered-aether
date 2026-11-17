@@ -23,6 +23,7 @@ import com.linc.alteredaether.compat.AddedMob;
 import com.linc.alteredaether.registry.AARegistries;
 import com.linc.alteredaether.config.AACommonConfig;
 import com.linc.alteredaether.worldgen.basin.BasinField;
+import com.linc.alteredaether.worldgen.sea.CloudSea;
 import com.linc.alteredaether.worldgen.skirt.SkirtField;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -71,11 +72,13 @@ public final class SpawnPlacementEvents {
         // standing on #altered_aether:breeze_spawnable_on (cold aerclouds). Aerclouds have no solid collision, so
         // the placement type can't be ON_GROUND; the block below is tested directly. Other spawn reasons, such as
         // trial spawners, are left as vanilla had them.
-        // The cloud skirts are wide sheets of cold aercloud, so only a share of the breezes that would spawn on one do.
+        // The cloud skirts and the cloud seas are wide sheets of cold aercloud, so only a share of the breezes that would
+        // spawn on one do.
         event.register(EntityType.BREEZE, SpawnPlacementTypes.NO_RESTRICTIONS, Heightmap.Types.MOTION_BLOCKING,
                 (type, level, reason, pos, random) -> !isWorldSpawn(reason)
                         || level.getBlockState(pos.below()).is(AATags.BREEZE_SPAWNABLE_ON)
-                        && (!onSkirt(level, pos.below()) || random.nextDouble() < AACommonConfig.CLOUD_SKIRT_BREEZE_CHANCE.get()),
+                        && (!onSkirt(level, pos.below()) || random.nextDouble() < AACommonConfig.CLOUD_SKIRT_BREEZE_CHANCE.get())
+                        && (!onSea(level, pos.below()) || random.nextDouble() < AACommonConfig.CLOUD_SEA_BREEZE_CHANCE.get()),
                 RegisterSpawnPlacementsEvent.Operation.REPLACE);
 
         // Zephyrs, and squalls by the zephyr's rule: standing room on the ground, open sky over the whole hitbox, and
@@ -175,6 +178,12 @@ public final class SpawnPlacementEvents {
     private static boolean onSkirt(ServerLevelAccessor level, BlockPos cloud) {
         SkirtField field = SkirtField.get(level.getLevel().dimension());
         return field != null && field.inCollarQuickly(cloud.getX(), cloud.getY(), cloud.getZ());
+    }
+
+    /** Whether a block of cloud is part of a cloud sea's sheet. */
+    private static boolean onSea(ServerLevelAccessor level, BlockPos cloud) {
+        CloudSea sea = CloudSea.get(level.getLevel().dimension());
+        return sea != null && sea.contains(cloud.getX(), cloud.getY(), cloud.getZ());
     }
 
     /** In an atoll's lagoon, or within {@code margin} blocks of its water. */

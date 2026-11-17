@@ -24,6 +24,7 @@ import com.linc.alteredaether.worldgen.TerrainProbe;
 import com.linc.alteredaether.worldgen.grove.BreakField;
 import com.linc.alteredaether.worldgen.grove.GroveField;
 import com.linc.alteredaether.worldgen.landmark.LandmarkField;
+import com.linc.alteredaether.worldgen.sea.CloudSea;
 import com.linc.alteredaether.worldgen.skirt.SkirtField;
 import net.minecraft.world.level.levelgen.DensityFunction;
 import net.minecraft.world.level.levelgen.NoiseBasedChunkGenerator;
@@ -70,6 +71,7 @@ public final class RegionBinding {
         List<Atoll> atolls = new ArrayList<>();
         Set<VoronoiFracture.Binding> fractures = Collections.newSetFromMap(new IdentityHashMap<>());
         List<GroveBreak> breaks = new ArrayList<>();
+        List<CloudSeaMarker> seas = new ArrayList<>();
         RandomState randomState = level.getChunkSource().randomState();
         randomState.router().mapAll(new DensityFunction.Visitor() {
             @Override
@@ -84,10 +86,17 @@ public final class RegionBinding {
                     fractures.add(fracture.binding());
                 } else if (function instanceof GroveBreak groveBreak && groveBreak.binding() != null) {
                     breaks.add(groveBreak);
+                } else if (function instanceof CloudSeaMarker sea) {
+                    seas.add(sea);
                 }
                 return function;
             }
         });
+        // The cloud sea's sheet, in the tall Aether, whose terrain alone carries the marker.
+        if (!seas.isEmpty() && level.getMinBuildHeight() < 0) {
+            CloudSea.put(level.dimension(), new CloudSea(level.getSeed(), seas.getFirst().argument(),
+                    seas.getFirst().sheet()));
+        }
         if (bindings.isEmpty()) {
             return;
         }
@@ -152,7 +161,8 @@ public final class RegionBinding {
                 level.getMaxBuildHeight()));
         // The cloud skirts are the tall Aether's alone.
         if (level.getMinBuildHeight() < 0 && carve != null) {
-            SkirtField.put(level.dimension(), new SkirtField(level.getSeed(), probe));
+            SkirtField.put(level.dimension(), new SkirtField(level.getSeed(), probe,
+                    CloudSea.get(level.dimension())));
         }
     }
 
@@ -164,6 +174,7 @@ public final class RegionBinding {
             LandmarkField.put(level.dimension(), null);
             GroveField.put(level.dimension(), null);
             SkirtField.put(level.dimension(), null);
+            CloudSea.put(level.dimension(), null);
         }
     }
 

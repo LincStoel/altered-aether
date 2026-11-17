@@ -247,6 +247,22 @@ class SkirtGridTest {
     }
 
     @Test
+    void aCollarThatSuitsTheSeaJoinsItAndOneThatDoesntGivesWay() {
+        // Far from the sea, nothing changes.
+        assertEquals(-12, SkirtGrid.seaRim(-12, 0, -18));
+        assertEquals(1, SkirtGrid.seaFade(0, 1));
+        assertEquals(1, SkirtGrid.seaFade(0, 0));
+        // A close match is drawn level with the sheet by the join, and survives up to it.
+        assertEquals(-18, SkirtGrid.seaRim(-14, SkirtGrid.SEA_JOIN, -18), 1e-9);
+        assertEquals(1, SkirtGrid.seaFade(SkirtGrid.SEA_JOIN, 1), 1e-9);
+        assertEquals(0, SkirtGrid.seaFade(SkirtGrid.SEA_JOIN + SkirtGrid.SEA_FADE, 1), 1e-9);
+        // A collar far below the sheet stays where it is and is gone before the join.
+        assertEquals(-50, SkirtGrid.seaRim(-50, SkirtGrid.SEA_JOIN, -18), 1e-9);
+        assertEquals(0, SkirtGrid.seaMatch(-50, -18), 1e-9);
+        assertEquals(0, SkirtGrid.seaFade(SkirtGrid.SEA_FADE, 0), 1e-9);
+    }
+
+    @Test
     void aSlopedRimGetsNoCollar() {
         assertEquals(1, SkirtGrid.levelness(0));
         assertEquals(1, SkirtGrid.levelness(SkirtGrid.LEVEL));

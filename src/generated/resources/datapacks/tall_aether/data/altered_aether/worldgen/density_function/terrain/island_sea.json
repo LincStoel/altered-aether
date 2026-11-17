@@ -1,0 +1,10 @@
+{
+  "type": "altered_aether:choose",
+  "high": "altered_aether:terrain/cloud_sea_land",
+  "low": "altered_aether:terrain/island",
+  "mask": {
+    "type": "altered_aether:cloud_sea",
+    "argument": "altered_aether:terrain/cloud_sea_mask",
+    "sheet": "altered_aether:terrain/cloud_sea_sheet"
+  }
+}

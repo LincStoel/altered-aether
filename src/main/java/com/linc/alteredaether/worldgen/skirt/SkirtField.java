@@ -17,6 +17,8 @@ package com.linc.alteredaether.worldgen.skirt;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.linc.alteredaether.worldgen.TerrainProbe;
+import com.linc.alteredaether.worldgen.sea.CloudSea;
+import com.linc.alteredaether.worldgen.sea.CloudSeaMath;
 import net.minecraft.Util;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.level.Level;
@@ -71,14 +73,18 @@ public final class SkirtField {
 
     private final long seed;
     private final TerrainProbe probe;
+    /** The world's cloud sea, which collars near it join or give way to; null where there is none. */
+    @Nullable
+    private final CloudSea sea;
     private final Cache<Long, Terrain> terrain = CacheBuilder.newBuilder().maximumSize(1 << 13).build();
     private final Cache<Long, int[]> coarse = CacheBuilder.newBuilder().maximumSize(1 << 13).build();
     private final Cache<Long, Collar> collars = CacheBuilder.newBuilder().maximumSize(1 << 12).build();
     private final Cache<Long, Boolean> votes = CacheBuilder.newBuilder().maximumSize(1 << 14).build();
 
-    public SkirtField(long seed, TerrainProbe probe) {
+    public SkirtField(long seed, TerrainProbe probe, @Nullable CloudSea sea) {
         this.seed = seed;
         this.probe = probe;
+        this.sea = sea;
     }
 
     public long seed() {
@@ -204,12 +210,22 @@ public final class SkirtField {
         // Sampled one column further out all round, so the rise of the rim height can be taken at every column.
         double[] near = new double[m * m], blend = new double[m * m], broad = new double[m * m];
         double[] sample = new double[3];
+        // The cloud sea's weight and how well each collar suits its sheet, where the sea comes near the tile.
+        double[] seaWeight = seaNear(gx0, gz0) ? new double[m * m] : null, match = new double[m * m];
+        java.util.Arrays.fill(match, 1);
         for (int j = 0; j < m; j++) {
             for (int i = 0; i < m; i++) {
-                SkirtGrid.sample(sources, (gx0 + i - 1) * STEP, (gz0 + j - 1) * STEP, sample);
+                int x = (gx0 + i - 1) * STEP, z = (gz0 + j - 1) * STEP;
+                SkirtGrid.sample(sources, x, z, sample);
                 near[j * m + i] = sample[0];
                 blend[j * m + i] = sample[1];
                 broad[j * m + i] = sample[2];
+                if (seaWeight != null) {
+                    double w = sea.weight(x, z), target = seaRimTarget(x, z);
+                    seaWeight[j * m + i] = w;
+                    match[j * m + i] = SkirtGrid.seaMatch(sample[1], target);
+                    blend[j * m + i] = SkirtGrid.seaRim(sample[1], w, target);
+                }
             }
         }
         float[] distance = new float[n * n], height = new float[n * n], gate = new float[n * n];
@@ -223,13 +239,36 @@ public final class SkirtField {
                 wide[j * n + i] = (float) broad[at];
                 if (near[at] < SkirtGrid.FAR) {
                     double rise = Math.hypot(rise(near, blend, at, 1), rise(near, blend, at, m));
+                    double seaFade = seaWeight == null ? 1 : SkirtGrid.seaFade(seaWeight[at], match[at]);
                     gate[j * n + i] = (float) (inner(view, gx, gz, blend[at]) * riftFade(view, gx, gz)
-                            * SkirtGrid.levelness(rise));
+                            * SkirtGrid.levelness(rise) * seaFade);
                     any |= gate[j * n + i] > 0 && near[at] < SkirtGrid.MAX_WIDTH + SkirtGrid.CRAG_WIDE * broad[at];
                 }
             }
         }
         return any ? new Collar(gx0, gz0, distance, height, gate, wide) : Collar.EMPTY;
+    }
+
+    /** Whether the cloud sea reaches anywhere near a tile: its weight is broad, so the corners and middle tell. */
+    private boolean seaNear(int gx0, int gz0) {
+        if (sea == null) {
+            return false;
+        }
+        int x0 = (gx0 - 1) * STEP, z0 = (gz0 - 1) * STEP, side = (TILE + 2) * STEP;
+        for (int[] d : new int[][]{{0, 0}, {side, 0}, {0, side}, {side, side}, {side / 2, side / 2}}) {
+            if (sea.weight(x0 + d[0], z0 + d[1]) > 0) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * The rim height that would set a collar's top level with the cloud sea's sheet at a point: the sheet's middle
+     * there, raised half a full lens, as it stands where the sheet is whole.
+     */
+    private double seaRimTarget(int x, int z) {
+        return CloudSeaMath.middle(sea.drift(x, z)) + CloudSeaMath.UP / 2 + SkirtGrid.GAP;
     }
 
     /**

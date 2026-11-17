@@ -19,6 +19,7 @@ import com.linc.alteredaether.worldgen.basin.BasinField;
 import com.linc.alteredaether.worldgen.basin.BasinSite;
 import com.linc.alteredaether.worldgen.density.RegionBinding;
 import com.linc.alteredaether.worldgen.landmark.LandmarkField;
+import com.linc.alteredaether.worldgen.sea.CloudSea;
 import net.minecraft.core.Holder;
 import net.minecraft.core.QuartPos;
 import net.minecraft.resources.ResourceKey;
@@ -137,6 +138,7 @@ public final class WorldgenReport {
             climateDump(level, originX, originZ, radius, Math.max(1, step / 4), java.nio.file.Path.of(climate), lines);
         }
         basinSurvey(level, originX, originZ, radius, lines);
+        seaSurvey(level, originX, originZ, radius, step, lines);
         landmarkSurvey(level, originX, originZ, radius, lines);
         if (Boolean.getBoolean("altered_aether.report.structures")) {
             structureHeights(level, originX, originZ, lines);
@@ -240,6 +242,95 @@ public final class WorldgenReport {
                 type, list.size(), list.stream().mapToDouble(BasinSite::radius).average().orElse(0),
                 list.stream().mapToInt(BasinSite::waterLevel).average().orElse(0),
                 list.stream().limit(3).map(site -> site.x() + "," + site.z()).toList())));
+    }
+
+    /**
+     * The tall Aether's cloud seas over the area. On a fine 2D grid: how much of the world the sea's mask covers (its
+     * share of plain-island land, since the mask ignores the landforms), how much keeps its sheet once the landforms
+     * have taken theirs, and how big the seas are. At the column samples well inside a sea: whether any ground surface
+     * lies in or just above the sheet's band (the terrain should keep it all at y 8 or higher), how many columns have
+     * land at all, and how much of the sheet is hole.
+     */
+    private static void seaSurvey(ServerLevel level, int originX, int originZ, int radius, int step, List<String> lines) {
+        CloudSea sea = CloudSea.terrain(level.dimension());
+        if (sea == null) {
+            lines.add("Cloud sea: none in this world");
+            return;
+        }
+        int fine = Math.max(16, radius / 250);
+        int n = 2 * radius / fine + 1;
+        boolean[] in = new boolean[n * n];
+        int masked = 0, sheeted = 0;
+        for (int j = 0; j < n; j++) {
+            for (int i = 0; i < n; i++) {
+                int x = originX - radius + i * fine, z = originZ - radius + j * fine;
+                in[j * n + i] = sea.mask(x, z) > 0.5;
+                masked += in[j * n + i] ? 1 : 0;
+                sheeted += sea.weight(x, z) > 0.5 ? 1 : 0;
+            }
+        }
+        // The seas, as 4-connected patches of the mask; their size as the diameter of a disc of the same area.
+        List<Double> sizes = new ArrayList<>();
+        boolean[] seen = new boolean[n * n];
+        java.util.ArrayDeque<Integer> queue = new java.util.ArrayDeque<>();
+        for (int start = 0; start < n * n; start++) {
+            if (!in[start] || seen[start]) {
+                continue;
+            }
+            seen[start] = true;
+            queue.add(start);
+            int cells = 0;
+            boolean edge = false;
+            while (!queue.isEmpty()) {
+                int at = queue.poll(), i = at % n, j = at / n;
+                cells++;
+                edge |= i == 0 || j == 0 || i == n - 1 || j == n - 1;
+                for (int[] d : new int[][]{{1, 0}, {-1, 0}, {0, 1}, {0, -1}}) {
+                    int ni = i + d[0], nj = j + d[1];
+                    if (ni >= 0 && nj >= 0 && ni < n && nj < n && in[nj * n + ni] && !seen[nj * n + ni]) {
+                        seen[nj * n + ni] = true;
+                        queue.add(nj * n + ni);
+                    }
+                }
+            }
+            if (!edge) {
+                sizes.add(2 * Math.sqrt(cells * (double) fine * fine / Math.PI));
+            }
+        }
+        sizes.sort(null);
+        lines.add(String.format("Cloud sea: mask covers %.1f%%, sheet %.1f%% (grid %d); %d whole seas, diameter "
+                        + "median %.0f, range %.0f..%.0f", 100.0 * masked / (n * n), 100.0 * sheeted / (n * n), fine,
+                sizes.size(), sizes.isEmpty() ? 0 : sizes.get(sizes.size() / 2), sizes.isEmpty() ? 0 : sizes.getFirst(),
+                sizes.isEmpty() ? 0 : sizes.getLast()));
+
+        ChunkGenerator generator = level.getChunkSource().getGenerator();
+        RandomState random = level.getChunkSource().randomState();
+        int columns = 0, land = 0, ground = 0, holes = 0;
+        int[] span = new int[2];
+        for (int x = originX - radius; x <= originX + radius; x += step) {
+            for (int z = originZ - radius; z <= originZ + radius; z += step) {
+                double w = sea.weight(x, z);
+                if (w < 0.9) {
+                    continue;
+                }
+                columns++;
+                holes += sea.span(x, z, w, span) ? 0 : 1;
+                NoiseColumn column = generator.getBaseColumn(x, z, level, random);
+                boolean anyLand = false, low = false;
+                for (int y = level.getMinBuildHeight(); y < 8; y++) {
+                    boolean solid = !column.getBlock(y).isAir() && column.getBlock(y).getFluidState().isEmpty();
+                    anyLand |= solid;
+                    if (solid && y >= -40 && column.getBlock(y + 1).isAir()) {
+                        low = true;
+                    }
+                }
+                land += anyLand ? 1 : 0;
+                ground += low ? 1 : 0;
+            }
+        }
+        lines.add(String.format("  open sea columns %d: %.0f%% with land below y 8, %.1f%% with ground at y -40..7, "
+                        + "%.0f%% hole", columns, columns == 0 ? 0 : 100.0 * land / columns,
+                columns == 0 ? 0 : 100.0 * ground / columns, columns == 0 ? 0 : 100.0 * holes / columns));
     }
 
     /** Every landmark over the area by type, with how each turned out where that varies. */

@@ -205,6 +205,13 @@ for the stock 0..255 Aether. The height can't change once a world's Aether has b
 
 With the tall pack, other mods' Aether structures and ores are moved to the matching heights automatically.
 
+The tall Aether also has **cloud seas**: broad stretches, a thousand to three thousand blocks across, where the islands
+are shaped round a rolling sheet of cold aercloud at about y -35..-8. Landmasses stand in it with their cliffs
+plunging through and their roots hanging out beneath, smaller islands float above it, and sky lakes and holes break it
+up, wider toward its edges. They form under any region's plain islands, and give way to our landforms. Falling water
+washes its own way down through the cloud. The lower islands outside the seas wear **cloud skirts**, collars of the
+same cloud round their rims, which join a sea's sheet where they meet it.
+
 ## Optional mods
 
 ### Highly encouraged
@@ -242,8 +249,9 @@ on cold aerclouds.
 `config/altered_aether-common.toml`. Every value is commented with its default and range.
 
 - `[region]`: the region's weight and each biome on or off.
-- `[terrain]`: landform strengths, rift fracture size and drift, dune height and wind, atoll size, and
-  `landmark_rarity` (higher is rarer, 0 turns landmarks off).
+- `[terrain]`: landform strengths, rift fracture size and drift, dune height and wind, atoll size,
+  `landmark_rarity` (higher is rarer, 0 turns landmarks off), and the cloud skirts and cloud seas on or off, with the
+  share of breezes that spawn on each.
 - `[basins]`: each kind of lake on or off and its rarity, waterfall frequency, coral density.
 - `[groves]`: giant spacing, golden heartwood chance, the share of Deep Aether wood colonies, camp and secret-chest
   chances, the share of trails and camps still tended, and the chance and size of the swamp lakes (`mire_chance`,

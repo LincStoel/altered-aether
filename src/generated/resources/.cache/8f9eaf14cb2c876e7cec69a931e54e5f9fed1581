@@ -1,4 +1,4 @@
-// 1.21.1	2026-11-15T17:42:22.5337221	Altered Aether terrain (tall)
+// 1.21.1	2026-11-17T12:13:43.6895667	Altered Aether terrain (tall)
 f42ea67ddb2a016ae6e8bcabfc213cce31a103fe datapacks/tall_aether/data/aether/dimension_type/the_aether.json
 e7d8bc7b25714231079ba52b6565836a7cc0e594 datapacks/tall_aether/data/aether/worldgen/configured_feature/quicksoil_shelf.json
 9c9966b5b6fdf691cca57ed7291cc0ea1fc69ff0 datapacks/tall_aether/data/aether/worldgen/noise_settings/skylands.json
@@ -8,6 +8,9 @@ ff56f6ae4025bdda1cdd2f68a6ca5454f85d339b datapacks/tall_aether/data/aether/world
 e1b246d76d75bd65cefc68ee1ab98810125486f1 datapacks/tall_aether/data/aether/worldgen/structure/silver_dungeon.json
 c1fba662a7a02f13f38d638d130c6529a0cca842 datapacks/tall_aether/data/altered_aether/worldgen/configured_feature/shelf/cascading.json
 471a12916e47bdcafbb6abb9199a10e7106d8192 datapacks/tall_aether/data/altered_aether/worldgen/configured_feature/shelf/vexing.json
+d09b2ccb9b1d101d6577df922705610647447440 datapacks/tall_aether/data/altered_aether/worldgen/density_function/terrain/cloud_sea_land.json
+2b9d6fc16fedcb9f0aa2a49bc9b5ce0edd333aa6 datapacks/tall_aether/data/altered_aether/worldgen/density_function/terrain/cloud_sea_mask.json
+8ca220b6b5c44c6ce1dc03a35ec3505e31cdbb5a datapacks/tall_aether/data/altered_aether/worldgen/density_function/terrain/cloud_sea_sheet.json
 ec98ef181daf868f8f2eaf6ec56a7ea537bf9d56 datapacks/tall_aether/data/altered_aether/worldgen/density_function/terrain/crags.json
 cd662e8515d689bfcf0c8545e650107e7209faff datapacks/tall_aether/data/altered_aether/worldgen/density_function/terrain/crag_3d_noise.json
 f6f14e6dd90d604a9e68ee0f3104ef1a6e6b062f datapacks/tall_aether/data/altered_aether/worldgen/density_function/terrain/dune_centre.json
@@ -16,6 +19,8 @@ a4d2291b31bf3a9f730e13245fb7cea3db28b451 datapacks/tall_aether/data/altered_aeth
 d7a1c5d45938c4ad8da71e9fd0a93b58e6279135 datapacks/tall_aether/data/altered_aether/worldgen/density_function/terrain/grove_land.json
 dcd5a0aced10a4413b3e5d81328bba5251b3e305 datapacks/tall_aether/data/altered_aether/worldgen/density_function/terrain/grove_land_broken.json
 a52a5a0ee55572a18bb86cff5b07db81e6770ef7 datapacks/tall_aether/data/altered_aether/worldgen/density_function/terrain/island.json
+194b26684983645657109199d1912ec548246427 datapacks/tall_aether/data/altered_aether/worldgen/density_function/terrain/island_high.json
+3740e0c27f30dc32d404062fc125349351947e6a datapacks/tall_aether/data/altered_aether/worldgen/density_function/terrain/island_sea.json
 c46ac2a682aaed2da21192610462cb1a1103da16 datapacks/tall_aether/data/altered_aether/worldgen/density_function/terrain/jag.json
 a28d5637cf33a9471afd76d1fe48eaf616d13a8f datapacks/tall_aether/data/altered_aether/worldgen/density_function/terrain/plateau.json
 3ae99d74bf9248b14d611900d00fc6f99fa22fbd datapacks/tall_aether/data/altered_aether/worldgen/density_function/terrain/plateau_terraced.json

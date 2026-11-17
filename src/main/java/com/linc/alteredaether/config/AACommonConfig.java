@@ -51,6 +51,8 @@ public final class AACommonConfig {
     public static final DoubleValue LANDMARK_RARITY;
     public static final BooleanValue CLOUD_SKIRTS;
     public static final DoubleValue CLOUD_SKIRT_BREEZE_CHANCE;
+    public static final BooleanValue CLOUD_SEA;
+    public static final DoubleValue CLOUD_SEA_BREEZE_CHANCE;
     public static final DoubleValue GIANT_SPACING;
     public static final DoubleValue GOLDEN_HEART_CHANCE;
     public static final DoubleValue DEEP_AETHER_WOOD_CHANCE;
@@ -214,6 +216,11 @@ public final class AACommonConfig {
         CLOUD_SKIRT_BREEZE_CHANCE = b.comment("Share of the breezes that would spawn on a cloud skirt that do. The skirts",
                         "are wide, so all of them would bring swarms.")
                 .defineInRange("cloud_skirt_breeze_chance", 0.25, 0.0, 1.0);
+        CLOUD_SEA = b.comment("The sheet of cold aercloud laid over the tall Aether's cloud seas, where the islands are shaped",
+                        "round it. Off leaves the islands as they are, with open sky between them.")
+                .define("cloud_sea", true);
+        CLOUD_SEA_BREEZE_CHANCE = b.comment("Share of the breezes that would spawn on a cloud sea that do.")
+                .defineInRange("cloud_sea_breeze_chance", 0.25, 0.0, 1.0);
         b.pop();
 
         b.comment("The giant trees of the Skyroot Cathedral and Nurselog Hollow. Only affects newly generated chunks.")

@@ -284,6 +284,40 @@ public final class SkirtGrid {
         }
     }
 
+    /** Weight of the cloud sea by which a collar that matches the sheet has joined it, and from which it fades. */
+    public static final double SEA_JOIN = 0.4;
+    /** Weight of the cloud sea over which a matching collar fades out, once it has joined the sheet. */
+    public static final double SEA_FADE = 0.3;
+    /** Blocks a collar's top may sit from the sheet's and still join it fully, and over which that falls off. */
+    public static final double SEA_MATCH = 4, SEA_MISMATCH = 8;
+
+    /** How well a collar at this rim height suits the cloud sea's sheet, whose rim height would be {@code target}. */
+    public static double seaMatch(double rim, double target) {
+        return 1 - smoothstep((Math.abs(rim - target) - SEA_MATCH) / SEA_MISMATCH);
+    }
+
+    /**
+     * The collar's rim height near the cloud sea, of weight {@code weight} there: drawn toward {@code target}, the rim
+     * height that would put its top level with the sheet's, as far as it suits ({@link #seaMatch}), fully by
+     * {@link #SEA_JOIN}.
+     */
+    public static double seaRim(double rim, double weight, double target) {
+        if (weight <= 0) {
+            return rim;
+        }
+        return rim + (target - rim) * smoothstep(weight / SEA_JOIN) * seaMatch(rim, target);
+    }
+
+    /**
+     * What survives of a collar near the cloud sea: a collar that suits the sheet runs on into it and fades out after
+     * {@link #SEA_JOIN}; one that doesn't fades out before it reaches the sheet.
+     */
+    public static double seaFade(double weight, double match) {
+        double late = 1 - smoothstep((weight - SEA_JOIN) / SEA_FADE);
+        double early = 1 - smoothstep(weight / SEA_FADE);
+        return early + (late - early) * match;
+    }
+
     /** The fade toward the rift for a point this many blocks from the nearest rift column. */
     public static double riftFade(double distance) {
         return smoothstep(distance / RIFT_FADE);

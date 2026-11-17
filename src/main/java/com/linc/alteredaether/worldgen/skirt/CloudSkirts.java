@@ -187,7 +187,7 @@ public final class CloudSkirts {
     // ------------------------------------------------------------------------------------------------- cover --
 
     /** Whether a block has open sky above it for a few blocks: out from under the island. */
-    private static boolean open(WorldGenLevel level, BlockPos pos) {
+    public static boolean open(WorldGenLevel level, BlockPos pos) {
         BlockPos.MutableBlockPos up = new BlockPos.MutableBlockPos();
         for (int dy = 1; dy <= OPEN_HEIGHT; dy++) {
             up.set(pos.getX(), pos.getY() + dy, pos.getZ());
@@ -203,7 +203,7 @@ public final class CloudSkirts {
     }
 
     /** Whether open air lies a few steps away through air at the same height, as under an overhang. */
-    private static boolean opensNearby(WorldGenLevel level, BlockPos start) {
+    public static boolean opensNearby(WorldGenLevel level, BlockPos start) {
         Set<Long> seen = new HashSet<>();
         ArrayDeque<int[]> queue = new ArrayDeque<>();
         queue.add(new int[]{start.getX(), start.getZ(), 0});
@@ -234,7 +234,7 @@ public final class CloudSkirts {
     }
 
     /** Cold aercloud as the Aether's own world generation places it, with double drops. */
-    private static BlockState cloud() {
+    public static BlockState cloud() {
         return AetherBlocks.COLD_AERCLOUD.get().defaultBlockState()
                 .setValue(AetherBlockStateProperties.DOUBLE_DROPS, true);
     }
