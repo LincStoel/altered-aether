@@ -341,7 +341,7 @@ class PlannerTest {
     // Focus, claims, frozen chests, shared strict chests
 
     @Test
-    void aFocusedPlanOnlyMovesItemsOutOfTheFocus() {
+    void aFocusedPlanOnlyMovesWhatLeftTheFocus() {
         for (SortMode mode : SortMode.values()) {
             SortSnapshot snapshot = new SortSnapshot(KEYS, List.of(
                     chest(0, 64, 0, 64, 2, 10),
@@ -349,10 +349,48 @@ class PlannerTest {
                     chest(4, 1, 2, 3)));
             Planner.Plan plan = Planner.plan(snapshot, mode, new Planner.Focus(Set.of(0), Set.of()), 0);
             assertFalse(plan.isEmpty(), mode + ": nothing planned");
+            Set<Integer> left = new HashSet<>();
             for (Move move : plan.moves()) {
-                assertEquals(0, move.srcInv(), mode + ": moved out of a chest outside the focus: " + move);
+                if (move.srcInv() == 0 && move.dstInv() != 0) {
+                    left.add(move.key());
+                }
+            }
+            for (Move move : plan.moves()) {
+                assertTrue(move.srcInv() == 0 || left.contains(move.key()),
+                        mode + ": moved something from outside the focus that never left it: " + move);
             }
         }
+    }
+
+    @Test
+    void anItemMovedOutOfTheFocusComesTogetherAcrossTheNetwork() {
+        // one stone dropped in a chest of its own goes to stone's chest, and so does the stray stone among the logs
+        SortSnapshot snapshot = new SortSnapshot(KEYS, List.of(
+                chest(0, 1),
+                chest(0, 64, 0, 64),
+                chest(2, 64, 2, 64, 2, 64, 0, 20, 4, 1)));
+        Planner.Plan plan = Planner.plan(snapshot, SortMode.TIDY, new Planner.Focus(Set.of(0), Set.of()), 0);
+        long stone = 0;
+        for (Move move : plan.moves()) {
+            assertEquals(0, move.key(), "moved something other than the stone: " + move);
+            assertEquals(1, move.dstInv(), "the stone went somewhere other than its chest: " + move);
+            stone += move.count();
+        }
+        assertEquals(21, stone, "not all the stone came together");
+        // in compact, the stone's partial stacks merge across the network once one has moved
+        SortSnapshot partials = new SortSnapshot(KEYS, List.of(
+                chest(0, 10, 4, 1, 5, 1, 6, 1),
+                chest(0, 30, 2, 64),
+                chest(2, 64, 0, 7, 7, 1)));
+        plan = Planner.plan(partials, SortMode.COMPACT, new Planner.Focus(Set.of(0), Set.of()), 0);
+        boolean fromFocus = false, fromElsewhere = false;
+        for (Move move : plan.moves()) {
+            if (move.key() == 0) {
+                fromFocus |= move.srcInv() == 0;
+                fromElsewhere |= move.srcInv() == 2;
+            }
+        }
+        assertTrue(fromFocus && fromElsewhere, "the stone's partial stacks weren't all merged: " + plan.moves());
     }
 
     @Test

@@ -57,13 +57,17 @@ import java.util.Set;
  * {@link #orderWithin}, without moves.
  *
  * <p>A plan can be <b>focused</b> on a few inventories (see {@link Focus}): only items in those are moved, though what
- * every chest is for is still judged on the whole network. A <b>frozen</b> inventory (one in use, say) keeps what it is
+ * every chest is for is still judged on the whole network. An item that moves out of the focus is followed, though:
+ * the rest of it, wherever it is on the network, is moved home with it (but not the rest of its family, and not for
+ * topping up a sink). A <b>frozen</b> inventory (one in use, say) keeps what it is
  * for but nothing moves into or out of it. An item pinned strictly to two or more chests is shared out between them:
  * new ones go to the chest holding fewest, and the chests are kept within a stack of each other.
  */
 public final class Planner {
     /** Moves planned at most at once; the rest wait for the next plan. */
     public static final int MAX_MOVES = 512;
+    /** Times at most a focused plan is made again to follow the items it moved. */
+    private static final int FOLLOW_PASSES = 3;
     /** The fewest slots a family fills to be given a chest that would otherwise stay empty: two stacks. */
     private static final int SPARE_FILL = 2;
     /**
@@ -129,7 +133,29 @@ public final class Planner {
     }
 
     public static Plan plan(SortSnapshot snapshot, SortMode mode, Focus focus, Settings settings) {
+        Set<Integer> follow = new HashSet<>();
+        Plan plan = plan(snapshot, mode, focus, settings, follow);
+        // a focused plan follows the items it moves: the rest of each across the network comes together too
+        for (int pass = 0; pass < FOLLOW_PASSES && !focus.all(); pass++) {
+            Set<Integer> moved = new HashSet<>(follow);
+            for (Move move : plan.moves()) {
+                if (move.srcInv() != move.dstInv() && snapshot.invs().get(move.dstInv()).kind() != Kind.SINK) {
+                    moved.add(move.key());
+                }
+            }
+            if (moved.size() == follow.size()) {
+                break;
+            }
+            follow = moved;
+            plan = plan(snapshot, mode, focus, settings, follow);
+        }
+        return plan;
+    }
+
+    private static Plan plan(SortSnapshot snapshot, SortMode mode, Focus focus, Settings settings,
+                             Set<Integer> follow) {
         Work work = new Work(snapshot, focus, settings);
+        work.gatherKeys.addAll(follow);
         work.assignBulk();
         if (mode == SortMode.TIDY) {
             tidy(work);
