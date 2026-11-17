@@ -120,8 +120,9 @@ public final class AATagProvider extends JsonDataProvider {
                 "aether:altar", "aether:freezer", "aether:incubator", "aether:treasure_chest", "aether:chest_mimic",
                 "aether:sun_altar", "altered_aether:ambrosium_campfire",
                 "deep_aether:combiner", "deep_aether:poison_cauldron", "aether_beyond_parity:ambrosium_campfire",
-                // Create: everything that moves or processes items, belts most of all
-                "create:belt", "create:chute", "create:smart_chute", "create:andesite_funnel", "create:brass_funnel",
+                // Create: everything that moves or processes items, belts most of all (a brass funnel putting items
+                // into a block is linked as a sink, see CreateFunnels)
+                "create:belt", "create:chute", "create:smart_chute", "create:andesite_funnel",
                 "create:andesite_belt_funnel", "create:brass_belt_funnel", "create:andesite_tunnel", "create:brass_tunnel",
                 "create:basin", "create:millstone", "create:crushing_wheel_controller", "create:mechanical_crafter",
                 "create:deployer", "create:mechanical_saw", "create:item_drain", "create:spout", "create:weighted_ejector",

@@ -16,6 +16,7 @@ package com.linc.alteredaether.entity.golem;
 
 import com.linc.alteredaether.AlteredAether;
 import com.linc.alteredaether.compat.CreateCompat;
+import com.linc.alteredaether.compat.CreateFunnels;
 import com.linc.alteredaether.compat.CreatePlacards;
 import com.linc.alteredaether.config.AACommonConfig;
 import net.minecraft.core.BlockPos;
@@ -91,6 +92,8 @@ public final class GolemStorage {
         POOLED,
         /** Crates: the odds and ends go here first. */
         MISC,
+        /** A brass funnel into a machine: only filled, with what its filter lets through. */
+        SINK,
         /** Can't be linked. */
         NONE;
 
@@ -103,15 +106,28 @@ public final class GolemStorage {
     private GolemStorage() {
     }
 
+    /** The block's inventory as the golem uses it: a brass funnel's is the block it feeds, insert-only and filtered. */
     @Nullable
     public static IItemHandler handler(Level level, BlockPos pos) {
+        BlockState state = level.getBlockState(pos);
+        if (create() && CreateFunnels.isSink(state)) {
+            return CreateFunnels.sink(level, pos, state);
+        }
         return level.getCapability(Capabilities.ItemHandler.BLOCK, pos, null);
+    }
+
+    /** Whether the brass funnel at {@code pos} is held shut by redstone. */
+    public static boolean sinkShut(Level level, BlockPos pos) {
+        return create() && CreateFunnels.powered(level.getBlockState(pos));
     }
 
     /** How a golem may use the block at {@code pos}; the chunk must be loaded. */
     public static Role role(Level level, BlockPos pos) {
         BlockState state = level.getBlockState(pos);
         IItemHandler handler = handler(level, pos);
+        if (handler != null && create() && CreateFunnels.isSink(state)) {
+            return Role.SINK;
+        }
         if (handler == null) {
             return Role.NONE;
         }
@@ -305,24 +321,36 @@ public final class GolemStorage {
      * @param strict true if any pin is a glow item frame or a placard: then the inventory takes only its pinned items,
      *               not their families, and the golem sends everything else away
      */
-    public record Pins(List<ItemStack> items, boolean strict) {
+    public record Pins(List<ItemStack> items, List<ItemStack> filters, boolean strict) {
+        public static final Pins NONE = new Pins(List.of(), List.of(), false);
+
         public boolean isEmpty() {
-            return items.isEmpty();
+            return items.isEmpty() && filters.isEmpty();
         }
     }
 
     /**
      * What is pinned to the inventory at {@code pos} (and its other half): the items in item frames hanging on it,
-     * and on Create's placards.
+     * and on Create's placards. A Create filter in a frame or on a placard pins everything it lets through. A brass
+     * funnel's pins are its filter, strictly.
      */
     public static Pins pins(ServerLevel level, BlockPos pos) {
-        List<ItemStack> pins = new ArrayList<>();
-        boolean strict = addPins(level, pos, pins);
+        BlockState state = level.getBlockState(pos);
+        if (create() && CreateFunnels.isSink(state)) {
+            ItemStack filter = CreateFunnels.filter(level, pos);
+            return filter.isEmpty() ? Pins.NONE : new Pins(List.of(), List.of(filter), true);
+        }
+        List<ItemStack> pins = new ArrayList<>(), filters = new ArrayList<>();
+        boolean strict = addPins(level, pos, pins, filters);
         BlockPos other = partner(level, pos);
         if (other != null) {
-            strict |= addPins(level, other, pins);
+            strict |= addPins(level, other, pins, filters);
         }
-        return new Pins(pins, strict && !pins.isEmpty());
+        return new Pins(pins, filters, strict && !(pins.isEmpty() && filters.isEmpty()));
+    }
+
+    private static boolean create() {
+        return ModList.get().isLoaded(CreateCompat.MOD) && AACommonConfig.compat(CreateCompat.MOD);
     }
 
     /** Those of {@code positions} that are storage pinned strictly, for their glow. */
@@ -337,20 +365,21 @@ public final class GolemStorage {
     }
 
     /** Adds what is pinned to the block at {@code pos}; true if a pin there is strict. */
-    private static boolean addPins(ServerLevel level, BlockPos pos, List<ItemStack> pins) {
+    private static boolean addPins(ServerLevel level, BlockPos pos, List<ItemStack> pins, List<ItemStack> filters) {
         boolean strict = false;
+        boolean create = create();
         for (ItemFrame frame : level.getEntitiesOfClass(ItemFrame.class, new AABB(pos).inflate(0.75))) {
             BlockPos attached = frame.getPos().relative(frame.getDirection().getOpposite());
             if (attached.equals(pos) && !frame.getItem().isEmpty()) {
-                pins.add(frame.getItem());
+                (create && CreateFunnels.isFilter(frame.getItem()) ? filters : pins).add(frame.getItem());
                 strict |= frame instanceof GlowItemFrame;
             }
         }
-        if (ModList.get().isLoaded(CreateCompat.MOD) && AACommonConfig.compat(CreateCompat.MOD)) {
+        if (create) {
             for (Direction side : Direction.values()) {
                 ItemStack held = CreatePlacards.heldOn(level, pos, side);
                 if (!held.isEmpty()) {
-                    pins.add(held);
+                    (CreateFunnels.isFilter(held) ? filters : pins).add(held);
                     strict = true;
                 }
             }

@@ -53,10 +53,6 @@
       "required": false
     },
     {
-      "id": "create:brass_funnel",
-      "required": false
-    },
-    {
       "id": "create:andesite_belt_funnel",
       "required": false
     },

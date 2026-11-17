@@ -1,4 +1,4 @@
-// 1.21.1	2026-11-16T19:08:52.5699192	Altered Aether tags
+// 1.21.1	2026-11-16T19:14:01.7801421	Altered Aether tags
 b032a16350ca6010469714eb13672f97361123fc data/aether/tags/worldgen/biome/is_aether.json
 8a23702b05296c8af5014d6aa6e9265ded85c7d9 data/altered_aether/tags/block/boulder_ore_blacklist.json
 7ec09b2e18ab43d296e2d76cad7fe25c11cda07f data/altered_aether/tags/block/breeze_spawnable_on.json
@@ -11,7 +11,7 @@ da43ab2bbe8355c871257730474643815250588c data/altered_aether/tags/block/frozen_c
 d31ee6ca2eba325e4d0295b8519427ad2bbc69a9 data/altered_aether/tags/block/golem_empty_only.json
 1caefbee1ed3d8ea5158f6e2c7f6af09ff7095fe data/altered_aether/tags/block/golem_heads.json
 8a23702b05296c8af5014d6aa6e9265ded85c7d9 data/altered_aether/tags/block/golem_linkable.json
-5dfef94654ef8da822a85268c29ac522a835af4f data/altered_aether/tags/block/golem_link_blacklist.json
+a798137aa14d207b5e37876f48050e1cc614ecd3 data/altered_aether/tags/block/golem_link_blacklist.json
 614702f4365bc752768722a2a9fd01aa496d1718 data/altered_aether/tags/block/golem_misc_storage.json
 90be4db00dc371b5025e464e44e03526f8018bfb data/altered_aether/tags/block/lantern_spawnable_on.json
 7e7e93de67da47045a45b01a4effe54bb9908749 data/altered_aether/tags/block/naga_spawnable_on.json

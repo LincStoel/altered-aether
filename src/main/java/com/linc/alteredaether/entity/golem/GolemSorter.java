@@ -569,7 +569,10 @@ public final class GolemSorter {
                 return;
             }
             contentsChanged = true;
-            if (triggers.changed(key, now, delay(), inUse, seen.pins()) && !inUse) {
+            // a sink that changed (its machine used something up) wants its items pulled in from anywhere
+            InvCache.Entry entry = cache.get(key);
+            boolean sink = entry != null && entry.inv.kind() == SortSnapshot.Kind.SINK;
+            if (triggers.changed(key, now, delay(), inUse, seen.pins() || sink) && !inUse) {
                 acknowledge(level, pos);
             }
             if (seen.fewer()) {
@@ -765,9 +768,12 @@ public final class GolemSorter {
                 } else if (GolemAccess.encased(level, pos)) {
                     blocked++;
                     frozen = true;
+                } else if (role == GolemStorage.Role.SINK && GolemStorage.sinkShut(level, pos)) {
+                    // a brass funnel held shut by redstone takes nothing
+                    frozen = true;
                 }
                 String claim = claims.get(key);
-                invs.add(entry.inv.with(frozen, claim == null ? -1 : cache.node(claim)));
+                invs.add(cache.view(level, pos, entry).with(frozen, claim == null ? -1 : cache.node(claim)));
                 positions.add(pos);
                 invKeys.add(key);
             }

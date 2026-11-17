@@ -147,6 +147,11 @@ public record SortSnapshot(List<Key> keys, List<Inv> invs, List<Node> nodes) {
             return new Inv(kind, plain, limit, key, count, only, capacity, pins, strict, frozen, claim);
         }
 
+        /** The same inventory with other pins. */
+        public Inv withPins(Set<Integer> pins) {
+            return new Inv(kind, plain, limit, key, count, only, capacity, pins, strict, frozen, claim);
+        }
+
         /** The same inventory playing another part, with each empty slot taking {@code only} and a total cap. */
         public Inv as(Kind kind, int[] only, int capacity) {
             return new Inv(kind, plain, limit, key, count, only, capacity, pins, strict, frozen, claim);

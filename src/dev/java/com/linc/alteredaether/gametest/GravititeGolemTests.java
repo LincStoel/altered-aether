@@ -464,6 +464,71 @@ public final class GravititeGolemTests {
         }).thenSucceed();
     }
 
+    /**
+     * With Create: a brass funnel into a furnace is fed what its filter lets through, up to the room the furnace has;
+     * one with no filter gets nothing, and one held shut by redstone gets nothing. Passes trivially without Create.
+     */
+    @GameTest(template = "arena", timeoutTicks = 900)
+    public static void aBrassFunnelIsFedWhatItsFilterLetsThrough(GameTestHelper helper) {
+        if (!net.neoforged.fml.ModList.get().isLoaded("create")) {
+            helper.succeed();
+            return;
+        }
+        floor(helper);
+        GravititeGolem golem = golem(helper, HOME);
+        BlockPos chestPos = new BlockPos(12, 2, 12);
+        BlockPos fed = new BlockPos(20, 2, 12), unfiltered = new BlockPos(20, 2, 16), shut = new BlockPos(20, 2, 20);
+        BaseContainerBlockEntity chest = chest(helper, chestPos, join(stacks(Items.COAL, 2), stacks(Items.IRON_INGOT, 1)));
+        for (BlockPos furnace : List.of(fed, unfiltered, shut)) {
+            helper.setBlock(furnace, Blocks.FURNACE);
+        }
+        CreateGolemChecks.placeBrassFunnel(helper, fed.above(), Direction.UP, false);
+        CreateGolemChecks.placeBrassFunnel(helper, unfiltered.above(), Direction.UP, false);
+        CreateGolemChecks.placeBrassFunnel(helper, shut.above(), Direction.UP, true);
+        CreateGolemChecks.setFilter(helper, fed.above(), new ItemStack(Items.COAL));
+        CreateGolemChecks.setFilter(helper, shut.above(), new ItemStack(Items.COAL));
+        ServerLevel level = helper.getLevel();
+        helper.assertTrue(GolemStorage.role(level, helper.absolutePos(fed.above())) == GolemStorage.Role.SINK,
+                "a brass funnel into a furnace isn't a sink");
+        helper.startSequence().thenIdle(5).thenExecute(() -> link(helper, golem, chestPos, fed.above(),
+                unfiltered.above(), shut.above())).thenWaitUntil(() -> {
+            assertSettled(helper, golem);
+            BaseContainerBlockEntity furnace = (BaseContainerBlockEntity) helper.getBlockEntity(fed);
+            helper.assertTrue(furnace.getItem(0).is(Items.COAL) && furnace.getItem(0).getCount() == 64,
+                    "the furnace wasn't fed its coal: " + furnace.getItem(0));
+            helper.assertTrue(((BaseContainerBlockEntity) helper.getBlockEntity(unfiltered)).isEmpty(),
+                    "a funnel with no filter was fed");
+            helper.assertTrue(((BaseContainerBlockEntity) helper.getBlockEntity(shut)).isEmpty(),
+                    "a funnel held shut was fed");
+            helper.assertTrue(count(chest, Items.COAL) == 64 && count(chest, Items.IRON_INGOT) == 64,
+                    "the chest gave up the wrong things");
+        }).thenSucceed();
+    }
+
+    /** With Create: a list filter in an item frame pins every item on its list. Passes trivially without Create. */
+    @GameTest(template = "arena", timeoutTicks = 900)
+    public static void aFilterInAFramePinsWhatItLetsThrough(GameTestHelper helper) {
+        if (!net.neoforged.fml.ModList.get().isLoaded("create")) {
+            helper.succeed();
+            return;
+        }
+        floor(helper);
+        GravititeGolem golem = golem(helper, HOME);
+        BlockPos pinned = new BlockPos(12, 2, 12), mixed = new BlockPos(20, 2, 12);
+        BaseContainerBlockEntity home = chest(helper, pinned);
+        BaseContainerBlockEntity other = chest(helper, mixed, join(stacks(Items.COBBLESTONE, 2), stacks(Items.ANDESITE, 2),
+                stacks(Items.OAK_LOG, 9)));
+        ItemFrame frame = new ItemFrame(helper.getLevel(), helper.absolutePos(pinned.north()), Direction.NORTH);
+        frame.setItem(CreateGolemChecks.listFilter(new ItemStack(Items.COBBLESTONE), new ItemStack(Items.ANDESITE)), false);
+        helper.getLevel().addFreshEntity(frame);
+        helper.startSequence().thenIdle(5).thenExecute(() -> link(helper, golem, pinned, mixed)).thenWaitUntil(() -> {
+            assertSettled(helper, golem);
+            helper.assertTrue(count(home, Items.COBBLESTONE) == 128 && count(home, Items.ANDESITE) == 128,
+                    "the filtered items didn't go to their frame");
+            helper.assertTrue(count(other, Items.OAK_LOG) == 576, "the logs moved");
+        }).thenSucceed();
+    }
+
     /** Its pebble used on the golem links the storage around it (not bookshelves or furnaces); crouching unlinks it. */
     @GameTest(template = "arena", timeoutTicks = 200)
     public static void aPebbleUsedOnItsGolemLinksAllAround(GameTestHelper helper) {

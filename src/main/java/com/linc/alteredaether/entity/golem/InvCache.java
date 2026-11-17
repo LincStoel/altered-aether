@@ -14,6 +14,7 @@
  */
 package com.linc.alteredaether.entity.golem;
 
+import com.linc.alteredaether.compat.CreateFunnels;
 import com.linc.alteredaether.compat.QuarkCrates;
 import com.linc.alteredaether.entity.golem.group.GolemPaths;
 import com.linc.alteredaether.entity.golem.sort.SortSnapshot;
@@ -59,6 +60,18 @@ final class InvCache {
         /** Each slot's fill (count over what fits), summed, and the slots: for comparators. */
         double fill;
         int slots;
+        /** Create filters pinned to it, which pin whatever they let through; and the keys pinned outright. */
+        List<ItemStack> filters = List.of();
+        Set<Integer> basePins = Set.of();
+    }
+
+    /** What each Create filter (by its hash) lets through of the keys numbered so far. */
+    private final Map<Integer, FilterMatch> filterMatches = new HashMap<>();
+
+    private static final class FilterMatch {
+        final Set<Integer> keys = new HashSet<>();
+        /** Keys below this have been tested. */
+        int checked;
     }
 
     /** What reading an inventory found. */
@@ -98,7 +111,73 @@ final class InvCache {
             entries.clear();
             nodes.subList(1, nodes.size()).clear();
             nodeIndex.keySet().retainAll(Set.of("misc"));
+            filterMatches.clear();
         }
+    }
+
+    /**
+     * The inventory as a plan should see it: with what its filters let through of every item known by now pinned,
+     * and a sink as one slot for each item it takes, holding as many as it has room for now.
+     */
+    SortSnapshot.Inv view(ServerLevel level, BlockPos pos, Entry entry) {
+        if (entry.filters.isEmpty()) {
+            return entry.inv;
+        }
+        Set<Integer> pins = new HashSet<>(entry.basePins);
+        pins.addAll(filterKeys(level, entry.filters));
+        if (entry.inv.kind() == SortSnapshot.Kind.SINK) {
+            IItemHandler handler = GolemStorage.handler(level, pos);
+            if (handler != null) {
+                entry.inv = sinkInv(handler, pins);
+            }
+            return entry.inv;
+        }
+        if (!pins.equals(entry.inv.pins())) {
+            entry.inv = entry.inv.withPins(Set.copyOf(pins));
+        }
+        return entry.inv;
+    }
+
+    /** The keys {@code filters} let through: those they name, and every key numbered so far that passes them. */
+    private Set<Integer> filterKeys(ServerLevel level, List<ItemStack> filters) {
+        Set<Integer> out = new HashSet<>();
+        for (ItemStack filter : filters) {
+            int hash = ItemStack.hashItemAndComponents(filter);
+            FilterMatch match = filterMatches.get(hash);
+            if (match == null) {
+                match = new FilterMatch();
+                filterMatches.put(hash, match);
+                for (ItemStack listed : CreateFunnels.listed(filter)) {
+                    match.keys.add(keyOf(listed));
+                }
+            }
+            while (match.checked < keys.size()) {
+                int k = match.checked++;
+                if (CreateFunnels.accepts(level, filter, items.get(k))) {
+                    match.keys.add(k);
+                }
+            }
+            out.addAll(match.keys);
+        }
+        return out;
+    }
+
+    /** A sink as a plan sees it: a slot for each key it takes, as big as the room it has for that key. */
+    private SortSnapshot.Inv sinkInv(IItemHandler handler, Set<Integer> pins) {
+        List<Integer> taken = new ArrayList<>(pins);
+        taken.sort(null);
+        int n = taken.size();
+        int[] limit = new int[n], key = new int[n], count = new int[n], only = new int[n];
+        Arrays.fill(key, -1);
+        for (int i = 0; i < n; i++) {
+            int k = taken.get(i);
+            only[i] = k;
+            int stack = Math.max(1, keys.get(k).maxStack());
+            ItemStack left = handler.insertItem(0, items.get(k).copyWithCount(stack), true);
+            limit[i] = stack - left.getCount();
+        }
+        return new SortSnapshot.Inv(SortSnapshot.Kind.SINK, false, limit, key, count, only, Integer.MAX_VALUE,
+                Set.copyOf(pins), true, false, -1);
     }
 
     /**
@@ -117,6 +196,9 @@ final class InvCache {
         int pinsHash = (pinned.strict() ? 1 : 0) + (locked ? 2 : 0);
         for (ItemStack pin : pinned.items()) {
             pinsHash = pinsHash * 31 + ItemStack.hashItemAndComponents(pin);
+        }
+        for (ItemStack filter : pinned.filters()) {
+            pinsHash = pinsHash * 37 + ItemStack.hashItemAndComponents(filter);
         }
         SortSnapshot.Kind kind = kind(role);
         Entry old = entries.get(key);
@@ -157,8 +239,18 @@ final class InvCache {
             }
         }
         int capacity = kind == SortSnapshot.Kind.MISC ? QuarkCrates.capacity(state) : Integer.MAX_VALUE;
-        entry.inv = new SortSnapshot.Inv(kind, plain, limit, slotKey, count, only, capacity, pins, pinned.strict(), false,
-                -1);
+        entry.filters = List.copyOf(pinned.filters());
+        entry.basePins = Set.copyOf(pins);
+        if (kind == SortSnapshot.Kind.SINK) {
+            // what the machine holds tells when it wants more; the plan sees only room for what it takes
+            entry.inv = sinkInv(handler, entry.filters.isEmpty() ? pins : filterKeys(level, entry.filters));
+        } else {
+            if (!entry.filters.isEmpty()) {
+                pins.addAll(filterKeys(level, entry.filters));
+            }
+            entry.inv = new SortSnapshot.Inv(kind, plain, limit, slotKey, count, only, capacity, pins, pinned.strict(),
+                    false, -1);
+        }
         entries.put(key, entry);
         if (old == null) {
             return new Seen(Change.NEW, false);
@@ -175,6 +267,7 @@ final class InvCache {
             case BULK -> SortSnapshot.Kind.BULK;
             case POOLED -> SortSnapshot.Kind.POOLED;
             case MISC -> SortSnapshot.Kind.MISC;
+            case SINK -> SortSnapshot.Kind.SINK;
             default -> SortSnapshot.Kind.STORAGE;
         };
     }
