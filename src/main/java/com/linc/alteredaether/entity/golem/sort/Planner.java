@@ -40,8 +40,8 @@ import java.util.Set;
  * then reads what every chest is for. A <b>pinned</b> one (an item frame, placard or filter on it) belongs to its
  * pinned items and their families, whatever it holds; a <b>strict</b> pinned one belongs to its pinned items alone,
  * and anything else in it is sent to wherever else has room. A crate ({@link Kind#MISC}) is for the miscellaneous
- * items, and with the room they leave for the equipment ({@link #CRATE_CATEGORIES}), whose chests then give it up.
- * Otherwise the family filling the most of a chest's slots is its <b>dominant</b> family. Each item goes to the
+ * items or for the equipment ({@link #CRATE_CATEGORY}), never both: the equipment takes the crates it needs first (see
+ * {@link Grouping}), and its chests give it up for them. Otherwise the family filling the most of a chest's slots is its <b>dominant</b> family. Each item goes to the
  * best home it has: pinned for it, its drawer, pinned for its family, then the dominant chest for its family holding
  * the most of it. A family no chest is for takes empty chests (the biggest first). An item with no home at all goes to
  * the crates, then the chests of miscellaneous items, and if none has room it is reported stuck.
@@ -77,10 +77,10 @@ public final class Planner {
      */
     public static final int MISC_MAX_ITEMS = 16;
     /**
-     * The categories (children of the root, as {@code GolemPaths} names them) whose families crates take besides the
-     * odds and ends, with the room those leave.
+     * The category (a child of the root, as {@code GolemPaths} names it) a crate may be for instead of the odds and
+     * ends, with all its families.
      */
-    public static final Set<String> CRATE_CATEGORIES = Set.of("equipment");
+    public static final String CRATE_CATEGORY = "equipment";
 
     /**
      * Which inventories a plan moves items out of.
@@ -236,7 +236,14 @@ public final class Planner {
                 dominant[i] = -1;
             }
         }
+        // each crate is the equipment's or the odds and ends'
+        List<Integer> crates = new ArrayList<>(), equipmentCrates = new ArrayList<>();
         for (int i = 0; i < n; i++) {
+            if (type[i] == CRATE) {
+                boolean equipment = w.equipmentCrates.contains(i);
+                (equipment ? equipmentCrates : crates).add(i);
+                dominant[i] = equipment ? w.equipmentNode() : SortSnapshot.ROOT;
+            }
             w.claims[i] = dominant[i];
         }
         Map<Integer, List<Integer>> exclusive = w.exclusiveHomes();
@@ -249,16 +256,17 @@ public final class Planner {
                 claimed.addAll(pinGroups.get(i));
             } else if (type[i] == DOMINANT) {
                 claimed.add(dominant[i]);
-            } else if (type[i] == CRATE) {
-                SortSnapshot.Inv crate = w.invs.get(i);
-                crateSlots += Math.min(crate.size(), crate.capacity() / 64L);
             }
         }
-        // crates are for the miscellaneous items, while they have room for them all
+        for (int i : crates) {
+            SortSnapshot.Inv crate = w.invs.get(i);
+            crateSlots += Math.min(crate.size(), crate.capacity() / 64L);
+        }
+        // the odds and ends' crates are for them, while they have room for them all
         if (crateSlots > 0 && crateSlots >= groupSlots.getOrDefault(SortSnapshot.ROOT, 0)) {
             claimed.add(SortSnapshot.ROOT);
         }
-        // and the equipment groups they have room for besides
+        // and the equipment's for the equipment groups they have room for
         for (int group : groupSlots.keySet()) {
             if (w.crated(group)) {
                 claimed.add(group);
@@ -296,12 +304,6 @@ public final class Planner {
                 } else {
                     newHome.computeIfAbsent(group, g -> new ArrayList<>()).add(chest);
                 }
-            }
-        }
-        List<Integer> crates = new ArrayList<>();
-        for (int i = 0; i < n; i++) {
-            if (type[i] == CRATE) {
-                crates.add(i);
             }
         }
         Map<Integer, List<Integer>> nearby = new HashMap<>();
@@ -355,8 +357,10 @@ public final class Planner {
                         }
                     }
                     homes.addAll(w.byHeld(tier, key));
-                    if (group == SortSnapshot.ROOT || w.crated(group)) {
+                    if (group == SortSnapshot.ROOT) {
                         homes.addAll(w.byHeld(crates, key));
+                    } else if (w.crated(group)) {
+                        homes.addAll(w.byHeld(equipmentCrates, key));
                     }
                     tier.clear();
                     for (int j = 0; j < n; j++) {
@@ -373,7 +377,7 @@ public final class Planner {
                         // takes it instead
                         int g = group;
                         for (int j : nearby.computeIfAbsent(key, x -> nearbyHomes(w, x, g, type, dominant, pinGroups,
-                                newHome, crates))) {
+                                newHome, equipmentCrates))) {
                             if (!homes.contains(j)) {
                                 homes.add(j);
                             }
@@ -401,18 +405,19 @@ public final class Planner {
                 List<Integer> better = at > 0 ? homes.subList(0, at) : homes;
                 boolean evicting = inv.refuses(key);
                 if (inv.source() || evicting) {
-                    // anywhere else will do: the crates and misc chests, then unpinned chests, then ones pinned for
-                    // something else
+                    // anywhere else will do: the crates for it and misc chests, then unpinned chests, then ones
+                    // pinned for something else (never a crate for something else)
                     better = new ArrayList<>(better);
-                    for (int c : crates) {
+                    for (int c : w.crated(group) ? equipmentCrates : crates) {
                         if (c != i && !better.contains(c)) {
                             better.add(c);
                         }
                     }
                     for (int pass = 0; pass < 2; pass++) {
                         for (int j = 0; j < n; j++) {
-                            if (j == i || type[j] == SOURCE || type[j] == SINK || type[j] == BULK || better.contains(j)
-                                    || w.invs.get(j).refuses(key) || (pass == 0) == (type[j] == PINNED)) {
+                            if (j == i || type[j] == SOURCE || type[j] == SINK || type[j] == BULK || type[j] == CRATE
+                                    || better.contains(j) || w.invs.get(j).refuses(key)
+                                    || (pass == 0) == (type[j] == PINNED)) {
                                 continue;
                             }
                             better.add(j);
@@ -448,7 +453,7 @@ public final class Planner {
     /**
      * The chests of the families other than {@code group}, nearest {@code key}'s own family first; within a family,
      * those pinned for it, then those it is the dominant family of, holding the most of {@code key} first, then the
-     * chests just given to it (or the crates, for a group they hold).
+     * chests just given to it (or the equipment's crates, for a group they hold).
      */
     private static List<Integer> nearbyHomes(Work w, int key, int group, int[] type, int[] dominant,
                                              List<Set<Integer>> pinGroups, Map<Integer, List<Integer>> newHome,
@@ -775,6 +780,8 @@ public final class Planner {
         Map<Integer, List<Integer>> bulkHomes = new HashMap<>();
         /** Tidy's groups, once worked out. */
         Grouping.Result group;
+        /** The crates that are the equipment's, once worked out; the rest are the odds and ends'. */
+        Set<Integer> equipmentCrates = Set.of();
         /** Keys with more than {@link #MISC_MAX_ITEMS} to store: never miscellaneous. */
         Set<Integer> many = new HashSet<>();
         /** Keys of {@link #many} whose family has no group, by the group nearest it they count towards instead. */
@@ -838,6 +845,7 @@ public final class Planner {
             claims = other.claims;
             bulkHomes = other.bulkHomes;
             group = other.group;
+            equipmentCrates = other.equipmentCrates;
             many = other.many;
             rehomed = other.rehomed;
             nearest = other.nearest;
@@ -1007,9 +1015,9 @@ public final class Planner {
             Set<Integer> forced = new HashSet<>();
             Set<Integer> claimed = new HashSet<>();
             int chests = 0;
-            int miscSlots = 0;
-            long crateItems = 0;
-            for (SortSnapshot.Inv inv : invs) {
+            List<Integer> crateInvs = new ArrayList<>();
+            for (int i = 0; i < invs.size(); i++) {
+                SortSnapshot.Inv inv = invs.get(i);
                 if (inv.kind() != Kind.SINK && inv.kind() != Kind.POOLED) {
                     if (inv.kind() != Kind.SOURCE) {
                         pinned.addAll(inv.pins());
@@ -1026,8 +1034,7 @@ public final class Planner {
                 if (inv.kind() == Kind.STORAGE && inv.pins().isEmpty()) {
                     chests++;
                 } else if (inv.kind() == Kind.MISC && inv.pins().isEmpty()) {
-                    miscSlots += (int) Math.min(inv.size(), inv.capacity() / 64L);
-                    crateItems += Math.min(inv.capacity(), inv.size() * 64L);
+                    crateInvs.add(i);
                 }
                 if (inv.kind() == Kind.BULK || inv.kind() == Kind.POOLED || inv.kind() == Kind.SINK) {
                     continue;
@@ -1068,8 +1075,25 @@ public final class Planner {
                 long stack = Math.max(1, keys.get(k).maxStack());
                 fill[node] += (int) Math.min(Integer.MAX_VALUE / 4, (left * Grouping.STACK + stack - 1) / stack);
             });
+            int equipment = equipmentNode();
+            int[] crateSlots = new int[crateInvs.size()], was = new int[crateInvs.size()];
+            long[] crateItems = new long[crateInvs.size()];
+            for (int c = 0; c < crateInvs.size(); c++) {
+                SortSnapshot.Inv crate = invs.get(crateInvs.get(c));
+                crateSlots[c] = (int) Math.min(crate.size(), crate.capacity() / 64L);
+                crateItems[c] = Math.min(crate.capacity(), crate.size() * 64L);
+                was[c] = equipment >= 0 && crate.claim() == equipment ? Grouping.Crates.EQUIPMENT
+                        : crate.claim() == SortSnapshot.ROOT ? Grouping.Crates.ODDS_AND_ENDS : 0;
+            }
             Grouping.Result result = Grouping.compute(nodes, slots, manySlots, fill, items, crateable(), chests, size,
-                    miscSlots, crateItems, minFill, SPARE_FILL * Grouping.STACK, forced, claimed);
+                    new Grouping.Crates(crateSlots, crateItems, was), minFill, SPARE_FILL * Grouping.STACK, forced,
+                    claimed);
+            equipmentCrates = new HashSet<>();
+            for (int c = 0; c < crateInvs.size(); c++) {
+                if (result.equipmentCrates()[c]) {
+                    equipmentCrates.add(crateInvs.get(c));
+                }
+            }
             // too many of one item for the odds and ends, and no group for its family: it goes with the group nearest
             rehomed = new HashMap<>();
             for (int k : many) {
@@ -1082,12 +1106,22 @@ public final class Planner {
             return result;
         }
 
-        /** The nodes crates take as well as the odds and ends: those under a {@link #CRATE_CATEGORIES} category. */
+        /** The {@link #CRATE_CATEGORY} node, or -1 if the tree has none. */
+        int equipmentNode() {
+            for (int i = 1; i < nodes.size(); i++) {
+                if (nodes.get(i).parent() == SortSnapshot.ROOT && nodes.get(i).name().equals(CRATE_CATEGORY)) {
+                    return i;
+                }
+            }
+            return -1;
+        }
+
+        /** The nodes a crate may be for instead of the odds and ends: the {@link #CRATE_CATEGORY} and all under it. */
         boolean[] crateable() {
             boolean[] out = new boolean[nodes.size()];
+            int equipment = equipmentNode();
             for (int i = 1; i < nodes.size(); i++) {
-                SortSnapshot.Node node = nodes.get(i);
-                out[i] = node.parent() == SortSnapshot.ROOT ? CRATE_CATEGORIES.contains(node.name()) : out[node.parent()];
+                out[i] = i == equipment || out[nodes.get(i).parent()];
             }
             return out;
         }

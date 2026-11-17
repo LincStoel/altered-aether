@@ -301,32 +301,65 @@ class FamilyPlannerTest {
         return out;
     }
 
-    @Test
-    void cratesTakeTheEquipmentWithTheRoomTheOddsAndEndsLeave() {
-        // eight tools and helmets are enough for a chest of their own (even split in two, with chests to spare), but
-        // the crate has room for them besides the odds and ends
-        int[] mixed = concat(stacks(PLANKS, 10), ones(PICKAXE, 5), ones(HELMET, 3), new int[]{IRON, 7});
-        SortSnapshot snapshot = snapshot(chest(mixed), crate(640), chest(), chest(), chest());
-        assertTrue(settle(snapshot, SortMode.TIDY) <= 4, "didn't settle");
-        assertEquals(Set.of(PICKAXE, HELMET, IRON), keysIn(snapshot.invs().get(1)), "the crate: " + dump(snapshot));
+    /** Eight tools and helmets (enough for a chest of their own), spruce, and seven iron as the odds and ends. */
+    private static final int[] MIXED = concat(stacks(PLANKS, 10), ones(PICKAXE, 5), ones(HELMET, 3),
+            new int[]{IRON, 7});
 
-        // a crate the odds and ends fill leaves the equipment a chest of its own
-        SortSnapshot full = snapshot(chest(concat(mixed, new int[]{OAK, 5})), crate(12), chest(), chest());
-        assertTrue(settle(full, SortMode.TIDY) <= 4, "didn't settle");
-        assertFalse(keysIn(full.invs().get(1)).contains(PICKAXE), "equipment in a full crate: " + dump(full));
-        assertTrue(chestWith(full, Set.of(PICKAXE, HELMET)) >= 0, "the equipment has no chest: " + dump(full));
+    @Test
+    void aLoneCrateIsTheEquipmentsAndTheOddsAndEndsTakeAChest() {
+        SortSnapshot snapshot = snapshot(chest(MIXED), crate(640), chest(), chest(), chest());
+        assertTrue(settle(snapshot, SortMode.TIDY) <= 4, "didn't settle");
+        assertEquals(Set.of(PICKAXE, HELMET), keysIn(snapshot.invs().get(1)), "the crate: " + dump(snapshot));
+        assertTrue(chestWith(snapshot, Set.of(IRON)) >= 0, "the odds and ends have no chest: " + dump(snapshot));
+    }
+
+    @Test
+    void twoCratesAreOneForEachNeverBoth() {
+        // whether sorted from a chest or from a crate holding both
+        SortSnapshot fromChest = snapshot(chest(MIXED), crate(640), crate(640), chest());
+        SortSnapshot fromCrate = snapshot(crate(640, concat(ones(PICKAXE, 5), ones(HELMET, 3), new int[]{IRON, 7})),
+                crate(640), chest(stacks(PLANKS, 10)), chest());
+        for (SortSnapshot snapshot : List.of(fromChest, fromCrate)) {
+            assertTrue(settle(snapshot, SortMode.TIDY) <= 4, "didn't settle");
+            Set<Set<Integer>> crates = new HashSet<>();
+            for (SortSnapshot.Inv inv : snapshot.invs()) {
+                if (inv.kind() == Kind.MISC) {
+                    crates.add(keysIn(inv));
+                }
+            }
+            assertEquals(Set.of(Set.of(PICKAXE, HELMET), Set.of(IRON)), crates, dump(snapshot));
+        }
+    }
+
+    @Test
+    void equipmentTooBigForTheCratesLeavesThemToTheOddsAndEnds() {
+        // a crate holding two items: none of the equipment's groups fits
+        SortSnapshot tiny = snapshot(chest(MIXED), crate(2), chest(), chest());
+        assertTrue(settle(tiny, SortMode.TIDY) <= 4, "didn't settle");
+        assertTrue(keysIn(tiny.invs().get(1)).equals(Set.of(IRON)), "the crate: " + dump(tiny));
+        assertTrue(chestWith(tiny, Set.of(PICKAXE, HELMET)) >= 0, "the equipment has no chest: " + dump(tiny));
     }
 
     @Test
     void anEquipmentChestEmptiesIntoTheCrate() {
         SortSnapshot snapshot = snapshot(
                 chest(concat(ones(PICKAXE, 5), ones(HELMET, 3))).with(false, 14),
-                crate(640, IRON, 7),
+                crate(640),
                 chest(stacks(PLANKS, 10)));
         assertTrue(settle(snapshot, SortMode.TIDY) <= 4, "didn't settle");
         assertTrue(snapshot.invs().get(0).isEmpty(), "the equipment stayed in its chest: " + dump(snapshot));
         assertEquals(5, count(snapshot.invs().get(1), PICKAXE), dump(snapshot));
         assertEquals(3, count(snapshot.invs().get(1), HELMET), dump(snapshot));
+    }
+
+    @Test
+    void aCrateKeepsWhatItIsFor() {
+        // the second crate was the equipment's: it stays so, rather than the first taking over
+        SortSnapshot snapshot = snapshot(crate(640, IRON, 7), crate(640).with(false, 14),
+                chest(concat(stacks(PLANKS, 10), ones(PICKAXE, 5), ones(HELMET, 3))), chest());
+        assertTrue(settle(snapshot, SortMode.TIDY) <= 4, "didn't settle");
+        assertEquals(Set.of(IRON), keysIn(snapshot.invs().get(0)), dump(snapshot));
+        assertEquals(Set.of(PICKAXE, HELMET), keysIn(snapshot.invs().get(1)), dump(snapshot));
     }
 
     @Test

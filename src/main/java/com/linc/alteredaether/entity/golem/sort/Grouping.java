@@ -37,9 +37,11 @@ import java.util.Set;
  * otherwise stand empty, however little it fills. If it gets none, those items go with the group nearest their family
  * in the tree instead ({@link Result#nearest}), and so don't keep the odds and ends a chest they won't fill.
  *
- * <p>Crates hold the odds and ends first, and then, with what room is left, the groups of the families they also take
- * ({@code crateable}: equipment), biggest first, judged by items, as a crate counts them. A group the crates hold
- * needs no chest ({@link Result#crated}).
+ * <p>Each crate is for one thing: the equipment ({@code crateable}) or the odds and ends, never both. The equipment's
+ * groups take crates first (those kept for them before, then those for nothing yet, then the odds and ends') until the crates have room for them all,
+ * judged by items, as a crate counts them; they then fill those crates biggest first, and a group that doesn't fit
+ * needs a chest after all. The crates left over are the odds and ends'. A group in the crates needs no chest
+ * ({@link Result#crated}).
  */
 public final class Grouping {
     /** Fill is counted in hundredths of a stack. */
@@ -52,8 +54,9 @@ public final class Grouping {
      *                the group filling fewest slots, then the earliest node), or -1 if there is none; what its items
      *                too many to be miscellaneous go with when its group is the root
      * @param crated  the groups kept in the crates rather than chests of their own
+     * @param equipmentCrates which crates (in the order given) are for the equipment; the rest are the odds and ends'
      */
-    public record Result(int[] group, int[] own, int[] nearest, boolean[] crated) {
+    public record Result(int[] group, int[] own, int[] nearest, boolean[] crated, boolean[] equipmentCrates) {
         public int of(SortSnapshot.Key key) {
             return group[key.node()];
         }
@@ -61,6 +64,17 @@ public final class Grouping {
         public boolean crated(int group) {
             return group > 0 && group < crated.length && crated[group];
         }
+    }
+
+    /**
+     * The crates, in a fixed order.
+     *
+     * @param slots how many full stacks each holds (what the odds and ends are judged by)
+     * @param items how many items each holds (what the equipment is judged by)
+     * @param was   what each was for last time: {@link #EQUIPMENT}, {@link #ODDS_AND_ENDS} or 0 for neither
+     */
+    public record Crates(int[] slots, long[] items, int[] was) {
+        public static final int EQUIPMENT = 1, ODDS_AND_ENDS = 2;
     }
 
     private Grouping() {
@@ -75,16 +89,15 @@ public final class Grouping {
      * @param crateable the nodes whose groups crates take as well as the odds and ends
      * @param chests    how many chests there are to keep groups in
      * @param chestSize the slots in a chest
-     * @param miscSlots the slots kept for the miscellaneous items besides chests (crates)
-     * @param crateItems the items the crates hold in all
+     * @param crates    the crates, for the equipment or the odds and ends besides chests
      * @param minFill   the fewest stacks' worth (in hundredths) a family holds to be worth a group
      * @param spareFill the fewest it holds to be worth a chest that would otherwise stay empty
      * @param forced    pinned families: always groups, needing no chest
      * @param claimed   families a chest was kept for last time
      */
     public static Result compute(List<SortSnapshot.Node> nodes, int[] slots, int[] many, int[] fill, int[] items,
-                                 boolean[] crateable, int chests, int chestSize, int miscSlots, long crateItems,
-                                 int minFill, int spareFill, Set<Integer> forced, Set<Integer> claimed) {
+                                 boolean[] crateable, int chests, int chestSize, Crates crates, int minFill,
+                                 int spareFill, Set<Integer> forced, Set<Integer> claimed) {
         int n = nodes.size();
         int[] weight = fill.clone();
         boolean anyMany = false;
@@ -111,8 +124,8 @@ public final class Grouping {
                 in[f] = true;
             }
         }
-        Context ctx = new Context(nodes, slots, many, fill, items, crateable, depth, chestSize, miscSlots, crateItems,
-                minFill, forced, claimed);
+        Context ctx = new Context(nodes, slots, many, fill, items, crateable, depth, chestSize, crates, minFill, forced,
+                claimed);
         split(ctx, in, weight, children, chests);
         // chests still to spare: rather than leave them empty, the biggest groups left split further, down to
         // families of a couple of stacks (lone one-offs still share the odds and ends). Here, and only here, what is
@@ -158,7 +171,8 @@ public final class Grouping {
         int[] own = new int[n];
         int[] ownItems = new int[n];
         int[] group = ctx.assign(in, own, new int[n], ownItems);
-        return new Result(group, own, ctx.nearest(group, own), ctx.crated(own, ownItems));
+        Context.CrateUse use = ctx.crates(own, ownItems);
+        return new Result(group, own, ctx.nearest(group, own), use.crated(), use.equipment());
     }
 
     /** Splits off the heaviest families first while the groups fit {@code chests}, each holding the context's fill. */
@@ -190,8 +204,8 @@ public final class Grouping {
         final List<SortSnapshot.Node> nodes;
         final int[] slots, many, fill, items, depth;
         final boolean[] crateable;
-        final int chestSize, miscSlots;
-        final long crateItems;
+        final int chestSize;
+        final Crates crates;
         int minFill;
         /** Splitting for spare chests: what is too many to be miscellaneous counts with the group nearest it. */
         boolean spare;
@@ -201,8 +215,7 @@ public final class Grouping {
         final Integer[] deepestFirst;
 
         Context(List<SortSnapshot.Node> nodes, int[] slots, int[] many, int[] fill, int[] items, boolean[] crateable,
-                int[] depth, int chestSize, int miscSlots, long crateItems, int minFill, Set<Integer> forced,
-                Set<Integer> claimed) {
+                int[] depth, int chestSize, Crates crates, int minFill, Set<Integer> forced, Set<Integer> claimed) {
             this.nodes = nodes;
             this.slots = slots;
             this.many = many;
@@ -211,8 +224,7 @@ public final class Grouping {
             this.crateable = crateable;
             this.depth = depth;
             this.chestSize = Math.max(1, chestSize);
-            this.miscSlots = miscSlots;
-            this.crateItems = crateItems;
+            this.crates = crates;
             this.minFill = Math.max(1, minFill);
             this.forced = forced;
             this.claimed = claimed;
@@ -246,43 +258,83 @@ public final class Grouping {
                     }
                 }
             }
-            boolean[] crated = crated(own, ownItems);
+            CrateUse use = crates(own, ownItems);
             int need = 0;
             for (int g = 1; g < own.length; g++) {
-                if (own[g] > 0 && !forced.contains(g) && !crated[g]) {
+                if (own[g] > 0 && !forced.contains(g) && !use.crated()[g]) {
                     need += (own[g] + chestSize - 1) / chestSize;
                 }
             }
-            int misc = Math.max(0, own[SortSnapshot.ROOT] - miscSlots);
+            int misc = Math.max(0, own[SortSnapshot.ROOT] - use.miscSlots());
             return need + (misc + chestSize - 1) / chestSize;
         }
 
         /**
-         * The crateable groups the crates hold besides the odds and ends: with the room the odds and ends leave (none
-         * if they overflow the crates), biggest first by items, each that still fits.
+         * @param crated    the groups in the crates
+         * @param equipment which crates are the equipment's
+         * @param miscSlots the slots of the crates left to the odds and ends
          */
-        boolean[] crated(int[] own, int[] ownItems) {
+        record CrateUse(boolean[] crated, boolean[] equipment, int miscSlots) {
+        }
+
+        /**
+         * Which crates are the equipment's (until they have room for all its groups), the groups they hold (biggest
+         * first, each that still fits), and the slots of the crates left to the odds and ends. None are the
+         * equipment's if none of its groups fits them.
+         */
+        CrateUse crates(int[] own, int[] ownItems) {
             int n = own.length;
+            int count = crates.slots().length;
             boolean[] crated = new boolean[n];
-            if (crateItems <= 0 || own[SortSnapshot.ROOT] > miscSlots) {
-                return crated;
-            }
-            long room = crateItems - ownItems[SortSnapshot.ROOT];
+            boolean[] equipment = new boolean[count];
             List<Integer> candidates = new ArrayList<>();
+            long wanted = 0;
             for (int g = 1; g < n; g++) {
                 if (own[g] > 0 && crateable[g] && !forced.contains(g)) {
                     candidates.add(g);
+                    wanted += ownItems[g];
                 }
             }
-            candidates.sort((a, b) -> ownItems[a] != ownItems[b] ? Integer.compare(ownItems[b], ownItems[a])
-                    : Integer.compare(a, b));
-            for (int g : candidates) {
-                if (ownItems[g] <= room) {
-                    crated[g] = true;
-                    room -= ownItems[g];
+            if (!candidates.isEmpty() && count > 0) {
+                // the equipment's own crates first, then crates for nothing yet, the odds and ends' last
+                List<Integer> order = new ArrayList<>();
+                for (int was : new int[]{Crates.EQUIPMENT, 0, Crates.ODDS_AND_ENDS}) {
+                    for (int c = 0; c < count; c++) {
+                        if (crates.was()[c] == was) {
+                            order.add(c);
+                        }
+                    }
+                }
+                long room = 0;
+                for (int c : order) {
+                    if (room >= wanted) {
+                        break;
+                    }
+                    equipment[c] = true;
+                    room += crates.items()[c];
+                }
+                candidates.sort((a, b) -> ownItems[a] != ownItems[b] ? Integer.compare(ownItems[b], ownItems[a])
+                        : Integer.compare(a, b));
+                boolean any = false;
+                for (int g : candidates) {
+                    if (ownItems[g] <= room) {
+                        crated[g] = true;
+                        room -= ownItems[g];
+                        any = true;
+                    }
+                }
+                if (!any) {
+                    // nothing of the equipment fits them: the crates are the odds and ends' after all
+                    Arrays.fill(equipment, false);
                 }
             }
-            return crated;
+            int miscSlots = 0;
+            for (int c = 0; c < count; c++) {
+                if (!equipment[c]) {
+                    miscSlots += crates.slots()[c];
+                }
+            }
+            return new CrateUse(crated, equipment, miscSlots);
         }
 
         int[] assign(boolean[] in, int[] own, int[] ownFill) {

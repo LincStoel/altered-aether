@@ -187,7 +187,7 @@ public final class AAJadePlugin implements IWailaPlugin {
             }
             // the family tidy mode keeps it for, as last planned
             String claim = net.claims().get(GolemStorage.inventoryKey(level, pos));
-            if (claim != null && role == GolemStorage.Role.STORAGE && pins.isEmpty()) {
+            if (claim != null && (role == GolemStorage.Role.STORAGE || role == GolemStorage.Role.MISC) && pins.isEmpty()) {
                 tag.putString("holds", claim);
             }
             data.put("golem_link", tag);
