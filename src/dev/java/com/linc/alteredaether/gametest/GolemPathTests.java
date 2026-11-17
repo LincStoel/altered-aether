@@ -65,8 +65,16 @@ public final class GolemPathTests {
         // the nether by tag, and what is made from it by recipe
         expect(helper, Items.CRIMSON_STAIRS, "nether/blocks/wood/crimson");
         expect(helper, Items.POLISHED_BLACKSTONE_BRICKS, "nether/blocks/stone/blackstone");
+        // equipment is one family wherever it comes from
         String sword = path(Items.IRON_SWORD);
-        helper.assertTrue(sword.startsWith("overworld/equipment/weapons"), "the sword is filed under " + sword);
+        helper.assertTrue(sword.equals("equipment/weapons/iron"), "the sword is filed under " + sword);
+        String helmet = path(Items.IRON_HELMET);
+        helper.assertTrue(helmet.equals("equipment/armor/iron"), "the helmet is filed under " + helmet);
+        Item zanite = BuiltInRegistries.ITEM.get(ResourceLocation.fromNamespaceAndPath("aether", "zanite_pickaxe"));
+        if (zanite != Items.AIR) {
+            String actual = path(zanite);
+            helper.assertTrue(actual.equals("equipment/tools/zanite"), "the zanite pickaxe is filed under " + actual);
+        }
         // the Aether by mod
         Item skyroot = BuiltInRegistries.ITEM.get(ResourceLocation.fromNamespaceAndPath("aether", "skyroot_stairs"));
         if (skyroot != Items.AIR) {

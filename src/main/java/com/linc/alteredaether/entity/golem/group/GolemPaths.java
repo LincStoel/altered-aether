@@ -99,8 +99,12 @@ public final class GolemPaths {
      * @param type      the material
      */
     public record ItemPath(String dimension, String category, String group, String type) {
+        /**
+         * The families it sits in, from the top. Equipment is one family wherever it comes from, so armour, tools and
+         * weapons stay together when they don't get chests of their own; everything else is filed by dimension first.
+         */
         public List<String> names() {
-            return List.of(dimension, category, group, type);
+            return category.equals("equipment") ? List.of(category, group, type) : List.of(dimension, category, group, type);
         }
 
         @Override
