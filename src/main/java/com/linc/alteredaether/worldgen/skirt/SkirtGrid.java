@@ -30,7 +30,8 @@ import java.util.Set;
  *
  * <p>The collar round a rim is a lens like the dune sheets': {@link #GAP} under the rim at the cliff, up to
  * {@link #MAX_THICK} thick there, tapering top and bottom to a feather edge {@link #MIN_WIDTH} to {@link #MAX_WIDTH}
- * blocks out.
+ * blocks out. It stays level: where the rim climbs or drops it fades away ({@link #levelness}), and it thins out where
+ * land comes up beneath it ({@link #clearance}).
  */
 public final class SkirtGrid {
     /** Blocks between grid columns. */
@@ -45,14 +46,14 @@ public final class SkirtGrid {
     public static final int LOW_BELOW = 0;
     /** Grid columns an island may have before it counts as a landmass, voted on locally. */
     public static final int CAP = 8192;
-    /** Grid columns an island needs for a collar: a scrap of rock a few blocks across gets none. */
-    public static final int MIN_ISLAND = 6;
+    /** Grid columns an island needs for a collar, about 800 square blocks: anything under 32 blocks across gets none. */
+    public static final int MIN_ISLAND = 50;
     /** Radius of the local vote on a landmass, in grid columns (128 blocks). */
     public static final int VOTE_RADIUS = 32;
     /** Side of a local vote's cell, in grid columns: one vote serves the cell. */
     public static final int VOTE_CELL = 8;
 
-    public static final double MIN_WIDTH = 16, MAX_WIDTH = 32;
+    public static final double MIN_WIDTH = 32, MAX_WIDTH = 48;
     public static final double MIN_THICK = 3, MAX_THICK = 5;
     /** The collar's top at the cliff, under the rim. */
     public static final double GAP = 2;
@@ -61,9 +62,16 @@ public final class SkirtGrid {
     /** Spread of the blend between rim heights, in blocks. */
     public static final double SIGMA = 10;
     /** Rims further than this from a point, in blocks, play no part in its collar. */
-    public static final double REACH = 48;
+    public static final double REACH = 64;
     /** Distance recorded where no rim is in reach. */
-    public static final double FAR = 64;
+    public static final double FAR = 80;
+    /**
+     * Rise per block of the blended rim height where a collar starts to fade, and where it is gone: a rim that climbs
+     * or drops gets no skirt, so a collar never steps up or down a slope.
+     */
+    public static final double LEVEL = 0.04, SLOPED = 0.1;
+    /** Open air a collar wants under it, in blocks; it thins as land comes up beneath and is gone with this little. */
+    public static final int CLEAR = 16, CLEAR_MIN = 3;
     /** Blocks over which a collar fades out toward the Shattered Rift. */
     public static final double RIFT_FADE = 8;
     /** Blocks over which a collar thins round the gap a waterfall leaves. */
@@ -261,7 +269,7 @@ public final class SkirtGrid {
         return top == HIGH || top != SKY && top >= rimHeight - GAP - MAX_THICK - DROOP - 1;
     }
 
-    /** The collar's width at a column: 16 to 32 blocks, wandering round the rim. */
+    /** The collar's width at a column: 32 to 48 blocks, wandering round the rim. */
     public static double width(long seed, double x, double z) {
         return MIN_WIDTH + (MAX_WIDTH - MIN_WIDTH) * (0.5 + 0.5 * fbm(seed ^ 0x77A3L, x / 96, z / 96));
     }
@@ -300,6 +308,31 @@ public final class SkirtGrid {
         out[0] = middle - half + billowBottom * lens;
         out[1] = middle + half + billowTop * lens;
         return out[1] > out[0];
+    }
+
+    /** What survives of a collar where the blended rim height rises this much per block. */
+    public static double levelness(double rise) {
+        return 1 - smoothstep((rise - LEVEL) / (SLOPED - LEVEL));
+    }
+
+    /** What survives of a collar with this many blocks of open air under it. */
+    public static double clearance(int air) {
+        return smoothstep((air - CLEAR_MIN) / (double) (CLEAR - CLEAR_MIN));
+    }
+
+    /**
+     * The whole blocks a span fills: as many as it is thick, rounded, centred on its middle, so a thin collar is still
+     * one unbroken layer rather than a scatter where the span happens to cross a block's centre. Returns how many,
+     * the lowest being {@code (int) Math.round(middle - count / 2.0)}; see {@link #lowest}.
+     */
+    public static int layers(double bottom, double top) {
+        return Math.max(0, (int) Math.round(top - bottom));
+    }
+
+    /** The lowest block of a span's {@link #layers}. */
+    public static int lowest(double bottom, double top) {
+        int count = layers(bottom, top);
+        return (int) Math.round((bottom + top) / 2 - count / 2.0);
     }
 
     public static double smoothstep(double t) {

@@ -53,6 +53,8 @@ public final class CloudSkirts {
     private static final int RUN = 6;
     /** How far round a chunk water is looked for: the widest gap plus its feather. */
     private static final int WATER_REACH = 7;
+    /** Blocks either way the clearance under the collar is averaged over. */
+    private static final int CLEAR_BLUR = 4;
 
     /** A column water will pour down, from {@code y}. */
     public record Fall(int x, int y, int z) {
@@ -66,17 +68,40 @@ public final class CloudSkirts {
         return SkirtField.get(level.getLevel().dimension());
     }
 
-    /** Lays the collar in one chunk's own columns. Returns how many blocks were placed. */
+    /**
+     * Lays the collar in one chunk's own columns. Returns how many blocks were placed.
+     *
+     * <p>Each column is filled as {@link SkirtGrid#layers}, thinned by the open air under it: the air below each
+     * column round the chunk is measured ({@link SkirtGrid#clearance}), taken as the least within
+     * {@link SkirtGrid#CLEAR_MIN} blocks so a flank fanning out under the collar is felt from beside it too, then
+     * averaged over {@link #CLEAR_BLUR} blocks either way so the collar thins smoothly rather than in steps.
+     */
     public static int place(WorldGenLevel level, SkirtField field, int x0, int z0) {
-        double[][] spans = new double[256][];
+        int margin = SkirtGrid.CLEAR_MIN + CLEAR_BLUR, side = 16 + 2 * margin;
+        double[][] spans = new double[side * side][];
         double[] out = new double[2];
+        boolean any = false;
+        for (int i = 0; i < side * side; i++) {
+            int x = x0 - margin + i % side, z = z0 - margin + i / side;
+            if (field.span(x, z, 1, out)) {
+                spans[i] = out.clone();
+                any |= x >= x0 && x < x0 + 16 && z >= z0 && z < z0 + 16;
+            }
+        }
+        if (!any) {
+            return 0;
+        }
+        double[] clear = clearance(level, spans, x0 - margin, z0 - margin, side);
+        double[][] own = new double[256][];
         int low = Integer.MAX_VALUE, high = Integer.MIN_VALUE;
         for (int i = 0; i < 256; i++) {
-            if (field.span(x0 + (i & 15), z0 + (i >> 4), 1, out)) {
-                spans[i] = out.clone();
-                low = Math.min(low, (int) Math.floor(out[0]));
-                high = Math.max(high, (int) Math.ceil(out[1]));
+            int x = x0 + (i & 15), z = z0 + (i >> 4), at = ((i >> 4) + margin) * side + (i & 15) + margin;
+            if (spans[at] == null || clear[at] <= 0 || !field.span(x, z, clear[at], out)) {
+                continue;
             }
+            own[i] = out.clone();
+            low = Math.min(low, (int) Math.floor(out[0]) - 1);
+            high = Math.max(high, (int) Math.ceil(out[1]) + 1);
         }
         if (high == Integer.MIN_VALUE) {
             return 0;
@@ -86,18 +111,22 @@ public final class CloudSkirts {
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
         int placed = 0;
         for (int i = 0; i < 256; i++) {
-            if (spans[i] == null) {
+            if (own[i] == null) {
                 continue;
             }
-            int x = x0 + (i & 15), z = z0 + (i >> 4);
-            double[] span = spans[i];
+            int x = x0 + (i & 15), z = z0 + (i >> 4), at = ((i >> 4) + margin) * side + (i & 15) + margin;
+            double[] span = own[i];
             if (!falls.isEmpty()) {
                 double gate = gapGate(field.seed(), falls, x, z, span[0]);
-                if (gate < 1 && !field.span(x, z, gate, span)) {
+                if (gate < 1 && !field.span(x, z, gate * clear[at], span)) {
                     continue;
                 }
             }
-            for (int y = (int) Math.ceil(span[0] - 0.5); y <= (int) Math.floor(span[1] - 0.5); y++) {
+            int count = SkirtGrid.layers(span[0], span[1]), lowest = SkirtGrid.lowest(span[0], span[1]);
+            if (count == 0 || airBelow(level, pos, x, lowest, z, SkirtGrid.CLEAR_MIN) < SkirtGrid.CLEAR_MIN) {
+                continue;
+            }
+            for (int y = lowest; y < lowest + count; y++) {
                 pos.set(x, y, z);
                 if (level.isOutsideBuildHeight(y) || !level.getBlockState(pos).isAir()
                         || !open(level, pos) && !opensNearby(level, pos)) {
@@ -108,6 +137,73 @@ public final class CloudSkirts {
             }
         }
         return placed;
+    }
+
+    /**
+     * What survives of the collar at each column of a square for the open air under it: all of it with
+     * {@link SkirtGrid#CLEAR} blocks of air under the whole collar, less as land comes nearer. Columns with no collar,
+     * or out of reach, don't hold it back.
+     */
+    private static double[] clearance(WorldGenLevel level, double[][] spans, int ax, int az, int side) {
+        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
+        double[] raw = new double[side * side];
+        for (int i = 0; i < side * side; i++) {
+            int x = ax + i % side, z = az + i / side;
+            if (spans[i] == null || !WriteBounds.reachable(level, x, z)) {
+                raw[i] = 1;
+                continue;
+            }
+            raw[i] = SkirtGrid.clearance(airBelow(level, pos, x, SkirtGrid.lowest(spans[i][0], spans[i][1]), z,
+                    SkirtGrid.CLEAR));
+        }
+        int near = SkirtGrid.CLEAR_MIN;
+        double[] least = new double[side * side];
+        for (int i = 0; i < side * side; i++) {
+            int x = i % side, z = i / side;
+            double value = 1;
+            for (int dz = -near; dz <= near; dz++) {
+                for (int dx = -near; dx <= near; dx++) {
+                    int nx = x + dx, nz = z + dz;
+                    if (nx >= 0 && nz >= 0 && nx < side && nz < side && dx * dx + dz * dz <= near * near) {
+                        value = Math.min(value, raw[nz * side + nx]);
+                    }
+                }
+            }
+            least[i] = value;
+        }
+        double[] mean = new double[side * side];
+        for (int i = 0; i < side * side; i++) {
+            int x = i % side, z = i / side;
+            double sum = 0;
+            int count = 0;
+            for (int dz = -CLEAR_BLUR; dz <= CLEAR_BLUR; dz++) {
+                for (int dx = -CLEAR_BLUR; dx <= CLEAR_BLUR; dx++) {
+                    int nx = x + dx, nz = z + dz;
+                    if (nx >= 0 && nz >= 0 && nx < side && nz < side) {
+                        sum += least[nz * side + nx];
+                        count++;
+                    }
+                }
+            }
+            // A column with land close under it keeps only a little, whatever its neighbours have.
+            mean[i] = Math.min(sum / count, raw[i] + 0.35);
+        }
+        return mean;
+    }
+
+    /** Blocks of open air under a block, counting down to {@code limit}; cold aercloud counts as air. */
+    private static int airBelow(WorldGenLevel level, BlockPos.MutableBlockPos pos, int x, int y, int z, int limit) {
+        for (int d = 1; d <= limit; d++) {
+            pos.set(x, y - d, z);
+            if (level.isOutsideBuildHeight(pos)) {
+                return limit;
+            }
+            BlockState state = level.getBlockState(pos);
+            if (!state.isAir() && !state.is(AetherBlocks.COLD_AERCLOUD.get())) {
+                return d - 1;
+            }
+        }
+        return limit;
     }
 
     /**
@@ -141,8 +237,12 @@ public final class CloudSkirts {
                         continue;
                     }
                     boolean keep = field.span(x, z, gate, cut);
-                    for (int y = (int) Math.ceil(whole[0] - 0.5); y <= (int) Math.floor(whole[1] - 0.5); y++) {
-                        boolean inside = keep && y + 0.5 >= cut[0] && y + 0.5 <= cut[1];
+                    int keepFrom = keep ? SkirtGrid.lowest(cut[0], cut[1]) : 0;
+                    int keepTo = keep ? keepFrom + SkirtGrid.layers(cut[0], cut[1]) : 0;
+                    // The whole span and a block either side: the collar there may have been thinned by clearance.
+                    int from = SkirtGrid.lowest(whole[0], whole[1]);
+                    for (int y = from - 1; y <= from + SkirtGrid.layers(whole[0], whole[1]); y++) {
+                        boolean inside = y >= keepFrom && y < keepTo;
                         if (!inside && level.getBlockState(pos.set(x, y, z)).is(cloud.getBlock())
                                 && WriteBounds.writable(level, pos)) {
                             level.setBlock(pos, Blocks.AIR.defaultBlockState(), Block.UPDATE_CLIENTS);

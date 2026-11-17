@@ -205,6 +205,52 @@ class SkirtGridTest {
     }
 
     @Test
+    void aSlopedRimGetsNoCollar() {
+        assertEquals(1, SkirtGrid.levelness(0));
+        assertEquals(1, SkirtGrid.levelness(SkirtGrid.LEVEL));
+        assertEquals(0, SkirtGrid.levelness(SkirtGrid.SLOPED));
+        // A rim dropping a block in every eight is a slope.
+        assertEquals(0, SkirtGrid.levelness(1 / 8.0));
+        double between = SkirtGrid.levelness((SkirtGrid.LEVEL + SkirtGrid.SLOPED) / 2);
+        assertTrue(between > 0 && between < 1);
+    }
+
+    @Test
+    void theCollarNeedsOpenAirUnderIt() {
+        assertEquals(0, SkirtGrid.clearance(0));
+        assertEquals(0, SkirtGrid.clearance(SkirtGrid.CLEAR_MIN));
+        assertEquals(1, SkirtGrid.clearance(SkirtGrid.CLEAR));
+        double last = 0;
+        for (int air = SkirtGrid.CLEAR_MIN; air <= SkirtGrid.CLEAR; air++) {
+            double now = SkirtGrid.clearance(air);
+            assertTrue(now >= last);
+            last = now;
+        }
+    }
+
+    @Test
+    void aThinCollarIsStillOneUnbrokenLayer() {
+        // Spans under a block thick but more than half, wherever they sit, fill exactly one block, and spans of one
+        // thickness at heights a little apart fill blocks that touch: no holes where the span misses a block's centre.
+        for (double middle = -12; middle <= -10; middle += 0.05) {
+            assertEquals(1, SkirtGrid.layers(middle - 0.3, middle + 0.3), "at " + middle);
+            int lowest = SkirtGrid.lowest(middle - 0.3, middle + 0.3);
+            assertTrue(Math.abs(lowest + 0.5 - middle) <= 0.5 + 1e-9);
+        }
+        assertEquals(0, SkirtGrid.layers(-10.2, -9.8));
+        assertEquals(4, SkirtGrid.layers(-14, -10));
+        assertEquals(-14, SkirtGrid.lowest(-14, -10));
+        // The lens tapers to an edge one layer thick all the way round, never thicker on the outside.
+        double[] at = new double[2];
+        int last = Integer.MAX_VALUE;
+        for (double d = 0; d < 40; d += 0.5) {
+            int count = SkirtGrid.span(d, -10, 1, 40, 5, 0, 0, at) ? SkirtGrid.layers(at[0], at[1]) : 0;
+            assertTrue(count <= last, "thicker at " + d);
+            last = count;
+        }
+    }
+
+    @Test
     void widthAndThicknessStayInTheirRanges() {
         for (int i = 0; i < 2000; i++) {
             double x = i * 7.3 - 3000, z = i * -11.1 + 900;

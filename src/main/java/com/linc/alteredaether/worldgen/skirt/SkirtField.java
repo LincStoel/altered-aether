@@ -128,6 +128,20 @@ public final class SkirtField {
         return Optional.empty();
     }
 
+    /**
+     * For the debug tools: a grid column's top, 1 when it is on a rim, and its island's verdict (0 not judged, 1 low,
+     * 2 not low, 3 a landmass voted on locally).
+     */
+    public int[] debugColumn(int gx, int gz) {
+        View view = new View();
+        int top = view.top(gx, gz);
+        if (top == SkirtGrid.SKY || top == SkirtGrid.HIGH) {
+            return new int[]{top, 0, 0};
+        }
+        low(view, gx, gz);
+        return new int[]{top, SkirtGrid.rim(view, gx, gz) ? 1 : 0, view.tile(gx, gz).verdict[Terrain.index(gx, gz)]};
+    }
+
     private boolean span(Collar collar, int x, int z, double gate, double[] out) {
         if (collar.empty()) {
             return false;
@@ -174,23 +188,48 @@ public final class SkirtField {
         if (sources.size() == 0) {
             return Collar.EMPTY;
         }
-        int n = TILE + 1;
-        float[] distance = new float[n * n], height = new float[n * n], gate = new float[n * n];
+        int n = TILE + 1, m = n + 2;
+        // Sampled one column further out all round, so the rise of the rim height can be taken at every column.
+        double[] near = new double[m * m], blend = new double[m * m];
         double[] sample = new double[2];
+        for (int j = 0; j < m; j++) {
+            for (int i = 0; i < m; i++) {
+                SkirtGrid.sample(sources, (gx0 + i - 1) * STEP, (gz0 + j - 1) * STEP, sample);
+                near[j * m + i] = sample[0];
+                blend[j * m + i] = sample[1];
+            }
+        }
+        float[] distance = new float[n * n], height = new float[n * n], gate = new float[n * n];
         boolean any = false;
         for (int j = 0; j < n; j++) {
             for (int i = 0; i < n; i++) {
-                int gx = gx0 + i, gz = gz0 + j;
-                SkirtGrid.sample(sources, gx * STEP, gz * STEP, sample);
-                distance[j * n + i] = (float) sample[0];
-                height[j * n + i] = (float) sample[1];
-                if (sample[0] < SkirtGrid.FAR) {
-                    gate[j * n + i] = (float) (inner(view, gx, gz, sample[1]) * riftFade(view, gx, gz));
-                    any |= gate[j * n + i] > 0 && sample[0] < SkirtGrid.MAX_WIDTH;
+                int gx = gx0 + i, gz = gz0 + j, at = (j + 1) * m + i + 1;
+                distance[j * n + i] = (float) near[at];
+                height[j * n + i] = (float) blend[at];
+                if (near[at] < SkirtGrid.FAR) {
+                    double rise = Math.hypot(rise(near, blend, at, 1), rise(near, blend, at, m));
+                    gate[j * n + i] = (float) (inner(view, gx, gz, blend[at]) * riftFade(view, gx, gz)
+                            * SkirtGrid.levelness(rise));
+                    any |= gate[j * n + i] > 0 && near[at] < SkirtGrid.MAX_WIDTH;
                 }
             }
         }
         return any ? new Collar(gx0, gz0, distance, height, gate) : Collar.EMPTY;
+    }
+
+    /**
+     * How fast the blended rim height changes per block across a sample, along one axis ({@code stride} 1 for x, the
+     * row length for z), from the samples either side that have a rim in reach.
+     */
+    private static double rise(double[] near, double[] blend, int at, int stride) {
+        boolean before = near[at - stride] < SkirtGrid.FAR, after = near[at + stride] < SkirtGrid.FAR;
+        if (before && after) {
+            return Math.abs(blend[at + stride] - blend[at - stride]) / (2.0 * STEP);
+        }
+        if (before || after) {
+            return Math.abs(blend[before ? at - stride : at + stride] - blend[at]) / STEP;
+        }
+        return 0;
     }
 
     /** 1 where the collar may lie: off the island, or one grid step inside its edge; 0 deeper in. */
