@@ -286,13 +286,24 @@ public final class DebugCommands {
                 state -> state.is(com.aetherteam.aether.block.AetherBlocks.COLD_AERCLOUD.get()))).join();
         server.submit(() -> WorldRender.render(aether, name + "_slice_x", x - 64, z, x + 64, z, y - 40, y + 30, 6)).join();
         server.submit(() -> WorldRender.render(aether, name + "_slice_z", x, z - 64, x, z + 64, y - 40, y + 30, 6)).join();
+        // The biome round the spot at a few heights, east and south of it too, as the world has it.
+        StringBuilder biomes = new StringBuilder();
+        for (int[] d : new int[][]{{0, 0}, {32, 0}, {64, 0}, {0, 32}, {32, 32}}) {
+            biomes.append(" (").append(x + d[0]).append(',').append(z + d[1]).append(')');
+            for (int by : new int[]{-40, -10, 0, 20, 60, 100}) {
+                biomes.append(' ').append(by).append('=').append(aether.getUncachedNoiseBiome((x + d[0]) >> 2, by >> 2,
+                        (z + d[1]) >> 2).unwrapKey().map(k -> k.location().getPath()).orElse("?"));
+            }
+        }
+        AlteredAether.LOGGER.info("Skirt spot {} biomes:{}", name, biomes);
         skirtGrid(aether, name + "_grid", x, z, 64);
     }
 
     /**
      * The skirt field's grid round a point, 8 pixels per grid column: sky dark, high columns grey, land shaded by its
      * top from dark (y -64) to light (y 23) and tinted by its island's verdict (green low, blue not low, yellow a
-     * landmass voted on locally, magenta not judged), rim columns with a red centre, the point itself outlined white.
+     * landmass voted on locally, magenta not judged), rim columns with a red centre (cyan where a crag collar grows),
+     * the point itself outlined white.
      */
     private static void skirtGrid(ServerLevel aether, String name, int x, int z, int radius) {
         SkirtField field = SkirtField.get(THE_AETHER);
@@ -325,8 +336,8 @@ public final class DebugCommands {
                 }
                 g.setColor(colour);
                 g.fillRect(i * px, j * px, px, px);
-                if (column[1] == 1) {
-                    g.setColor(java.awt.Color.RED);
+                if (column[1] != 0) {
+                    g.setColor(column[1] == 2 ? java.awt.Color.CYAN : java.awt.Color.RED);
                     g.fillRect(i * px + 3, j * px + 3, 2, 2);
                 }
             }
@@ -557,6 +568,9 @@ public final class DebugCommands {
             if (Boolean.getBoolean("altered_aether.render")) {
                 for (int i = 0; i < spots.size(); i++) {
                     skirtRenders(server, aether, "spot" + i, spots.get(i));
+                }
+                if (biome != null && biome.startsWith("core:")) {
+                    skirtRenders(server, aether, "core", origin.atY(0));
                 }
             }
             if (Boolean.getBoolean("altered_aether.render") && biome != null && biome.equals("skirt")) {

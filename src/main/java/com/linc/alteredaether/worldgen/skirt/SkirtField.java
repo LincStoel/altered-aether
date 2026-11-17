@@ -43,11 +43,16 @@ public final class SkirtField {
     /** Grid columns per tile side. */
     static final int TILE = 16;
     private static final String RIFT = "altered_aether:shattered_rift";
+    private static final String CRAGS = "altered_aether:frozen_crags";
     /** Grid columns searched round a tile for rims that reach into it. */
     private static final int SOURCE_REACH = (int) Math.ceil(SkirtGrid.REACH / STEP);
     /** Grid columns searched for the rift. */
     private static final int RIFT_REACH = (int) Math.ceil(SkirtGrid.RIFT_FADE / STEP);
     private static final byte UNKNOWN = 0, LOW = 1, NOT_LOW = 2, LANDMASS = 3;
+    /** A column's biome, as far as the skirts care, once read. */
+    private static final byte OTHER = 1, IN_RIFT = 2, IN_CRAGS = 3;
+    /** Whether a column is solid at the crag collar's height, once read; and whether its cross-section there is big. */
+    private static final byte NO = 1, YES = 2;
 
     public static void put(ResourceKey<Level> dimension, @Nullable SkirtField field) {
         if (field == null) {
@@ -103,7 +108,10 @@ public final class SkirtField {
         return span(collar, x, z, 1, out) && y >= Math.floor(out[0]) - 1 && y <= Math.ceil(out[1]) + 1;
     }
 
-    /** The nearest point on a low island's rim, searching tile by tile out to {@code maxDistance}; for the debug tools. */
+    /**
+     * The nearest point a collar grows from (a low island's rim, or a big crag's edge at y 0), searching tile by tile
+     * out to {@code maxDistance}; for the debug tools. The height given is the source's, not the collar's.
+     */
     public Optional<int[]> nearestRim(int x, int z, int maxDistance) {
         int tx0 = Math.floorDiv(Math.floorDiv(x, STEP), TILE), tz0 = Math.floorDiv(Math.floorDiv(z, STEP), TILE);
         int rings = maxDistance / (TILE * STEP) + 1;
@@ -116,10 +124,9 @@ public final class SkirtField {
                     }
                     for (int i = 0; i < TILE * TILE; i++) {
                         int gx = tx * TILE + i % TILE, gz = tz * TILE + i / TILE;
-                        int top = view.top(gx, gz);
-                        if (top != SkirtGrid.SKY && top != SkirtGrid.HIGH && SkirtGrid.rim(view, gx, gz)
-                                && low(view, gx, gz)) {
-                            return Optional.of(new int[]{gx * STEP, top, gz * STEP});
+                        double[] source = source(view, gx, gz);
+                        if (source != null) {
+                            return Optional.of(new int[]{gx * STEP, (int) source[0], gz * STEP});
                         }
                     }
                 }
@@ -129,17 +136,20 @@ public final class SkirtField {
     }
 
     /**
-     * For the debug tools: a grid column's top, 1 when it is on a rim, and its island's verdict (0 not judged, 1 low,
-     * 2 not low, 3 a landmass voted on locally).
+     * For the debug tools: a grid column's top, 1 when it is on a rim or 2 when a crag collar grows from it, and its
+     * island's verdict (0 not judged, 1 low, 2 not low, 3 a landmass voted on locally).
      */
     public int[] debugColumn(int gx, int gz) {
         View view = new View();
         int top = view.top(gx, gz);
+        double[] source = top == SkirtGrid.SKY ? null : source(view, gx, gz);
+        int edge = source != null && source[1] > 0 ? 2 : top != SkirtGrid.SKY && top != SkirtGrid.HIGH
+                && SkirtGrid.rim(view, gx, gz) ? 1 : 0;
         if (top == SkirtGrid.SKY || top == SkirtGrid.HIGH) {
-            return new int[]{top, 0, 0};
+            return new int[]{top, edge, 0};
         }
         low(view, gx, gz);
-        return new int[]{top, SkirtGrid.rim(view, gx, gz) ? 1 : 0, view.tile(gx, gz).verdict[Terrain.index(gx, gz)]};
+        return new int[]{top, edge, view.tile(gx, gz).verdict[Terrain.index(gx, gz)]};
     }
 
     private boolean span(Collar collar, int x, int z, double gate, double[] out) {
@@ -150,15 +160,15 @@ public final class SkirtField {
         int i = gx - collar.gx0, j = gz - collar.gz0;
         double fx = (x - gx * STEP) / (double) STEP, fz = (z - gz * STEP) / (double) STEP;
         double distance = collar.lerp(collar.distance, i, j, fx, fz);
-        if (distance >= SkirtGrid.MAX_WIDTH) {
+        if (distance >= SkirtGrid.MAX_WIDTH + SkirtGrid.CRAG_WIDE) {
             return false;
         }
         double g = collar.lerp(collar.gate, i, j, fx, fz) * gate;
         if (g <= 0) {
             return false;
         }
-        double rim = collar.lerp(collar.height, i, j, fx, fz);
-        return SkirtGrid.span(distance, rim, g, SkirtGrid.width(seed, x, z), SkirtGrid.thickness(seed, x, z),
+        double rim = collar.lerp(collar.height, i, j, fx, fz), wide = collar.lerp(collar.wide, i, j, fx, fz);
+        return SkirtGrid.span(distance, rim, g, SkirtGrid.width(seed, x, z, wide), SkirtGrid.thickness(seed, x, z),
                 SkirtGrid.billowTop(seed, x, z), SkirtGrid.billowBottom(seed, x, z), out);
     }
 
@@ -179,9 +189,9 @@ public final class SkirtField {
         SkirtGrid.Sources sources = new SkirtGrid.Sources();
         for (int gz = gz0 - SOURCE_REACH; gz <= gz0 + TILE + SOURCE_REACH; gz++) {
             for (int gx = gx0 - SOURCE_REACH; gx <= gx0 + TILE + SOURCE_REACH; gx++) {
-                int top = view.top(gx, gz);
-                if (top != SkirtGrid.SKY && top != SkirtGrid.HIGH && SkirtGrid.rim(view, gx, gz) && low(view, gx, gz)) {
-                    sources.add(gx * STEP, gz * STEP, top);
+                double[] source = source(view, gx, gz);
+                if (source != null) {
+                    sources.add(gx * STEP, gz * STEP, source[0], source[1]);
                 }
             }
         }
@@ -190,31 +200,68 @@ public final class SkirtField {
         }
         int n = TILE + 1, m = n + 2;
         // Sampled one column further out all round, so the rise of the rim height can be taken at every column.
-        double[] near = new double[m * m], blend = new double[m * m];
-        double[] sample = new double[2];
+        double[] near = new double[m * m], blend = new double[m * m], broad = new double[m * m];
+        double[] sample = new double[3];
         for (int j = 0; j < m; j++) {
             for (int i = 0; i < m; i++) {
                 SkirtGrid.sample(sources, (gx0 + i - 1) * STEP, (gz0 + j - 1) * STEP, sample);
                 near[j * m + i] = sample[0];
                 blend[j * m + i] = sample[1];
+                broad[j * m + i] = sample[2];
             }
         }
         float[] distance = new float[n * n], height = new float[n * n], gate = new float[n * n];
+        float[] wide = new float[n * n];
         boolean any = false;
         for (int j = 0; j < n; j++) {
             for (int i = 0; i < n; i++) {
                 int gx = gx0 + i, gz = gz0 + j, at = (j + 1) * m + i + 1;
                 distance[j * n + i] = (float) near[at];
                 height[j * n + i] = (float) blend[at];
+                wide[j * n + i] = (float) broad[at];
                 if (near[at] < SkirtGrid.FAR) {
                     double rise = Math.hypot(rise(near, blend, at, 1), rise(near, blend, at, m));
                     gate[j * n + i] = (float) (inner(view, gx, gz, blend[at]) * riftFade(view, gx, gz)
                             * SkirtGrid.levelness(rise));
-                    any |= gate[j * n + i] > 0 && near[at] < SkirtGrid.MAX_WIDTH;
+                    any |= gate[j * n + i] > 0 && near[at] < SkirtGrid.MAX_WIDTH + SkirtGrid.CRAG_WIDE * broad[at];
                 }
             }
         }
-        return any ? new Collar(gx0, gz0, distance, height, gate) : Collar.EMPTY;
+        return any ? new Collar(gx0, gz0, distance, height, gate, wide) : Collar.EMPTY;
+    }
+
+    /**
+     * Whether a collar grows from a grid column, and if so its height and width, {height, wide}: a big Frozen Crags
+     * island's edge where it crosses y 0, wide, at a height that puts the collar's top there; or the rim of a low
+     * island, at the rim's height. Null when neither.
+     */
+    @Nullable
+    private double[] source(View view, int gx, int gz) {
+        int top = view.top(gx, gz);
+        if (top == SkirtGrid.SKY) {
+            return null;
+        }
+        if (SkirtGrid.cragEdge(view, gx, gz) && bigCrag(view, gx, gz)) {
+            return new double[]{SkirtGrid.CRAG_TOP + SkirtGrid.GAP, 1};
+        }
+        if (top != SkirtGrid.HIGH && SkirtGrid.rim(view, gx, gz) && low(view, gx, gz)) {
+            return new double[]{top, 0};
+        }
+        return null;
+    }
+
+    /** Whether a column's cross-section at the crag collar's height is big enough for a collar, remembered. */
+    private boolean bigCrag(View view, int gx, int gz) {
+        byte verdict = view.tile(gx, gz).bigCrag[Terrain.index(gx, gz)];
+        if (verdict == 0) {
+            SkirtGrid.Island section = SkirtGrid.crossSection(view, gx, gz);
+            verdict = section.low() ? YES : NO;
+            for (long point : section.points()) {
+                int px = (int) (point >> 32), pz = (int) point;
+                view.tile(px, pz).bigCrag[Terrain.index(px, pz)] = verdict;
+            }
+        }
+        return verdict == YES;
     }
 
     /**
@@ -234,12 +281,16 @@ public final class SkirtField {
 
     /** 1 where the collar may lie: off the island, or one grid step inside its edge; 0 deeper in. */
     private static double inner(View view, int gx, int gz, double rim) {
-        if (!SkirtGrid.covered(view.top(gx, gz), rim)) {
+        if (!covered(view, gx, gz, rim)) {
             return 1;
         }
-        return !SkirtGrid.covered(view.top(gx + 1, gz), rim) || !SkirtGrid.covered(view.top(gx - 1, gz), rim)
-                || !SkirtGrid.covered(view.top(gx, gz + 1), rim) || !SkirtGrid.covered(view.top(gx, gz - 1), rim)
-                ? 1 : 0;
+        return !covered(view, gx + 1, gz, rim) || !covered(view, gx - 1, gz, rim)
+                || !covered(view, gx, gz + 1, rim) || !covered(view, gx, gz - 1, rim) ? 1 : 0;
+    }
+
+    private static boolean covered(View view, int gx, int gz, double rim) {
+        int top = view.top(gx, gz);
+        return SkirtGrid.covered(top, top == SkirtGrid.HIGH && view.solidAtTop(gx, gz), rim);
     }
 
     private static double riftFade(View view, int gx, int gz) {
@@ -346,18 +397,22 @@ public final class SkirtField {
      */
     private static final class Terrain {
         final int[] top = new int[TILE * TILE];
-        /** 0 not yet read, 1 not rift, 2 rift. */
-        final byte[] rift = new byte[TILE * TILE];
+        /** 0 not yet read, else OTHER, IN_RIFT or IN_CRAGS. */
+        final byte[] biome = new byte[TILE * TILE];
         final byte[] verdict = new byte[TILE * TILE];
+        /** 0 not yet read, else whether the column is solid at the crag collar's height (NO, YES). */
+        final byte[] solidAtTop = new byte[TILE * TILE];
+        /** 0 not yet judged, else whether its cross-section there is big enough for a crag collar (NO, YES). */
+        final byte[] bigCrag = new byte[TILE * TILE];
 
         static int index(int gx, int gz) {
             return Math.floorMod(gx, TILE) + Math.floorMod(gz, TILE) * TILE;
         }
     }
 
-    /** The collar sampled at the grid columns of a tile: distance to the nearest low rim, its height, and the gate. */
-    private record Collar(int gx0, int gz0, float[] distance, float[] height, float[] gate) {
-        static final Collar EMPTY = new Collar(0, 0, null, null, null);
+    /** The collar at the grid columns of a tile: distance to the nearest source, its height, the gate, how wide. */
+    private record Collar(int gx0, int gz0, float[] distance, float[] height, float[] gate, float[] wide) {
+        static final Collar EMPTY = new Collar(0, 0, null, null, null, null);
         static final int N = TILE + 1;
 
         boolean empty() {
@@ -393,12 +448,37 @@ public final class SkirtField {
 
         @Override
         public boolean rift(int gx, int gz) {
+            return biome(gx, gz) == IN_RIFT;
+        }
+
+        @Override
+        public boolean crag(int gx, int gz) {
+            return biome(gx, gz) == IN_CRAGS;
+        }
+
+        private byte biome(int gx, int gz) {
             Terrain tile = tile(gx, gz);
             int index = Terrain.index(gx, gz);
-            if (tile.rift[index] == 0) {
-                tile.rift[index] = (byte) (probe.biomeAt(gx * STEP, gz * STEP).equals(RIFT) ? 2 : 1);
+            if (tile.biome[index] == 0) {
+                String biome = probe.biomeAt(gx * STEP, gz * STEP);
+                tile.biome[index] = biome.equals(RIFT) ? IN_RIFT : biome.equals(CRAGS) ? IN_CRAGS : OTHER;
             }
-            return tile.rift[index] == 2;
+            return tile.biome[index];
+        }
+
+        /** Read from the terrain for columns whose top reaches the height at all; lower ones can't be solid there. */
+        @Override
+        public boolean solidAtTop(int gx, int gz) {
+            Terrain tile = tile(gx, gz);
+            int index = Terrain.index(gx, gz);
+            int top = tile.top[index];
+            if (top == SkirtGrid.SKY || top != SkirtGrid.HIGH && top < SkirtGrid.CRAG_TOP) {
+                return false;
+            }
+            if (tile.solidAtTop[index] == 0) {
+                tile.solidAtTop[index] = probe.solid(gx * STEP, SkirtGrid.CRAG_TOP, gz * STEP) ? YES : NO;
+            }
+            return tile.solidAtTop[index] == YES;
         }
     }
 }

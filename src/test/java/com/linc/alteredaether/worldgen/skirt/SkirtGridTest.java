@@ -30,7 +30,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /** The cloud skirts' grid arithmetic: which islands are low, and the collar's shape. */
 class SkirtGridTest {
     /** A hand-drawn terrain: sky wherever nothing is drawn. */
-    private static final class Drawn implements SkirtGrid.Columns {
+    private static class Drawn implements SkirtGrid.Columns {
         final Map<Long, Integer> tops = new HashMap<>();
         final Set<Long> rift = new HashSet<>();
 
@@ -64,6 +64,59 @@ class SkirtGridTest {
         assertFalse(SkirtGrid.flood(high, 0, 0).low());
         Drawn tall = new Drawn().disc(0, 0, 8, SkirtGrid.HIGH);
         assertFalse(SkirtGrid.flood(tall, 0, 0).low());
+    }
+
+    @Test
+    void aRimAtZeroIsLow() {
+        assertTrue(SkirtGrid.lowRim(0));
+        assertFalse(SkirtGrid.lowRim(1));
+        assertTrue(SkirtGrid.flood(new Drawn().disc(0, 0, 8, 0), 0, 0).low());
+    }
+
+    @Test
+    void aBigCragGetsAWideCollarRoundItsCrossSection() {
+        // A tall crag (high columns) whose rock reaches y 0 over a disc: its edge there is a crag edge, in the
+        // Frozen Crags only, and the cross-section is big once it reaches CRAG_MIN columns.
+        Set<Long> crags = new HashSet<>();
+        Drawn big = new Drawn() {
+            @Override
+            public boolean crag(int gx, int gz) {
+                return crags.contains(SkirtGrid.key(gx, gz));
+            }
+        }.disc(0, 0, 7, SkirtGrid.HIGH);
+        big.tops.keySet().forEach(crags::add);
+        assertTrue(big.tops.size() >= SkirtGrid.CRAG_MIN);
+        assertTrue(SkirtGrid.cragEdge(big, 7, 0));
+        assertFalse(SkirtGrid.cragEdge(big, 0, 0));
+        assertTrue(SkirtGrid.crossSection(big, 7, 0).low());
+        assertTrue(SkirtGrid.crossSection(big, -7, 0).low());
+        // The same shape outside the Crags has no crag edge; a slim one inside them is too small.
+        assertFalse(SkirtGrid.cragEdge(new Drawn().disc(0, 0, 7, SkirtGrid.HIGH), 7, 0));
+        Drawn slim = new Drawn().disc(0, 0, 4, SkirtGrid.HIGH);
+        assertTrue(slim.tops.size() < SkirtGrid.CRAG_MIN);
+        assertFalse(SkirtGrid.crossSection(slim, 0, 0).low());
+    }
+
+    @Test
+    void aCragCollarIsWiderAndBlendsIntoAnOrdinaryOne() {
+        for (int i = 0; i < 500; i++) {
+            double x = i * 13.7, z = i * -5.1;
+            double w = SkirtGrid.width(7, x, z, 1);
+            assertTrue(w >= SkirtGrid.MIN_WIDTH + SkirtGrid.CRAG_WIDE - 1e-9
+                    && w <= SkirtGrid.MAX_WIDTH + SkirtGrid.CRAG_WIDE + 1e-9, "width " + w);
+        }
+        SkirtGrid.Sources sources = new SkirtGrid.Sources();
+        sources.add(0, 0, SkirtGrid.CRAG_TOP + SkirtGrid.GAP, 1);
+        sources.add(60, 0, -4);
+        double[] out = new double[3];
+        SkirtGrid.sample(sources, 2, 0, out);
+        assertEquals(1, out[2], 1e-6);
+        SkirtGrid.sample(sources, 58, 0, out);
+        assertEquals(0, out[2], 1e-6);
+        // A crag collar's top sits at CRAG_TOP at the cliff.
+        double[] at = new double[2];
+        SkirtGrid.span(0, SkirtGrid.CRAG_TOP + SkirtGrid.GAP, 1, 56, 4, 0, 0, at);
+        assertEquals(SkirtGrid.CRAG_TOP, at[1], 1e-9);
     }
 
     @Test

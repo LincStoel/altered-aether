@@ -25,8 +25,11 @@ import java.util.Set;
  * solid block in the low band under {@link #PROBE_TOP} with air above it, or {@link #SKY} when the band is empty, or
  * {@link #HIGH} when the column is solid at the band's top (an island too high to matter). Neighbouring columns belong
  * to one island when their tops are within {@link #DROP} of each other; a column is on its island's <em>rim</em> when
- * a neighbour is sky or drops away by at least that much. An island is low when more than half its rim lies below
- * {@link #LOW_BELOW}, and only low islands' rims grow a collar; scraps under {@link #MIN_ISLAND} columns get none.
+ * a neighbour is sky or drops away by at least that much. An island is low when more than half its rim lies at or
+ * below {@link #LOW_BELOW}, and only low islands' rims grow a collar; scraps under {@link #MIN_ISLAND} columns get none.
+ *
+ * <p>The Frozen Crags are the exception: their tall islands, whatever their rim, wear a wider collar round where they
+ * cross y 0, its top at {@link #CRAG_TOP}, when that cross-section is at least {@link #CRAG_MIN} columns.
  *
  * <p>The collar round a rim is a lens like the dune sheets': {@link #GAP} under the rim at the cliff, up to
  * {@link #MAX_THICK} thick there, tapering top and bottom to a feather edge {@link #MIN_WIDTH} to {@link #MAX_WIDTH}
@@ -42,7 +45,7 @@ public final class SkirtGrid {
     public static final int PROBE_TOP = 23;
     /** A neighbour this much lower is off the island's edge (as IslandEdge's drop). */
     public static final int DROP = 16;
-    /** Rim heights under this are low. */
+    /** Rim heights at or under this are low. */
     public static final int LOW_BELOW = 0;
     /** Grid columns an island may have before it counts as a landmass, voted on locally. */
     public static final int CAP = 8192;
@@ -76,12 +79,29 @@ public final class SkirtGrid {
     public static final double RIFT_FADE = 8;
     /** Blocks over which a collar thins round the gap a waterfall leaves. */
     public static final double FEATHER = 3;
+    /** The top of a Frozen Crags collar. */
+    public static final int CRAG_TOP = 0;
+    /** Grid columns a crag's cross-section at {@link #CRAG_TOP} needs for a collar: about 48 blocks across. */
+    public static final int CRAG_MIN = 113;
+    /** How much wider a crag collar is: 48 to 64 blocks. */
+    public static final double CRAG_WIDE = 16;
 
     /** The terrain as the grid sees it. */
     public interface Columns {
         int top(int gx, int gz);
 
         boolean rift(int gx, int gz);
+
+        /** Whether the column is solid at {@link #CRAG_TOP}. */
+        default boolean solidAtTop(int gx, int gz) {
+            int top = top(gx, gz);
+            return top == HIGH || top != SKY && top >= CRAG_TOP;
+        }
+
+        /** Whether the column is in the Frozen Crags. */
+        default boolean crag(int gx, int gz) {
+            return false;
+        }
     }
 
     /** An island found by {@link #flood}: its columns, and whether it is low; {@code overCap} when it was too big. */
@@ -92,17 +112,24 @@ public final class SkirtGrid {
     public static final class Sources {
         int size;
         int[] x = new int[64], z = new int[64];
-        float[] height = new float[64];
+        float[] height = new float[64], wide = new float[64];
 
-        public void add(int bx, int bz, int h) {
+        public void add(int bx, int bz, double h) {
+            add(bx, bz, h, 0);
+        }
+
+        /** A rim column; {@code wide} 1 for a crag's, whose collar is {@link #CRAG_WIDE} wider. */
+        public void add(int bx, int bz, double h, double wide) {
             if (size == x.length) {
                 x = java.util.Arrays.copyOf(x, size * 2);
                 z = java.util.Arrays.copyOf(z, size * 2);
                 height = java.util.Arrays.copyOf(height, size * 2);
+                this.wide = java.util.Arrays.copyOf(this.wide, size * 2);
             }
             x[size] = bx;
             z[size] = bz;
-            height[size] = h;
+            height[size] = (float) h;
+            this.wide[size] = (float) wide;
             size++;
         }
 
@@ -143,7 +170,7 @@ public final class SkirtGrid {
 
     /** Whether a rim column counts as low in a vote. */
     public static boolean lowRim(int top) {
-        return top != HIGH && top < LOW_BELOW;
+        return top != HIGH && top <= LOW_BELOW;
     }
 
     /**
@@ -217,7 +244,8 @@ public final class SkirtGrid {
 
     /**
      * The distance from a point to the nearest rim in reach, and the rims' heights blended round it, into
-     * {@code out[0]} and {@code out[1]}. With no rim in reach the distance is {@link #FAR}.
+     * {@code out[0]} and {@code out[1]}, and when {@code out} has room how wide they are, blended the same way,
+     * into {@code out[2]}. With no rim in reach the distance is {@link #FAR}.
      */
     public static void sample(Sources sources, double px, double pz, double[] out) {
         double nearest = Double.MAX_VALUE;
@@ -232,9 +260,12 @@ public final class SkirtGrid {
         if (nearest > reach) {
             out[0] = FAR;
             out[1] = 0;
+            if (out.length > 2) {
+                out[2] = 0;
+            }
             return;
         }
-        double weights = 0, sum = 0;
+        double weights = 0, sum = 0, wide = 0;
         for (int i = 0; i < sources.size; i++) {
             double dx = sources.x[i] - px, dz = sources.z[i] - pz;
             double d = dx * dx + dz * dz;
@@ -244,9 +275,13 @@ public final class SkirtGrid {
             double w = Math.exp(-(d - nearest) / (2 * SIGMA * SIGMA));
             weights += w;
             sum += w * sources.height[i];
+            wide += w * sources.wide[i];
         }
         out[0] = Math.min(FAR, Math.sqrt(nearest));
         out[1] = sum / weights;
+        if (out.length > 2) {
+            out[2] = wide / weights;
+        }
     }
 
     /** The fade toward the rift for a point this many blocks from the nearest rift column. */
@@ -264,14 +299,58 @@ public final class SkirtGrid {
         return 1 + (int) Math.floor((hash(seed ^ 0x5EEDFA11L, x, z) * 0.5 + 0.5) * 2.999);
     }
 
-    /** Whether a column's ground covers the collar there: an island the collar may only reach just inside. */
-    public static boolean covered(int top, double rimHeight) {
-        return top == HIGH || top != SKY && top >= rimHeight - GAP - MAX_THICK - DROOP - 1;
+    /**
+     * Whether a column's ground covers the collar there: an island the collar may only reach just inside. A high
+     * column covers it only when its rock reaches down to {@link #CRAG_TOP}, so a crag's collar can run under an
+     * overhang.
+     */
+    public static boolean covered(int top, boolean solidAtTop, double rimHeight) {
+        return top == HIGH ? solidAtTop : top != SKY && top >= rimHeight - GAP - MAX_THICK - DROOP - 1;
     }
 
     /** The collar's width at a column: 32 to 48 blocks, wandering round the rim. */
     public static double width(long seed, double x, double z) {
-        return MIN_WIDTH + (MAX_WIDTH - MIN_WIDTH) * (0.5 + 0.5 * fbm(seed ^ 0x77A3L, x / 96, z / 96));
+        return width(seed, x, z, 0);
+    }
+
+    /** As above, {@link #CRAG_WIDE} wider in proportion to {@code wide}: 48 to 64 blocks round a crag. */
+    public static double width(long seed, double x, double z, double wide) {
+        return MIN_WIDTH + CRAG_WIDE * wide
+                + (MAX_WIDTH - MIN_WIDTH) * (0.5 + 0.5 * fbm(seed ^ 0x77A3L, x / 96, z / 96));
+    }
+
+    /** Whether a column is on the edge of a Frozen Crags island's cross-section at {@link #CRAG_TOP}. */
+    public static boolean cragEdge(Columns columns, int gx, int gz) {
+        return columns.solidAtTop(gx, gz) && (!columns.solidAtTop(gx + 1, gz) || !columns.solidAtTop(gx - 1, gz)
+                || !columns.solidAtTop(gx, gz + 1) || !columns.solidAtTop(gx, gz - 1)) && columns.crag(gx, gz);
+    }
+
+    /**
+     * The cross-section at {@link #CRAG_TOP} holding a solid column, searched until it reaches {@link #CRAG_MIN}
+     * columns: {@code low} (here, big enough) when it did, which a search from any of its columns would also find.
+     */
+    public static Island crossSection(Columns columns, int gx, int gz) {
+        Set<Long> seen = new HashSet<>();
+        ArrayDeque<Long> queue = new ArrayDeque<>();
+        long start = key(gx, gz);
+        seen.add(start);
+        queue.add(start);
+        while (!queue.isEmpty()) {
+            long point = queue.poll();
+            int x = (int) (point >> 32), z = (int) point;
+            for (int i = 0; i < 4; i++) {
+                int nx = x + (i == 0 ? 1 : i == 1 ? -1 : 0), nz = z + (i == 2 ? 1 : i == 3 ? -1 : 0);
+                long next = key(nx, nz);
+                if (!seen.contains(next) && columns.solidAtTop(nx, nz)) {
+                    seen.add(next);
+                    if (seen.size() >= CRAG_MIN) {
+                        return new Island(toArray(seen), true, true);
+                    }
+                    queue.add(next);
+                }
+            }
+        }
+        return new Island(toArray(seen), false, false);
     }
 
     /** The collar's thickness at the cliff: 3 to 5 blocks. */
