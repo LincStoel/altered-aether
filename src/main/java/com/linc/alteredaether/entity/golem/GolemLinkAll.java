@@ -177,6 +177,8 @@ public final class GolemLinkAll {
         if (role == GolemStorage.Role.NONE) {
             return false;
         }
-        return level.getBlockState(pos).is(GolemStorage.LINKABLE) || GolemStorage.plainContainer(level, pos) != null;
+        // plain containers, drawers and crates; other modded storage is linked one at a time, knowingly
+        return level.getBlockState(pos).is(GolemStorage.LINKABLE) || GolemStorage.plainContainer(level, pos) != null
+                || role == GolemStorage.Role.BULK || role == GolemStorage.Role.POOLED || role == GolemStorage.Role.MISC;
     }
 }

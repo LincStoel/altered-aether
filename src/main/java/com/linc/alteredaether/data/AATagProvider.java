@@ -102,6 +102,14 @@ public final class AATagProvider extends JsonDataProvider {
                 "deep_aether:carved_green_squash", "deep_aether:carved_purple_squash");
         tag("block", AlteredAether.id("golem_empty_only"), "minecraft:hopper", "create:depot");
         tag("block", AlteredAether.id("golem_linkable"));
+        // the odds and ends go into crates first; drawers are found by their slots, compacting ones named
+        tag("block", AlteredAether.id("golem_misc_storage"), "quark:crate");
+        tag("block", AlteredAether.id("golem_bulk"));
+        tag("block", AlteredAether.id("golem_bulk_pooled"), "functionalstorage:compacting_drawer",
+                "functionalstorage:simple_compacting_drawer", "functionalstorage:compacting_framed_drawer",
+                "functionalstorage:framed_simple_compacting_drawer", "storagedrawers:compacting_drawers_2",
+                "storagedrawers:compacting_drawers_3", "storagedrawers:compacting_half_drawers_2",
+                "storagedrawers:compacting_half_drawers_3");
         List<String> never = new ArrayList<>(List.of(
                 // vanilla machines and inventories that aren't storage
                 "minecraft:furnace", "minecraft:blast_furnace", "minecraft:smoker", "minecraft:brewing_stand",
@@ -153,6 +161,7 @@ public final class AATagProvider extends JsonDataProvider {
                 "sophisticatedstorage:storage_input", "sophisticatedstorage:storage_output",
                 "storagedrawers:controller", "storagedrawers:controller_io",
                 "functionalstorage:storage_controller", "functionalstorage:controller_extension",
+                "functionalstorage:framed_storage_controller", "functionalstorage:framed_controller_extension",
                 "integrateddynamics:cable", "integratedtunnels:part_interface_item",
                 // Mekanism: its machines, and the personal chests its security guards
                 "mekanism:personal_chest", "mekanism:personal_barrel", "mekanism:metallurgic_infuser",

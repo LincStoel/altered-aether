@@ -485,6 +485,14 @@
       "required": false
     },
     {
+      "id": "functionalstorage:framed_storage_controller",
+      "required": false
+    },
+    {
+      "id": "functionalstorage:framed_controller_extension",
+      "required": false
+    },
+    {
       "id": "integrateddynamics:cable",
       "required": false
     },

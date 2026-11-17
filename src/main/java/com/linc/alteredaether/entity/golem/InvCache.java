@@ -14,15 +14,18 @@
  */
 package com.linc.alteredaether.entity.golem;
 
+import com.linc.alteredaether.compat.QuarkCrates;
 import com.linc.alteredaether.entity.golem.group.GolemPaths;
 import com.linc.alteredaether.entity.golem.sort.SortSnapshot;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.items.IItemHandler;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -109,13 +112,15 @@ final class InvCache {
         }
         int contentHash = GolemStorage.contentHash(handler);
         GolemStorage.Pins pinned = GolemStorage.pins(level, pos);
-        int pinsHash = pinned.strict() ? 1 : 0;
+        BlockState state = level.getBlockState(pos);
+        boolean locked = GolemStorage.locked(state);
+        int pinsHash = (pinned.strict() ? 1 : 0) + (locked ? 2 : 0);
         for (ItemStack pin : pinned.items()) {
             pinsHash = pinsHash * 31 + ItemStack.hashItemAndComponents(pin);
         }
+        SortSnapshot.Kind kind = kind(role);
         Entry old = entries.get(key);
-        if (old != null && old.contentHash == contentHash && old.pinsHash == pinsHash
-                && old.inv.source() == (role == GolemStorage.Role.SOURCE)) {
+        if (old != null && old.contentHash == contentHash && old.pinsHash == pinsHash && old.inv.kind() == kind) {
             return UNCHANGED;
         }
         Entry entry = new Entry();
@@ -141,8 +146,19 @@ final class InvCache {
             pins.add(keyOf(pin));
         }
         boolean plain = GolemStorage.plainContainer(level, pos) != null;
-        entry.inv = new SortSnapshot.Inv(role == GolemStorage.Role.SOURCE, plain, limit, slotKey, count, pins,
-                pinned.strict());
+        int[] only = new int[n];
+        Arrays.fill(only, SortSnapshot.ANY);
+        if (kind == SortSnapshot.Kind.BULK || kind == SortSnapshot.Kind.POOLED) {
+            for (int slot = 0; slot < n; slot++) {
+                // a void upgrade's slot, or an empty slot of a locked drawer, takes nothing the golem should send
+                if (GolemStorage.voidSlot(handler, slot) || locked && slotKey[slot] < 0) {
+                    only[slot] = SortSnapshot.NONE;
+                }
+            }
+        }
+        int capacity = kind == SortSnapshot.Kind.MISC ? QuarkCrates.capacity(state) : Integer.MAX_VALUE;
+        entry.inv = new SortSnapshot.Inv(kind, plain, limit, slotKey, count, only, capacity, pins, pinned.strict(), false,
+                -1);
         entries.put(key, entry);
         if (old == null) {
             return new Seen(Change.NEW, false);
@@ -150,6 +166,17 @@ final class InvCache {
         boolean contents = old.contentHash != contentHash, pinsChanged = old.pinsHash != pinsHash;
         Change change = contents && pinsChanged ? Change.BOTH : pinsChanged ? Change.PINS : Change.CONTENTS;
         return new Seen(change, entry.total < old.total);
+    }
+
+    /** The part an inventory of {@code role} plays in a plan. */
+    static SortSnapshot.Kind kind(GolemStorage.Role role) {
+        return switch (role) {
+            case SOURCE -> SortSnapshot.Kind.SOURCE;
+            case BULK -> SortSnapshot.Kind.BULK;
+            case POOLED -> SortSnapshot.Kind.POOLED;
+            case MISC -> SortSnapshot.Kind.MISC;
+            default -> SortSnapshot.Kind.STORAGE;
+        };
     }
 
     /** The key for {@code stack}, numbering it if it is new. */

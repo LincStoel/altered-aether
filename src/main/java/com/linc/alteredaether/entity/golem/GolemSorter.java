@@ -1210,7 +1210,8 @@ public final class GolemSorter {
                 if (stack.isEmpty()) {
                     return;
                 }
-                if (level.isLoaded(pos) && GolemStorage.role(level, pos) == GolemStorage.Role.STORAGE) {
+                GolemStorage.Role role = level.isLoaded(pos) ? GolemStorage.role(level, pos) : GolemStorage.Role.NONE;
+                if (role == GolemStorage.Role.STORAGE || role == GolemStorage.Role.MISC) {
                     IItemHandler handler = GolemStorage.handler(level, pos);
                     if (handler != null) {
                         stack = ItemHandlerHelper.insertItemStacked(handler, stack, false);

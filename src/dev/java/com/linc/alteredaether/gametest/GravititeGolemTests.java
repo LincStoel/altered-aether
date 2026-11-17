@@ -44,6 +44,7 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.context.UseOnContext;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.ComparatorBlock;
 import net.minecraft.world.level.block.entity.BaseContainerBlockEntity;
@@ -423,6 +424,43 @@ public final class GravititeGolemTests {
                 ItemStack stack = home.getItem(slot);
                 helper.assertTrue(stack.isEmpty() || spruce.contains(stack.getItem()), "the spruce chest holds " + stack);
             }
+        }).thenSucceed();
+    }
+
+    /**
+     * With Functional Storage: a drawer is bulk storage, its empty slot given the item filling the most stacks, and a
+     * compacting drawer only takes in. Passes trivially without the mod.
+     */
+    @GameTest(template = "arena", timeoutTicks = 900)
+    public static void drawersTakeTheItemsFillingTheMostStacks(GameTestHelper helper) {
+        Block drawerBlock = net.minecraft.core.registries.BuiltInRegistries.BLOCK.get(
+                net.minecraft.resources.ResourceLocation.fromNamespaceAndPath("functionalstorage", "oak_1"));
+        Block compacting = net.minecraft.core.registries.BuiltInRegistries.BLOCK.get(
+                net.minecraft.resources.ResourceLocation.fromNamespaceAndPath("functionalstorage", "compacting_drawer"));
+        if (drawerBlock == Blocks.AIR) {
+            helper.succeed();
+            return;
+        }
+        floor(helper);
+        GravititeGolem golem = golem(helper, HOME);
+        BlockPos drawer = new BlockPos(12, 2, 12), pooled = new BlockPos(12, 2, 14), a = new BlockPos(20, 2, 12);
+        helper.setBlock(drawer, drawerBlock);
+        helper.setBlock(pooled, compacting);
+        BaseContainerBlockEntity chest = chest(helper, a, join(stacks(Items.COBBLESTONE, 9), stacks(Items.OAK_LOG, 3),
+                new ItemStack[]{new ItemStack(Items.DIAMOND, 5)}));
+        ServerLevel level = helper.getLevel();
+        helper.assertTrue(GolemStorage.role(level, helper.absolutePos(drawer)) == GolemStorage.Role.BULK,
+                "a drawer isn't bulk storage: " + GolemStorage.role(level, helper.absolutePos(drawer)));
+        helper.assertTrue(GolemStorage.role(level, helper.absolutePos(pooled)) == GolemStorage.Role.POOLED,
+                "a compacting drawer isn't pooled");
+        helper.startSequence().thenIdle(5).thenExecute(() -> link(helper, golem, drawer, a)).thenWaitUntil(() -> {
+            assertSettled(helper, golem);
+            var handler = GolemStorage.handler(level, helper.absolutePos(drawer));
+            helper.assertTrue(handler != null && handler.getStackInSlot(0).is(Items.COBBLESTONE)
+                    && handler.getStackInSlot(0).getCount() == 576, "the drawer didn't take the cobblestone: "
+                    + (handler == null ? "no handler" : handler.getStackInSlot(0)));
+            helper.assertTrue(count(chest, Items.COBBLESTONE) == 0 && count(chest, Items.OAK_LOG) == 192,
+                    "the chest kept the wrong things");
         }).thenSucceed();
     }
 

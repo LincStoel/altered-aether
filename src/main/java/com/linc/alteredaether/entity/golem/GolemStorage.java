@@ -68,14 +68,36 @@ public final class GolemStorage {
     public static final TagKey<Block> LINKABLE = TagKey.create(Registries.BLOCK, AlteredAether.id("golem_linkable"));
     /** What a golem's head may be. */
     public static final TagKey<Block> HEADS = TagKey.create(Registries.BLOCK, AlteredAether.id("golem_heads"));
+    /** Storage for the odds and ends first of all: Quark's crates. */
+    public static final TagKey<Block> MISC_STORAGE = TagKey.create(Registries.BLOCK, AlteredAether.id("golem_misc_storage"));
+    /** Bulk storage (drawers) that slot sizes alone don't give away. */
+    public static final TagKey<Block> BULK = TagKey.create(Registries.BLOCK, AlteredAether.id("golem_bulk"));
+    /** Compacting drawers: their slots are tiers of one pool. */
+    public static final TagKey<Block> BULK_POOLED = TagKey.create(Registries.BLOCK, AlteredAether.id("golem_bulk_pooled"));
+
+    /** The most slots bulk storage has (four drawers and a void upgrade's slot). */
+    private static final int BULK_SLOTS = 5;
+    /** The fewest items each slot of bulk storage holds. */
+    private static final int BULK_LIMIT = 256;
 
     public enum Role {
         /** Filled and emptied. */
         STORAGE,
         /** Only emptied. */
         SOURCE,
+        /** Drawers: each slot holds lots of one item. */
+        BULK,
+        /** Compacting drawers: only filled. */
+        POOLED,
+        /** Crates: the odds and ends go here first. */
+        MISC,
         /** Can't be linked. */
-        NONE
+        NONE;
+
+        /** Whether the golem puts items into it. */
+        public boolean fills() {
+            return this == STORAGE || this == BULK || this == POOLED || this == MISC;
+        }
     }
 
     private GolemStorage() {
@@ -89,11 +111,12 @@ public final class GolemStorage {
     /** How a golem may use the block at {@code pos}; the chunk must be loaded. */
     public static Role role(Level level, BlockPos pos) {
         BlockState state = level.getBlockState(pos);
-        if (handler(level, pos) == null) {
+        IItemHandler handler = handler(level, pos);
+        if (handler == null) {
             return Role.NONE;
         }
         if (state.is(LINKABLE)) {
-            return Role.STORAGE;
+            return storageRole(state, handler);
         }
         if (state.is(EMPTY_ONLY)) {
             return Role.SOURCE;
@@ -101,7 +124,54 @@ public final class GolemStorage {
         if (state.is(BLACKLIST) || isMachine(level.getBlockEntity(pos))) {
             return Role.NONE;
         }
-        return Role.STORAGE;
+        return storageRole(state, handler);
+    }
+
+    private static Role storageRole(BlockState state, IItemHandler handler) {
+        if (state.is(BULK_POOLED)) {
+            return Role.POOLED;
+        }
+        if (state.is(BULK) || looksBulk(handler)) {
+            return Role.BULK;
+        }
+        return state.is(MISC_STORAGE) ? Role.MISC : Role.STORAGE;
+    }
+
+    /**
+     * Whether an inventory is bulk storage by its slots: a few, each holding several stacks (a void upgrade's slot,
+     * which takes endlessly and holds nothing, aside).
+     */
+    private static boolean looksBulk(IItemHandler handler) {
+        int slots = handler.getSlots();
+        if (slots < 1 || slots > BULK_SLOTS) {
+            return false;
+        }
+        int real = 0;
+        for (int slot = 0; slot < slots; slot++) {
+            if (voidSlot(handler, slot)) {
+                continue;
+            }
+            if (handler.getSlotLimit(slot) < BULK_LIMIT) {
+                return false;
+            }
+            real++;
+        }
+        return real > 0;
+    }
+
+    /** A drawer's void-upgrade slot: takes anything, endlessly, and holds nothing. */
+    public static boolean voidSlot(IItemHandler handler, int slot) {
+        return handler.getSlotLimit(slot) == Integer.MAX_VALUE && handler.getStackInSlot(slot).isEmpty();
+    }
+
+    /** Whether a drawer is locked to what it holds, as its block state says. */
+    public static boolean locked(BlockState state) {
+        for (var property : state.getProperties()) {
+            if (property.getName().equals("locked") && property.getValueClass() == Boolean.class) {
+                return (Boolean) state.getValue(property);
+            }
+        }
+        return false;
     }
 
     /** Machines no tag names, caught by what their block entity is. Hoppers, being empty-only by tag, come first. */
@@ -125,10 +195,50 @@ public final class GolemStorage {
         return null;
     }
 
-    /** One position standing for the whole inventory at {@code pos}: a double chest is seen as one. */
+    /**
+     * One number standing for the whole inventory at {@code pos}: a double chest is seen as one, and so are ender
+     * drawers sharing a frequency.
+     */
     public static long inventoryKey(Level level, BlockPos pos) {
+        String frequency = DrawerFrequency.of(level.getBlockEntity(pos));
+        if (frequency != null) {
+            // far outside any block position's packing
+            return 0x7FF0_0000_0000_0000L | (frequency.hashCode() & 0xFFFF_FFFFL);
+        }
         BlockPos other = partner(level, pos);
         return other == null ? pos.asLong() : Math.min(pos.asLong(), other.asLong());
+    }
+
+    /** Functional Storage's ender drawers: one inventory per frequency, wherever they stand. Found by reflection. */
+    private static final class DrawerFrequency {
+        private static final String TILE = "com.buuz135.functionalstorage.block.tile.EnderDrawerTile";
+        @Nullable
+        private static java.lang.reflect.Method getter;
+        private static boolean tried;
+
+        @Nullable
+        static String of(@Nullable BlockEntity be) {
+            if (be == null || !be.getClass().getName().equals(TILE)) {
+                return null;
+            }
+            if (!tried) {
+                tried = true;
+                try {
+                    getter = be.getClass().getMethod("getFrequency");
+                } catch (ReflectiveOperationException | RuntimeException e) {
+                    AlteredAether.LOGGER.warn("Functional Storage ender drawers have no frequency to read; each counts alone", e);
+                }
+            }
+            if (getter == null) {
+                return null;
+            }
+            try {
+                Object frequency = getter.invoke(be);
+                return frequency == null ? null : frequency.toString();
+            } catch (ReflectiveOperationException | RuntimeException e) {
+                return null;
+            }
+        }
     }
 
     /**

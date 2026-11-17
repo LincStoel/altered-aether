@@ -1306,11 +1306,15 @@ public final class Planner {
             return moved;
         }
 
+        /** Moves {@code amount} from one slot to another, a stack at most per move (a drawer slot holds far more). */
         void transfer(int src, int srcSlot, int dst, int dstSlot, int amount) {
             SortSnapshot.Inv from = invs.get(src);
             SortSnapshot.Inv to = invs.get(dst);
             int key = from.key()[srcSlot];
-            moves.add(new Move(src, srcSlot, dst, dstSlot, key, amount));
+            int stack = Math.max(1, keys.get(key).maxStack());
+            for (int left = amount; left > 0; left -= stack) {
+                moves.add(new Move(src, srcSlot, dst, dstSlot, key, Math.min(stack, left)));
+            }
             if (dst != src) {
                 received.add(dst);
             }
