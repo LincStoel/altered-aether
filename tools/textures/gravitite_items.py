@@ -23,6 +23,8 @@ Recolours other mods' sprites to gravitite's palette by brightness:
 
 The palettes are read from the Aether's own enchanted gravitite and gravitite ore textures.
 
+The textures in HAND_DRAWN have been redrawn by hand, and this script leaves them alone.
+
 Usage:  python tools/textures/gravitite_items.py   (needs the Create, Oritech and Aether jars in libs/ and libs/optional)
 """
 import io
@@ -33,6 +35,14 @@ from PIL import Image
 
 REPO = pathlib.Path(__file__).resolve().parents[2]
 OUT = REPO / "src/main/resources/assets/altered_aether/textures"
+HAND_DRAWN = {"item/enchanted_gravitite_ingot.png", "item/enchanted_gravitite_nugget.png", "item/gravitite_dust.png"}
+
+
+def save(image, name):
+    if name in HAND_DRAWN:
+        print("leaving hand-drawn", name)
+        return
+    image.save(OUT / name)
 
 
 def jar(prefix):
@@ -126,15 +136,14 @@ def main():
     (OUT / "block").mkdir(parents=True, exist_ok=True)
 
     item = "assets/create/textures/item/"
-    recolour(read(create, item + "raw_zinc.png"), ore).save(OUT / "item/raw_gravitite.png")
-    recolour(read(create, item + "crushed_raw_zinc.png"), ore).save(OUT / "item/crushed_gravitite.png")
-    recolour(read(create, item + "zinc_nugget.png"), enchanted).save(OUT / "item/enchanted_gravitite_nugget.png")
-    recolour(read(create, "assets/create/textures/block/raw_zinc_block.png"), ore).save(
-        OUT / "block/raw_gravitite_block.png")
+    save(recolour(read(create, item + "raw_zinc.png"), ore), "item/raw_gravitite.png")
+    save(recolour(read(create, item + "crushed_raw_zinc.png"), ore), "item/crushed_gravitite.png")
+    save(recolour(read(create, item + "zinc_nugget.png"), enchanted), "item/enchanted_gravitite_nugget.png")
+    save(recolour(read(create, "assets/create/textures/block/raw_zinc_block.png"), ore), "block/raw_gravitite_block.png")
     dust = "assets/oritech/textures/item/"
-    recolour(read(oritech, dust + "iron_dust.png"), ore).save(OUT / "item/gravitite_dust.png")
-    recolour(read(oritech, dust + "small_iron_dust.png"), ore).save(OUT / "item/small_gravitite_dust.png")
-    cube(enchanted).save(OUT / "item/enchanted_gravitite_ingot.png")
+    save(recolour(read(oritech, dust + "iron_dust.png"), ore), "item/gravitite_dust.png")
+    save(recolour(read(oritech, dust + "small_iron_dust.png"), ore), "item/small_gravitite_dust.png")
+    save(cube(enchanted), "item/enchanted_gravitite_ingot.png")
 
 
 if __name__ == "__main__":
