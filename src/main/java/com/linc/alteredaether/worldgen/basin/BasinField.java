@@ -52,9 +52,10 @@ public final class BasinField {
     static final int ATOLL_CELL = 320;
     /**
      * Cells of the second, finer atoll grid, for small single atolls in the gaps the big ones leave. A small atoll
-     * stands only clear of every big one, and trims less of the land around it.
+     * stands only clear of every big one, and trims less of the land around it. Wide enough past a small atoll's
+     * extent (32 to 43 blocks) that each can drift well off its cell's centre, so they don't read as a grid.
      */
-    static final int MINOR_CELL = 88;
+    static final int MINOR_CELL = 120;
     private static final double MINOR_INFLUENCE = 16;
     /** Double atolls are landmarks, on a grid of their own this times the configured atoll size. */
     static final int DOUBLE_CELL = 1024;
