@@ -36,6 +36,10 @@ import java.util.Set;
  * <p>Some items are too many to be miscellaneous ({@code many}). A family holding one is given a chest that would
  * otherwise stand empty, however little it fills. If it gets none, those items go with the group nearest their family
  * in the tree instead ({@link Result#nearest}), and so don't keep the odds and ends a chest they won't fill.
+ *
+ * <p>Crates hold the odds and ends first, and then, with what room is left, the groups of the families they also take
+ * ({@code crateable}: equipment), biggest first, judged by items, as a crate counts them. A group the crates hold
+ * needs no chest ({@link Result#crated}).
  */
 public final class Grouping {
     /** Fill is counted in hundredths of a stack. */
@@ -47,10 +51,15 @@ public final class Grouping {
      * @param nearest for each node, the group nearest it in the tree other than the root (the closest relative, then
      *                the group filling fewest slots, then the earliest node), or -1 if there is none; what its items
      *                too many to be miscellaneous go with when its group is the root
+     * @param crated  the groups kept in the crates rather than chests of their own
      */
-    public record Result(int[] group, int[] own, int[] nearest) {
+    public record Result(int[] group, int[] own, int[] nearest, boolean[] crated) {
         public int of(SortSnapshot.Key key) {
             return group[key.node()];
+        }
+
+        public boolean crated(int group) {
+            return group > 0 && group < crated.length && crated[group];
         }
     }
 
@@ -62,17 +71,20 @@ public final class Grouping {
      * @param slots     the slots the items directly in each node fill, merged
      * @param many      the part of {@code slots} filled by items too many to be miscellaneous
      * @param fill      how many stacks' worth (in hundredths, {@link #STACK}) the items directly in each node are
+     * @param items     how many items are directly in each node
+     * @param crateable the nodes whose groups crates take as well as the odds and ends
      * @param chests    how many chests there are to keep groups in
      * @param chestSize the slots in a chest
      * @param miscSlots the slots kept for the miscellaneous items besides chests (crates)
+     * @param crateItems the items the crates hold in all
      * @param minFill   the fewest stacks' worth (in hundredths) a family holds to be worth a group
      * @param spareFill the fewest it holds to be worth a chest that would otherwise stay empty
      * @param forced    pinned families: always groups, needing no chest
      * @param claimed   families a chest was kept for last time
      */
-    public static Result compute(List<SortSnapshot.Node> nodes, int[] slots, int[] many, int[] fill, int chests,
-                                 int chestSize, int miscSlots, int minFill, int spareFill, Set<Integer> forced,
-                                 Set<Integer> claimed) {
+    public static Result compute(List<SortSnapshot.Node> nodes, int[] slots, int[] many, int[] fill, int[] items,
+                                 boolean[] crateable, int chests, int chestSize, int miscSlots, long crateItems,
+                                 int minFill, int spareFill, Set<Integer> forced, Set<Integer> claimed) {
         int n = nodes.size();
         int[] weight = fill.clone();
         boolean anyMany = false;
@@ -99,7 +111,8 @@ public final class Grouping {
                 in[f] = true;
             }
         }
-        Context ctx = new Context(nodes, slots, many, fill, depth, chestSize, miscSlots, minFill, forced, claimed);
+        Context ctx = new Context(nodes, slots, many, fill, items, crateable, depth, chestSize, miscSlots, crateItems,
+                minFill, forced, claimed);
         split(ctx, in, weight, children, chests);
         // chests still to spare: rather than leave them empty, the biggest groups left split further, down to
         // families of a couple of stacks (lone one-offs still share the odds and ends). Here, and only here, what is
@@ -143,8 +156,9 @@ public final class Grouping {
             ctx.spare = spare;
         }
         int[] own = new int[n];
-        int[] group = ctx.assign(in, own, new int[n]);
-        return new Result(group, own, ctx.nearest(group, own));
+        int[] ownItems = new int[n];
+        int[] group = ctx.assign(in, own, new int[n], ownItems);
+        return new Result(group, own, ctx.nearest(group, own), ctx.crated(own, ownItems));
     }
 
     /** Splits off the heaviest families first while the groups fit {@code chests}, each holding the context's fill. */
@@ -174,8 +188,10 @@ public final class Grouping {
 
     private static final class Context {
         final List<SortSnapshot.Node> nodes;
-        final int[] slots, many, fill, depth;
+        final int[] slots, many, fill, items, depth;
+        final boolean[] crateable;
         final int chestSize, miscSlots;
+        final long crateItems;
         int minFill;
         /** Splitting for spare chests: what is too many to be miscellaneous counts with the group nearest it. */
         boolean spare;
@@ -184,15 +200,19 @@ public final class Grouping {
         final Set<Integer> forced, claimed;
         final Integer[] deepestFirst;
 
-        Context(List<SortSnapshot.Node> nodes, int[] slots, int[] many, int[] fill, int[] depth, int chestSize,
-                int miscSlots, int minFill, Set<Integer> forced, Set<Integer> claimed) {
+        Context(List<SortSnapshot.Node> nodes, int[] slots, int[] many, int[] fill, int[] items, boolean[] crateable,
+                int[] depth, int chestSize, int miscSlots, long crateItems, int minFill, Set<Integer> forced,
+                Set<Integer> claimed) {
             this.nodes = nodes;
             this.slots = slots;
             this.many = many;
             this.fill = fill;
+            this.items = items;
+            this.crateable = crateable;
             this.depth = depth;
             this.chestSize = Math.max(1, chestSize);
             this.miscSlots = miscSlots;
+            this.crateItems = crateItems;
             this.minFill = Math.max(1, minFill);
             this.forced = forced;
             this.claimed = claimed;
@@ -211,7 +231,8 @@ public final class Grouping {
         /** The chests the groups {@code in} need. */
         int need(boolean[] in) {
             int[] own = new int[nodes.size()];
-            int[] group = assign(in, own, new int[nodes.size()]);
+            int[] ownItems = new int[nodes.size()];
+            int[] group = assign(in, own, new int[nodes.size()], ownItems);
             // what is too many to be miscellaneous goes with the group nearest it instead
             int[] nearest = null;
             for (int i = 0; i < own.length && spare; i++) {
@@ -225,9 +246,10 @@ public final class Grouping {
                     }
                 }
             }
+            boolean[] crated = crated(own, ownItems);
             int need = 0;
             for (int g = 1; g < own.length; g++) {
-                if (own[g] > 0 && !forced.contains(g)) {
+                if (own[g] > 0 && !forced.contains(g) && !crated[g]) {
                     need += (own[g] + chestSize - 1) / chestSize;
                 }
             }
@@ -236,16 +258,49 @@ public final class Grouping {
         }
 
         /**
-         * Each node's group, with {@code own} filled with each group's slots and {@code ownFill} its fill: a group
-         * left holding too little folds into the group above it.
+         * The crateable groups the crates hold besides the odds and ends: with the room the odds and ends leave (none
+         * if they overflow the crates), biggest first by items, each that still fits.
          */
+        boolean[] crated(int[] own, int[] ownItems) {
+            int n = own.length;
+            boolean[] crated = new boolean[n];
+            if (crateItems <= 0 || own[SortSnapshot.ROOT] > miscSlots) {
+                return crated;
+            }
+            long room = crateItems - ownItems[SortSnapshot.ROOT];
+            List<Integer> candidates = new ArrayList<>();
+            for (int g = 1; g < n; g++) {
+                if (own[g] > 0 && crateable[g] && !forced.contains(g)) {
+                    candidates.add(g);
+                }
+            }
+            candidates.sort((a, b) -> ownItems[a] != ownItems[b] ? Integer.compare(ownItems[b], ownItems[a])
+                    : Integer.compare(a, b));
+            for (int g : candidates) {
+                if (ownItems[g] <= room) {
+                    crated[g] = true;
+                    room -= ownItems[g];
+                }
+            }
+            return crated;
+        }
+
         int[] assign(boolean[] in, int[] own, int[] ownFill) {
+            return assign(in, own, ownFill, new int[nodes.size()]);
+        }
+
+        /**
+         * Each node's group, with {@code own} filled with each group's slots, {@code ownFill} its fill and
+         * {@code ownItems} its items: a group left holding too little folds into the group above it.
+         */
+        int[] assign(boolean[] in, int[] own, int[] ownFill, int[] ownItems) {
             int n = nodes.size();
             int[] group = new int[n];
             for (int i = 0; i < n; i++) {
                 group[i] = in[i] ? i : group[nodes.get(i).parent() < 0 ? 0 : nodes.get(i).parent()];
                 own[group[i]] += slots[i];
                 ownFill[group[i]] += fill[i];
+                ownItems[group[i]] += items[i];
             }
             int[] folded = new int[n];
             Arrays.fill(folded, -1);
@@ -257,8 +312,10 @@ public final class Grouping {
                 int up = group[nodes.get(g).parent()];
                 own[up] += own[g];
                 ownFill[up] += ownFill[g];
+                ownItems[up] += ownItems[g];
                 own[g] = 0;
                 ownFill[g] = 0;
+                ownItems[g] = 0;
                 folded[g] = up;
             }
             for (int i = 0; i < n; i++) {

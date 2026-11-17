@@ -72,7 +72,7 @@ public record SortSnapshot(List<Key> keys, List<Inv> invs, List<Node> nodes) {
         BULK,
         /** A compacting drawer: its slots are tiers of one pool, so it only ever takes in, and isn't counted. */
         POOLED,
-        /** Storage for the miscellaneous items first of all (a Quark crate). */
+        /** Storage for the miscellaneous items first of all, then the equipment (a Quark crate). */
         MISC
     }
 

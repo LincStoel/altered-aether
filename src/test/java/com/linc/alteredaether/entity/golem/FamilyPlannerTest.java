@@ -57,12 +57,18 @@ class FamilyPlannerTest {
             new SortSnapshot.Node(0, "aether"),         // 10
             new SortSnapshot.Node(10, "blocks"),        // 11
             new SortSnapshot.Node(11, "other"),         // 12
-            new SortSnapshot.Node(12, "gravitite"));    // 13
+            new SortSnapshot.Node(12, "gravitite"),     // 13
+            new SortSnapshot.Node(0, "equipment"),      // 14
+            new SortSnapshot.Node(14, "tools"),         // 15
+            new SortSnapshot.Node(15, "iron"),          // 16
+            new SortSnapshot.Node(14, "armor"),         // 17
+            new SortSnapshot.Node(17, "iron"));         // 18
 
     private static final int PLANKS = 0, STAIRS = 1, STRIPPED = 2, HOLLOW = 3, GRAVITITE = 4, OAK = 5, ANDESITE = 6,
-            IRON = 7, COAL = 8;
+            IRON = 7, COAL = 8, PICKAXE = 9, HELMET = 10;
     private static final List<SortSnapshot.Key> KEYS = List.of(
-            key(4, 0), key(4, 1), key(4, 2), key(4, 3), key(13, 4), key(5, 5), key(7, 6), key(9, 7), key(9, 8));
+            key(4, 0), key(4, 1), key(4, 2), key(4, 3), key(13, 4), key(5, 5), key(7, 6), key(9, 7), key(9, 8),
+            new SortSnapshot.Key(1, 16, (16L << 20) | 9), new SortSnapshot.Key(1, 18, (18L << 20) | 10));
 
     /** As the config has it by default: a family needs a quarter of a chest to get one. */
     private static final Planner.Settings SETTINGS = new Planner.Settings(3, 0.25, 2);
@@ -283,6 +289,44 @@ class FamilyPlannerTest {
         assertTrue(crate.total() <= 15, "over the crate's capacity");
         assertTrue(keysIn(crate).size() >= 2, "the odds and ends didn't go to the crate: " + dump(snapshot));
         assertFalse(keysIn(crate).contains(PLANKS), "spruce in the crate");
+    }
+
+    /** {@code n} of an unstackable {@code key}, one to a slot, as key/count pairs. */
+    private static int[] ones(int key, int n) {
+        int[] out = new int[n * 2];
+        for (int i = 0; i < n; i++) {
+            out[i * 2] = key;
+            out[i * 2 + 1] = 1;
+        }
+        return out;
+    }
+
+    @Test
+    void cratesTakeTheEquipmentWithTheRoomTheOddsAndEndsLeave() {
+        // eight tools and helmets are enough for a chest of their own (even split in two, with chests to spare), but
+        // the crate has room for them besides the odds and ends
+        int[] mixed = concat(stacks(PLANKS, 10), ones(PICKAXE, 5), ones(HELMET, 3), new int[]{IRON, 7});
+        SortSnapshot snapshot = snapshot(chest(mixed), crate(640), chest(), chest(), chest());
+        assertTrue(settle(snapshot, SortMode.TIDY) <= 4, "didn't settle");
+        assertEquals(Set.of(PICKAXE, HELMET, IRON), keysIn(snapshot.invs().get(1)), "the crate: " + dump(snapshot));
+
+        // a crate the odds and ends fill leaves the equipment a chest of its own
+        SortSnapshot full = snapshot(chest(concat(mixed, new int[]{OAK, 5})), crate(12), chest(), chest());
+        assertTrue(settle(full, SortMode.TIDY) <= 4, "didn't settle");
+        assertFalse(keysIn(full.invs().get(1)).contains(PICKAXE), "equipment in a full crate: " + dump(full));
+        assertTrue(chestWith(full, Set.of(PICKAXE, HELMET)) >= 0, "the equipment has no chest: " + dump(full));
+    }
+
+    @Test
+    void anEquipmentChestEmptiesIntoTheCrate() {
+        SortSnapshot snapshot = snapshot(
+                chest(concat(ones(PICKAXE, 5), ones(HELMET, 3))).with(false, 14),
+                crate(640, IRON, 7),
+                chest(stacks(PLANKS, 10)));
+        assertTrue(settle(snapshot, SortMode.TIDY) <= 4, "didn't settle");
+        assertTrue(snapshot.invs().get(0).isEmpty(), "the equipment stayed in its chest: " + dump(snapshot));
+        assertEquals(5, count(snapshot.invs().get(1), PICKAXE), dump(snapshot));
+        assertEquals(3, count(snapshot.invs().get(1), HELMET), dump(snapshot));
     }
 
     @Test

@@ -40,7 +40,8 @@ import java.util.Set;
  * then reads what every chest is for. A <b>pinned</b> one (an item frame, placard or filter on it) belongs to its
  * pinned items and their families, whatever it holds; a <b>strict</b> pinned one belongs to its pinned items alone,
  * and anything else in it is sent to wherever else has room. A crate ({@link Kind#MISC}) is for the miscellaneous
- * items. Otherwise the family filling the most of a chest's slots is its <b>dominant</b> family. Each item goes to the
+ * items, and with the room they leave for the equipment ({@link #CRATE_CATEGORIES}), whose chests then give it up.
+ * Otherwise the family filling the most of a chest's slots is its <b>dominant</b> family. Each item goes to the
  * best home it has: pinned for it, its drawer, pinned for its family, then the dominant chest for its family holding
  * the most of it. A family no chest is for takes empty chests (the biggest first). An item with no home at all goes to
  * the crates, then the chests of miscellaneous items, and if none has room it is reported stuck.
@@ -75,6 +76,11 @@ public final class Planner {
      * own instead, crate or no crate.
      */
     public static final int MISC_MAX_ITEMS = 16;
+    /**
+     * The categories (children of the root, as {@code GolemPaths} names them) whose families crates take besides the
+     * odds and ends, with the room those leave.
+     */
+    public static final Set<String> CRATE_CATEGORIES = Set.of("equipment");
 
     /**
      * Which inventories a plan moves items out of.
@@ -212,7 +218,8 @@ public final class Planner {
         for (Map.Entry<Integer, List<Integer>> entry : byGroup.entrySet()) {
             int group = entry.getKey();
             List<Integer> chests = entry.getValue();
-            int keep = Math.max(1, (groupSlots.getOrDefault(group, 0) + size - 1) / size);
+            // a group the crates hold keeps none: its chests give it up for the crates
+            int keep = w.crated(group) ? 0 : Math.max(1, (groupSlots.getOrDefault(group, 0) + size - 1) / size);
             if (chests.size() <= keep) {
                 continue;
             }
@@ -250,6 +257,12 @@ public final class Planner {
         // crates are for the miscellaneous items, while they have room for them all
         if (crateSlots > 0 && crateSlots >= groupSlots.getOrDefault(SortSnapshot.ROOT, 0)) {
             claimed.add(SortSnapshot.ROOT);
+        }
+        // and the equipment groups they have room for besides
+        for (int group : groupSlots.keySet()) {
+            if (w.crated(group)) {
+                claimed.add(group);
+            }
         }
         List<Integer> unclaimed = new ArrayList<>();
         for (int group : groupSlots.keySet()) {
@@ -342,7 +355,7 @@ public final class Planner {
                         }
                     }
                     homes.addAll(w.byHeld(tier, key));
-                    if (group == SortSnapshot.ROOT) {
+                    if (group == SortSnapshot.ROOT || w.crated(group)) {
                         homes.addAll(w.byHeld(crates, key));
                     }
                     tier.clear();
@@ -360,7 +373,7 @@ public final class Planner {
                         // takes it instead
                         int g = group;
                         for (int j : nearby.computeIfAbsent(key, x -> nearbyHomes(w, x, g, type, dominant, pinGroups,
-                                newHome))) {
+                                newHome, crates))) {
                             if (!homes.contains(j)) {
                                 homes.add(j);
                             }
@@ -435,10 +448,11 @@ public final class Planner {
     /**
      * The chests of the families other than {@code group}, nearest {@code key}'s own family first; within a family,
      * those pinned for it, then those it is the dominant family of, holding the most of {@code key} first, then the
-     * chests just given to it.
+     * chests just given to it (or the crates, for a group they hold).
      */
     private static List<Integer> nearbyHomes(Work w, int key, int group, int[] type, int[] dominant,
-                                             List<Set<Integer>> pinGroups, Map<Integer, List<Integer>> newHome) {
+                                             List<Set<Integer>> pinGroups, Map<Integer, List<Integer>> newHome,
+                                             List<Integer> crates) {
         List<Integer> homes = new ArrayList<>();
         List<Integer> tier = new ArrayList<>();
         for (int near : w.nearestGroups(w.keys.get(key).node())) {
@@ -460,6 +474,13 @@ public final class Planner {
             }
             homes.addAll(w.byHeld(tier, key));
             homes.addAll(newHome.getOrDefault(near, List.of()));
+            if (w.crated(near)) {
+                for (int c : w.byHeld(crates, key)) {
+                    if (!homes.contains(c)) {
+                        homes.add(c);
+                    }
+                }
+            }
         }
         return homes;
     }
@@ -987,6 +1008,7 @@ public final class Planner {
             Set<Integer> claimed = new HashSet<>();
             int chests = 0;
             int miscSlots = 0;
+            long crateItems = 0;
             for (SortSnapshot.Inv inv : invs) {
                 if (inv.kind() != Kind.SINK && inv.kind() != Kind.POOLED) {
                     if (inv.kind() != Kind.SOURCE) {
@@ -1005,6 +1027,7 @@ public final class Planner {
                     chests++;
                 } else if (inv.kind() == Kind.MISC && inv.pins().isEmpty()) {
                     miscSlots += (int) Math.min(inv.size(), inv.capacity() / 64L);
+                    crateItems += Math.min(inv.capacity(), inv.size() * 64L);
                 }
                 if (inv.kind() == Kind.BULK || inv.kind() == Kind.POOLED || inv.kind() == Kind.SINK) {
                     continue;
@@ -1033,18 +1056,20 @@ public final class Planner {
             int size = chestSize();
             int minFill = Math.max(SPARE_FILL, (int) Math.round(size * settings.minFill())) * Grouping.STACK;
             int[] slots = new int[nodes.size()], manySlots = new int[nodes.size()], fill = new int[nodes.size()];
+            int[] items = new int[nodes.size()];
             toStore.forEach((k, left) -> {
                 int node = keys.get(k).node();
                 int need = need(k, left);
                 slots[node] += need;
+                items[node] = (int) Math.min(Integer.MAX_VALUE / 4, items[node] + left);
                 if (many.contains(k)) {
                     manySlots[node] += need;
                 }
                 long stack = Math.max(1, keys.get(k).maxStack());
                 fill[node] += (int) Math.min(Integer.MAX_VALUE / 4, (left * Grouping.STACK + stack - 1) / stack);
             });
-            Grouping.Result result = Grouping.compute(nodes, slots, manySlots, fill, chests, size, miscSlots, minFill,
-                    SPARE_FILL * Grouping.STACK, forced, claimed);
+            Grouping.Result result = Grouping.compute(nodes, slots, manySlots, fill, items, crateable(), chests, size,
+                    miscSlots, crateItems, minFill, SPARE_FILL * Grouping.STACK, forced, claimed);
             // too many of one item for the odds and ends, and no group for its family: it goes with the group nearest
             rehomed = new HashMap<>();
             for (int k : many) {
@@ -1055,6 +1080,21 @@ public final class Planner {
             }
             nearest = new HashMap<>();
             return result;
+        }
+
+        /** The nodes crates take as well as the odds and ends: those under a {@link #CRATE_CATEGORIES} category. */
+        boolean[] crateable() {
+            boolean[] out = new boolean[nodes.size()];
+            for (int i = 1; i < nodes.size(); i++) {
+                SortSnapshot.Node node = nodes.get(i);
+                out[i] = node.parent() == SortSnapshot.ROOT ? CRATE_CATEGORIES.contains(node.name()) : out[node.parent()];
+            }
+            return out;
+        }
+
+        /** Whether tidy keeps {@code group} in the crates rather than chests of its own. */
+        boolean crated(int group) {
+            return this.group != null && this.group.crated(group);
         }
 
         int groupOf(int key) {

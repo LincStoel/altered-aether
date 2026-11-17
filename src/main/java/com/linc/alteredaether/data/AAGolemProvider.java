@@ -124,7 +124,7 @@ public final class AAGolemProvider extends JsonDataProvider {
         lang.put(M + "linked_source", "Linked to %s, to be emptied only (%s / %s)");
         lang.put(M + "linked_blocked", "Linked to %s, but it's walled in: no golem can get at it (%s / %s)");
         lang.put(M + "linked_bulk", "Linked to %s as bulk storage, for what it holds and what there is most of (%s / %s)");
-        lang.put(M + "linked_misc", "Linked to %s, for the odds and ends (%s / %s)");
+        lang.put(M + "linked_misc", "Linked to %s, for the odds and ends and equipment (%s / %s)");
         lang.put(M + "linked_sink", "Linked to %s, to be fed what its filter lets through (%s / %s)");
         lang.put(M + "linked_sink_unfiltered", "Linked to %s, but it has no filter, so it is fed nothing (%s / %s)");
         lang.put(M + "unlinked", "Unlinked from %s");
@@ -181,7 +181,7 @@ public final class AAGolemProvider extends JsonDataProvider {
         lang.put(status + "linked_to", "Linked to %s");
         lang.put(status + "source", "Emptied only");
         lang.put(status + "bulk", "Bulk storage");
-        lang.put(status + "misc", "For the odds and ends");
+        lang.put(status + "misc", "For the odds and ends and equipment");
         lang.put(status + "sink", "Fed what its filter lets through");
         lang.put(status + "sink_unfiltered", "Fed nothing: it has no filter");
         lang.put(status + "holds", "Kept for: %s");
@@ -206,7 +206,7 @@ public final class AAGolemProvider extends JsonDataProvider {
         lang.put(jei + "guide.drawers.title", "Drawers: ");
         lang.put(jei + "guide.drawers", "are bulk storage. Each drawer keeps what it holds; an empty one is given whatever fills the most stacks. A locked empty drawer is left alone, and a compacting drawer is only ever filled.");
         lang.put(jei + "guide.crate.title", "Quark crates: ");
-        lang.put(jei + "guide.crate", "take the odds and ends first, up to what a crate holds.");
+        lang.put(jei + "guide.crate", "take the odds and ends first, then armour, tools and weapons with the room left, up to what a crate holds.");
         lang.put(jei + "guide.funnels.title", "Brass funnel into a machine: ");
         lang.put(jei + "guide.funnels", "link the funnel, and the golem keeps the machine fed with what the funnel's filter lets through. No filter, nothing is fed; redstone on the funnel holds it shut.");
         lang.put(jei + "guide.pebble.storage.title", "Pebble on storage: ");
