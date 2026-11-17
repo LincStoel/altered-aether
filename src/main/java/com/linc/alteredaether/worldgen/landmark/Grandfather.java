@@ -18,6 +18,7 @@ import com.linc.alteredaether.worldgen.TerrainProbe;
 import com.linc.alteredaether.worldgen.grove.Giant;
 import com.linc.alteredaether.worldgen.grove.GrandfatherTree;
 import com.linc.alteredaether.worldgen.grove.GroveBuilder;
+import com.linc.alteredaether.worldgen.grove.NeckCloud;
 import net.minecraft.core.BlockPos;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.ChunkPos;
@@ -76,6 +77,7 @@ record Grandfather(int x, int z, Giant giant) implements Landmark {
         GroveBuilder.build(level, x0, z0, x1, z1, giant);
         GroveBuilder.furnish(level, x0, z0, x1, z1, giant);
         GroveBuilder.hangVines(level, x0, z0, x1, z1, giant);
+        NeckCloud.place(level, x0, z0, x1, z1, giant);
     }
 
     @Override
