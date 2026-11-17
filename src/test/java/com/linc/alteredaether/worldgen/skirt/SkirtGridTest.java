@@ -247,17 +247,6 @@ class SkirtGridTest {
     }
 
     @Test
-    void waterfallsLeaveAGapAndAFeather() {
-        for (int x = -50; x < 50; x++) {
-            int r = SkirtGrid.gapRadius(42, x, 3 * x);
-            assertTrue(r >= 1 && r <= 3);
-        }
-        assertEquals(0, SkirtGrid.feather(2, 2));
-        assertTrue(SkirtGrid.feather(3.5, 2) > 0 && SkirtGrid.feather(3.5, 2) < 1);
-        assertEquals(1, SkirtGrid.feather(2 + SkirtGrid.FEATHER, 2));
-    }
-
-    @Test
     void aSlopedRimGetsNoCollar() {
         assertEquals(1, SkirtGrid.levelness(0));
         assertEquals(1, SkirtGrid.levelness(SkirtGrid.LEVEL));

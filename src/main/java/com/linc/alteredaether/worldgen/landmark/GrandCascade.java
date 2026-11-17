@@ -15,7 +15,6 @@
 package com.linc.alteredaether.worldgen.landmark;
 
 import com.linc.alteredaether.worldgen.TerrainProbe;
-import com.linc.alteredaether.worldgen.skirt.CloudSkirts;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
@@ -247,8 +246,6 @@ record GrandCascade(int x, int z, List<Tier> tiers, double vertical, long salt) 
                     level.setBlock(pos.set(bx, y, bz), water, 2);
                     if (notch) {
                         level.scheduleTick(pos.immutable(), Fluids.WATER, 0);
-                        // The last notch pours over the island's edge, maybe onto a neighbour's cloud skirt.
-                        CloudSkirts.clearFalls(level, pos.immutable());
                     }
                 }
                 if (bowl && distance < shore * 0.8 && LandmarkField.hash(salt, bx, 7, bz) < 0.025) {

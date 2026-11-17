@@ -472,9 +472,9 @@ public final class AACommonConfig {
                 .push("boulders");
         BOULDER_INTERVAL_MINUTES = b.comment("Average minutes between boulders falling near each player in the Aether, with a",
                         "random spread. 0 turns falling boulders off.")
-                .defineInRange("interval_minutes", 10.0, 0.0, 1440.0);
+                .defineInRange("interval_minutes", 8.0, 0.0, 1440.0);
         BOULDER_MAX_ACTIVE = b.comment("Most boulders falling or rolling in one dimension at once.")
-                .defineInRange("max_active", 3, 1, 32);
+                .defineInRange("max_active", 6, 1, 32);
         BOULDER_DAMAGE = b.comment("Multiplier on the damage a moving boulder does to what it hits. 0 for none.")
                 .defineInRange("damage", 1.0, 0.0, 10.0);
         b.pop();

@@ -79,8 +79,6 @@ public final class SkirtGrid {
     public static final int CLEAR = 16, CLEAR_MIN = 3;
     /** Blocks over which a collar fades out toward the Shattered Rift. */
     public static final double RIFT_FADE = 8;
-    /** Blocks over which a collar thins round the gap a waterfall leaves. */
-    public static final double FEATHER = 3;
     /** The top of a Frozen Crags or Tempest Peaks collar. */
     public static final int CRAG_TOP = 0;
     /** Grid columns a crag's cross-section at {@link #CRAG_TOP} needs for a collar: about 48 blocks across. */
@@ -291,16 +289,6 @@ public final class SkirtGrid {
         return smoothstep(distance / RIFT_FADE);
     }
 
-    /** How much of the collar survives this many blocks from a waterfall whose gap has this radius. */
-    public static double feather(double distance, double radius) {
-        return distance <= radius ? 0 : smoothstep((distance - radius) / FEATHER);
-    }
-
-    /** The radius of the gap round a waterfall, 1 to 3 blocks, fixed by where it falls. */
-    public static int gapRadius(long seed, int x, int z) {
-        return 1 + (int) Math.floor((hash(seed ^ 0x5EEDFA11L, x, z) * 0.5 + 0.5) * 2.999);
-    }
-
     /**
      * Whether a column's ground covers the collar there: an island the collar may only reach just inside. A high
      * column covers it only when its rock reaches down to {@link #CRAG_TOP}, so a crag's collar can run under an
@@ -376,7 +364,7 @@ public final class SkirtGrid {
      *
      * @param distance  blocks from the nearest low rim
      * @param rim       the blended rim height
-     * @param gate      what survives of the collar here (rift fade, inner reach, waterfall gaps), 0 to 1
+     * @param gate      what survives of the collar here (rift fade, inner reach, clearance), 0 to 1
      */
     public static boolean span(double distance, double rim, double gate, double width, double thick, double billowTop,
                                double billowBottom, double[] out) {
