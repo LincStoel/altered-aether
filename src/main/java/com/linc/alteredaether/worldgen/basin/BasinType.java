@@ -39,10 +39,10 @@ public enum BasinType {
      * A big lake after the Aether II's: a noise-shaped sheet of water planed into the island, on a grid of its own. The
      * radii bound its outline ({@link LakeShape#radius()}), not the water itself, which mostly stops well short.
      */
-    LAKE("lake", 0.45, 85, 130, 8, 14, Fluid.WATER, "aether:skyroot_meadow", "aether:skyroot_grove",
+    LAKE("lake", 0.8, 85, 130, 8, 14, Fluid.WATER, "aether:skyroot_meadow", "aether:skyroot_grove",
             "aether:skyroot_forest", "aether:skyroot_woodland", "aether_plateau", "cascading_archwood_grove"),
     /** The big lake of the poisonous biomes: the vexing grove, and Deep Aether's yagroot swamp. */
-    POISON_LAKE("poison_lake", 0.45, 85, 130, 6, 11, Fluid.POISON, "vexing_archwood_grove",
+    POISON_LAKE("poison_lake", 0.8, 85, 130, 6, 11, Fluid.POISON, "vexing_archwood_grove",
             "deep_aether:yagroot_swamp");
 
     public enum Fluid {

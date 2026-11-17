@@ -167,6 +167,7 @@ public final class BasinFillFeature extends Feature<NoneFeatureConfiguration> {
         BlockState lakeShore = site.isLake() ? lakeShore(field, site) : null;
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
         List<BlockPos> beds = new ArrayList<>();
+        List<int[]> filled = new ArrayList<>();
         boolean placed = false;
         // Water first, so the seal pass below sees this chunk's columns as they'll finally be.
         for (int x = chunk.getMinBlockX(); x <= chunk.getMaxBlockX(); x++) {
@@ -178,10 +179,17 @@ public final class BasinFillFeature extends Feature<NoneFeatureConfiguration> {
                 if (waterBottom > water) {
                     continue;
                 }
+                if (site.isLake() && waterBottom <= bottom) {
+                    // Past the island's edge: left dry, and the water beside it pours off.
+                    continue;
+                }
                 for (int y = water; y >= waterBottom; y--) {
                     BlockState state = y == water && site.type().fluid() == BasinType.Fluid.FROZEN
                             ? Blocks.ICE.defaultBlockState() : liquid;
                     level.setBlock(pos.set(x, y, z), state, Block.UPDATE_CLIENTS);
+                }
+                if (site.isLake()) {
+                    filled.add(new int[]{x, z, waterBottom});
                 }
                 placed = true;
                 pos.set(x, waterBottom - 1, z);
@@ -209,9 +217,16 @@ public final class BasinFillFeature extends Feature<NoneFeatureConfiguration> {
             seabed(level, field, chunk, site, bottom, random);
         }
         bedOres(level, beds, random);
+        for (int[] column : filled) {
+            spill(level, site, liquid, column[0], column[1], column[2], bottom, pos);
+        }
         for (int x = chunk.getMinBlockX(); x <= chunk.getMaxBlockX(); x++) {
             for (int z = chunk.getMinBlockZ(); z <= chunk.getMaxBlockZ(); z++) {
                 if (site.reach(x, z) > 1.3) {
+                    continue;
+                }
+                // A big lake is free to spill where the island ends; only its holes into the ground are sealed.
+                if (site.isLake() && waterBottom(level, site, x, z, bottom, pos) <= bottom) {
                     continue;
                 }
                 int own = site.inFootprint(x, z) ? waterBottom(level, site, x, z, bottom, pos) : water + 1;
@@ -352,7 +367,39 @@ public final class BasinFillFeature extends Feature<NoneFeatureConfiguration> {
             return false;
         }
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
-        return y >= waterBottom(level, site, x, z, bottom, pos);
+        int waterBottom = waterBottom(level, site, x, z, bottom, pos);
+        // A big lake leaves the columns past the island's edge dry.
+        return y >= waterBottom && !(site.isLake() && waterBottom <= bottom);
+    }
+
+    /**
+     * Wakes a big lake's water wherever it stands beside open air, so it pours off the island's edge as the Aether
+     * II's lakes do, instead of waiting, frozen in place, for something to disturb it.
+     */
+    private static void spill(WorldGenLevel level, BasinSite site, BlockState liquid, int x, int z, int waterBottom,
+                              int bottom, BlockPos.MutableBlockPos pos) {
+        if (liquid.getFluidState().isEmpty()) {
+            return;
+        }
+        var fluid = liquid.getFluidState().getType();
+        BlockPos.MutableBlockPos beside = new BlockPos.MutableBlockPos();
+        boolean[] dry = new boolean[4];
+        int i = 0;
+        for (Direction side : Direction.Plane.HORIZONTAL) {
+            // A neighbour that is lake too will hold water once its own chunk is filled; only one left dry is a spill.
+            int nx = x + side.getStepX(), nz = z + side.getStepZ();
+            dry[i++] = !site.inFootprint(nx, nz) || waterBottom(level, site, nx, nz, bottom, beside) <= bottom;
+        }
+        for (int y = site.waterLevel(); y >= waterBottom; y--) {
+            i = 0;
+            for (Direction side : Direction.Plane.HORIZONTAL) {
+                if (dry[i++] && level.getBlockState(beside.set(x + side.getStepX(), y, z + side.getStepZ())).isAir()) {
+                    level.scheduleTick(pos.set(x, y, z), fluid, 0);
+                    FeatureStats.placed("lake_spill");
+                    break;
+                }
+            }
+        }
     }
 
     private static boolean open(BlockState state) {

@@ -68,6 +68,13 @@ public final class BasinField {
     /** Spots tried per lake cell, and how much smaller than its rolled outline the last one tries the lake. */
     private static final int LAKE_ATTEMPTS = 24;
     private static final double LAKE_SHRINK = 0.45;
+    /**
+     * Rim bearings a big lake may have with no ground, where it runs to the island's edge and spills off, and the
+     * share of its water (one in this many) that may lie past the edge.
+     */
+    private static final int LAKE_OPEN_RIM = 8, LAKE_VOID_SHARE = 4;
+    /** How far under the rim's middling height a rim point may drop before it counts as a spill, in tall blocks. */
+    private static final int LAKE_STEP_DOWN = 8;
     /** The chance a double-atoll cell holds one, before the landmark rarity multiplier. */
     private static final double DOUBLE_CHANCE = 0.6;
     /** The biomes a double atoll stands in: the skyroot islands, where clearing a moat leaves open sky. */
@@ -541,8 +548,8 @@ public final class BasinField {
             return reject("lake_no_ground");
         }
         int hill = (int) Math.round(LAKE_RIM_HILL * vertical);
-        int[] rimX = new int[LAKE_RIM], rimZ = new int[LAKE_RIM];
-        int lowest = Integer.MAX_VALUE, highest = Integer.MIN_VALUE;
+        int[] rimX = new int[LAKE_RIM], rimZ = new int[LAKE_RIM], tops = new int[LAKE_RIM];
+        int lowest = Integer.MAX_VALUE, highest = Integer.MIN_VALUE, open = 0;
         for (int i = 0; i < LAKE_RIM; i++) {
             double angle = i * Mth.TWO_PI / LAKE_RIM;
             double cos = Math.cos(angle), sin = Math.sin(angle);
@@ -555,37 +562,58 @@ public final class BasinField {
             }
             rimX[i] = x + (int) Math.round(cos * (shore + 3));
             rimZ[i] = z + (int) Math.round(sin * (shore + 3));
-            int top = surfaceNear(rimX[i], rimZ[i], centre, centre - hill, centre + hill + 1);
-            if (top == Integer.MIN_VALUE) {
+            // No ground within reach of the centre's height: the island ends there, and the lake spills off it.
+            tops[i] = surfaceNear(rimX[i], rimZ[i], centre, centre - hill, centre + shape.plane());
+            if (tops[i] == Integer.MIN_VALUE && ++open > LAKE_OPEN_RIM) {
                 return reject("lake_no_rim");
             }
-            lowest = Math.min(lowest, top);
-            highest = Math.max(highest, top);
-            if (highest - lowest > hill) {
-                return reject("lake_hill");
+        }
+        // The water sits under the rim's lowest point, but a point far under the rest (the island stepping down) is
+        // somewhere for the lake to spill instead, while the budget for those lasts.
+        int[] grounded = java.util.Arrays.stream(tops).filter(t -> t != Integer.MIN_VALUE).sorted().toArray();
+        int median = grounded[grounded.length / 2];
+        for (int i = 0; i < LAKE_RIM; i++) {
+            if (tops[i] != Integer.MIN_VALUE && tops[i] < median - LAKE_STEP_DOWN * vertical && open < LAKE_OPEN_RIM) {
+                tops[i] = Integer.MIN_VALUE;
+                open++;
             }
+        }
+        for (int top : tops) {
+            if (top != Integer.MIN_VALUE) {
+                lowest = Math.min(lowest, top);
+                highest = Math.max(highest, top);
+            }
+        }
+        // Higher ground round the rim is cut back to a bank, or left as a cliff behind it.
+        if (highest - lowest > shape.plane() - 4) {
+            return reject("lake_hill");
         }
         int water = lowest - 1;
         if (water + shape.plane() + 4 * vertical >= maxY || water - depth - 8 <= minY) {
             return reject("lake_height");
         }
         for (int i = 0; i < LAKE_RIM; i++) {
-            if (!solid(rimX[i], water, rimZ[i]) || !solid(rimX[i], water - 2, rimZ[i])) {
+            if (tops[i] != Integer.MIN_VALUE && (!solid(rimX[i], water, rimZ[i]) || !solid(rimX[i], water - 2, rimZ[i]))
+                    && ++open > LAKE_OPEN_RIM) {
                 return reject("lake_rim_open");
             }
         }
         // Across the water: ground no deeper than a few blocks under the bed, and none higher than the plane clears.
+        // Where the water runs off the island there is no ground under it at all, which is fine for part of it.
         int step = (int) Math.ceil(outline / LAKE_INTERIOR);
         int ceiling = water + shape.plane() - 4;
+        int wet = 0, voids = 0;
         for (int dx = -LAKE_INTERIOR * step; dx <= LAKE_INTERIOR * step; dx += step) {
             for (int dz = -LAKE_INTERIOR * step; dz <= LAKE_INTERIOR * step; dz += step) {
                 if (!shape.wet(dx, dz)) {
                     continue;
                 }
+                wet++;
                 int bed = (int) Math.floor(water + 1 - depth * shape.depthShare(dx, dz));
                 int top = surfaceNear(x + dx, z + dz, water, bed - 6, ceiling + 1);
                 if (top == Integer.MIN_VALUE) {
-                    return reject("lake_void");
+                    voids++;
+                    continue;
                 }
                 if (top > ceiling) {
                     return reject("lake_peak");
@@ -594,6 +622,9 @@ public final class BasinField {
                     return reject("lake_thin_floor");
                 }
             }
+        }
+        if (voids * LAKE_VOID_SHARE > wet) {
+            return reject("lake_void");
         }
         return BasinSite.lake(type, x, z, depth, water, shape);
     }
