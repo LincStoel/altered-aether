@@ -110,7 +110,7 @@ public final class AAGolemProvider extends JsonDataProvider {
 
         lang.put(M + "mode.tidy", "Tidy");
         lang.put(M + "mode.compact", "Compact");
-        lang.put(M + "mode.tidy.desc", "each kind of item kept to its own chest");
+        lang.put(M + "mode.tidy.desc", "each family of items kept together, as finely as there are chests for");
         lang.put(M + "mode.compact.desc", "everything packed into as few chests as it fits in");
         lang.put(M + "mode", "Mode: %s, %s");
         lang.put(M + "pebble", "%s hands you a storage pebble");
@@ -123,6 +123,10 @@ public final class AAGolemProvider extends JsonDataProvider {
         lang.put(M + "linked", "Linked to %s (%s / %s)");
         lang.put(M + "linked_source", "Linked to %s, to be emptied only (%s / %s)");
         lang.put(M + "linked_blocked", "Linked to %s, but it's walled in: no golem can get at it (%s / %s)");
+        lang.put(M + "linked_bulk", "Linked to %s as bulk storage, for what it holds and what there is most of (%s / %s)");
+        lang.put(M + "linked_misc", "Linked to %s, for the odds and ends (%s / %s)");
+        lang.put(M + "linked_sink", "Linked to %s, to be fed what its filter lets through (%s / %s)");
+        lang.put(M + "linked_sink_unfiltered", "Linked to %s, but it has no filter, so it is fed nothing (%s / %s)");
         lang.put(M + "unlinked", "Unlinked from %s");
         lang.put(M + "linked_all", "%s linked %s more around it (%s / %s)");
         lang.put(M + "unlinked_all", "%s unlinked %s around it");
@@ -145,6 +149,7 @@ public final class AAGolemProvider extends JsonDataProvider {
         lang.put(M + "hint.linked_blocked", "Linked to %s, but walled in");
         lang.put(M + "hint.not_linked", "Not linked");
         lang.put(M + "hint.empty_only", "Not linked (would only be emptied)");
+        lang.put(M + "hint.insert_only", "Not linked (would be fed what its filter lets through)");
         lang.put(M + "hint.cant_link", "Can't be linked");
 
         String subtitles = "subtitles." + AlteredAether.MOD_ID + ".entity.gravitite_golem.";
@@ -175,6 +180,12 @@ public final class AAGolemProvider extends JsonDataProvider {
         lang.put(status + "encased", "Walled in: no golem can get at it");
         lang.put(status + "linked_to", "Linked to %s");
         lang.put(status + "source", "Emptied only");
+        lang.put(status + "bulk", "Bulk storage");
+        lang.put(status + "misc", "For the odds and ends");
+        lang.put(status + "sink", "Fed what its filter lets through");
+        lang.put(status + "sink_unfiltered", "Fed nothing: it has no filter");
+        lang.put(status + "holds", "Kept for: %s");
+        lang.put(status + "odds_and_ends", "odds and ends");
         lang.put(status + "pinned", "Pinned: %s");
         lang.put(status + "pinned_only", "Only for: %s");
 
@@ -189,9 +200,17 @@ public final class AAGolemProvider extends JsonDataProvider {
         lang.put(jei + "guide.build.title", "Build: ");
         lang.put(jei + "guide.build", "a carved pumpkin (or a Deep Aether carved squash) on a block of enchanted gravitite standing on holystone. It sits where it was built, and hands its builder a storage pebble.");
         lang.put(jei + "guide.hand.title", "Empty hand on the golem: ");
-        lang.put(jei + "guide.hand", "take a pebble. Sneak to switch between Tidy (each kind of item to its own chest) and Compact (everything in as few chests as it fits).");
+        lang.put(jei + "guide.hand", "take a pebble. Sneak to switch between Tidy (families of items kept together) and Compact (everything in as few chests as it fits).");
+        lang.put(jei + "guide.tidy.title", "Tidy: ");
+        lang.put(jei + "guide.tidy", "items are filed by where they come from (the Aether, the overworld...), what they are (blocks, resources, equipment, food...) and what they're made of: spruce stairs, planks and logs are all spruce. A family that fills a quarter of a chest gets a chest of its own; smaller ones share with their kin (spruce with the other wood), and what fits nowhere finer goes with the odds and ends.");
+        lang.put(jei + "guide.drawers.title", "Drawers: ");
+        lang.put(jei + "guide.drawers", "are bulk storage. Each drawer keeps what it holds; an empty one is given whatever fills the most stacks. A locked empty drawer is left alone, and a compacting drawer is only ever filled.");
+        lang.put(jei + "guide.crate.title", "Quark crates: ");
+        lang.put(jei + "guide.crate", "take the odds and ends first, up to what a crate holds.");
+        lang.put(jei + "guide.funnels.title", "Brass funnel into a machine: ");
+        lang.put(jei + "guide.funnels", "link the funnel, and the golem keeps the machine fed with what the funnel's filter lets through. No filter, nothing is fed; redstone on the funnel holds it shut.");
         lang.put(jei + "guide.pebble.storage.title", "Pebble on storage: ");
-        lang.put(jei + "guide.pebble.storage", "link it, or unlink it, without opening it. Hoppers and depots are only ever emptied.");
+        lang.put(jei + "guide.pebble.storage", "link it, or unlink it, without opening it. Hoppers and depots are only ever emptied. Look at linked storage with Jade to see what it is kept for.");
         lang.put(jei + "guide.pebble.golem.title", "Pebble on the golem: ");
         lang.put(jei + "guide.pebble.golem", "link all the storage within its reach. Sneak to unlink it all.");
         lang.put(jei + "guide.pebble.send.title", "Sneak, pebble on the top of a block: ");
@@ -203,11 +222,11 @@ public final class AAGolemProvider extends JsonDataProvider {
         lang.put(jei + "guide.dye.title", "Dye on the golem: ");
         lang.put(jei + "guide.dye", "recolours it. Golems of one colour sitting within reach of each other work as one network, up to %s; one more rests until there is room.");
         lang.put(jei + "guide.frames.title", "Item frame on a chest: ");
-        lang.put(jei + "guide.frames", "makes it the home for that item and its kind.");
+        lang.put(jei + "guide.frames", "makes it the home for that item and its family.");
         lang.put(jei + "guide.frames.strict.title", "Glow item frame on a chest: ");
         lang.put(jei + "guide.frames.strict", "it holds only that item, and everything else is moved out.");
         lang.put(jei + "guide.frames.strict_create.title", "Glow item frame or Create placard on a chest: ");
-        lang.put(jei + "guide.frames.strict_create", "it holds only that item, and everything else is moved out.");
+        lang.put(jei + "guide.frames.strict_create", "it holds only that item, and everything else is moved out. A Create filter there (or in any frame) stands for everything it lets through.");
         lang.put(jei + "guide.redstone.title", "Redstone: ");
         lang.put(jei + "guide.redstone", "power makes the golem rest; a pulse has it sort everything again.");
         lang.put(jei + "guide.comparator.title", "Comparator facing the block under a golem: ");

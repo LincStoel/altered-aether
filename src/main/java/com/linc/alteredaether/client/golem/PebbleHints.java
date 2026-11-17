@@ -146,7 +146,8 @@ final class PebbleHints {
         }
         HitResult hit = mc.hitResult;
         BlockPos pos = hit instanceof BlockHitResult block && hit.getType() == HitResult.Type.BLOCK ? block.getBlockPos() : null;
-        if (pos == null || level.getCapability(Capabilities.ItemHandler.BLOCK, pos, null) == null) {
+        if (pos == null || level.getCapability(Capabilities.ItemHandler.BLOCK, pos, null) == null
+                && funnel(level.getBlockState(pos)) == null) {
             lookedAt = null;
             return;
         }
@@ -175,6 +176,8 @@ final class PebbleHints {
         if (linked) {
             key = info.blocked().contains(pos) || partner != null && info.blocked().contains(partner)
                     ? "hint.linked_blocked" : "hint.linked";
+        } else if (funnel(state) != null) {
+            key = funnel(state) ? "hint.insert_only" : "hint.cant_link";
         } else if (state.is(GolemStorage.BLACKLIST) && !state.is(GolemStorage.LINKABLE)) {
             key = "hint.cant_link";
         } else if (state.is(GolemStorage.EMPTY_ONLY) && !state.is(GolemStorage.LINKABLE)) {
@@ -183,6 +186,20 @@ final class PebbleHints {
             key = "hint.not_linked";
         }
         mc.gui.setOverlayMessage(Component.translatable("message." + AlteredAether.MOD_ID + ".golem." + key, info.name()), false);
+    }
+
+    /**
+     * For a brass funnel with Create loaded: true if it puts items into what it is on (the golem can feed it), false
+     * if it takes them out. Null for anything else.
+     */
+    @Nullable
+    private static Boolean funnel(BlockState state) {
+        if (!net.neoforged.fml.ModList.get().isLoaded(com.linc.alteredaether.compat.CreateCompat.MOD)
+                || !net.minecraft.core.registries.BuiltInRegistries.BLOCK.getKey(state.getBlock()).toString()
+                .equals("create:brass_funnel")) {
+            return null;
+        }
+        return com.linc.alteredaether.compat.CreateFunnels.isSink(state);
     }
 
     @Nullable

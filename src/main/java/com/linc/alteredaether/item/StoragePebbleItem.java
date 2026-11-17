@@ -191,7 +191,13 @@ public class StoragePebbleItem extends Item {
                         : GolemPayloads.Glow.blocks(GolemPayloads.LINK, -1, both, GolemStorage.strict(level, both))
                                 .in(net.color()));
                 int linked = GolemNetworks.inventories(net, p -> GolemStorage.inventoryKey(level, p));
-                String key = blocked ? "linked_blocked" : role == GolemStorage.Role.SOURCE ? "linked_source" : "linked";
+                String key = blocked ? "linked_blocked" : switch (role) {
+                    case SOURCE -> "linked_source";
+                    case BULK, POOLED -> "linked_bulk";
+                    case MISC -> "linked_misc";
+                    case SINK -> GolemStorage.pins(level, pos).isEmpty() ? "linked_sink_unfiltered" : "linked_sink";
+                    default -> "linked";
+                };
                 player.displayClientMessage(message(key, net.name(), linked, net.maxLinks()), true);
                 GolemSorter.linked(level, net, both);
             }

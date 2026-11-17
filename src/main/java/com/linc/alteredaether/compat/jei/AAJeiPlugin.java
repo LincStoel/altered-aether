@@ -73,9 +73,18 @@ public final class AAJeiPlugin implements IModPlugin {
     private static Component[] golemGuide() {
         List<Component> lines = new ArrayList<>();
         lines.add(Component.translatable(GUIDE + "intro"));
-        for (String key : List.of("build", "hand", "pebble.storage", "pebble.golem", "pebble.send", "search", "sorting",
-                "dye", "frames", ModList.get().isLoaded(CreateCompat.MOD) ? "frames.strict_create" : "frames.strict",
-                "redstone", "comparator", "source", "health")) {
+        boolean create = ModList.get().isLoaded(CreateCompat.MOD);
+        List<String> keys = new ArrayList<>(List.of("build", "hand", "tidy", "pebble.storage", "pebble.golem",
+                "pebble.send", "search", "sorting", "dye", "frames", create ? "frames.strict_create" : "frames.strict",
+                "drawers"));
+        if (ModList.get().isLoaded("quark")) {
+            keys.add("crate");
+        }
+        if (create) {
+            keys.add("funnels");
+        }
+        keys.addAll(List.of("redstone", "comparator", "source", "health"));
+        for (String key : keys) {
             // heading and text side by side, so the text keeps the page's own colour
             lines.add(Component.empty().append(Component.translatable(GUIDE + key + ".title").withStyle(ChatFormatting.DARK_PURPLE))
                     .append(Component.translatable(GUIDE + key, AACommonConfig.GOLEM_MAX_NETWORK.get())));

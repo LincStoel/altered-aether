@@ -149,22 +149,32 @@ meditation. That spot is its home.
   from chest to chest. An item never leaves its chest until it lands in the next: nothing is lost if the golem is
   interrupted, killed or unloaded mid-flight. Chests a player has open are left alone. Once it is done, it chimes,
   and plain chests and barrels are also ordered inside.
-- **Modes.** Sneak and use the golem with an empty hand to switch. *Tidy* keeps each kind of item to its own chest:
-  each chest keeps what it mostly holds, and one-offs share a chest. *Compact* packs everything into as few chests
-  as it fits in. An item frame or Create placard on a chest pins that item, and its family, to that chest in either
-  mode.
+- **Modes.** Sneak and use the golem with an empty hand to switch. *Tidy* files items into families: where they
+  come from (the Aether, the overworld, the nether, the end), what they are (blocks, resources, equipment, food,
+  mechanisms) and what they are made of, read off their recipes, tags and names (spruce stairs, planks and stripped
+  logs are all spruce; cooked food is apart from raw). It sorts as finely as there are chests for: a family that
+  fills a quarter of a chest gets one of its own, smaller ones share with their kin (spruce with the other wood),
+  and what fits nowhere finer goes with the odds and ends. *Compact* packs everything into as few chests as it fits
+  in. An item frame on a chest pins that item, and its family, to that chest in either mode; a glow item frame or a
+  Create placard pins only that item and moves everything else out.
+- **Special storage.** Drawers (Functional Storage, Storage Drawers) are bulk storage: each keeps what it holds, and
+  an empty one is given whatever fills the most stacks; compacting drawers are only filled. Quark crates take the
+  odds and ends first. With Create, a brass funnel putting items into a machine can be linked: the golem keeps the
+  machine fed with what the funnel's filter lets through (nothing without one), and a Create filter in an item frame
+  or on a placard pins everything it lets through.
 - **Finding things.** Use the golem with any item to see which linked chests hold it, with the total above the
   hotbar. Use its own pebble on it to see everything linked for 15 seconds. While you hold its pebble you see the
   edge of its reach and motes over linked storage, and the tooltip shows its mode and links.
 - **Moving it.** Sneak and use the pebble on the top of a block to send the golem there; it walks, levitates up
   steps, floats across gaps, and sits down there as its new home. Anything else that moves it, it walks back from.
-- **Teams.** Use one golem's pebble on another to link them (both seated, within 32 blocks of each other, 2 to a
-  network by default); together they cover both areas and pass items between them. Use it again to unlink.
+- **Teams.** Golems of one colour sitting within reach of each other work as one network (6 by default; dye a
+  golem to recolour it); together they cover all their areas and pass items between them.
 - **Care.** Six hearts. It pushes everything near it away when struck (players gently), and is otherwise peaceful;
   monsters ignore it. Ambrosium shards heal it. A redstone signal makes it rest. It drops its holystone, and half
   the time its enchanted gravitite.
 - With Jade installed, looking at a golem shows its mode, links and what it is doing or waiting on; looking at
-  linked storage shows its golem and pin. JEI has a page on the pebble and spawn egg.
+  linked storage shows its golem, its pin, and the family tidy mode keeps it for. JEI has a page on the pebble and
+  spawn egg.
 
 ### Boulders
 
@@ -209,7 +219,9 @@ With the tall pack, other mods' Aether structures and ores are moved to the matc
 |---|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | Ars Nouveau | the archwood groves, scattered archwood, familiars and wilden in the groves; archwood is taken out of the overworld (Ars Elemental's too) unless `disable_overworld_archwood` is off                                                                  |
 | Ars Elemental | the Flashing Archwood Grove, flashjacks, sirens, sourcestone boulders                                                                                                                                                                                 |
-| Create | zinc in Tempest Peaks; placards pin items for gravitite golems, depots are emptied by them                                                                                                                                                                                                                                 |
+| Create | zinc in Tempest Peaks; placards and filters pin items for gravitite golems, depots are emptied by them, and brass funnels into machines are fed by them                                                                                                                                                                                                                                 |
+| Quark | gravitite golems put the odds and ends in crates first, and sort chests with Quark's own sort |
+| Functional Storage, Storage Drawers | gravitite golems keep drawers as bulk storage |
 | Oreganized | silver in the crags and the rift                                                                                                                                                                                                                      |
 | Dried Ghast | dried ghast fields in the Windswept Dunes                                                                                                                                                                                                             |
 | Snuffles | Snuffles in the Frozen Crags, and only in the Aether (configurable)                                                                                                                                                                                   |
@@ -244,7 +256,8 @@ on cold aerclouds.
 - `[storms]`: everything about the Tempest storms.
 - `[gravitite_golem]`: reach, golems per network, links per golem, how many slots a network reads, flight time,
   items in the air at once, how often storage is checked, the push when struck, healing and how far a golem can be
-  sent.
+  sent; for tidy mode, the share of a chest a family must fill to get its own (`min_group_fill`), the fewest stacks
+  worth a drawer (`bulk_min_stacks`) and which mods count as the Aether (`aether_namespaces`).
 - `[boulders]`: minutes between falling boulders per player (0 turns them off), how many at once, the chance one is
   dropped over the void, and the damage they do. How many ancient boulders there are is `ancient_boulders` under
   `[features]`.

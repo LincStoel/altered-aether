@@ -25,6 +25,7 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import snownee.jade.api.BlockAccessor;
@@ -64,6 +65,19 @@ public final class AAJadePlugin implements IWailaPlugin {
 
     private static Component line(String key, Object... args) {
         return Component.translatable(KEY + key, args);
+    }
+
+    /** A family's saved path as words: {@code overworld/blocks/wood/spruce} reads Overworld › Blocks › Wood › Spruce. */
+    private static Component family(String path) {
+        if (path.equals("misc")) {
+            return line("odds_and_ends");
+        }
+        List<String> words = new ArrayList<>();
+        for (String part : path.split("/")) {
+            String spaced = part.replace('_', ' ').replace('.', ' ');
+            words.add(spaced.isEmpty() ? spaced : Character.toUpperCase(spaced.charAt(0)) + spaced.substring(1));
+        }
+        return Component.literal(String.join(" › ", words));
     }
 
     enum Golem implements IEntityComponentProvider, IServerDataProvider<EntityAccessor> {
@@ -161,12 +175,20 @@ public final class AAJadePlugin implements IWailaPlugin {
             }
             CompoundTag tag = new CompoundTag();
             tag.putString("name", net.name());
-            tag.putBoolean("source", GolemStorage.role(level, pos) == GolemStorage.Role.SOURCE);
-            tag.putBoolean("encased", com.linc.alteredaether.entity.golem.GolemAccess.encased(level, pos));
+            GolemStorage.Role role = GolemStorage.role(level, pos);
             GolemStorage.Pins pins = GolemStorage.pins(level, pos);
-            if (!pins.isEmpty()) {
-                tag.putString("pin", pins.items().get(0).getHoverName().getString());
+            tag.putString("role", role == GolemStorage.Role.SINK && pins.isEmpty() ? "sink_unfiltered"
+                    : role.name().toLowerCase(java.util.Locale.ROOT));
+            tag.putBoolean("encased", com.linc.alteredaether.entity.golem.GolemAccess.encased(level, pos));
+            if (!pins.isEmpty() && role != GolemStorage.Role.SINK) {
+                ItemStack first = pins.items().isEmpty() ? pins.filters().get(0) : pins.items().get(0);
+                tag.putString("pin", first.getHoverName().getString());
                 tag.putBoolean("strict", pins.strict());
+            }
+            // the family tidy mode keeps it for, as last planned
+            String claim = net.claims().get(GolemStorage.inventoryKey(level, pos));
+            if (claim != null && role == GolemStorage.Role.STORAGE && pins.isEmpty()) {
+                tag.putString("holds", claim);
             }
             data.put("golem_link", tag);
         }
@@ -178,8 +200,17 @@ public final class AAJadePlugin implements IWailaPlugin {
                 return;
             }
             tooltip.add(line("linked_to", tag.getString("name")));
-            if (tag.getBoolean("source")) {
-                tooltip.add(line("source"));
+            switch (tag.getString("role")) {
+                case "source" -> tooltip.add(line("source"));
+                case "bulk", "pooled" -> tooltip.add(line("bulk"));
+                case "misc" -> tooltip.add(line("misc"));
+                case "sink" -> tooltip.add(line("sink"));
+                case "sink_unfiltered" -> tooltip.add(line("sink_unfiltered"));
+                default -> {
+                }
+            }
+            if (tag.contains("holds")) {
+                tooltip.add(line("holds", family(tag.getString("holds"))));
             }
             if (tag.getBoolean("encased")) {
                 tooltip.add(line("encased"));
