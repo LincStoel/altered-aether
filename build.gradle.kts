@@ -192,21 +192,28 @@ sourceSets.main.get().resources {
 // Optional mods the content integrates with live in libs/optional/ (not committed, not compiled against), apart from
 // those in optionalMaven. -PoptionalMods picks which of them go into a run: "all", "none", or comma-separated names
 // (jar name prefixes or Modrinth project names, with - and _ alike) such as -PoptionalMods=snuffles,deep-aether.
-// Client and server runs default to "all"; the GameTest server defaults to "none", since some optional mods (Quark)
-// stop it from loading. Use it to test the mod both with and without each integration.
+// Client and server runs default to "all"; the GameTest server defaults to "none" to keep test runs lean. Use it to
+// test the mod both with and without each integration.
 fun normalised(name: String) = name.lowercase().replace('-', '_')
+// Optional mods that crash a dev dedicated server, so the server and GameTest runs never get them, even when named.
+// Ascended Quark 1.1.7: SkyrootStoolModule subscribes a ZClientSetup handler from a common class. In production Zeta
+// just logs that and skips the handler, but in dev (FMLLoader.isProduction() false) it throws at mod construction
+// ("Client event interface ... was found in a non client only class").
+val clientOnlyOptional = listOf("ascended_quark")
 val mavenOptionalPrefixes = optionalMavenModules.map(::normalised)
 // A jar in libs/optional for a mod optionalMaven already provides is left out, so a run never gets two copies.
 val optionalJars = files(fileTree("libs/optional") { include("*.jar") }.files
     .filter { jar -> mavenOptionalPrefixes.none { normalised(jar.name).startsWith(it) } })
 val optionalJarNames = fileTree("libs/optional") { include("*.jar") }.files.map { it.name }
 
-fun selectedOptional(selection: String): FileCollection {
+fun selectedOptional(selection: String, dedicatedServer: Boolean): FileCollection {
     if (selection == "none") {
         return files()
     }
     val prefixes = if (selection == "all") null else selection.split(',').map { normalised(it.trim()) }
-    val local = optionalJars.files.filter { jar -> prefixes == null || prefixes.any { normalised(jar.name).startsWith(it) } }
+    val local = optionalJars.files
+        .filter { jar -> prefixes == null || prefixes.any { normalised(jar.name).startsWith(it) } }
+        .filter { jar -> !dedicatedServer || clientOnlyOptional.none { normalised(jar.name).startsWith(it) } }
     // Kept free of script references (such as normalised), which the configuration cache can't store.
     val maven = optionalMaven.incoming.artifactView {
         componentFilter { id ->
@@ -246,7 +253,7 @@ for ((run, dir) in listOf("Client" to "run", "Server" to "run-server", "Data" to
     val clientMods = run == "Client" && clientModsEnabled
     val sources = files(
         devMods,
-        if (withOptional) selectedOptional(selection) else files(),
+        if (withOptional) selectedOptional(selection, dedicatedServer = run != "Client") else files(),
         if (shaders) shaderJars else files(),
         if (clientMods) clientJars else files(),
     )
