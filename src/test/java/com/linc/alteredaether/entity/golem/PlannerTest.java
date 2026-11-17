@@ -43,6 +43,8 @@ class PlannerTest {
             key(64, 0), key(64, 0), key(64, 1), key(64, 1),
             key(64, 10), key(64, 11), key(64, 12), key(64, 13), key(64, 14), key(64, 15),
             key(1, 2));
+    /** The nodes a flat snapshot of {@link #KEYS} gives stone and logs. */
+    private static final int STONE = 1, LOGS = 2;
 
     private static SortSnapshot.Key key(int stack, int group) {
         return new SortSnapshot.Key(stack, group, group * 1000L);
@@ -374,19 +376,20 @@ class PlannerTest {
 
     @Test
     void aClaimHoldsAgainstARivalUnderTheTolerance() {
-        // stone fills 2 slots, logs 4: under a tolerance of 3 the chest stays stone's, and the logs go
+        // stone fills 2 slots, logs 4: under a tolerance of 3 the chest stays stone's, and the logs go (a flat
+        // snapshot's group g is node g + 1)
         SortSnapshot keep = new SortSnapshot(KEYS, List.of(
-                claimed(0, 0, 64, 0, 64, 2, 64, 2, 64, 2, 64, 2, 64), chest()));
+                claimed(STONE, 0, 64, 0, 64, 2, 64, 2, 64, 2, 64, 2, 64), chest()));
         Planner.Plan plan = Planner.plan(keep, SortMode.TIDY, Planner.Focus.ALL, 3);
-        assertEquals(0, plan.claims()[0], "the claim was lost");
+        assertEquals(STONE, plan.claims()[0], "the claim was lost");
         for (Move move : plan.moves()) {
             assertEquals(2, move.key(), "stone moved out of its own chest: " + move);
         }
         // with a fifth stack of logs the logs fill the tolerance more, and take the chest
         SortSnapshot flip = new SortSnapshot(KEYS, List.of(
-                claimed(0, 0, 64, 0, 64, 2, 64, 2, 64, 2, 64, 2, 64, 2, 64), chest()));
+                claimed(STONE, 0, 64, 0, 64, 2, 64, 2, 64, 2, 64, 2, 64, 2, 64), chest()));
         plan = Planner.plan(flip, SortMode.TIDY, Planner.Focus.ALL, 3);
-        assertEquals(1, plan.claims()[0], "the logs didn't take the chest");
+        assertEquals(LOGS, plan.claims()[0], "the logs didn't take the chest");
         for (Move move : plan.moves()) {
             assertEquals(0, move.key(), "logs moved out of what is now their chest: " + move);
         }
