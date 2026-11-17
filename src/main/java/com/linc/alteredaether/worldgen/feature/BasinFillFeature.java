@@ -163,6 +163,8 @@ public final class BasinFillFeature extends Feature<NoneFeatureConfiguration> {
         int bottom = water - site.maxDepth() - 4;
         BlockState liquid = liquid(site.type());
         BlockState seal = seal(site.type());
+        // A big lake's shore: quicksoil, Deep Aether's mud, or just the grass it was.
+        BlockState lakeShore = site.isLake() ? lakeShore(field, site) : null;
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
         List<BlockPos> beds = new ArrayList<>();
         boolean placed = false;
@@ -188,13 +190,16 @@ public final class BasinFillFeature extends Feature<NoneFeatureConfiguration> {
                     level.setBlock(pos, seal, Block.UPDATE_CLIENTS);
                 } else {
                     beds.add(pos.immutable());
-                    dressFloor(level, field, site, pos, water - waterBottom + 1, random);
+                    dressFloor(level, field, site, pos, water - waterBottom + 1, random, lakeShore);
                 }
             }
         }
+        // A chunk may hold only shore, so this goes before the check for water.
         if (site.type() == BasinType.ATOLL_LAGOON) {
-            // A chunk may hold only shore, so this goes before the check for water.
-            placed |= shore(level, field, chunk, site, pos);
+            placed |= shore(level, field, chunk, site, pos,
+                    GrovePalette.natural(block("aether:quicksoil", Blocks.SAND).defaultBlockState()));
+        } else if (lakeShore != null) {
+            placed |= shore(level, field, chunk, site, pos, lakeShore);
         }
         if (!placed) {
             return false;
@@ -225,13 +230,32 @@ public final class BasinFillFeature extends Feature<NoneFeatureConfiguration> {
     }
 
     /**
-     * Quicksoil shores round an atoll's lagoon, whatever biome it lies in: a beach running up from the water to the
-     * crest, breaking into patches further out and giving way to the land's own ground. The soil is turned a few
-     * blocks deep, so digging into the beach doesn't hit dirt at once; rock is left alone.
+     * The shore a big lake takes, the same for the whole lake: mostly quicksoil, as round the Aether II's lakes, or
+     * with Deep Aether its mud, which the poison lakes favour; now and then none, the grass running down to the water.
+     */
+    @org.jetbrains.annotations.Nullable
+    private static BlockState lakeShore(BasinField field, BasinSite site) {
+        float roll = field.randomAt(SHORE_SALT, site.x(), site.z()).nextFloat();
+        Block mud = AACommonConfig.COMPAT_ENABLED.get("deep_aether").get() ? block("deep_aether:aether_mud", null) : null;
+        Block quicksoil = block("aether:quicksoil", Blocks.SAND);
+        Block shore;
+        if (site.type().fluid() == BasinType.Fluid.POISON) {
+            shore = mud != null ? roll < 0.7f ? mud : null : roll < 0.6f ? quicksoil : null;
+        } else if (mud != null) {
+            shore = roll < 0.4f ? quicksoil : roll < 0.8f ? mud : null;
+        } else {
+            shore = roll < 0.8f ? quicksoil : null;
+        }
+        return shore == null ? null : GrovePalette.natural(shore.defaultBlockState());
+    }
+
+    /**
+     * A shore round an atoll's lagoon or a big lake, whatever biome it lies in: a beach running up from the water to
+     * the crest or bank, breaking into patches further out and giving way to the land's own ground. The soil is turned
+     * a few blocks deep, so digging into the beach doesn't hit dirt at once; rock is left alone.
      */
     private static boolean shore(WorldGenLevel level, BasinField field, ChunkPos chunk, BasinSite site,
-                                 BlockPos.MutableBlockPos pos) {
-        BlockState quicksoil = GrovePalette.natural(block("aether:quicksoil", Blocks.SAND).defaultBlockState());
+                                 BlockPos.MutableBlockPos pos, BlockState quicksoil) {
         int water = site.waterLevel();
         boolean placed = false;
         for (int x = chunk.getMinBlockX(); x <= chunk.getMaxBlockX(); x++) {
@@ -357,7 +381,7 @@ public final class BasinFillFeature extends Feature<NoneFeatureConfiguration> {
 
     /** The floor under the water: soil becomes lake bed, and lagoons get quicksoil and their glowing thickets. */
     private void dressFloor(WorldGenLevel level, BasinField field, BasinSite site, BlockPos.MutableBlockPos floor,
-                            int depth, RandomSource random) {
+                            int depth, RandomSource random, @org.jetbrains.annotations.Nullable BlockState lakeShore) {
         BlockState ground = level.getBlockState(floor);
         boolean soil = ground.is(BlockTags.DIRT) || ground.is(AETHER_DIRT) || ground.is(Blocks.SNOW_BLOCK)
                 || ground.is(BlockTags.SAND) || ground.is(block("aether:quicksoil", Blocks.SAND));
@@ -375,9 +399,12 @@ public final class BasinFillFeature extends Feature<NoneFeatureConfiguration> {
             return;
         }
         double patch = field.noise(FLOOR_SALT, floor.getX(), floor.getZ(), 6);
+        // A mud-shored lake has a muddy bed where the others have clay.
+        Block clay = lakeShore != null && !lakeShore.is(block("aether:quicksoil", Blocks.SAND)) ? lakeShore.getBlock()
+                : Blocks.CLAY;
         Block bed = switch (site.type()) {
             case FROZEN_POOL -> block("aether:holystone", Blocks.STONE);
-            default -> patch > 0.45 ? Blocks.CLAY : patch < -0.5 ? block("aether:mossy_holystone", Blocks.MOSSY_COBBLESTONE)
+            default -> patch > 0.45 ? clay : patch < -0.5 ? block("aether:mossy_holystone", Blocks.MOSSY_COBBLESTONE)
                     : block("aether:aether_dirt", Blocks.DIRT);
         };
         level.setBlock(floor, bed.defaultBlockState(), Block.UPDATE_CLIENTS);

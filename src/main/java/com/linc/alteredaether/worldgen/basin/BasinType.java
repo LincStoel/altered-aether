@@ -34,7 +34,16 @@ public enum BasinType {
      * Double atolls are landmarks on a grid of their own, and stand anywhere in the skyroot biomes.
      */
     ATOLL_LAGOON("atoll_lagoon", 0.35, 30, 42, 9, 13, Fluid.WATER, "aether:skyroot_grove", "aether:skyroot_forest",
-            "aether:skyroot_woodland", "aether_plateau");
+            "aether:skyroot_woodland", "aether_plateau"),
+    /**
+     * A big lake after the Aether II's: a noise-shaped sheet of water planed into the island, on a grid of its own. The
+     * radii bound its outline ({@link LakeShape#radius()}), not the water itself, which mostly stops well short.
+     */
+    LAKE("lake", 0.45, 85, 130, 8, 14, Fluid.WATER, "aether:skyroot_meadow", "aether:skyroot_grove",
+            "aether:skyroot_forest", "aether:skyroot_woodland", "aether_plateau", "cascading_archwood_grove"),
+    /** The big lake of the poisonous biomes: the vexing grove, and Deep Aether's yagroot swamp. */
+    POISON_LAKE("poison_lake", 0.45, 85, 130, 6, 11, Fluid.POISON, "vexing_archwood_grove",
+            "deep_aether:yagroot_swamp");
 
     public enum Fluid {
         WATER,
@@ -70,6 +79,11 @@ public enum BasinType {
     /** Built by the atoll density function on the atoll grid, rather than carved into the terrain. */
     public boolean atollShaped() {
         return this == ATOLL_LAGOON;
+    }
+
+    /** One of the big lakes, shaped by a {@link LakeShape} on the lake grid. */
+    public boolean lake() {
+        return this == LAKE || this == POISON_LAKE;
     }
 
     boolean suits(String biome) {

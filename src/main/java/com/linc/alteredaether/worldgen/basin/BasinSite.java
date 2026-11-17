@@ -20,11 +20,16 @@ package com.linc.alteredaether.worldgen.basin;
  * {@code ring} it is instead a river round a ring island: every column within {@code radius} of the ring's centre
  * line.
  *
+ * With a {@code lake} it is one of the big lakes: the shoreline is the lake shape's contour, {@code radius} is the
+ * furthest it can reach, and everything over the water and its banks is planed away up to the shape's
+ * {@link LakeShape#plane() plane}.
+ *
  * <p>Above the water a cone widening at {@link #BANK_SLOPE} blocks out per block up clears the banks, so a basin cut
  * into uneven ground gets a sloping shore instead of a well shaft.
  */
 public record BasinSite(BasinType type, int x, int z, double radius, double depth, int waterLevel, double phase1,
-                        double phase2, @org.jetbrains.annotations.Nullable RingPath ring) {
+                        double phase2, @org.jetbrains.annotations.Nullable RingPath ring,
+                        @org.jetbrains.annotations.Nullable LakeShape lake) {
     /** Height of the cleared bank above the water. */
     static final int BANK_HEIGHT = 12;
     /** Blocks the bank recedes per block of height. */
@@ -33,10 +38,22 @@ public record BasinSite(BasinType type, int x, int z, double radius, double dept
     static final double MAX_WOBBLE = 1.22;
     /** How far past the water a lagoon's quicksoil shore may reach, in blocks; inside a lake's banks anyway. */
     public static final int SHORE_REACH = 14;
+    /** How far past a big lake's shore its sloping bank reaches; ground standing higher beyond is left as a cliff. */
+    static final double LAKE_BANK = 18;
 
     public BasinSite(BasinType type, int x, int z, double radius, double depth, int waterLevel, double phase1,
                      double phase2) {
-        this(type, x, z, radius, depth, waterLevel, phase1, phase2, null);
+        this(type, x, z, radius, depth, waterLevel, phase1, phase2, null, null);
+    }
+
+    public BasinSite(BasinType type, int x, int z, double radius, double depth, int waterLevel, double phase1,
+                     double phase2, @org.jetbrains.annotations.Nullable RingPath ring) {
+        this(type, x, z, radius, depth, waterLevel, phase1, phase2, ring, null);
+    }
+
+    /** A big lake, shaped by {@code lake}. */
+    public static BasinSite lake(BasinType type, int x, int z, double depth, int waterLevel, LakeShape lake) {
+        return new BasinSite(type, x, z, lake.radius(), depth, waterLevel, 0, 0, null, lake);
     }
 
     /** The shoreline's radius multiplier at a bearing. Shared with the atoll, so its lagoon matches its ring. */
@@ -49,6 +66,9 @@ public record BasinSite(BasinType type, int x, int z, double radius, double dept
      * river, the distance from its centre line as a fraction of its half width, on either bank.
      */
     public double reach(int px, int pz) {
+        if (lake != null) {
+            return 1 + lake.beyond(px - x, pz - z) / radius;
+        }
         double dx = px - x, dz = pz - z;
         if (ring != null) {
             return ring.distance(dx, dz) / radius;
@@ -64,6 +84,10 @@ public record BasinSite(BasinType type, int x, int z, double radius, double dept
     public double extent() {
         if (ring != null) {
             return ring.furthest() + radius + SHORE_REACH;
+        }
+        if (lake != null) {
+            // The bank's distance is read off the field's slope, which overshoots a little where the noise is flat.
+            return radius + LAKE_BANK * 1.5 + 2;
         }
         return radius * MAX_WOBBLE + BANK_HEIGHT * BANK_SLOPE + 2;
     }
@@ -86,6 +110,10 @@ public record BasinSite(BasinType type, int x, int z, double radius, double dept
         if (type.atollShaped() || py < waterLevel - maxDepth()) {
             return false;
         }
+        if (lake != null) {
+            int[] run = new int[2];
+            return lakeColumn(px, pz, run) && py > run[0] && py <= run[1];
+        }
         double reach = reach(px, pz);
         if (py <= waterLevel) {
             return reach < 1 && py > floor(reach);
@@ -100,7 +128,37 @@ public record BasinSite(BasinType type, int x, int z, double radius, double dept
     }
 
     public boolean inFootprint(int px, int pz) {
-        return reach(px, pz) < 1;
+        return lake != null ? lake.wet(px - x, pz - z) : reach(px, pz) < 1;
+    }
+
+    /**
+     * A big lake's carve in one column, as the open run {@code run[0] < y <= run[1]}: from the bed up over the water,
+     * and on the banks from a cone rising {@link #BANK_SLOPE} blocks out per block up. Everything up to the plane
+     * goes, so a hill on the shore is cut back to a sloping bank, or to a cliff where it stands past the bank.
+     *
+     * @return false where the lake carves nothing in the column
+     */
+    public boolean lakeColumn(int px, int pz, int[] run) {
+        int dx = px - x, dz = pz - z;
+        double extent = extent();
+        if (lake == null || (double) dx * dx + (double) dz * dz > extent * extent) {
+            return false;
+        }
+        run[1] = waterLevel + lake.plane();
+        if (lake.wet(dx, dz)) {
+            run[0] = (int) Math.floor(waterLevel + 1 - depth * lake.depthShare(dx, dz));
+            return true;
+        }
+        double beyond = lake.beyond(dx, dz);
+        if (beyond > LAKE_BANK) {
+            return false;
+        }
+        run[0] = (int) Math.floor(waterLevel + Math.max(0, beyond) / BANK_SLOPE);
+        return true;
+    }
+
+    public boolean isLake() {
+        return lake != null;
     }
 
     public boolean isRiver() {

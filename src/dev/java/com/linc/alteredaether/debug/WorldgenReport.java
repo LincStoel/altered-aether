@@ -242,6 +242,30 @@ public final class WorldgenReport {
                 type, list.size(), list.stream().mapToDouble(BasinSite::radius).average().orElse(0),
                 list.stream().mapToInt(BasinSite::waterLevel).average().orElse(0),
                 list.stream().limit(3).map(site -> site.x() + "," + site.z()).toList())));
+        // Big lakes must keep clear of every atoll, and basins of every big lake.
+        int clashes = 0;
+        for (BasinSite lake : sites) {
+            if (!lake.isLake()) {
+                continue;
+            }
+            int e = (int) Math.ceil(lake.extent());
+            for (var atoll : field.atollsTouching(lake.x() - e, lake.z() - e, lake.x() + e, lake.z() + e)) {
+                if (Math.hypot(lake.x() - atoll.x(), lake.z() - atoll.z()) < lake.extent() + atoll.extent()) {
+                    clashes++;
+                    lines.add(String.format("  CLASH: lake at %d,%d overlaps an atoll at %d,%d", lake.x(), lake.z(),
+                            atoll.x(), atoll.z()));
+                }
+            }
+            for (BasinSite other : sites) {
+                if (other != lake && !other.type().atollShaped() && Math.hypot(lake.x() - other.x(),
+                        lake.z() - other.z()) < lake.extent() + other.extent()) {
+                    clashes++;
+                    lines.add(String.format("  CLASH: lake at %d,%d overlaps a %s at %d,%d", lake.x(), lake.z(),
+                            other.type().name().toLowerCase(), other.x(), other.z()));
+                }
+            }
+        }
+        lines.add("  big lake clashes: " + clashes);
     }
 
     /**

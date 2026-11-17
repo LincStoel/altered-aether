@@ -489,6 +489,30 @@ public final class DebugCommands {
                 origin = new BlockPos(found.x(), 64, found.z());
                 AlteredAether.LOGGER.info("Worldgen benchmark: centred on {} at {}: {}", biome, origin.toShortString(),
                         found);
+            } else if (biome != null && (biome.equals("lake") || biome.equals("lake:poison"))) {
+                // The nearest big lake, searched outward ring by ring over the lake grid.
+                BasinType type = biome.equals("lake") ? BasinType.LAKE : BasinType.POISON_LAKE;
+                BasinField field = BasinField.get(THE_AETHER);
+                int cell = field == null ? 1 : field.lakeCell();
+                int ox = Math.floorDiv(origin.getX(), cell), oz = Math.floorDiv(origin.getZ(), cell);
+                BasinSite found = null;
+                for (int r = 0; r < 40 && field != null && found == null; r++) {
+                    for (int cx = ox - r; cx <= ox + r && found == null; cx++) {
+                        for (int cz = oz - r; cz <= oz + r && found == null; cz++) {
+                            if (Math.max(Math.abs(cx - ox), Math.abs(cz - oz)) == r) {
+                                found = field.lakeInCell(cx, cz).filter(s -> s.type() == type).orElse(null);
+                            }
+                        }
+                    }
+                }
+                if (found == null) {
+                    AlteredAether.LOGGER.error("Worldgen benchmark: no {} found", biome);
+                    return;
+                }
+                origin = new BlockPos(found.x(), 64, found.z());
+                AlteredAether.LOGGER.info("Worldgen benchmark: centred on a {} at {} (outline {}, water {}, depth {})",
+                        biome, origin.toShortString(), String.format("%.0f", found.radius()), found.waterLevel(),
+                        String.format("%.1f", found.depth()));
             } else if (biome != null && biome.equals("skirt")) {
                 // The nearest rim of a low island, which wears a cloud skirt.
                 SkirtField field = SkirtField.get(THE_AETHER);
