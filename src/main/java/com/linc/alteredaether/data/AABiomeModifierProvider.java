@@ -57,6 +57,14 @@ public final class AABiomeModifierProvider extends JsonDataProvider {
         seal.addProperty("features", AAFeatureProvider.BASIN_SEAL);
         seal.addProperty("step", "top_layer_modification");
         data(FOLDER, AlteredAether.id("basin_seal"), seal);
+        // The cloud skirts round the tall Aether's low islands, in every Aether biome and last of all, so the water
+        // that will pour over an edge is already in place. The rift is left out by the field itself.
+        JsonObject skirts = new JsonObject();
+        skirts.addProperty("type", "neoforge:add_features");
+        skirts.addProperty("biomes", IS_AETHER);
+        skirts.addProperty("features", AAFeatureProvider.CLOUD_SKIRT);
+        skirts.addProperty("step", "top_layer_modification");
+        data(FOLDER, AlteredAether.id("cloud_skirts"), skirts);
 
         // Landmarks, like basins, are built in every Aether chunk they reach, whatever its biome. The builder runs
         // before all other decoration; what dresses them runs with the surface structures.

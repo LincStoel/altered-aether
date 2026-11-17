@@ -1,4 +1,4 @@
-// 1.21.1	2026-11-01T12:39:16.8573909	Altered Aether biome modifiers
+// 1.21.1	2026-11-16T22:53:57.0618904	Altered Aether biome modifiers
 a6b67b4c1c313dc7fdb12bbc3331f85be76ab355 data/altered_aether/neoforge/biome_modifier/aether_exclusive.json
 5aa795e9611228495aa045b613bafcf69423632e data/altered_aether/neoforge/biome_modifier/basin_fill.json
 7fb8c799e30de1bc657c97a9046a2e637c6525ba data/altered_aether/neoforge/biome_modifier/basin_seal.json
@@ -6,6 +6,7 @@ af06987abc4d0ba2bc63e3271c48b431af6a429e data/altered_aether/neoforge/biome_modi
 2f5432ea6a770098e91971668b5d548cff976cf9 data/altered_aether/neoforge/biome_modifier/camps/blue_berry_farm.json
 c61d66b74c63203fc545639b4e572e502c18124e data/altered_aether/neoforge/biome_modifier/camps/gleamberry_farm.json
 2bedda06d001e39089bdac441eef0518f7a75ddc data/altered_aether/neoforge/biome_modifier/climate.json
+2de69ad92eecbea5af781ac1d46e4345492117af data/altered_aether/neoforge/biome_modifier/cloud_skirts.json
 a9345f6216c4fb0178a1c9b7792da91d3db86f61 data/altered_aether/neoforge/biome_modifier/groves.json
 32cd1b217f275f0c69414c959cc319c5613a1c6a data/altered_aether/neoforge/biome_modifier/grove_hanging_roots.json
 0101f84b2647b243f490cfa87d69271b8b7cd472 data/altered_aether/neoforge/biome_modifier/landmarks.json

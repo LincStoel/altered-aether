@@ -24,6 +24,7 @@ import com.linc.alteredaether.worldgen.TerrainProbe;
 import com.linc.alteredaether.worldgen.grove.BreakField;
 import com.linc.alteredaether.worldgen.grove.GroveField;
 import com.linc.alteredaether.worldgen.landmark.LandmarkField;
+import com.linc.alteredaether.worldgen.skirt.SkirtField;
 import net.minecraft.world.level.levelgen.DensityFunction;
 import net.minecraft.world.level.levelgen.NoiseBasedChunkGenerator;
 import net.minecraft.world.level.levelgen.NoiseSettings;
@@ -149,6 +150,10 @@ public final class RegionBinding {
         LandmarkField.put(level.dimension(), landmarks);
         GroveField.put(level.dimension(), new GroveField(level.getSeed(), probe, landmarks, breakField, vertical,
                 level.getMaxBuildHeight()));
+        // The cloud skirts are the tall Aether's alone.
+        if (level.getMinBuildHeight() < 0 && carve != null) {
+            SkirtField.put(level.dimension(), new SkirtField(level.getSeed(), probe));
+        }
     }
 
     @SubscribeEvent
@@ -158,6 +163,7 @@ public final class RegionBinding {
             BasinField.put(level.dimension(), null);
             LandmarkField.put(level.dimension(), null);
             GroveField.put(level.dimension(), null);
+            SkirtField.put(level.dimension(), null);
         }
     }
 

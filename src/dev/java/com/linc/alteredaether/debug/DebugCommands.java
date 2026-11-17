@@ -40,6 +40,7 @@ import com.linc.alteredaether.worldgen.grove.Mire;
 import com.linc.alteredaether.worldgen.landmark.Landmark;
 import com.linc.alteredaether.worldgen.landmark.LandmarkField;
 import com.linc.alteredaether.worldgen.landmark.LandmarkType;
+import com.linc.alteredaether.worldgen.skirt.SkirtField;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.Level;
@@ -366,6 +367,17 @@ public final class DebugCommands {
                 origin = new BlockPos(found.x(), 64, found.z());
                 AlteredAether.LOGGER.info("Worldgen benchmark: centred on {} at {}: {}", biome, origin.toShortString(),
                         found);
+            } else if (biome != null && biome.equals("skirt")) {
+                // The nearest rim of a low island, which wears a cloud skirt.
+                SkirtField field = SkirtField.get(THE_AETHER);
+                int[] rim = field == null ? null : field.nearestRim(origin.getX(), origin.getZ(), 4000).orElse(null);
+                if (rim == null) {
+                    AlteredAether.LOGGER.error("Worldgen benchmark: no cloud skirt within 4000 blocks{}",
+                            field == null ? " (no skirt field: is this the tall Aether?)" : "");
+                    return;
+                }
+                origin = new BlockPos(rim[0], rim[1], rim[2]);
+                AlteredAether.LOGGER.info("Worldgen benchmark: centred on a low island's rim at {}", origin.toShortString());
             } else if (biome != null && biome.matches("-?\\d+:-?\\d+")) {
                 String[] xz = biome.split(":");
                 origin = new BlockPos(Integer.parseInt(xz[0]), 64, Integer.parseInt(xz[1]));
@@ -461,6 +473,20 @@ public final class DebugCommands {
                             state -> BuiltInRegistries.BLOCK.getKey(state.getBlock()).getPath().contains("copper")
                                     || BuiltInRegistries.BLOCK.getKey(state.getBlock()).getPath().contains(family))).join();
                 }
+            }
+            if (Boolean.getBoolean("altered_aether.render") && biome != null && biome.equals("skirt")) {
+                // Sections through the rim, east-west and north-south, a plan cut through the collar, and the same
+                // plan with only the cloud drawn.
+                int sx = origin.getX(), sz = origin.getZ(), sy = origin.getY();
+                server.submit(() -> WorldRender.render(aether, "skirt_slice_x", sx - 64, sz, sx + 64, sz, sy - 40,
+                        sy + 24, 4)).join();
+                server.submit(() -> WorldRender.render(aether, "skirt_slice_z", sx, sz - 64, sx, sz + 64, sy - 40,
+                        sy + 24, 4)).join();
+                server.submit(() -> WorldRender.render(aether, "skirt_plan", sx - 64, sz - 64, sx + 64, sz + 64,
+                        sy - 9, sy - 2, 4)).join();
+                server.submit(() -> WorldRender.render(aether, "skirt_cloud", sx - 64, sz - 64, sx + 64, sz + 64,
+                        sy - 40, sy + 24, 4, state -> state.is(com.aetherteam.aether.block.AetherBlocks.COLD_AERCLOUD.get())))
+                        .join();
             }
             if (Boolean.getBoolean("altered_aether.render") && biome != null && biome.equals("giant:" + AACommands.MIRE)) {
                 // Sections through the lake and a plan at its water line, so islets, roots and the bed show.

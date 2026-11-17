@@ -14,6 +14,7 @@
  */
 package com.linc.alteredaether.worldgen.feature;
 
+import com.linc.alteredaether.worldgen.skirt.CloudSkirts;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.core.BlockPos;
@@ -78,6 +79,8 @@ public final class EdgeSpringFeature extends Feature<EdgeSpringFeature.Config> {
                 BlockPos at = pos.immutable();
                 level.setBlock(at, source, Block.UPDATE_CLIENTS);
                 level.scheduleTick(at, source.getFluidState().getType(), 0);
+                // A neighbouring chunk's cloud skirt may already lie under the fall.
+                CloudSkirts.clearFalls(level, at);
                 PLACED.incrementAndGet();
                 return true;
             }

@@ -53,6 +53,7 @@ import com.linc.alteredaether.worldgen.feature.AncientBoulderFeature;
 import com.linc.alteredaether.worldgen.feature.BoulderFeature;
 import com.linc.alteredaether.worldgen.feature.CopperSpikeFeature;
 import com.linc.alteredaether.worldgen.feature.CopperVeinFeature;
+import com.linc.alteredaether.worldgen.feature.CloudSkirtFeature;
 import com.linc.alteredaether.worldgen.feature.EdgeSpringFeature;
 import com.linc.alteredaether.worldgen.placement.ConfigCount;
 import com.linc.alteredaether.worldgen.placement.ArchwoodRegion;
@@ -288,6 +289,8 @@ public final class AARegistries {
             FEATURES.register("ruin", RuinFeature::new);
     public static final DeferredHolder<Feature<?>, UnderstoryFeature> UNDERSTORY =
             FEATURES.register("understory", UnderstoryFeature::new);
+    public static final DeferredHolder<Feature<?>, CloudSkirtFeature> CLOUD_SKIRT =
+            FEATURES.register("cloud_skirt", CloudSkirtFeature::new);
     public static final DeferredHolder<Feature<?>, EdgeSpringFeature> EDGE_SPRING =
             FEATURES.register("edge_spring", EdgeSpringFeature::new);
     public static final DeferredHolder<Feature<?>, BoulderFeature> BOULDER =

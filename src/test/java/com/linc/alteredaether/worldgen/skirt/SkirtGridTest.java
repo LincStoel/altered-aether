@@ -1,0 +1,216 @@
+/*
+ * Altered Aether
+ * Copyright (C) 2026 Linc Stoel
+ *
+ * This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public
+ * License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later
+ * version.
+ *
+ * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along with this program. If not, see
+ * <https://www.gnu.org/licenses/>.
+ */
+package com.linc.alteredaether.worldgen.skirt;
+
+import org.junit.jupiter.api.Test;
+
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+/** The cloud skirts' grid arithmetic: which islands are low, and the collar's shape. */
+class SkirtGridTest {
+    /** A hand-drawn terrain: sky wherever nothing is drawn. */
+    private static final class Drawn implements SkirtGrid.Columns {
+        final Map<Long, Integer> tops = new HashMap<>();
+        final Set<Long> rift = new HashSet<>();
+
+        Drawn disc(int cx, int cz, int radius, int top) {
+            for (int x = cx - radius; x <= cx + radius; x++) {
+                for (int z = cz - radius; z <= cz + radius; z++) {
+                    if ((x - cx) * (x - cx) + (z - cz) * (z - cz) <= radius * radius) {
+                        tops.put(SkirtGrid.key(x, z), top);
+                    }
+                }
+            }
+            return this;
+        }
+
+        @Override
+        public int top(int gx, int gz) {
+            return tops.getOrDefault(SkirtGrid.key(gx, gz), SkirtGrid.SKY);
+        }
+
+        @Override
+        public boolean rift(int gx, int gz) {
+            return rift.contains(SkirtGrid.key(gx, gz));
+        }
+    }
+
+    @Test
+    void anIslandWithItsRimBelowZeroIsLow() {
+        Drawn low = new Drawn().disc(0, 0, 8, -12);
+        assertTrue(SkirtGrid.flood(low, 0, 0).low());
+        Drawn high = new Drawn().disc(0, 0, 8, 12);
+        assertFalse(SkirtGrid.flood(high, 0, 0).low());
+        Drawn tall = new Drawn().disc(0, 0, 8, SkirtGrid.HIGH);
+        assertFalse(SkirtGrid.flood(tall, 0, 0).low());
+    }
+
+    @Test
+    void aScrapOfRockGetsNoCollar() {
+        Drawn scrap = new Drawn().disc(0, 0, 1, -12);
+        assertTrue(scrap.tops.size() < SkirtGrid.MIN_ISLAND);
+        assertFalse(SkirtGrid.flood(scrap, 0, 0).low());
+    }
+
+    @Test
+    void anIslandAcrossZeroGoesByMostOfItsRim() {
+        // A disc 33 columns across, tilted: below 0 to the west of x = 6, so most of its rim is low.
+        Drawn mostlyLow = tilted(6);
+        assertTrue(SkirtGrid.flood(mostlyLow, 0, 0).low());
+        Drawn mostlyHigh = tilted(-6);
+        assertFalse(SkirtGrid.flood(mostlyHigh, 0, 0).low());
+    }
+
+    private static Drawn tilted(int split) {
+        Drawn drawn = new Drawn();
+        for (int x = -16; x <= 16; x++) {
+            for (int z = -16; z <= 16; z++) {
+                if (x * x + z * z <= 256) {
+                    drawn.tops.put(SkirtGrid.key(x, z), x < split ? -4 : 4);
+                }
+            }
+        }
+        return drawn;
+    }
+
+    @Test
+    void anIslandIsTheSameFromWhereverItIsFound() {
+        Drawn drawn = new Drawn().disc(0, 0, 10, -8).disc(14, 0, 6, -2);
+        long[] a = SkirtGrid.flood(drawn, 0, 0).points(), b = SkirtGrid.flood(drawn, 17, 1).points();
+        Arrays.sort(a);
+        Arrays.sort(b);
+        assertArrayEquals(a, b);
+    }
+
+    @Test
+    void aDropSeparatesIslands() {
+        // A low island right beside one far higher: two islands, the higher one not low.
+        Drawn drawn = new Drawn().disc(0, 0, 6, -30).disc(12, 0, 6, 10);
+        assertTrue(SkirtGrid.flood(drawn, 0, 0).low());
+        assertFalse(SkirtGrid.flood(drawn, 12, 0).low());
+        assertEquals(SkirtGrid.flood(drawn, 0, 0).points().length + SkirtGrid.flood(drawn, 12, 0).points().length,
+                drawn.tops.size());
+    }
+
+    @Test
+    void aHugeLandmassIsOverTheCap() {
+        Drawn drawn = new Drawn();
+        for (int x = 0; x < 100; x++) {
+            for (int z = 0; z < 100; z++) {
+                drawn.tops.put(SkirtGrid.key(x, z), -10);
+            }
+        }
+        SkirtGrid.Island island = SkirtGrid.flood(drawn, 50, 50);
+        assertTrue(island.overCap());
+        assertTrue(SkirtGrid.localLow(drawn, 0, 0));
+    }
+
+    @Test
+    void riftColumnsAreNeverRim() {
+        Drawn drawn = new Drawn().disc(0, 0, 6, -10);
+        drawn.tops.keySet().forEach(drawn.rift::add);
+        assertFalse(SkirtGrid.rim(drawn, 6, 0));
+        // No rim left to vote, so no collar.
+        assertFalse(SkirtGrid.flood(drawn, 0, 0).low());
+        assertEquals(0, SkirtGrid.riftFade(0));
+        assertEquals(1, SkirtGrid.riftFade(SkirtGrid.RIFT_FADE));
+    }
+
+    @Test
+    void theCollarIsALensUnderTheRim() {
+        double[] at = new double[2];
+        assertTrue(SkirtGrid.span(0, -10, 1, 24, 4, 0, 0, at));
+        assertEquals(-10 - SkirtGrid.GAP, at[1], 1e-9);
+        assertEquals(-10 - SkirtGrid.GAP - 4, at[0], 1e-9);
+        double last = at[1] - at[0];
+        for (double d = 2; d < 24; d += 2) {
+            assertTrue(SkirtGrid.span(d, -10, 1, 24, 4, 0, 0, at));
+            double thick = at[1] - at[0];
+            assertTrue(thick < last, "thinner at " + d);
+            last = thick;
+        }
+        assertFalse(SkirtGrid.span(24, -10, 1, 24, 4, 0, 0, at));
+        assertFalse(SkirtGrid.span(4, -10, 0, 24, 4, 0, 0, at));
+    }
+
+    @Test
+    void neighbouringCollarsJoin() {
+        // Two rims 40 blocks apart at different heights: every point between them is in a collar, at a height
+        // between theirs that changes smoothly.
+        SkirtGrid.Sources sources = new SkirtGrid.Sources();
+        sources.add(0, 0, -10);
+        sources.add(40, 0, -20);
+        double[] sample = new double[2], at = new double[2];
+        double lastHeight = Double.NaN;
+        for (int x = 0; x <= 40; x++) {
+            SkirtGrid.sample(sources, x, 0, sample);
+            assertTrue(SkirtGrid.span(sample[0], sample[1], 1, SkirtGrid.MAX_WIDTH, 4, 0, 0, at), "gap at " + x);
+            assertTrue(sample[1] <= -10 + 1e-9 && sample[1] >= -20 - 1e-9);
+            if (!Double.isNaN(lastHeight)) {
+                assertTrue(sample[1] <= lastHeight + 1e-9);
+                assertTrue(lastHeight - sample[1] < 2, "step at " + x);
+            }
+            lastHeight = sample[1];
+        }
+    }
+
+    @Test
+    void rimsOutOfReachChangeNothing() {
+        // A tile sees more rims than its neighbour; a point both share must come out the same in each.
+        SkirtGrid.Sources near = new SkirtGrid.Sources(), more = new SkirtGrid.Sources();
+        near.add(0, 0, -8);
+        near.add(12, 4, -14);
+        more.add(-200, 0, 5);
+        more.add(0, 0, -8);
+        more.add(12, 4, -14);
+        more.add(300, 40, -40);
+        double[] a = new double[2], b = new double[2];
+        SkirtGrid.sample(near, 6, 10, a);
+        SkirtGrid.sample(more, 6, 10, b);
+        assertArrayEquals(a, b);
+        SkirtGrid.sample(near, 500, 500, a);
+        assertEquals(SkirtGrid.FAR, a[0]);
+    }
+
+    @Test
+    void waterfallsLeaveAGapAndAFeather() {
+        for (int x = -50; x < 50; x++) {
+            int r = SkirtGrid.gapRadius(42, x, 3 * x);
+            assertTrue(r >= 1 && r <= 3);
+        }
+        assertEquals(0, SkirtGrid.feather(2, 2));
+        assertTrue(SkirtGrid.feather(3.5, 2) > 0 && SkirtGrid.feather(3.5, 2) < 1);
+        assertEquals(1, SkirtGrid.feather(2 + SkirtGrid.FEATHER, 2));
+    }
+
+    @Test
+    void widthAndThicknessStayInTheirRanges() {
+        for (int i = 0; i < 2000; i++) {
+            double x = i * 7.3 - 3000, z = i * -11.1 + 900;
+            double w = SkirtGrid.width(99, x, z), t = SkirtGrid.thickness(99, x, z);
+            assertTrue(w >= SkirtGrid.MIN_WIDTH - 1e-9 && w <= SkirtGrid.MAX_WIDTH + 1e-9, "width " + w);
+            assertTrue(t >= SkirtGrid.MIN_THICK - 1e-9 && t <= SkirtGrid.MAX_THICK + 1e-9, "thickness " + t);
+        }
+    }
+}
