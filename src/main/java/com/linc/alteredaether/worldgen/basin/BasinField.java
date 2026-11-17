@@ -55,7 +55,7 @@ public final class BasinField {
      * stands only clear of every big one, and trims less of the land around it. Wide enough past a small atoll's
      * extent (32 to 43 blocks) that each can drift well off its cell's centre, so they don't read as a grid.
      */
-    static final int MINOR_CELL = 120;
+    static final int MINOR_CELL = 136;
     private static final double MINOR_INFLUENCE = 16;
     /** Double atolls are landmarks, on a grid of their own this times the configured atoll size. */
     static final int DOUBLE_CELL = 1024;
