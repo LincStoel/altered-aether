@@ -148,6 +148,10 @@ public final class Tour {
                     whaleShots(spawn, shots);
                     continue;
                 }
+                if (stop.startsWith("skirt")) {
+                    skirtShots(stop, spawn, shots);
+                    continue;
+                }
                 if (stop.equals("leap")) {
                     double x = spawn.getX() + 0.5, y = Integer.getInteger("altered_aether.tour.stage", 200) + 2, z = spawn.getZ() + 0.5;
                     shots.add(new Shot("whale_leap", x, y + 8, z, x, y, z + 20, 6000, false, false));
@@ -258,6 +262,33 @@ public final class Tour {
             shots.add(new Shot("whale_top", x + 0.01, y + 16, z + 0.5, x, fy, z + 0.5, 6000, false, false));
             shots.add(new Shot("whale_rear", x + 5, y + 5, z - 14, x, fy, z, 6000, false, false));
             shots.add(new Shot("whale_ride", x, y + 8, z, x, fy, z + 20, 6000, false, false));
+        }
+
+        /**
+         * The cloud skirt round a low island: the nearest low rim to a point well away from spawn ({@code skirt} or
+         * {@code skirt:dx:dz} for the offset), so its chunks are new and wear the skirt, framed from four sides
+         * just above the rim and once from high up.
+         */
+        private static void skirtShots(String stop, BlockPos spawn, List<Shot> shots) {
+            String[] parts = stop.split(":");
+            int dx = parts.length == 3 ? Integer.parseInt(parts[1]) : 6000;
+            int dz = parts.length == 3 ? Integer.parseInt(parts[2]) : 6000;
+            com.linc.alteredaether.worldgen.skirt.SkirtField field =
+                    com.linc.alteredaether.worldgen.skirt.SkirtField.get(THE_AETHER);
+            int[] rim = field == null ? null
+                    : field.nearestRim(spawn.getX() + dx, spawn.getZ() + dz, 4000).orElse(null);
+            if (rim == null) {
+                AlteredAether.LOGGER.error("Tour: no cloud skirt found{}", field == null ? " (no skirt field)" : "");
+                return;
+            }
+            AlteredAether.LOGGER.info("Tour: low rim at {} {} {}", rim[0], rim[1], rim[2]);
+            double x = rim[0] + 0.5, y = rim[1], z = rim[2] + 0.5;
+            for (int i = 0; i < 4; i++) {
+                double angle = Math.PI * 0.25 + i * Math.PI / 2;
+                shots.add(new Shot("skirt_" + i, x + Math.cos(angle) * 44, y + 8, z + Math.sin(angle) * 44, x,
+                        y - 5, z, 6000, false, false));
+            }
+            shots.add(new Shot("skirt_above", x + 70, y + 55, z + 70, x, y - 4, z, 6000, false, false));
         }
 
         /** Walks from a point toward where the biome is widest, so the shots sit well inside it. */
