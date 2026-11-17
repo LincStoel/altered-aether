@@ -32,16 +32,23 @@ import java.util.Set;
  *
  * <p>A family a chest was already kept for needs only half as much to stay a group, so one item more or less doesn't
  * reshuffle the storage. A pinned family is always a group, kept in its pinned chest, needing no chest of its own.
+ *
+ * <p>Some items are too many to be miscellaneous ({@code many}). A family holding one is given a chest that would
+ * otherwise stand empty, however little it fills. If it gets none, those items go with the group nearest their family
+ * in the tree instead ({@link Result#nearest}), and so don't keep the odds and ends a chest they won't fill.
  */
 public final class Grouping {
     /** Fill is counted in hundredths of a stack. */
     public static final int STACK = 100;
 
     /**
-     * @param group the group each node's items belong to (a node index; the root for the miscellaneous items)
-     * @param own   the slots each group's items fill (0 for a node that isn't a group)
+     * @param group   the group each node's items belong to (a node index; the root for the miscellaneous items)
+     * @param own     the slots each group's items fill (0 for a node that isn't a group)
+     * @param nearest for each node, the group nearest it in the tree other than the root (the closest relative, then
+     *                the group filling fewest slots, then the earliest node), or -1 if there is none; what its items
+     *                too many to be miscellaneous go with when its group is the root
      */
-    public record Result(int[] group, int[] own) {
+    public record Result(int[] group, int[] own, int[] nearest) {
         public int of(SortSnapshot.Key key) {
             return group[key.node()];
         }
@@ -53,6 +60,7 @@ public final class Grouping {
     /**
      * @param nodes     the family tree, root first, parents before children
      * @param slots     the slots the items directly in each node fill, merged
+     * @param many      the part of {@code slots} filled by items too many to be miscellaneous
      * @param fill      how many stacks' worth (in hundredths, {@link #STACK}) the items directly in each node are
      * @param chests    how many chests there are to keep groups in
      * @param chestSize the slots in a chest
@@ -62,10 +70,15 @@ public final class Grouping {
      * @param forced    pinned families: always groups, needing no chest
      * @param claimed   families a chest was kept for last time
      */
-    public static Result compute(List<SortSnapshot.Node> nodes, int[] slots, int[] fill, int chests, int chestSize,
-                                 int miscSlots, int minFill, int spareFill, Set<Integer> forced, Set<Integer> claimed) {
+    public static Result compute(List<SortSnapshot.Node> nodes, int[] slots, int[] many, int[] fill, int chests,
+                                 int chestSize, int miscSlots, int minFill, int spareFill, Set<Integer> forced,
+                                 Set<Integer> claimed) {
         int n = nodes.size();
         int[] weight = fill.clone();
+        boolean anyMany = false;
+        for (int m : many) {
+            anyMany |= m > 0;
+        }
         int[] depth = new int[n];
         List<List<Integer>> children = new ArrayList<>(n);
         for (int i = 0; i < n; i++) {
@@ -86,22 +99,52 @@ public final class Grouping {
                 in[f] = true;
             }
         }
-        Context ctx = new Context(nodes, slots, fill, depth, chestSize, miscSlots, minFill, forced, claimed);
+        Context ctx = new Context(nodes, slots, many, fill, depth, chestSize, miscSlots, minFill, forced, claimed);
         split(ctx, in, weight, children, chests);
         // chests still to spare: rather than leave them empty, the biggest groups left split further, down to
-        // families of a couple of stacks (lone one-offs still share the odds and ends)
-        if (spareFill < ctx.minFill) {
+        // families of a couple of stacks (lone one-offs still share the odds and ends). Here, and only here, what is
+        // too many to be miscellaneous counts with the group nearest it, so a chest the odds and ends were kept
+        // that they won't fill is spare too; counting it so from the start would let the heaviest families split
+        // finer before lighter ones were kept apart at all.
+        if (spareFill < ctx.minFill || anyMany) {
             int before = ctx.minFill;
-            ctx.minFill = Math.max(1, spareFill);
+            ctx.minFill = Math.max(1, Math.min(spareFill, ctx.minFill));
+            ctx.spare = true;
             if (ctx.need(in) <= chests) {
                 split(ctx, in, weight, children, chests);
             } else {
                 ctx.minFill = before;
+                ctx.spare = false;
             }
+        }
+        // a chest still spare goes to a family holding something too many to be odds and ends, however little it
+        // fills, rather than those items going in with another family; the biggest first. Judged as if they stayed
+        // with the odds and ends, so only a chest that would otherwise stand empty is taken.
+        if (anyMany) {
+            boolean spare = ctx.spare;
+            ctx.spare = false;
+            int[] now = ctx.assign(in, new int[n], new int[n]);
+            List<Integer> candidates = new ArrayList<>();
+            for (int i = 1; i < n; i++) {
+                if (many[i] > 0 && now[i] == SortSnapshot.ROOT) {
+                    candidates.add(i);
+                }
+            }
+            candidates.sort((a, b) -> fill[a] != fill[b] ? Integer.compare(fill[b], fill[a]) : Integer.compare(a, b));
+            for (int c : candidates) {
+                boolean was = in[c];
+                in[c] = true;
+                ctx.kept.add(c);
+                if (ctx.need(in) > chests) {
+                    in[c] = was;
+                    ctx.kept.remove(c);
+                }
+            }
+            ctx.spare = spare;
         }
         int[] own = new int[n];
         int[] group = ctx.assign(in, own, new int[n]);
-        return new Result(group, own);
+        return new Result(group, own, ctx.nearest(group, own));
     }
 
     /** Splits off the heaviest families first while the groups fit {@code chests}, each holding the context's fill. */
@@ -131,16 +174,21 @@ public final class Grouping {
 
     private static final class Context {
         final List<SortSnapshot.Node> nodes;
-        final int[] slots, fill, depth;
+        final int[] slots, many, fill, depth;
         final int chestSize, miscSlots;
         int minFill;
+        /** Splitting for spare chests: what is too many to be miscellaneous counts with the group nearest it. */
+        boolean spare;
+        /** Families given a spare chest for what they hold too many of to be miscellaneous: kept whatever they fill. */
+        final Set<Integer> kept = new java.util.HashSet<>();
         final Set<Integer> forced, claimed;
         final Integer[] deepestFirst;
 
-        Context(List<SortSnapshot.Node> nodes, int[] slots, int[] fill, int[] depth, int chestSize, int miscSlots,
-                int minFill, Set<Integer> forced, Set<Integer> claimed) {
+        Context(List<SortSnapshot.Node> nodes, int[] slots, int[] many, int[] fill, int[] depth, int chestSize,
+                int miscSlots, int minFill, Set<Integer> forced, Set<Integer> claimed) {
             this.nodes = nodes;
             this.slots = slots;
+            this.many = many;
             this.fill = fill;
             this.depth = depth;
             this.chestSize = Math.max(1, chestSize);
@@ -163,7 +211,20 @@ public final class Grouping {
         /** The chests the groups {@code in} need. */
         int need(boolean[] in) {
             int[] own = new int[nodes.size()];
-            assign(in, own, new int[nodes.size()]);
+            int[] group = assign(in, own, new int[nodes.size()]);
+            // what is too many to be miscellaneous goes with the group nearest it instead
+            int[] nearest = null;
+            for (int i = 0; i < own.length && spare; i++) {
+                if (group[i] == SortSnapshot.ROOT && many[i] > 0) {
+                    if (nearest == null) {
+                        nearest = nearest(group, own.clone());
+                    }
+                    if (nearest[i] > 0) {
+                        own[SortSnapshot.ROOT] -= many[i];
+                        own[nearest[i]] += many[i];
+                    }
+                }
+            }
             int need = 0;
             for (int g = 1; g < own.length; g++) {
                 if (own[g] > 0 && !forced.contains(g)) {
@@ -189,7 +250,8 @@ public final class Grouping {
             int[] folded = new int[n];
             Arrays.fill(folded, -1);
             for (int g : deepestFirst) {
-                if (g == SortSnapshot.ROOT || !in[g] || forced.contains(g) || ownFill[g] >= threshold(g)) {
+                if (g == SortSnapshot.ROOT || !in[g] || forced.contains(g) || kept.contains(g)
+                        || ownFill[g] >= threshold(g)) {
                     continue;
                 }
                 int up = group[nodes.get(g).parent()];
@@ -207,6 +269,47 @@ public final class Grouping {
                 group[i] = g;
             }
             return group;
+        }
+
+        /**
+         * For each node, the group of {@code group} nearest it other than the root: its closest relative, the one under
+         * its nearest ancestor (or itself) that has any group under it; among those, the group filling fewest slots
+         * ({@code own}), so a big family isn't the one mixed, then the earliest node; -1 if there is none. Two passes
+         * over the tree, up then down.
+         */
+        int[] nearest(int[] group, int[] own) {
+            int n = nodes.size();
+            List<Integer> groups = new ArrayList<>();
+            boolean[] seen = new boolean[n];
+            for (int g : group) {
+                if (g != SortSnapshot.ROOT && !seen[g]) {
+                    seen[g] = true;
+                    groups.add(g);
+                }
+            }
+            groups.sort((a, b) -> own[a] != own[b] ? Integer.compare(own[a], own[b]) : Integer.compare(a, b));
+            // the best rank within each node's subtree, up from the leaves (children come after their parents)
+            int none = Integer.MAX_VALUE;
+            int[] best = new int[n];
+            Arrays.fill(best, none);
+            for (int rank = 0; rank < groups.size(); rank++) {
+                best[groups.get(rank)] = rank;
+            }
+            for (int i = n - 1; i > 0; i--) {
+                int parent = nodes.get(i).parent();
+                best[parent] = Math.min(best[parent], best[i]);
+            }
+            // then down: a node with no group under it takes its parent's
+            for (int i = 1; i < n; i++) {
+                if (best[i] == none) {
+                    best[i] = best[nodes.get(i).parent()];
+                }
+            }
+            int[] out = new int[n];
+            for (int i = 0; i < n; i++) {
+                out[i] = best[i] == none ? -1 : groups.get(best[i]);
+            }
+            return out;
         }
     }
 }

@@ -45,6 +45,10 @@ import java.util.Set;
  * the most of it. A family no chest is for takes empty chests (the biggest first). An item with no home at all goes to
  * the crates, then the chests of miscellaneous items, and if none has room it is reported stuck.
  *
+ * <p>Only a few of an item ({@link #MISC_MAX_ITEMS} at most) are ever miscellaneous. Any more, and an item whose family
+ * has no group counts towards the group nearest it in the family tree, so goes wherever that family does; and when its
+ * family's chests have no room, the next nearest family's take it, then the next, before the crates.
+ *
  * <p><b>Compact</b> fills pinned chests and drawers with their items, merges partial stacks (into the chest holding the
  * most of that item), then empties the least-used chests into the others, one whole chest at a time, while one fits.
  *
@@ -62,6 +66,11 @@ public final class Planner {
     public static final int MAX_MOVES = 512;
     /** The fewest slots a family fills to be given a chest that would otherwise stay empty: two stacks. */
     private static final int SPARE_FILL = 2;
+    /**
+     * The most of one item that goes in with the miscellaneous items: any more and it goes to the family nearest its
+     * own instead, crate or no crate.
+     */
+    public static final int MISC_MAX_ITEMS = 16;
 
     /**
      * Which inventories a plan moves items out of.
@@ -256,6 +265,7 @@ public final class Planner {
                 crates.add(i);
             }
         }
+        Map<Integer, List<Integer>> nearby = new HashMap<>();
 
         List<Integer> order = new ArrayList<>();
         for (int i = 0; i < n; i++) {
@@ -318,6 +328,17 @@ public final class Planner {
                     homes.addAll(w.byHeld(tier, key));
                     if (homes.isEmpty() || group == SortSnapshot.ROOT) {
                         homes.addAll(newHome.getOrDefault(group, List.of()));
+                    }
+                    if (w.many.contains(key)) {
+                        // too many to be odds and ends: when its family has no room, the nearest family with room
+                        // takes it instead
+                        int g = group;
+                        for (int j : nearby.computeIfAbsent(key, x -> nearbyHomes(w, x, g, type, dominant, pinGroups,
+                                newHome))) {
+                            if (!homes.contains(j)) {
+                                homes.add(j);
+                            }
+                        }
                     }
                     if (homes.isEmpty()) {
                         // nowhere for its family: in with the miscellaneous items
@@ -383,6 +404,38 @@ public final class Planner {
                 w.mergeWithin(i);
             }
         }
+    }
+
+    /**
+     * The chests of the families other than {@code group}, nearest {@code key}'s own family first; within a family,
+     * those pinned for it, then those it is the dominant family of, holding the most of {@code key} first, then the
+     * chests just given to it.
+     */
+    private static List<Integer> nearbyHomes(Work w, int key, int group, int[] type, int[] dominant,
+                                             List<Set<Integer>> pinGroups, Map<Integer, List<Integer>> newHome) {
+        List<Integer> homes = new ArrayList<>();
+        List<Integer> tier = new ArrayList<>();
+        for (int near : w.nearestGroups(w.keys.get(key).node())) {
+            if (near == group) {
+                continue;
+            }
+            tier.clear();
+            for (int j = 0; j < type.length; j++) {
+                if (type[j] == PINNED && pinGroups.get(j).contains(near)) {
+                    tier.add(j);
+                }
+            }
+            homes.addAll(w.byHeld(tier, key));
+            tier.clear();
+            for (int j = 0; j < type.length; j++) {
+                if (type[j] == DOMINANT && dominant[j] == near) {
+                    tier.add(j);
+                }
+            }
+            homes.addAll(w.byHeld(tier, key));
+            homes.addAll(newHome.getOrDefault(near, List.of()));
+        }
+        return homes;
     }
 
     // ---------------------------------------------------------------------------------------------------------------
@@ -659,6 +712,12 @@ public final class Planner {
         Map<Integer, List<Integer>> bulkHomes = new HashMap<>();
         /** Tidy's groups, once worked out. */
         Grouping.Result group;
+        /** Keys with more than {@link #MISC_MAX_ITEMS} to store: never miscellaneous. */
+        Set<Integer> many = new HashSet<>();
+        /** Keys of {@link #many} whose family has no group, by the group nearest it they count towards instead. */
+        Map<Integer, Integer> rehomed = new HashMap<>();
+        /** The groups nearest each node, nearest first, once asked for. */
+        Map<Integer, List<Integer>> nearest = new HashMap<>();
         List<Move> moves = new ArrayList<>();
         int unplaced;
         Set<Integer> stuck = new HashSet<>();
@@ -716,6 +775,9 @@ public final class Planner {
             claims = other.claims;
             bulkHomes = other.bulkHomes;
             group = other.group;
+            many = other.many;
+            rehomed = other.rehomed;
+            nearest = other.nearest;
             moves = new ArrayList<>(other.moves);
             unplaced = other.unplaced;
             stuck = new HashSet<>(other.stuck);
@@ -911,7 +973,8 @@ public final class Planner {
                     }
                 }
             }
-            int[] slots = new int[nodes.size()], fill = new int[nodes.size()];
+            // what is left to store outside pinned homes and drawers
+            Map<Integer, Long> toStore = new HashMap<>();
             for (Map.Entry<Integer, Long> entry : totals.entrySet()) {
                 int k = entry.getKey();
                 if (pinned.contains(k)) {
@@ -919,20 +982,81 @@ public final class Planner {
                 }
                 long left = entry.getValue() - bulkRoom(k);
                 if (left > 0) {
-                    int node = keys.get(k).node();
-                    slots[node] += need(k, left);
-                    long stack = Math.max(1, keys.get(k).maxStack());
-                    fill[node] += (int) Math.min(Integer.MAX_VALUE / 4, (left * Grouping.STACK + stack - 1) / stack);
+                    toStore.put(k, left);
+                    if (left > MISC_MAX_ITEMS) {
+                        many.add(k);
+                    }
                 }
             }
             int size = chestSize();
             int minFill = Math.max(SPARE_FILL, (int) Math.round(size * settings.minFill())) * Grouping.STACK;
-            return Grouping.compute(nodes, slots, fill, chests, size, miscSlots, minFill, SPARE_FILL * Grouping.STACK,
-                    forced, claimed);
+            int[] slots = new int[nodes.size()], manySlots = new int[nodes.size()], fill = new int[nodes.size()];
+            toStore.forEach((k, left) -> {
+                int node = keys.get(k).node();
+                int need = need(k, left);
+                slots[node] += need;
+                if (many.contains(k)) {
+                    manySlots[node] += need;
+                }
+                long stack = Math.max(1, keys.get(k).maxStack());
+                fill[node] += (int) Math.min(Integer.MAX_VALUE / 4, (left * Grouping.STACK + stack - 1) / stack);
+            });
+            Grouping.Result result = Grouping.compute(nodes, slots, manySlots, fill, chests, size, miscSlots, minFill,
+                    SPARE_FILL * Grouping.STACK, forced, claimed);
+            // too many of one item for the odds and ends, and no group for its family: it goes with the group nearest
+            rehomed = new HashMap<>();
+            for (int k : many) {
+                int node = keys.get(k).node();
+                if (result.group()[node] == SortSnapshot.ROOT && result.nearest()[node] > 0) {
+                    rehomed.put(k, result.nearest()[node]);
+                }
+            }
+            nearest = new HashMap<>();
+            return result;
         }
 
         int groupOf(int key) {
-            return group.of(keys.get(key));
+            Integer moved = rehomed.get(key);
+            return moved != null ? moved : group.of(keys.get(key));
+        }
+
+        /** The groups other than the root and {@code node}'s own, nearest to {@code node} in the family tree first. */
+        List<Integer> nearestGroups(int node) {
+            return nearest.computeIfAbsent(node, x -> nearestGroups(group, x));
+        }
+
+        /**
+         * The groups of {@code result} other than the root and {@code node}'s own, closest relatives first (by how far
+         * up the family tree from {@code node} they meet it), then the fewest slots filled, then the earlier node (as
+         * {@link Grouping.Result#nearest} has it).
+         */
+        private List<Integer> nearestGroups(Grouping.Result result, int node) {
+            int[] depth = new int[nodes.size()];
+            for (int i = 1; i < nodes.size(); i++) {
+                depth[i] = depth[nodes.get(i).parent()] + 1;
+            }
+            int own = result.group()[node];
+            Map<Integer, Integer> distance = new HashMap<>();
+            for (int g : result.group()) {
+                if (g == SortSnapshot.ROOT || g == own || distance.containsKey(g)) {
+                    continue;
+                }
+                // how far up from the node they meet: the closer the relative, the fewer
+                int a = node, b = g, steps = 0;
+                while (a != b) {
+                    if (depth[a] >= depth[b]) {
+                        a = nodes.get(a).parent();
+                        steps++;
+                    } else {
+                        b = nodes.get(b).parent();
+                    }
+                }
+                distance.put(g, steps);
+            }
+            List<Integer> groups = new ArrayList<>(distance.keySet());
+            groups.sort(Comparator.<Integer>comparingInt(distance::get).thenComparingInt(g -> result.own()[g])
+                    .thenComparingInt(g -> g));
+            return groups;
         }
 
         /** The slots in an unpinned chest, on average (27 if there is none). */

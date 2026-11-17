@@ -261,7 +261,7 @@ class FamilyPlannerTest {
     @Test
     void aFamilyTooSmallForAChestStaysWithTheOddsAndEnds() {
         SortSnapshot snapshot = snapshot(
-                chest(concat(stacks(PLANKS, 10), new int[]{OAK, 20, IRON, 5})),
+                chest(concat(stacks(PLANKS, 10), new int[]{OAK, 12, IRON, 5})),
                 chest(), chest(), chest(), chest());
         settle(snapshot, SortMode.TIDY);
         int used = 0;
@@ -377,7 +377,7 @@ class FamilyPlannerTest {
         for (int key : List.of(PLANKS, OAK, ANDESITE, IRON, GRAVITITE)) {
             assertTrue(chestWith(snapshot, Set.of(key)) >= 0, "key " + key + " isn't on its own: " + dump(snapshot));
         }
-        // with only two chests they share, coarsely: the blocks together, the rest with the odds and ends
+        // with only two chests they share, coarsely: the blocks together, the rest with the nearest family left
         SortSnapshot few = snapshot(
                 chest(concat(stacks(PLANKS, 3), stacks(OAK, 3), stacks(ANDESITE, 3), stacks(IRON, 3),
                         stacks(GRAVITITE, 3))),
@@ -387,13 +387,54 @@ class FamilyPlannerTest {
     }
 
     @Test
+    void moreThanSixteenOfAnItemGoToTheNearestFamilyNotTheOddsAndEnds() {
+        // 20 oak and 30 andesite fill a slot each, too little for chests of their own by the usual bar, too many for
+        // the odds and ends. The one spare chest goes to the bigger, the andesite; the oak goes in with the spruce,
+        // the nearest family. The 5 iron are odds and ends, crate or no crate.
+        int[] mixed = concat(stacks(PLANKS, 10), new int[]{OAK, 20, IRON, 5, ANDESITE, 30});
+        SortSnapshot crated = snapshot(chest(mixed), crate(640), chest());
+        assertTrue(settle(crated, SortMode.TIDY) <= 4, "didn't settle");
+        assertEquals(Set.of(IRON), keysIn(crated.invs().get(1)), "the crate: " + dump(crated));
+        assertTrue(chestWith(crated, Set.of(PLANKS, OAK)) >= 0, dump(crated));
+        assertTrue(chestWith(crated, Set.of(ANDESITE)) >= 0, dump(crated));
+
+        SortSnapshot chests = snapshot(chest(mixed), chest(), chest());
+        assertTrue(settle(chests, SortMode.TIDY) <= 4, "didn't settle");
+        assertTrue(chestWith(chests, Set.of(IRON)) >= 0, "the odds and ends: " + dump(chests));
+        assertTrue(chestWith(chests, Set.of(PLANKS, OAK)) >= 0, dump(chests));
+        assertTrue(chestWith(chests, Set.of(ANDESITE)) >= 0, dump(chests));
+
+        // no chest to spare: both go in with the spruce
+        SortSnapshot tight = snapshot(chest(mixed), crate(640));
+        assertTrue(settle(tight, SortMode.TIDY) <= 4, "didn't settle");
+        assertEquals(Set.of(IRON), keysIn(tight.invs().get(1)), "the crate: " + dump(tight));
+        assertEquals(Set.of(PLANKS, OAK, ANDESITE), keysIn(tight.invs().get(0)), dump(tight));
+    }
+
+    @Test
+    void moreThanSixteenGoOnToTheNextFamilyWhenTheNearestHasNoRoom() {
+        // the 20 oak belong with the spruce, but its chest is in use: the next nearest family, the gravitite, takes
+        // them rather than the crate
+        SortSnapshot snapshot = snapshot(
+                chest(stacks(PLANKS, 10)).with(true, -1),
+                chest(stacks(GRAVITITE, 10)),
+                crate(640, OAK, 20, IRON, 5));
+        Planner.Plan plan = Planner.plan(snapshot, SortMode.TIDY, Planner.Focus.ALL, SETTINGS);
+        for (Move move : plan.moves()) {
+            assertTrue(Planner.apply(snapshot, move), "move doesn't fit: " + move);
+        }
+        assertEquals(20, count(snapshot.invs().get(1), OAK), "the oak didn't go to the gravitite: " + dump(snapshot));
+        assertEquals(Set.of(IRON), keysIn(snapshot.invs().get(2)), "the crate: " + dump(snapshot));
+    }
+
+    @Test
     void aClaimedFamilyHoldsOnWhenItShrinks() {
         // spruce fills a slot: less than the two a spare chest asks, but a chest already kept for it keeps it while
-        // it fills half that
-        SortSnapshot fresh = snapshot(chest(PLANKS, 64, IRON, 64), chest());
+        // it fills half that (one chest, so none is spare for what is too many to be odds and ends either)
+        SortSnapshot fresh = snapshot(chest(PLANKS, 64, IRON, 64));
         assertTrue(Planner.plan(fresh, SortMode.TIDY, Planner.Focus.ALL, SETTINGS).claims()[0] != 4,
                 "too small for a chest of its own");
-        SortSnapshot kept = snapshot(chest(PLANKS, 64, IRON, 64).with(false, 4), chest());
+        SortSnapshot kept = snapshot(chest(PLANKS, 64, IRON, 64).with(false, 4));
         assertEquals(4, Planner.plan(kept, SortMode.TIDY, Planner.Focus.ALL, SETTINGS).claims()[0],
                 "the spruce chest was given up");
     }
