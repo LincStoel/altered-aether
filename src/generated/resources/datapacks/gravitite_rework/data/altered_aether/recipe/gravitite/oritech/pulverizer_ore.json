@@ -1,0 +1,21 @@
+{
+  "neoforge:conditions": [
+    {
+      "type": "altered_aether:mod_enabled",
+      "modid": "oritech"
+    }
+  ],
+  "type": "oritech:pulverizer",
+  "ingredients": [
+    {
+      "tag": "c:ores/gravitite"
+    }
+  ],
+  "results": [
+    {
+      "count": 2,
+      "id": "altered_aether:raw_gravitite"
+    }
+  ],
+  "time": 100
+}

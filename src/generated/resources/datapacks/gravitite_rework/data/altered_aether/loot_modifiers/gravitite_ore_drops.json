@@ -1,0 +1,27 @@
+{
+  "type": "altered_aether:gravitite_ore_drops",
+  "conditions": [
+    {
+      "condition": "neoforge:loot_table_id",
+      "loot_table_id": "aether:blocks/gravitite_ore"
+    },
+    {
+      "condition": "minecraft:inverted",
+      "term": {
+        "condition": "minecraft:match_tool",
+        "predicate": {
+          "predicates": {
+            "minecraft:enchantments": [
+              {
+                "enchantments": "minecraft:silk_touch",
+                "levels": {
+                  "min": 1
+                }
+              }
+            ]
+          }
+        }
+      }
+    }
+  ]
+}

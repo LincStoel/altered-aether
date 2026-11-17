@@ -366,6 +366,34 @@
       "entries": [
         {
           "type": "minecraft:item",
+          "conditions": [
+            {
+              "condition": "altered_aether:gravitite_rework"
+            }
+          ],
+          "functions": [
+            {
+              "count": {
+                "type": "minecraft:uniform",
+                "max": 5,
+                "min": 2
+              },
+              "function": "minecraft:set_count"
+            }
+          ],
+          "name": "altered_aether:enchanted_gravitite_ingot",
+          "weight": 4
+        },
+        {
+          "type": "minecraft:item",
+          "conditions": [
+            {
+              "condition": "minecraft:inverted",
+              "term": {
+                "condition": "altered_aether:gravitite_rework"
+              }
+            }
+          ],
           "functions": [
             {
               "count": {

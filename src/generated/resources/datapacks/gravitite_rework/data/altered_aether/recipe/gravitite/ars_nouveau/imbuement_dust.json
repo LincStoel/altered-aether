@@ -1,0 +1,22 @@
+{
+  "neoforge:conditions": [
+    {
+      "type": "altered_aether:mod_enabled",
+      "modid": "ars_nouveau"
+    },
+    {
+      "type": "altered_aether:mod_enabled",
+      "modid": "oritech"
+    }
+  ],
+  "type": "ars_nouveau:imbuement",
+  "input": {
+    "tag": "c:dusts/gravitite"
+  },
+  "output": {
+    "count": 1,
+    "id": "altered_aether:enchanted_gravitite_ingot"
+  },
+  "pedestalItems": [],
+  "source": 500
+}

@@ -1,0 +1,24 @@
+{
+  "neoforge:conditions": [
+    {
+      "type": "altered_aether:mod_enabled",
+      "modid": "oritech"
+    }
+  ],
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "#": {
+      "item": "altered_aether:small_gravitite_dust"
+    }
+  },
+  "pattern": [
+    "###",
+    "###",
+    "###"
+  ],
+  "result": {
+    "count": 1,
+    "id": "altered_aether:gravitite_dust"
+  }
+}

@@ -67,6 +67,9 @@ public final class AATagProvider extends JsonDataProvider {
                 "aether_beyond_parity:ambrosium_campfire");
         tag("block", ResourceLocation.withDefaultNamespace("mineable/axe"), "altered_aether:ambrosium_campfire",
                 "altered_aether:gleam_vines", "altered_aether:gleam_vines_plant");
+        // the raw gravitite block mines like the ore it comes from
+        tag("block", ResourceLocation.withDefaultNamespace("mineable/pickaxe"), "altered_aether:raw_gravitite_block");
+        tag("block", ResourceLocation.withDefaultNamespace("needs_iron_tool"), "altered_aether:raw_gravitite_block");
         // dead bushes may stand on the dunes' quicksoil
         tag("block", ResourceLocation.withDefaultNamespace("dead_bush_may_place_on"), "aether:quicksoil");
         // Tempest storms (see TempestStorms) and the natural rock their strikes scorch.

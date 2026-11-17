@@ -1,0 +1,19 @@
+{
+  "neoforge:conditions": [
+    {
+      "type": "altered_aether:mod_enabled",
+      "modid": "oritech"
+    }
+  ],
+  "type": "aether:enchanting",
+  "category": "enchanting_misc",
+  "cookingtime": 375,
+  "experience": 1.0,
+  "ingredient": {
+    "tag": "c:dusts/gravitite"
+  },
+  "result": {
+    "count": 1,
+    "id": "altered_aether:enchanted_gravitite_ingot"
+  }
+}

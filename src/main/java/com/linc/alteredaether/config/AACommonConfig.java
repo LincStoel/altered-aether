@@ -146,6 +146,9 @@ public final class AACommonConfig {
     // [tall_mode]
     public static final ModConfigSpec.ConfigValue<List<? extends String>> TALL_MODE_EXCLUSIONS;
 
+    // [gravitite]
+    public static final BooleanValue GRAVITITE_REWORK;
+
     // [compat]
     public static final Map<String, BooleanValue> COMPAT_ENABLED = new LinkedHashMap<>();
     public static final BooleanValue DISABLE_BEYOND_PARITY_CAMPFIRE;
@@ -161,7 +164,7 @@ public final class AACommonConfig {
     public static final List<String> COMPAT_MODS =
             List.of("ars_nouveau", "ars_elemental", "deep_aether", "aether_overworld_ores", "create", "oreganized",
                     "dried_ghast", "snuffles", "mowziesmobs", "integrated_villages", "immersiveengineering",
-                    "aether_beyond_parity", "sable", "simulated", "ftbchunks");
+                    "aether_beyond_parity", "oritech", "sable", "simulated", "ftbchunks");
 
     /** Per-mob spawn settings. */
     public record MobSettings(BooleanValue enabled, BooleanValue aetherExclusive, DoubleValue weightMultiplier,
@@ -452,6 +455,16 @@ public final class AACommonConfig {
                 .push("tall_mode");
         TALL_MODE_EXCLUSIONS = b.comment("Placed feature and structure ids whose heights must not be rescaled.")
                 .defineListAllowEmpty("exclusions", List.of("deep_aether:brass_dungeon"), () -> "", o -> o instanceof String);
+        b.pop();
+
+        b.comment("Gravitite as a modern ore.").push("gravitite");
+        GRAVITITE_REWORK = b.comment("Gravitite ore drops raw gravitite, which enchanting (never smelting) turns into enchanted",
+                        "gravitite ingots; the enchanted gravitite block becomes their storage block, and gravitite gear,",
+                        "repairs, trims and beacons take ingots. Adds Create, Oritech, Ars Nouveau and Sable support. Comes",
+                        "from the built-in 'altered_aether:gravitite_rework' datapack; false leaves gravitite as the Aether",
+                        "has it. Takes effect when a world is loaded.")
+                .worldRestart()
+                .define("rework", true);
         b.pop();
 
         b.comment("Boulders that fall out of the sky (needs Sable). How many long-fallen ones lie in the terrain is",

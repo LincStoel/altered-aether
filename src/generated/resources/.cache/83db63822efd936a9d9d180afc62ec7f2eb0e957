@@ -1,4 +1,4 @@
-// 1.21.1	2026-11-10T13:43:39.9967417	Altered Aether loot tables
+// 1.21.1	2026-11-15T12:35:43.7136097	Altered Aether loot tables
 da7d952bd2602ab84a5bbbc60811f7f8d93992c1 data/altered_aether/loot_modifiers/bronze_dungeon_rumour_map.json
 6d7b90c78b7fcb70d68629dc918a2819472bad9b data/altered_aether/loot_modifiers/silver_dungeon_rumour_map.json
 df7232e8dfacb22d52716fb06abbd4f7642949d0 data/altered_aether/loot_table/chests/double_atoll.json
@@ -8,7 +8,7 @@ e33e185371ddbe32a05b21b03ccf9fef84d8bd5a data/altered_aether/loot_table/chests/g
 7b0f5d8579eee52c0e397b80a37c1535fb45d20c data/altered_aether/loot_table/chests/grove/ruin.json
 a83e5579ef589c920d6d037ffd2d62f1254f6f9e data/altered_aether/loot_table/chests/grove/ruin_junk.json
 01e86d21565fa11cf8a697a990b1887d399fab27 data/altered_aether/loot_table/chests/grove/secret.json
-0144c05fb40877ec972b0e020259ec3d2dd944a5 data/altered_aether/loot_table/chests/grove/stump.json
+b01d93b46de78b48fe6b52e23a0f334adcdb26bf data/altered_aether/loot_table/chests/grove/stump.json
 0fc1d686cbf424bf2ed14aa1efce2d8e962bafb2 data/altered_aether/loot_table/chests/grove/stump_poor.json
 1a8bbd3b6622ff836476d293d4fd0bb279e60dc5 data/altered_aether/loot_table/chests/grove/village_crate.json
 02bbc249f59aea52cffcfcc1d04ca38861ab0400 data/altered_aether/loot_table/chests/rumour_map.json

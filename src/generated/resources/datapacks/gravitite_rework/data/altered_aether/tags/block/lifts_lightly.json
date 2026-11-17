@@ -1,0 +1,7 @@
+{
+  "replace": false,
+  "values": [
+    "aether:gravitite_ore",
+    "altered_aether:raw_gravitite_block"
+  ]
+}

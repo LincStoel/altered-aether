@@ -21,6 +21,7 @@ import com.linc.alteredaether.worldgen.AABiomes;
 import net.minecraft.data.PackOutput;
 import net.minecraft.resources.ResourceLocation;
 
+import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
@@ -60,7 +61,46 @@ public final class AABlockProvider extends JsonDataProvider {
         gleamVines();
         asset("models/item", AlteredAether.id("squall_spawn_egg"), model("minecraft:item/template_spawn_egg", Map.of()));
         whaleWhistle();
+        gravitite();
         language();
+    }
+
+    /** The gravitite rework's items and raw block (see data/AAGravititeProvider); their art is placeholder. */
+    private static final List<String> GRAVITITE_ITEMS = List.of("raw_gravitite", "enchanted_gravitite_ingot",
+            "enchanted_gravitite_nugget", "crushed_gravitite", "gravitite_dust", "small_gravitite_dust");
+    private static final String RAW_GRAVITITE_BLOCK = "raw_gravitite_block";
+
+    private void gravitite() {
+        for (String item : GRAVITITE_ITEMS) {
+            asset("models/item", AlteredAether.id(item), model("minecraft:item/generated",
+                    Map.of("layer0", AlteredAether.MOD_ID + ":item/" + item)));
+        }
+        String block = AlteredAether.MOD_ID + ":block/" + RAW_GRAVITITE_BLOCK;
+        asset("models/block", AlteredAether.id(RAW_GRAVITITE_BLOCK), model("minecraft:block/cube_all", Map.of("all", block)));
+        asset("models/item", AlteredAether.id(RAW_GRAVITITE_BLOCK), model(block, Map.of()));
+        JsonObject variant = new JsonObject();
+        variant.addProperty("model", block);
+        JsonObject variants = new JsonObject();
+        variants.add("", variant);
+        JsonObject blockstate = new JsonObject();
+        blockstate.add("variants", variants);
+        asset("blockstates", AlteredAether.id(RAW_GRAVITITE_BLOCK), blockstate);
+
+        JsonObject condition = new JsonObject();
+        condition.addProperty("condition", "minecraft:survives_explosion");
+        JsonObject entry = new JsonObject();
+        entry.addProperty("type", "minecraft:item");
+        entry.addProperty("name", AlteredAether.MOD_ID + ":" + RAW_GRAVITITE_BLOCK);
+        JsonObject pool = new JsonObject();
+        pool.addProperty("rolls", 1);
+        pool.addProperty("bonus_rolls", 0);
+        pool.add("conditions", array(condition));
+        pool.add("entries", array(entry));
+        JsonObject loot = new JsonObject();
+        loot.addProperty("type", "minecraft:block");
+        loot.add("pools", array(pool));
+        loot.addProperty("random_sequence", AlteredAether.MOD_ID + ":blocks/" + RAW_GRAVITITE_BLOCK);
+        data("loot_table/blocks", AlteredAether.id(RAW_GRAVITITE_BLOCK), loot);
     }
 
     /**
@@ -268,7 +308,8 @@ public final class AABlockProvider extends JsonDataProvider {
     }
 
     /**
-     * The whale whistle's models, and its recipe: a crook of holystone round a mouthpiece of enchanted gravitite. While
+     * The whale whistle's models, and its recipe: a crook of holystone round a mouthpiece of enchanted gravitite (by the
+     * Aether's tag, so an ingot with the gravitite rework on, the block with it off). While
      * it's blown it's held to the lips as a goat horn is, through the same "tooting" property and the same placing, its
      * texture lying the same way as the horn's, the mouthpiece at the bottom right.
      */
@@ -293,8 +334,7 @@ public final class AABlockProvider extends JsonDataProvider {
         asset("models/item", AlteredAether.id(tooting), blown);
         JsonObject holystone = new JsonObject();
         holystone.addProperty("item", "aether:holystone");
-        JsonObject gravitite = new JsonObject();
-        gravitite.addProperty("item", "aether:enchanted_gravitite");
+        JsonObject gravitite = ingredientTag("aether:processed/gravitite");
         JsonObject key = new JsonObject();
         key.add("G", gravitite);
         key.add("H", holystone);
@@ -374,6 +414,19 @@ public final class AABlockProvider extends JsonDataProvider {
         lang.put("item." + AlteredAether.MOD_ID + ".rumour_map.flashing_archwood_grove", "Rumour of a Flashing Archwood Grove");
         lang.put("item." + AlteredAether.MOD_ID + ".rumour_map.flourishing_archwood_grove", "Rumour of a Flourishing Archwood Grove");
         lang.put("item." + AlteredAether.MOD_ID + ".rumour_map.vexing_archwood_grove", "Rumour of a Vexing Archwood Grove");
+        // the gravitite rework (see compat/GravititeRework); the Aether's block is now the ingots' storage block
+        lang.put("item." + AlteredAether.MOD_ID + ".raw_gravitite", "Raw Gravitite");
+        lang.put("item." + AlteredAether.MOD_ID + ".enchanted_gravitite_ingot", "Enchanted Gravitite Ingot");
+        lang.put("item." + AlteredAether.MOD_ID + ".enchanted_gravitite_nugget", "Enchanted Gravitite Nugget");
+        lang.put("item." + AlteredAether.MOD_ID + ".crushed_gravitite", "Crushed Gravitite");
+        lang.put("item." + AlteredAether.MOD_ID + ".gravitite_dust", "Gravitite Dust");
+        lang.put("item." + AlteredAether.MOD_ID + ".small_gravitite_dust", "Small Gravitite Dust");
+        lang.put("block." + AlteredAether.MOD_ID + "." + RAW_GRAVITITE_BLOCK, "Block of Raw Gravitite");
+        lang.put("block.aether.enchanted_gravitite", "Block of Enchanted Gravitite");
+        lang.put("pack." + AlteredAether.MOD_ID + ".gravitite_rework", "Altered Aether: Gravitite Rework");
+        lang.put("config.jade.plugin_" + AlteredAether.MOD_ID + ".gravitite_lift", "Enchanted gravitite lift");
+        lang.put("jade." + AlteredAether.MOD_ID + ".gravitite.lifting", "Powered: lifts");
+        lang.put("jade." + AlteredAether.MOD_ID + ".gravitite.inert", "Unpowered: needs redstone to lift");
         AAAdvancementProvider.language(lang);
         AABoulderProvider.language(lang);
         AAGolemProvider.language(lang);

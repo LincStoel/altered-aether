@@ -25,7 +25,14 @@ import com.linc.alteredaether.entity.Squall;
 import com.linc.alteredaether.entity.TamedAerwhale;
 import com.linc.alteredaether.entity.golem.GravititeGolem;
 import com.linc.alteredaether.entity.golem.ThrownPebble;
+import com.aetherteam.aether.block.miscellaneous.FloatingBlock;
+import com.linc.alteredaether.item.GravititeItem;
 import com.linc.alteredaether.item.PebbleLink;
+import com.linc.alteredaether.loot.GravititeOreDrops;
+import com.linc.alteredaether.loot.GravititeReworkCondition;
+import net.minecraft.world.level.material.MapColor;
+import net.minecraft.world.level.storage.loot.predicates.LootItemConditionType;
+import net.neoforged.neoforge.common.loot.IGlobalLootModifier;
 import com.linc.alteredaether.item.StoragePebbleItem;
 import com.linc.alteredaether.item.WhaleWhistleItem;
 import com.linc.alteredaether.item.WhistleLink;
@@ -131,6 +138,26 @@ public final class AARegistries {
     public static final DeferredItem<ItemNameBlockItem> GLEAMBERRIES = ITEMS.register("gleamberries",
             () -> new ItemNameBlockItem(GLEAM_VINES.get(), new Item.Properties().food(Foods.GLOW_BERRIES)));
 
+    /**
+     * Gravitite as a modern ore (see data/AAGravititeProvider): the ore drops raw gravitite, which only enchanting
+     * turns into the enchanted ingot. The raw block floats up as the ore does. Every item drifts upward when dropped
+     * (see item/GravititeItem); crushed gravitite is for Create and the dusts for Oritech.
+     */
+    public static final DeferredBlock<FloatingBlock> RAW_GRAVITITE_BLOCK = BLOCKS.registerBlock("raw_gravitite_block",
+            properties -> new FloatingBlock(false, properties),
+            BlockBehaviour.Properties.ofFullCopy(Blocks.RAW_IRON_BLOCK).mapColor(MapColor.COLOR_PINK));
+    public static final DeferredItem<BlockItem> RAW_GRAVITITE_BLOCK_ITEM = ITEMS.registerSimpleBlockItem(RAW_GRAVITITE_BLOCK);
+    public static final DeferredItem<GravititeItem> RAW_GRAVITITE = gravitite("raw_gravitite");
+    public static final DeferredItem<GravititeItem> ENCHANTED_GRAVITITE_INGOT = gravitite("enchanted_gravitite_ingot");
+    public static final DeferredItem<GravititeItem> ENCHANTED_GRAVITITE_NUGGET = gravitite("enchanted_gravitite_nugget");
+    public static final DeferredItem<GravititeItem> CRUSHED_GRAVITITE = gravitite("crushed_gravitite");
+    public static final DeferredItem<GravititeItem> GRAVITITE_DUST = gravitite("gravitite_dust");
+    public static final DeferredItem<GravititeItem> SMALL_GRAVITITE_DUST = gravitite("small_gravitite_dust");
+
+    private static DeferredItem<GravititeItem> gravitite(String name) {
+        return ITEMS.register(name, () -> new GravititeItem(new Item.Properties()));
+    }
+
     public static final DeferredRegister<EntityType<?>> ENTITY_TYPES =
             DeferredRegister.create(Registries.ENTITY_TYPE, AlteredAether.MOD_ID);
 
@@ -214,6 +241,18 @@ public final class AARegistries {
             DeferredRegister.create(Registries.LOOT_FUNCTION_TYPE, AlteredAether.MOD_ID);
     public static final DeferredHolder<LootItemFunctionType<?>, LootItemFunctionType<RumourMapFunction>> RUMOUR_MAP =
             LOOT_FUNCTIONS.register("rumour_map", () -> new LootItemFunctionType<>(RumourMapFunction.CODEC));
+
+    public static final DeferredRegister<LootItemConditionType> LOOT_CONDITIONS =
+            DeferredRegister.create(Registries.LOOT_CONDITION_TYPE, AlteredAether.MOD_ID);
+    /** Whether the gravitite rework is on, for our own tables that give gravitite (see GravititeReworkCondition). */
+    public static final DeferredHolder<LootItemConditionType, LootItemConditionType> GRAVITITE_REWORK_CONDITION =
+            LOOT_CONDITIONS.register("gravitite_rework", () -> new LootItemConditionType(GravititeReworkCondition.CODEC));
+
+    public static final DeferredRegister<MapCodec<? extends IGlobalLootModifier>> LOOT_MODIFIERS =
+            DeferredRegister.create(NeoForgeRegistries.Keys.GLOBAL_LOOT_MODIFIER_SERIALIZERS, AlteredAether.MOD_ID);
+    /** Gravitite ore drops raw gravitite (see GravititeOreDrops). */
+    public static final DeferredHolder<MapCodec<? extends IGlobalLootModifier>, MapCodec<GravititeOreDrops>> GRAVITITE_ORE_DROPS =
+            LOOT_MODIFIERS.register("gravitite_ore_drops", () -> GravititeOreDrops.CODEC);
 
     public static final DeferredRegister<MapCodec<? extends BiomeModifier>> BIOME_MODIFIER_SERIALIZERS =
             DeferredRegister.create(NeoForgeRegistries.Keys.BIOME_MODIFIER_SERIALIZERS, AlteredAether.MOD_ID);
@@ -355,6 +394,8 @@ public final class AARegistries {
         TRIGGERS.register(modBus);
         ENTITY_SUB_PREDICATES.register(modBus);
         LOOT_FUNCTIONS.register(modBus);
+        LOOT_CONDITIONS.register(modBus);
+        LOOT_MODIFIERS.register(modBus);
         BLOCKS.register(modBus);
         DATA_COMPONENTS.register(modBus);
         ITEMS.register(modBus);

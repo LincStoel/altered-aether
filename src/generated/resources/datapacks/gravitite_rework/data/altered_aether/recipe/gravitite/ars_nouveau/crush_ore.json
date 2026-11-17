@@ -1,0 +1,38 @@
+{
+  "neoforge:conditions": [
+    {
+      "type": "altered_aether:mod_enabled",
+      "modid": "ars_nouveau"
+    }
+  ],
+  "type": "ars_nouveau:crush",
+  "input": {
+    "item": "aether:gravitite_ore"
+  },
+  "output": [
+    {
+      "chance": 1.0,
+      "maxRange": 1,
+      "stack": {
+        "count": 1,
+        "id": "altered_aether:raw_gravitite"
+      }
+    },
+    {
+      "chance": 0.75,
+      "maxRange": 1,
+      "stack": {
+        "count": 1,
+        "id": "altered_aether:raw_gravitite"
+      }
+    },
+    {
+      "chance": 0.25,
+      "maxRange": 1,
+      "stack": {
+        "count": 1,
+        "id": "aether:zanite_gemstone"
+      }
+    }
+  ]
+}

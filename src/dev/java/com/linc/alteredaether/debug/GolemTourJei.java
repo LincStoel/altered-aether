@@ -28,6 +28,18 @@ final class GolemTourJei {
     private GolemTourJei() {
     }
 
+    /** JEI's page for how to make {@code stack} ({@code recipes}), or for what it is used in. */
+    static void show(ItemStack stack, boolean recipes) {
+        IJeiRuntime jei = runtime;
+        if (jei == null) {
+            AlteredAether.LOGGER.error("Tour: JEI isn't ready");
+            return;
+        }
+        var focus = jei.getJeiHelpers().getFocusFactory().createFocus(
+                recipes ? RecipeIngredientRole.OUTPUT : RecipeIngredientRole.INPUT, VanillaTypes.ITEM_STACK, stack);
+        jei.getRecipesGui().show(focus);
+    }
+
     static void showPebble() {
         IJeiRuntime jei = runtime;
         if (jei == null) {

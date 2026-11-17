@@ -3,7 +3,7 @@
   "category": "equipment",
   "key": {
     "G": {
-      "item": "aether:enchanted_gravitite"
+      "tag": "aether:processed/gravitite"
     },
     "H": {
       "item": "aether:holystone"

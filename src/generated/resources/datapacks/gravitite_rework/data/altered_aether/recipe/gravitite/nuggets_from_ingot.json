@@ -1,0 +1,13 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    {
+      "item": "altered_aether:enchanted_gravitite_ingot"
+    }
+  ],
+  "result": {
+    "count": 9,
+    "id": "altered_aether:enchanted_gravitite_nugget"
+  }
+}

@@ -229,7 +229,7 @@ With the tall pack, other mods' Aether structures and ores are moved to the matc
 | Mowzie's Mobs | nagas in Deep Aether's Yagroot Swamp; lanterns in the Skyroot Cathedral and Deep Aether's Luminescent Forest                                                                                                                                                           |
 | Integrated Villages | its airship village in the Aether, and no longer in the overworld (configurable)                                                                                                                                                                      |
 | Aether: Beyond Parity | its ambrosium campfire is replaced                                                                                                                                                                                                                    |
-| Sable | falling boulders |
+| Sable | falling boulders; gravitite lifts (enchanted gravitite only while powered)                                                                                                                                                                              |
 | Create Simulated (Create Aeronautics) | falling boulders pass through its void-holding "end sea" while ships don't; the tall Aether's end sea is lowered to the world's floor                                                                                                              |
 | FTB Chunks | falling boulders keep out of claims protected from griefing                                                                                                                                                                                          |
 

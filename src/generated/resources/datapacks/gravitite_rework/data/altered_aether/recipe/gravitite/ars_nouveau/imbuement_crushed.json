@@ -1,0 +1,22 @@
+{
+  "neoforge:conditions": [
+    {
+      "type": "altered_aether:mod_enabled",
+      "modid": "ars_nouveau"
+    },
+    {
+      "type": "altered_aether:mod_enabled",
+      "modid": "create"
+    }
+  ],
+  "type": "ars_nouveau:imbuement",
+  "input": {
+    "item": "altered_aether:crushed_gravitite"
+  },
+  "output": {
+    "count": 1,
+    "id": "altered_aether:enchanted_gravitite_ingot"
+  },
+  "pedestalItems": [],
+  "source": 500
+}

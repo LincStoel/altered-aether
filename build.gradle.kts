@@ -54,7 +54,10 @@ neoForge {
             // -PaaGolemTour=<label> quick-plays it too and runs the scripted gravitite golem check in debug/GolemTour.
             val golemTour = findProperty("aaGolemTour") as String?
             systemProperty("altered_aether.golem_tour", golemTour ?: "")
-            if (tour != null || jeiShot != null || golemTour != null) {
+            // -PaaGravititeTour=<label> quick-plays it too and runs the scripted gravitite rework check in debug/GravititeTour.
+            val gravititeTour = findProperty("aaGravititeTour") as String?
+            systemProperty("altered_aether.gravitite_tour", gravititeTour ?: "")
+            if (tour != null || jeiShot != null || golemTour != null || gravititeTour != null) {
                 programArguments.addAll("--quickPlaySingleplayer", "tour")
             }
             // -PaaJoin=host:port joins that server on start, to check a dedicated server end to end.
@@ -127,7 +130,7 @@ fun modrinth(project: String, versionProperty: String) = "maven.modrinth:$projec
 val devMods: Configuration by configurations.creating
 // Create, compiled against for the ambrosium campfire's fan processing (see CreateCompat).
 val createMod: Configuration by configurations.creating
-// Sable, compiled against for falling boulders (see compat/boulder).
+// Sable, compiled against for enchanted gravitite's powered lift (see compat/SableLift).
 val sableMod: Configuration by configurations.creating
 // Optional mods taken from Modrinth Maven rather than libs/optional/; selected with -PoptionalMods like the rest.
 val optionalMaven: Configuration by configurations.creating
@@ -155,7 +158,7 @@ dependencies {
     compileOnly(files(createMod.files.map { jar ->
         zipTree(jar).matching { include("META-INF/jarjar/ponder-*.jar", "META-INF/jarjar/flywheel-*.jar") }
     }))
-    // Sable, for falling boulders; its sub-levels' classes extend
+    // Sable, for the mixin that makes enchanted gravitite lift only while powered; its sub-levels' classes extend
     // Sable Companion's, a jar-in-jar, which is taken out for compiling too. Only the Sable-only classes name it.
     sableMod(modrinth("sable", "sable_version")) { isTransitive = false }
     compileOnly(files(sableMod.files.map { jar ->

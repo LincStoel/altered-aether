@@ -1,4 +1,4 @@
-// 1.21.1	2026-11-16T19:14:01.7801421	Altered Aether tags
+// 1.21.1	2026-11-17T10:58:10.4255929	Altered Aether tags
 b032a16350ca6010469714eb13672f97361123fc data/aether/tags/worldgen/biome/is_aether.json
 8a23702b05296c8af5014d6aa6e9265ded85c7d9 data/altered_aether/tags/block/boulder_ore_blacklist.json
 7ec09b2e18ab43d296e2d76cad7fe25c11cda07f data/altered_aether/tags/block/breeze_spawnable_on.json
@@ -38,6 +38,8 @@ a0bf1fc0c566444ccfdba18f668aa2501187ba7d data/c/tags/item/foods/berry.json
 480983c81f5804ad1eae130e6c1491ba46ac6f17 data/minecraft/tags/block/climbable.json
 c6381fa8eec6c45ea083b0125723f175d95dfe99 data/minecraft/tags/block/dead_bush_may_place_on.json
 321ecb60c5b87a7ca940124f0881814faa6dca7d data/minecraft/tags/block/mineable/axe.json
+89e146ad69fe81b721c39c1eb47e7278cd57cef4 data/minecraft/tags/block/mineable/pickaxe.json
+89e146ad69fe81b721c39c1eb47e7278cd57cef4 data/minecraft/tags/block/needs_iron_tool.json
 480983c81f5804ad1eae130e6c1491ba46ac6f17 data/minecraft/tags/block/sword_efficient.json
 a0bf1fc0c566444ccfdba18f668aa2501187ba7d data/minecraft/tags/item/fox_food.json
 c0bce12102bf355810d11f370b26eae472910a8d data/snuffles/tags/block/snuffles_spawnable_on.json

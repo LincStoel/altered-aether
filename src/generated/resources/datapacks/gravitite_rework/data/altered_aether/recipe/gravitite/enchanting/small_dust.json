@@ -1,0 +1,19 @@
+{
+  "neoforge:conditions": [
+    {
+      "type": "altered_aether:mod_enabled",
+      "modid": "oritech"
+    }
+  ],
+  "type": "aether:enchanting",
+  "category": "enchanting_misc",
+  "cookingtime": 41,
+  "experience": 1.0,
+  "ingredient": {
+    "item": "altered_aether:small_gravitite_dust"
+  },
+  "result": {
+    "count": 1,
+    "id": "altered_aether:enchanted_gravitite_nugget"
+  }
+}

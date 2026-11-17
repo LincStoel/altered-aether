@@ -1,0 +1,25 @@
+{
+  "neoforge:conditions": [
+    {
+      "type": "altered_aether:mod_enabled",
+      "modid": "oritech"
+    }
+  ],
+  "type": "oritech:pulverizer",
+  "ingredients": [
+    {
+      "tag": "c:raw_materials/gravitite"
+    }
+  ],
+  "results": [
+    {
+      "count": 1,
+      "id": "altered_aether:gravitite_dust"
+    },
+    {
+      "count": 3,
+      "id": "altered_aether:small_gravitite_dust"
+    }
+  ],
+  "time": 100
+}

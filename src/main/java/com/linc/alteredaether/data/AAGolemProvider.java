@@ -64,14 +64,36 @@ public final class AAGolemProvider extends JsonDataProvider {
         return model;
     }
 
-    /** The holystone it stood on, and half the time the enchanted gravitite it was. */
+    /**
+     * The holystone it stood on, and about half the enchanted gravitite it was: four or five ingots with the gravitite
+     * rework (its block is nine), and without it the block half the time.
+     */
     private void loot() {
         JsonArray pools = new JsonArray();
         pools.add(pool("aether:holystone", null));
+        JsonObject gravitite = pool(AlteredAether.MOD_ID + ":enchanted_gravitite_ingot", null);
+        JsonArray entries = gravitite.getAsJsonArray("entries");
+        JsonObject ingots = AALootProvider.gravititeRework(entries.get(0).getAsJsonObject(), true);
+        JsonObject range = new JsonObject();
+        range.addProperty("type", "minecraft:uniform");
+        range.addProperty("min", 4);
+        range.addProperty("max", 5);
+        JsonObject count = new JsonObject();
+        count.addProperty("function", "minecraft:set_count");
+        count.add("count", range);
+        JsonArray functions = new JsonArray();
+        functions.add(count);
+        ingots.add("functions", functions);
+        JsonObject block = new JsonObject();
+        block.addProperty("type", "minecraft:item");
+        block.addProperty("name", "aether:enchanted_gravitite");
+        AALootProvider.gravititeRework(block, false);
         JsonObject chance = new JsonObject();
         chance.addProperty("condition", "minecraft:random_chance");
         chance.addProperty("chance", 0.5);
-        pools.add(pool("aether:enchanted_gravitite", chance));
+        block.getAsJsonArray("conditions").add(chance);
+        entries.add(block);
+        pools.add(gravitite);
         JsonObject table = new JsonObject();
         table.addProperty("type", "minecraft:entity");
         table.add("pools", pools);

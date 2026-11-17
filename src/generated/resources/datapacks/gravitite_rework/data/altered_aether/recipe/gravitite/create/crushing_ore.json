@@ -1,0 +1,36 @@
+{
+  "neoforge:conditions": [
+    {
+      "type": "altered_aether:mod_enabled",
+      "modid": "create"
+    }
+  ],
+  "type": "create:crushing",
+  "ingredients": [
+    {
+      "item": "aether:gravitite_ore"
+    }
+  ],
+  "processing_time": 250,
+  "results": [
+    {
+      "id": "altered_aether:crushed_gravitite"
+    },
+    {
+      "chance": 0.75,
+      "id": "altered_aether:crushed_gravitite"
+    },
+    {
+      "chance": 0.75,
+      "id": "create:experience_nugget"
+    },
+    {
+      "chance": 0.25,
+      "id": "aether:zanite_gemstone"
+    },
+    {
+      "chance": 0.125,
+      "id": "aether:holystone"
+    }
+  ]
+}

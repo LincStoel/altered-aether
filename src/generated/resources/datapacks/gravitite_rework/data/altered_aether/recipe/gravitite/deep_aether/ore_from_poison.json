@@ -1,0 +1,16 @@
+{
+  "neoforge:conditions": [
+    {
+      "type": "altered_aether:mod_enabled",
+      "modid": "deep_aether"
+    }
+  ],
+  "type": "deep_aether:poison_recipe",
+  "ingredient": {
+    "item": "altered_aether:enchanted_gravitite_ingot"
+  },
+  "result": {
+    "count": 1,
+    "id": "aether:gravitite_ore"
+  }
+}

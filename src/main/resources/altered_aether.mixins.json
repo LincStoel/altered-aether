@@ -19,6 +19,8 @@
     "GleamVinesMixins$BeeGrow",
     "GleamVinesMixins$FoxPick",
     "LargeAercloudStructureMixin",
+    "SableFloatingBlockMixin",
+    "SableGravititeLiftMixin",
     "SilverDungeonStructureMixin",
     "SimulatedEndSeaMixin",
     "TallRemapExclusionMixins$Features",

@@ -1,0 +1,19 @@
+{
+  "neoforge:conditions": [
+    {
+      "type": "altered_aether:mod_enabled",
+      "modid": "create"
+    }
+  ],
+  "type": "aether:enchanting",
+  "category": "enchanting_misc",
+  "cookingtime": 750,
+  "experience": 1.0,
+  "ingredient": {
+    "item": "altered_aether:crushed_gravitite"
+  },
+  "result": {
+    "count": 1,
+    "id": "altered_aether:enchanted_gravitite_ingot"
+  }
+}

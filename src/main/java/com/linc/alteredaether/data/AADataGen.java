@@ -15,6 +15,7 @@
 package com.linc.alteredaether.data;
 
 import com.linc.alteredaether.AlteredAether;
+import com.linc.alteredaether.GravititeReworkPack;
 import com.linc.alteredaether.TallAetherPack;
 import net.minecraft.data.DataGenerator;
 import net.minecraft.data.PackOutput;
@@ -42,6 +43,8 @@ public final class AADataGen {
         generator.addProvider(event.includeServer(), new AAGolemProvider(output));
         generator.addProvider(event.includeServer(), new AABoulderProvider(output));
         generator.addProvider(event.includeServer(), new AASurfaceRuleProvider(output));
+        generator.addProvider(event.includeServer(), new AAGravititeProvider(
+                new PackOutput(output.getOutputFolder().resolve(GravititeReworkPack.PATH))));
         generator.addProvider(event.includeServer(),
                 new AATerrainProvider(output, AATerrainProvider.HeightMode.STOCK));
         generator.addProvider(event.includeServer(), new AATerrainProvider(
