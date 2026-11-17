@@ -413,7 +413,7 @@ public final class CloudSkirts {
     }
 
     /** Cold aercloud as the Aether's own world generation places it, with double drops. */
-    public static BlockState cloud() {
+    private static BlockState cloud() {
         return AetherBlocks.COLD_AERCLOUD.get().defaultBlockState()
                 .setValue(AetherBlockStateProperties.DOUBLE_DROPS, true);
     }

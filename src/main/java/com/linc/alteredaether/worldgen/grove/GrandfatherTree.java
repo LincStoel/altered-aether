@@ -132,16 +132,6 @@ public final class GrandfatherTree {
                     sin * 0.3);
             children.add(new double[]{child.centreX(childTop - 12), childTop - 12, child.centreZ(childTop - 12)});
         }
-        // A wide cloud round the neck, under the high crown and reaching almost out to the children (see NeckCloud):
-        // its top at the trunk, and how far it reaches.
-        double ring = Double.MAX_VALUE;
-        for (double[] c : children) {
-            ring = Math.min(ring, Math.hypot(c[0] - x, c[2] - z));
-        }
-        double reach = ring == Double.MAX_VALUE ? spread + 30 : ring - NeckCloud.SHORT_OF_RING;
-        int neck = top - NeckCloud.UNDER_CROWN;
-        s.point("neck", column.centreX(neck), neck, column.centreZ(neck));
-        s.point("neck_reach", column.centreX(neck) + reach, neck, column.centreZ(neck));
         // The children's limbs grown back into the old trunk.
         for (double[] c : children) {
             double cy = c[1];
