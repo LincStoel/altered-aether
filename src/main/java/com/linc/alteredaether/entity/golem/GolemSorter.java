@@ -642,9 +642,16 @@ public final class GolemSorter {
                 triggers.planned(round, Set.of(), false);
                 return;
             }
+            Planner.Settings settings = new Planner.Settings(AACommonConfig.GOLEM_MAJORITY_TOLERANCE.get(),
+                    AACommonConfig.GOLEM_MIN_GROUP_FILL.get(), AACommonConfig.GOLEM_BULK_MIN_STACKS.get());
             Planner.Plan plan = Planner.plan(snap.snapshot, net.mode().sort(), new Planner.Focus(sources, gather),
-                    new Planner.Settings(AACommonConfig.GOLEM_MAJORITY_TOLERANCE.get(),
-                            AACommonConfig.GOLEM_MIN_GROUP_FILL.get(), AACommonConfig.GOLEM_BULK_MIN_STACKS.get()));
+                    settings);
+            if (sources != null && Planner.layoutChanged(snap.snapshot, plan)) {
+                // a chest is now for something else: the layout has shifted, so the whole network is sorted to it
+                sources = null;
+                round = new SortTriggers.Round(true, Set.of(), round.gather());
+                plan = Planner.plan(snap.snapshot, net.mode().sort(), new Planner.Focus(null, gather), settings);
+            }
             saveClaims(networks, net, snap, plan);
             Set<Long> stuck = new HashSet<>();
             for (int i : plan.stuck()) {

@@ -434,6 +434,22 @@ class PlannerTest {
     }
 
     @Test
+    void onlyAChestChangingWhatItIsForShiftsTheLayout() {
+        Planner.Focus focus = new Planner.Focus(Set.of(1), Set.of());
+        // one more stone goes to stone's chest: nothing shifts
+        SortSnapshot more = new SortSnapshot(KEYS, List.of(claimed(STONE, 0, 64, 0, 64), chest(0, 1), chest()));
+        assertFalse(Planner.layoutChanged(more, Planner.plan(more, SortMode.TIDY, focus, 0)), "one more stone");
+        // logs put in an empty chest make it the logs' chest
+        SortSnapshot logs = new SortSnapshot(KEYS, List.of(claimed(STONE, 0, 64, 0, 64), chest(2, 64, 2, 64), chest()));
+        assertTrue(Planner.layoutChanged(logs, Planner.plan(logs, SortMode.TIDY, focus, 0)), "a new family's chest");
+        // a chest emptied by hand loses its claim, which shifts nothing
+        SortSnapshot emptied = new SortSnapshot(KEYS, List.of(claimed(STONE, 0, 64, 0, 64), claimed(LOGS), chest()));
+        assertFalse(Planner.layoutChanged(emptied, Planner.plan(emptied, SortMode.TIDY, focus, 0)), "an emptied chest");
+        // compact keeps every claim as it is
+        assertFalse(Planner.layoutChanged(logs, Planner.plan(logs, SortMode.COMPACT, focus, 0)), "compact");
+    }
+
+    @Test
     void aFrozenChestKeepsItsClaimAndNothingMovesThroughIt() {
         for (SortMode mode : SortMode.values()) {
             List<SortSnapshot.Inv> invs = List.of(

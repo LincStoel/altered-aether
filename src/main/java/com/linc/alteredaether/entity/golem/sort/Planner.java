@@ -654,6 +654,22 @@ public final class Planner {
         w.balance(exclusive);
     }
 
+    /**
+     * Whether {@code plan} judges a chest to be for something other than its claim: the network's layout has shifted,
+     * so a focused sort should become a whole one, or the rest of what that chest was (or is now) for stays put. An
+     * empty chest is left out (it lost its claim to the moves that emptied it, which shifts nothing), and so is a
+     * frozen one (it keeps its claim).
+     */
+    public static boolean layoutChanged(SortSnapshot snapshot, Plan plan) {
+        for (int i = 0; i < snapshot.invs().size(); i++) {
+            SortSnapshot.Inv inv = snapshot.invs().get(i);
+            if (!inv.isEmpty() && !inv.frozen() && plan.claims()[i] != inv.claim()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     // ---------------------------------------------------------------------------------------------------------------
     // Reordering a plain container in place
 
