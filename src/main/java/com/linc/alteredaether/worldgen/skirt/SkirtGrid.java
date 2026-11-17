@@ -26,10 +26,12 @@ import java.util.Set;
  * {@link #HIGH} when the column is solid at the band's top (an island too high to matter). Neighbouring columns belong
  * to one island when their tops are within {@link #DROP} of each other; a column is on its island's <em>rim</em> when
  * a neighbour is sky or drops away by at least that much. An island is low when more than half its rim lies at or
- * below {@link #LOW_BELOW}, and only low islands' rims grow a collar; scraps under {@link #MIN_ISLAND} columns get none.
+ * below {@link #LOW_BELOW}, and only low islands' rims grow a collar; scraps under {@link #MIN_ISLAND} columns get
+ * none.
  *
- * <p>The Frozen Crags are the exception: their tall islands, whatever their rim, wear a wider collar round where they
- * cross y 0, its top at {@link #CRAG_TOP}, when that cross-section is at least {@link #CRAG_MIN} columns.
+ * <p>The Frozen Crags and Tempest Peaks are the exception: their tall islands, whatever their rim, wear a wider
+ * collar round where they cross y 0, its top at {@link #CRAG_TOP}, when that cross-section is at least
+ * {@link #CRAG_MIN} columns.
  *
  * <p>The collar round a rim is a lens like the dune sheets': {@link #GAP} under the rim at the cliff, up to
  * {@link #MAX_THICK} thick there, tapering top and bottom to a feather edge {@link #MIN_WIDTH} to {@link #MAX_WIDTH}
@@ -49,7 +51,7 @@ public final class SkirtGrid {
     public static final int LOW_BELOW = 0;
     /** Grid columns an island may have before it counts as a landmass, voted on locally. */
     public static final int CAP = 8192;
-    /** Grid columns an island needs for a collar, about 800 square blocks: anything under 32 blocks across gets none. */
+    /** Grid columns an island needs for a collar, about 800 square blocks: under 32 blocks across gets none. */
     public static final int MIN_ISLAND = 50;
     /** Radius of the local vote on a landmass, in grid columns (128 blocks). */
     public static final int VOTE_RADIUS = 32;
@@ -79,7 +81,7 @@ public final class SkirtGrid {
     public static final double RIFT_FADE = 8;
     /** Blocks over which a collar thins round the gap a waterfall leaves. */
     public static final double FEATHER = 3;
-    /** The top of a Frozen Crags collar. */
+    /** The top of a Frozen Crags or Tempest Peaks collar. */
     public static final int CRAG_TOP = 0;
     /** Grid columns a crag's cross-section at {@link #CRAG_TOP} needs for a collar: about 48 blocks across. */
     public static final int CRAG_MIN = 113;
@@ -98,7 +100,7 @@ public final class SkirtGrid {
             return top == HIGH || top != SKY && top >= CRAG_TOP;
         }
 
-        /** Whether the column is in the Frozen Crags. */
+        /** Whether the column is in the Frozen Crags or Tempest Peaks. */
         default boolean crag(int gx, int gz) {
             return false;
         }
@@ -319,7 +321,7 @@ public final class SkirtGrid {
                 + (MAX_WIDTH - MIN_WIDTH) * (0.5 + 0.5 * fbm(seed ^ 0x77A3L, x / 96, z / 96));
     }
 
-    /** Whether a column is on the edge of a Frozen Crags island's cross-section at {@link #CRAG_TOP}. */
+    /** Whether a column is on the edge of a Frozen Crags or Tempest Peaks island's cross-section at y 0. */
     public static boolean cragEdge(Columns columns, int gx, int gz) {
         return columns.solidAtTop(gx, gz) && (!columns.solidAtTop(gx + 1, gz) || !columns.solidAtTop(gx - 1, gz)
                 || !columns.solidAtTop(gx, gz + 1) || !columns.solidAtTop(gx, gz - 1)) && columns.crag(gx, gz);

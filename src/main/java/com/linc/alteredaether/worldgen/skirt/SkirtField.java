@@ -43,7 +43,9 @@ public final class SkirtField {
     /** Grid columns per tile side. */
     static final int TILE = 16;
     private static final String RIFT = "altered_aether:shattered_rift";
-    private static final String CRAGS = "altered_aether:frozen_crags";
+    /** The biomes whose big tall islands wear a collar round where they cross y 0. */
+    private static final java.util.Set<String> PEAKS = java.util.Set.of("altered_aether:frozen_crags",
+            "altered_aether:tempest_peaks");
     /** Grid columns searched round a tile for rims that reach into it. */
     private static final int SOURCE_REACH = (int) Math.ceil(SkirtGrid.REACH / STEP);
     /** Grid columns searched for the rift. */
@@ -461,7 +463,7 @@ public final class SkirtField {
             int index = Terrain.index(gx, gz);
             if (tile.biome[index] == 0) {
                 String biome = probe.biomeAt(gx * STEP, gz * STEP);
-                tile.biome[index] = biome.equals(RIFT) ? IN_RIFT : biome.equals(CRAGS) ? IN_CRAGS : OTHER;
+                tile.biome[index] = biome.equals(RIFT) ? IN_RIFT : PEAKS.contains(biome) ? IN_CRAGS : OTHER;
             }
             return tile.biome[index];
         }
