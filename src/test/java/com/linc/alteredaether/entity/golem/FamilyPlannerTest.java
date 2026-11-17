@@ -367,16 +367,34 @@ class FamilyPlannerTest {
     }
 
     @Test
+    void spareChestsGoToSmallFamiliesBeforeTheyMix() {
+        // five families of three stacks, under a quarter of a chest each: with chests to spare, each gets its own
+        SortSnapshot snapshot = snapshot(
+                chest(concat(stacks(PLANKS, 3), stacks(OAK, 3), stacks(ANDESITE, 3), stacks(IRON, 3),
+                        stacks(GRAVITITE, 3))),
+                chest(), chest(), chest(), chest(), chest());
+        assertTrue(settle(snapshot, SortMode.TIDY) <= 4, "didn't settle");
+        for (int key : List.of(PLANKS, OAK, ANDESITE, IRON, GRAVITITE)) {
+            assertTrue(chestWith(snapshot, Set.of(key)) >= 0, "key " + key + " isn't on its own: " + dump(snapshot));
+        }
+        // with only two chests they share, coarsely: the blocks together, the rest with the odds and ends
+        SortSnapshot few = snapshot(
+                chest(concat(stacks(PLANKS, 3), stacks(OAK, 3), stacks(ANDESITE, 3), stacks(IRON, 3),
+                        stacks(GRAVITITE, 3))),
+                chest());
+        settle(few, SortMode.TIDY);
+        assertTrue(chestWith(few, Set.of(PLANKS, OAK, ANDESITE)) >= 0, "the blocks aren't together: " + dump(few));
+    }
+
+    @Test
     void aClaimedFamilyHoldsOnWhenItShrinks() {
-        // spruce fills 2 slots: under the 9-slot share a third of a chest asks, but a chest already kept for it
-        // keeps it while it fills half that
-        Planner.Settings settings = new Planner.Settings(0, 1.0 / 3, 2);
-        SortSnapshot fresh = snapshot(chest(PLANKS, 64, PLANKS, 64, IRON, 5), chest());
-        assertEquals(0, Planner.plan(fresh, SortMode.TIDY, Planner.Focus.ALL, settings).claims()[0],
+        // spruce fills a slot: less than the two a spare chest asks, but a chest already kept for it keeps it while
+        // it fills half that
+        SortSnapshot fresh = snapshot(chest(PLANKS, 64, IRON, 64), chest());
+        assertTrue(Planner.plan(fresh, SortMode.TIDY, Planner.Focus.ALL, SETTINGS).claims()[0] != 4,
                 "too small for a chest of its own");
-        SortSnapshot kept = snapshot(chest(PLANKS, 64, PLANKS, 64, PLANKS, 64, PLANKS, 64, PLANKS, 64, IRON, 5)
-                .with(false, 4), chest());
-        assertEquals(4, Planner.plan(kept, SortMode.TIDY, Planner.Focus.ALL, settings).claims()[0],
+        SortSnapshot kept = snapshot(chest(PLANKS, 64, IRON, 64).with(false, 4), chest());
+        assertEquals(4, Planner.plan(kept, SortMode.TIDY, Planner.Focus.ALL, SETTINGS).claims()[0],
                 "the spruce chest was given up");
     }
 }

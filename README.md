@@ -153,8 +153,9 @@ meditation. That spot is its home.
   come from (the Aether, the overworld, the nether, the end), what they are (blocks, resources, equipment, food,
   mechanisms) and what they are made of, read off their recipes, tags and names (spruce stairs, planks and stripped
   logs are all spruce; cooked food is apart from raw). It sorts as finely as there are chests for: a family that
-  fills a quarter of a chest gets one of its own, smaller ones share with their kin (spruce with the other wood),
-  and what fits nowhere finer goes with the odds and ends. *Compact* packs everything into as few chests as it fits
+  fills a quarter of a chest gets one of its own, and chests to spare go to smaller families of two stacks or
+  more; the rest share with their kin (spruce with the other wood), and what fits nowhere finer goes with the odds
+  and ends. *Compact* packs everything into as few chests as it fits
   in. An item frame on a chest pins that item, and its family, to that chest in either mode; a glow item frame or a
   Create placard pins only that item and moves everything else out.
 - **Special storage.** Drawers (Functional Storage, Storage Drawers) are bulk storage: each keeps what it holds, and

@@ -181,7 +181,7 @@
   "jei.altered_aether.golem.guide.sorting.title": "Sorting: ",
   "jei.altered_aether.golem.guide.source": "machines, and storage walled in on every side (it shows red).",
   "jei.altered_aether.golem.guide.source.title": "Can't be used: ",
-  "jei.altered_aether.golem.guide.tidy": "items are filed by where they come from (the Aether, the overworld...), what they are (blocks, resources, equipment, food...) and what they're made of: spruce stairs, planks and logs are all spruce. A family that fills a quarter of a chest gets a chest of its own; smaller ones share with their kin (spruce with the other wood), and what fits nowhere finer goes with the odds and ends.",
+  "jei.altered_aether.golem.guide.tidy": "items are filed by where they come from (the Aether, the overworld...), what they are (blocks, resources, equipment, food...) and what they're made of: spruce stairs, planks and logs are all spruce. A family that fills a quarter of a chest gets a chest of its own, and chests to spare go to smaller families of two stacks or more; the rest share with their kin (spruce with the other wood), and what fits nowhere finer goes with the odds and ends.",
   "jei.altered_aether.golem.guide.tidy.title": "Tidy: ",
   "key.altered_aether.aerwhale_dive": "Dive Aerwhale",
   "key.altered_aether.aerwhale_eject": "Leap off Aerwhale",

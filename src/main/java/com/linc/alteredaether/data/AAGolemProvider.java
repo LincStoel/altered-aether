@@ -202,7 +202,7 @@ public final class AAGolemProvider extends JsonDataProvider {
         lang.put(jei + "guide.hand.title", "Empty hand on the golem: ");
         lang.put(jei + "guide.hand", "take a pebble. Sneak to switch between Tidy (families of items kept together) and Compact (everything in as few chests as it fits).");
         lang.put(jei + "guide.tidy.title", "Tidy: ");
-        lang.put(jei + "guide.tidy", "items are filed by where they come from (the Aether, the overworld...), what they are (blocks, resources, equipment, food...) and what they're made of: spruce stairs, planks and logs are all spruce. A family that fills a quarter of a chest gets a chest of its own; smaller ones share with their kin (spruce with the other wood), and what fits nowhere finer goes with the odds and ends.");
+        lang.put(jei + "guide.tidy", "items are filed by where they come from (the Aether, the overworld...), what they are (blocks, resources, equipment, food...) and what they're made of: spruce stairs, planks and logs are all spruce. A family that fills a quarter of a chest gets a chest of its own, and chests to spare go to smaller families of two stacks or more; the rest share with their kin (spruce with the other wood), and what fits nowhere finer goes with the odds and ends.");
         lang.put(jei + "guide.drawers.title", "Drawers: ");
         lang.put(jei + "guide.drawers", "are bulk storage. Each drawer keeps what it holds; an empty one is given whatever fills the most stacks. A locked empty drawer is left alone, and a compacting drawer is only ever filled.");
         lang.put(jei + "guide.crate.title", "Quark crates: ");

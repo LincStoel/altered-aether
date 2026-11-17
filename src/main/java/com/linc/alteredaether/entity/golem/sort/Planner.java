@@ -60,6 +60,8 @@ import java.util.Set;
 public final class Planner {
     /** Moves planned at most at once; the rest wait for the next plan. */
     public static final int MAX_MOVES = 512;
+    /** The fewest slots a family fills to be given a chest that would otherwise stay empty: two stacks. */
+    private static final int SPARE_FILL = 2;
 
     /**
      * Which inventories a plan moves items out of.
@@ -909,7 +911,7 @@ public final class Planner {
                     }
                 }
             }
-            int[] direct = new int[nodes.size()];
+            int[] slots = new int[nodes.size()], fill = new int[nodes.size()];
             for (Map.Entry<Integer, Long> entry : totals.entrySet()) {
                 int k = entry.getKey();
                 if (pinned.contains(k)) {
@@ -917,12 +919,16 @@ public final class Planner {
                 }
                 long left = entry.getValue() - bulkRoom(k);
                 if (left > 0) {
-                    direct[keys.get(k).node()] += need(k, left);
+                    int node = keys.get(k).node();
+                    slots[node] += need(k, left);
+                    long stack = Math.max(1, keys.get(k).maxStack());
+                    fill[node] += (int) Math.min(Integer.MAX_VALUE / 4, (left * Grouping.STACK + stack - 1) / stack);
                 }
             }
             int size = chestSize();
-            int minFill = Math.max(2, (int) Math.round(size * settings.minFill()));
-            return Grouping.compute(nodes, direct, chests, size, miscSlots, minFill, forced, claimed);
+            int minFill = Math.max(SPARE_FILL, (int) Math.round(size * settings.minFill())) * Grouping.STACK;
+            return Grouping.compute(nodes, slots, fill, chests, size, miscSlots, minFill, SPARE_FILL * Grouping.STACK,
+                    forced, claimed);
         }
 
         int groupOf(int key) {

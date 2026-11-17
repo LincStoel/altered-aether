@@ -151,10 +151,10 @@ class PlannerTest {
     @Test
     void tidyUnmixesADumpChest() {
         SortSnapshot snapshot = new SortSnapshot(KEYS, List.of(
-                chest(0, 64, 0, 40, 2, 64, 2, 30, 4, 1, 5, 1, 6, 1, 7, 1),
+                chest(0, 64, 0, 64, 2, 64, 2, 64, 4, 1, 5, 1, 6, 1, 7, 1),
                 chest(), chest(), chest()));
         assertTrue(settle(snapshot, SortMode.TIDY) <= 3);
-        // stone and logs (two stacks each) get a chest of their own, and the one-offs share one
+        // stone and logs (two stacks each, enough for a spare chest) get a chest of their own, the one-offs share one
         int stone = -1, logs = -1, misc = -1;
         for (int i = 0; i < snapshot.invs().size(); i++) {
             Set<Integer> keys = keysIn(snapshot.invs().get(i));
