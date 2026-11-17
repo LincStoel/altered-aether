@@ -1,0 +1,17 @@
+{
+  "replace": false,
+  "values": [
+    "minecraft:end_stone",
+    "minecraft:chorus_fruit",
+    "minecraft:popped_chorus_fruit",
+    "minecraft:chorus_flower",
+    "minecraft:purpur_block",
+    "minecraft:shulker_shell",
+    "minecraft:elytra",
+    "minecraft:dragon_breath",
+    "minecraft:dragon_egg",
+    "minecraft:dragon_head",
+    "minecraft:end_rod",
+    "minecraft:end_crystal"
+  ]
+}

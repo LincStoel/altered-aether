@@ -1,4 +1,4 @@
-// 1.21.1	2026-11-15T21:32:55.6249857	Altered Aether tags
+// 1.21.1	2026-11-16T19:04:19.2681895	Altered Aether tags
 b032a16350ca6010469714eb13672f97361123fc data/aether/tags/worldgen/biome/is_aether.json
 8a23702b05296c8af5014d6aa6e9265ded85c7d9 data/altered_aether/tags/block/boulder_ore_blacklist.json
 7ec09b2e18ab43d296e2d76cad7fe25c11cda07f data/altered_aether/tags/block/breeze_spawnable_on.json
@@ -18,6 +18,10 @@ f76decdcce75cd4e962a371b9b30e0f57f123884 data/altered_aether/tags/block/scorchab
 b1fe34d2a9ffbf95392b5399248e0d0ce4eed170 data/altered_aether/tags/item/aerwhale_breeding_food.json
 54e9ace3261d185a4d3368102b6af48ed538c6f0 data/altered_aether/tags/item/aerwhale_taming_food.json
 382f42a5e82fcadecd2d78d451c21d40b9aff2ca data/altered_aether/tags/item/attracts_lightning.json
+8a23702b05296c8af5014d6aa6e9265ded85c7d9 data/altered_aether/tags/item/golem_origin/aether.json
+3a4a8d4ef2602ebd096518b1300c3c0b8a55fac7 data/altered_aether/tags/item/golem_origin/end.json
+359e89e29cb4c776e1b79b915e7ce74612a6dd34 data/altered_aether/tags/item/golem_origin/nether.json
+8a23702b05296c8af5014d6aa6e9265ded85c7d9 data/altered_aether/tags/item/golem_origin/overworld.json
 558650699ee11b9f0bb9350e42d7433200b1339d data/altered_aether/tags/item/insulating_boots.json
 b9cb72fb4859bb228260166a46afc3921c7f737b data/altered_aether/tags/worldgen/biome/has_lanterns.json
 8cf8a4cb0dc6acc9f95a83ab65901cc331d98695 data/altered_aether/tags/worldgen/biome/has_storms.json

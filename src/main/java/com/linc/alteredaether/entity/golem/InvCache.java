@@ -14,6 +14,7 @@
  */
 package com.linc.alteredaether.entity.golem;
 
+import com.linc.alteredaether.entity.golem.group.GolemPaths;
 import com.linc.alteredaether.entity.golem.sort.SortSnapshot;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
@@ -40,7 +41,10 @@ final class InvCache {
 
     final List<SortSnapshot.Key> keys = new ArrayList<>();
     final List<ItemStack> items = new ArrayList<>();
+    /** The family tree the keys sit in, root first; families are numbered as they are first met. */
+    final List<SortSnapshot.Node> nodes = new ArrayList<>(List.of(new SortSnapshot.Node(-1, "misc")));
     private final Map<ItemKey, Integer> index = new HashMap<>();
+    private final Map<String, Integer> nodeIndex = new HashMap<>(Map.of("misc", SortSnapshot.ROOT));
     private final Map<Long, Entry> entries = new HashMap<>();
 
     /** One inventory as last read. */
@@ -89,6 +93,8 @@ final class InvCache {
             items.clear();
             index.clear();
             entries.clear();
+            nodes.subList(1, nodes.size()).clear();
+            nodeIndex.keySet().retainAll(Set.of("misc"));
         }
     }
 
@@ -154,10 +160,36 @@ final class InvCache {
             return known;
         }
         int id = keys.size();
-        keys.add(new SortSnapshot.Key(stack.getMaxStackSize(), GolemGroups.group(stack), GolemGroups.order(stack)));
+        GolemPaths.ItemPath path = GolemPaths.path(stack);
+        keys.add(new SortSnapshot.Key(stack.getMaxStackSize(), node(path.names()), GolemPaths.order(stack, path)));
         items.add(stack.copyWithCount(1));
         index.put(new ItemKey(items.get(id)), id);
         return id;
+    }
+
+    /** The family {@code names} spells out from the root down, numbering it (and those above it) if it is new. */
+    int node(List<String> names) {
+        int parent = SortSnapshot.ROOT;
+        StringBuilder path = new StringBuilder();
+        for (String raw : names) {
+            String name = raw.replace('/', '.');
+            path.append(path.isEmpty() ? "" : "/").append(name);
+            String at = path.toString();
+            Integer known = nodeIndex.get(at);
+            if (known == null) {
+                known = nodes.size();
+                nodes.add(new SortSnapshot.Node(parent, name));
+                nodeIndex.put(at, known);
+            }
+            parent = known;
+        }
+        return parent;
+    }
+
+    /** The family a saved claim names ({@link SortSnapshot#path}). */
+    int node(String path) {
+        Integer known = nodeIndex.get(path);
+        return known != null ? known : node(List.of(path.split("/")));
     }
 
     /** An item without its count, compared and hashed as stacks are merged. */

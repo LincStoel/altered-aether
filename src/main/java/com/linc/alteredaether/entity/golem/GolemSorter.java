@@ -397,7 +397,7 @@ public final class GolemSorter {
         final Map<Long, Integer> lifted = new HashMap<>();
         final Map<String, CachedRoute> routes = new HashMap<>();
         /** The family each inventory was judged to be for, by key; saved with the network. */
-        final Map<Long, Integer> claims = new HashMap<>();
+        final Map<Long, String> claims = new HashMap<>();
         /** Every inventory this sort has looked at or moved items into, to tidy within once it is done. */
         final Set<Long> touched = new HashSet<>();
         boolean working, claimsLoaded, finishPending, contentsChanged;
@@ -416,10 +416,10 @@ public final class GolemSorter {
             long now = level.getGameTime();
             if (!claimsLoaded) {
                 claimsLoaded = true;
+                // claims saved before families were a tree name a flat family ("tag:...", "kind:..."): dropped
                 net.claims().forEach((key, name) -> {
-                    int group = GolemGroups.byName(name);
-                    if (group >= 0) {
-                        claims.put(key, group);
+                    if (!name.contains(":")) {
+                        claims.put(key, name);
                     }
                 });
             }
@@ -640,7 +640,8 @@ public final class GolemSorter {
                 return;
             }
             Planner.Plan plan = Planner.plan(snap.snapshot, net.mode().sort(), new Planner.Focus(sources, gather),
-                    AACommonConfig.GOLEM_MAJORITY_TOLERANCE.get());
+                    new Planner.Settings(AACommonConfig.GOLEM_MAJORITY_TOLERANCE.get(),
+                            AACommonConfig.GOLEM_MIN_GROUP_FILL.get(), AACommonConfig.GOLEM_BULK_MIN_STACKS.get()));
             saveClaims(networks, net, snap, plan);
             Set<Long> stuck = new HashSet<>();
             for (int i : plan.stuck()) {
@@ -709,19 +710,12 @@ public final class GolemSorter {
             for (int i = 0; i < snap.keys.size(); i++) {
                 int claim = plan.claims()[i];
                 if (claim >= 0) {
-                    claims.put(snap.keys.get(i), claim);
+                    claims.put(snap.keys.get(i), snap.snapshot.path(claim));
                 } else {
                     claims.remove(snap.keys.get(i));
                 }
             }
-            Map<Long, String> named = new HashMap<>();
-            claims.forEach((key, group) -> {
-                String name = GolemGroups.name(group);
-                if (!name.isEmpty()) {
-                    named.put(key, name);
-                }
-            });
-            networks.setClaims(net, named);
+            networks.setClaims(net, new HashMap<>(claims));
         }
 
         private Snap snapshot(ServerLevel level, GolemNetworks networks, GolemNetworks.Net net, List<GravititeGolem> team) {
@@ -772,14 +766,16 @@ public final class GolemSorter {
                     blocked++;
                     frozen = true;
                 }
-                invs.add(entry.inv.with(frozen, claims.getOrDefault(key, -1)));
+                String claim = claims.get(key);
+                invs.add(entry.inv.with(frozen, claim == null ? -1 : cache.node(claim)));
                 positions.add(pos);
                 invKeys.add(key);
             }
             for (BlockPos pos : gone) {
                 networks.prune(net, pos);
             }
-            return new Snap(new SortSnapshot(List.copyOf(cache.keys), invs), cache.items, positions, invKeys);
+            return new Snap(new SortSnapshot(List.copyOf(cache.keys), invs, List.copyOf(cache.nodes)), cache.items,
+                    positions, invKeys);
         }
 
         /**

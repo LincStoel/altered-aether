@@ -136,6 +136,9 @@ public final class AACommonConfig {
     public static final IntValue GOLEM_REPEL_COOLDOWN;
     public static final IntValue GOLEM_SORT_DELAY;
     public static final IntValue GOLEM_MAJORITY_TOLERANCE;
+    public static final DoubleValue GOLEM_MIN_GROUP_FILL;
+    public static final IntValue GOLEM_BULK_MIN_STACKS;
+    public static final ModConfigSpec.ConfigValue<List<? extends String>> GOLEM_AETHER_NAMESPACES;
     public static final IntValue GOLEM_MAX_MOVE;
 
     // [tall_mode]
@@ -421,6 +424,17 @@ public final class AACommonConfig {
         GOLEM_MAJORITY_TOLERANCE = b.comment("Slots another family must fill beyond a chest's own before tidy mode gives",
                         "the chest to it, so chests don't change hands over a stack or two.")
                 .defineInRange("majority_tolerance", 3, 0, 27);
+        GOLEM_MIN_GROUP_FILL = b.comment("Share of a chest a family of items must fill before tidy mode gives it a chest",
+                        "of its own; smaller families share their parent family's chest (spruce in with the other wood,",
+                        "wood with the other blocks), and what fits nowhere finer goes with the odds and ends.")
+                .defineInRange("min_group_fill", 0.25, 0.0, 1.0);
+        GOLEM_BULK_MIN_STACKS = b.comment("Fewest stacks of an item worth giving an empty drawer slot of its own.")
+                .defineInRange("bulk_min_stacks", 2, 1, 1024);
+        GOLEM_AETHER_NAMESPACES = b.comment("Mods whose items tidy mode files under the Aether, not the overworld. Item tags",
+                        "altered_aether:golem_origin/aether (and /nether, /end, /overworld) decide single items.")
+                .defineListAllowEmpty("aether_namespaces", List.of("aether", "deep_aether", "aether_redux",
+                        "lost_aether_content", "aether_genesis", "altered_aether", "aether_beyond_parity"),
+                        () -> "", o -> o instanceof String);
         GOLEM_MAX_MOVE = b.comment("Furthest a golem can be sent with a pebble, in blocks.")
                 .defineInRange("max_move_distance", 48, 4, 256);
         b.pop();

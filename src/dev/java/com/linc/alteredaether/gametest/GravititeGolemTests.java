@@ -115,6 +115,18 @@ public final class GravititeGolemTests {
         return stacks;
     }
 
+    /**
+     * Several runs of stacks one after another. Tidy gives a family a chest of its own only if it fills a quarter of
+     * one (7 slots of a chest), so tests that sort two families apart give each at least that many.
+     */
+    private static ItemStack[] join(ItemStack[]... parts) {
+        List<ItemStack> out = new ArrayList<>();
+        for (ItemStack[] part : parts) {
+            out.addAll(List.of(part));
+        }
+        return out.toArray(ItemStack[]::new);
+    }
+
     private static int count(BaseContainerBlockEntity container, Item item) {
         int n = 0;
         for (int slot = 0; slot < container.getContainerSize(); slot++) {
@@ -356,8 +368,8 @@ public final class GravititeGolemTests {
         floor(helper);
         GravititeGolem golem = golem(helper, HOME);
         BlockPos a = new BlockPos(12, 2, 12), b = new BlockPos(20, 2, 12), c = new BlockPos(12, 2, 20);
-        BaseContainerBlockEntity mixed = chest(helper, a, new ItemStack(Items.COBBLESTONE, 64), new ItemStack(Items.COBBLESTONE, 64),
-                new ItemStack(Items.COBBLESTONE, 64), new ItemStack(Items.OAK_LOG, 64), new ItemStack(Items.OAK_LOG, 30));
+        BaseContainerBlockEntity mixed = chest(helper, a, join(stacks(Items.COBBLESTONE, 10), stacks(Items.OAK_LOG, 7),
+                new ItemStack[]{new ItemStack(Items.OAK_LOG, 30)}));
         BaseContainerBlockEntity empty1 = chest(helper, b);
         BaseContainerBlockEntity empty2 = chest(helper, c);
         FakePlayer player = player(helper, "golem-linker");
@@ -371,11 +383,47 @@ public final class GravititeGolemTests {
         }).thenWaitUntil(() -> {
             int cobble = count(mixed, Items.COBBLESTONE) + count(empty1, Items.COBBLESTONE) + count(empty2, Items.COBBLESTONE);
             int logs = count(mixed, Items.OAK_LOG) + count(empty1, Items.OAK_LOG) + count(empty2, Items.OAK_LOG);
-            helper.assertTrue(cobble == 192 && logs == 94, "items made or lost: " + cobble + " cobble, " + logs + " logs");
+            helper.assertTrue(cobble == 640 && logs == 478, "items made or lost: " + cobble + " cobble, " + logs + " logs");
             helper.assertTrue(count(mixed, Items.OAK_LOG) == 0, "logs still mixed in with the cobblestone");
-            helper.assertTrue(count(empty1, Items.OAK_LOG) == 94 || count(empty2, Items.OAK_LOG) == 94, "logs not together");
+            helper.assertTrue(count(empty1, Items.OAK_LOG) == 478 || count(empty2, Items.OAK_LOG) == 478, "logs not together");
             assertSettled(helper, golem);
         }).thenExecute(() -> leave(helper, player)).thenSucceed();
+    }
+
+    /**
+     * Spruce strewn over three chests with enchanted gravitite and odds and ends (as a player found it) comes together:
+     * stairs, planks and stripped logs are all spruce, whatever their shape.
+     */
+    @GameTest(template = "arena", timeoutTicks = 900)
+    public static void spruceStrewnOverChestsComesTogether(GameTestHelper helper) {
+        floor(helper);
+        GravititeGolem golem = golem(helper, HOME);
+        Item gravitite = net.minecraft.core.registries.BuiltInRegistries.ITEM.get(
+                net.minecraft.resources.ResourceLocation.fromNamespaceAndPath("aether", "enchanted_gravitite"));
+        BlockPos a = new BlockPos(12, 2, 12), b = new BlockPos(20, 2, 12), c = new BlockPos(12, 2, 20);
+        BaseContainerBlockEntity first = chest(helper, a, new ItemStack(Items.SPRUCE_STAIRS, 64),
+                new ItemStack(Items.SPRUCE_STAIRS, 64), new ItemStack(Items.SPRUCE_PLANKS, 64),
+                new ItemStack(Items.STRIPPED_SPRUCE_LOG, 32), new ItemStack(gravitite, 16));
+        BaseContainerBlockEntity second = chest(helper, b, stacks(Items.STRIPPED_SPRUCE_LOG, 3));
+        BaseContainerBlockEntity third = chest(helper, c, new ItemStack(Items.SPRUCE_PLANKS, 40),
+                new ItemStack(Items.OAK_PLANKS, 3), new ItemStack(Items.ANDESITE, 5), new ItemStack(Items.IRON_INGOT, 7));
+        List<Item> spruce = List.of(Items.SPRUCE_STAIRS, Items.SPRUCE_PLANKS, Items.STRIPPED_SPRUCE_LOG);
+        helper.startSequence().thenIdle(5).thenExecute(() -> link(helper, golem, a, b, c)).thenWaitUntil(() -> {
+            assertSettled(helper, golem);
+            BaseContainerBlockEntity home = null;
+            for (BaseContainerBlockEntity chest : List.of(first, second, third)) {
+                if (count(chest, Items.SPRUCE_STAIRS) > 0) {
+                    home = chest;
+                }
+            }
+            helper.assertTrue(home != null, "the stairs went missing");
+            helper.assertTrue(count(home, Items.SPRUCE_STAIRS) == 128 && count(home, Items.SPRUCE_PLANKS) == 104
+                    && count(home, Items.STRIPPED_SPRUCE_LOG) == 224, "the spruce isn't together");
+            for (int slot = 0; slot < home.getContainerSize(); slot++) {
+                ItemStack stack = home.getItem(slot);
+                helper.assertTrue(stack.isEmpty() || spruce.contains(stack.getItem()), "the spruce chest holds " + stack);
+            }
+        }).thenSucceed();
     }
 
     /** Its pebble used on the golem links the storage around it (not bookshelves or furnaces); crouching unlinks it. */
@@ -464,9 +512,9 @@ public final class GravititeGolemTests {
         floor(helper);
         GravititeGolem golem = golem(helper, HOME);
         BlockPos a = new BlockPos(12, 2, 12), b = new BlockPos(20, 2, 12), c = new BlockPos(12, 2, 20);
-        BaseContainerBlockEntity stone = chest(helper, a, stacks(Items.COBBLESTONE, 3));
-        BaseContainerBlockEntity logs = chest(helper, b, stacks(Items.OAK_LOG, 3));
-        BaseContainerBlockEntity other = chest(helper, c, stacks(Items.DIAMOND, 2));
+        BaseContainerBlockEntity stone = chest(helper, a, stacks(Items.COBBLESTONE, 8));
+        BaseContainerBlockEntity logs = chest(helper, b, stacks(Items.OAK_LOG, 8));
+        BaseContainerBlockEntity other = chest(helper, c, stacks(Items.DIAMOND, 8));
         List<ItemStack> before = new ArrayList<>();
         helper.startSequence().thenIdle(5).thenExecute(() -> link(helper, golem, a, b, c))
                 .thenWaitUntil(() -> assertSettled(helper, golem))
@@ -480,13 +528,13 @@ public final class GravititeGolemTests {
                         "the stack moved before the delay"))
                 .thenWaitUntil(() -> {
                     helper.assertTrue(count(logs, Items.COBBLESTONE) == 0, "the stack never moved");
-                    helper.assertTrue(count(stone, Items.COBBLESTONE) == 256, "the stack didn't join the cobblestone");
+                    helper.assertTrue(count(stone, Items.COBBLESTONE) == 576, "the stack didn't join the cobblestone");
                 })
                 .thenExecute(() -> {
                     for (int slot = 0; slot < other.getContainerSize(); slot++) {
                         helper.assertTrue(ItemStack.matches(before.get(slot), other.getItem(slot)), "an unchanged chest was stirred");
                     }
-                    helper.assertTrue(count(logs, Items.OAK_LOG) == 192, "the logs moved");
+                    helper.assertTrue(count(logs, Items.OAK_LOG) == 512, "the logs moved");
                 }).thenSucceed();
     }
 
@@ -523,8 +571,8 @@ public final class GravititeGolemTests {
         floor(helper);
         GravititeGolem golem = golem(helper, HOME);
         BlockPos a = new BlockPos(12, 2, 12), b = new BlockPos(20, 2, 12);
-        BaseContainerBlockEntity stone = chest(helper, a, stacks(Items.COBBLESTONE, 2));
-        BaseContainerBlockEntity logs = chest(helper, b, stacks(Items.OAK_LOG, 2));
+        BaseContainerBlockEntity stone = chest(helper, a, stacks(Items.COBBLESTONE, 8));
+        BaseContainerBlockEntity logs = chest(helper, b, stacks(Items.OAK_LOG, 8));
         FakePlayer player = player(helper, "golem-browser");
         helper.startSequence().thenIdle(5).thenExecute(() -> link(helper, golem, a, b))
                 .thenWaitUntil(() -> assertSettled(helper, golem))
@@ -543,7 +591,7 @@ public final class GravititeGolemTests {
                 })
                 .thenWaitUntil(() -> {
                     helper.assertTrue(count(logs, Items.COBBLESTONE) == 0, "not sorted once closed");
-                    helper.assertTrue(count(stone, Items.COBBLESTONE) == 160, "items made or lost");
+                    helper.assertTrue(count(stone, Items.COBBLESTONE) == 544, "items made or lost");
                 }).thenExecute(() -> leave(helper, player)).thenSucceed();
     }
 
@@ -553,8 +601,8 @@ public final class GravititeGolemTests {
         floor(helper);
         GravititeGolem golem = golem(helper, HOME);
         BlockPos a = new BlockPos(12, 2, 12), b = new BlockPos(20, 2, 12);
-        BaseContainerBlockEntity stone = chest(helper, a, stacks(Items.COBBLESTONE, 2));
-        BaseContainerBlockEntity logs = chest(helper, b, stacks(Items.OAK_LOG, 2));
+        BaseContainerBlockEntity stone = chest(helper, a, stacks(Items.COBBLESTONE, 8));
+        BaseContainerBlockEntity logs = chest(helper, b, stacks(Items.OAK_LOG, 8));
         helper.startSequence().thenIdle(5).thenExecute(() -> link(helper, golem, a, b))
                 .thenWaitUntil(() -> assertSettled(helper, golem))
                 .thenExecute(() -> helper.setBlock(HOME.east(), Blocks.REDSTONE_BLOCK))
@@ -566,7 +614,7 @@ public final class GravititeGolemTests {
                 })
                 .thenWaitUntil(() -> {
                     helper.assertTrue(count(stone, Items.OAK_LOG) == 0, "the pulse sorted nothing");
-                    helper.assertTrue(count(logs, Items.OAK_LOG) == 192, "items made or lost");
+                    helper.assertTrue(count(logs, Items.OAK_LOG) == 576, "items made or lost");
                 }).thenSucceed();
     }
 
@@ -621,13 +669,12 @@ public final class GravititeGolemTests {
                 helper.setBlock(new BlockPos(x, y, 22), Blocks.STONE);
             }
         }
-        BaseContainerBlockEntity behind = chest(helper, hidden, new ItemStack(Items.OAK_LOG, 64), new ItemStack(Items.COBBLESTONE, 64),
-                new ItemStack(Items.COBBLESTONE, 64));
-        BaseContainerBlockEntity front = chest(helper, open, new ItemStack(Items.OAK_LOG, 64), new ItemStack(Items.OAK_LOG, 64));
+        BaseContainerBlockEntity behind = chest(helper, hidden, join(stacks(Items.OAK_LOG, 1), stacks(Items.COBBLESTONE, 8)));
+        BaseContainerBlockEntity front = chest(helper, open, stacks(Items.OAK_LOG, 7));
         helper.startSequence().thenIdle(5).thenExecute(() -> link(helper, golem, hidden, open))
                 .thenWaitUntil(() -> {
                     helper.assertTrue(count(behind, Items.OAK_LOG) == 0, "the chest behind the wall wasn't used");
-                    helper.assertTrue(count(front, Items.OAK_LOG) == 192, "logs made or lost");
+                    helper.assertTrue(count(front, Items.OAK_LOG) == 512, "logs made or lost");
                 }).thenSucceed();
     }
 
@@ -677,15 +724,15 @@ public final class GravititeGolemTests {
         floor(helper);
         GravititeGolem golem = golem(helper, HOME);
         BlockPos a = new BlockPos(12, 2, 12), b = new BlockPos(20, 2, 12);
-        BaseContainerBlockEntity source = chest(helper, a, new ItemStack(Items.COBBLESTONE, 64), new ItemStack(Items.COBBLESTONE, 64),
-                new ItemStack(Items.DIAMOND, 7));
-        BaseContainerBlockEntity target = chest(helper, b, new ItemStack(Items.DIAMOND, 64), new ItemStack(Items.DIAMOND, 64));
+        BaseContainerBlockEntity source = chest(helper, a, join(new ItemStack[]{new ItemStack(Items.DIAMOND, 7)},
+                stacks(Items.COBBLESTONE, 8)));
+        BaseContainerBlockEntity target = chest(helper, b, stacks(Items.DIAMOND, 7));
         helper.startSequence().thenIdle(5).thenExecute(() -> link(helper, golem, a, b)).thenWaitUntil(() -> {
             // the diamonds are in the air (the golem is concentrating) but still in their chest
             helper.assertTrue(golem.state() == GravititeGolem.CONCENTRATING, "no flight yet");
             helper.assertTrue(count(source, Items.DIAMOND) == 7, "the diamonds left before landing");
-        }).thenExecute(() -> source.setItem(2, ItemStack.EMPTY)).thenIdle(80).thenExecute(() -> {
-            helper.assertTrue(count(target, Items.DIAMOND) == 128, "diamonds appeared from nowhere: " + count(target, Items.DIAMOND));
+        }).thenExecute(() -> source.setItem(0, ItemStack.EMPTY)).thenIdle(80).thenExecute(() -> {
+            helper.assertTrue(count(target, Items.DIAMOND) == 448, "diamonds appeared from nowhere: " + count(target, Items.DIAMOND));
             helper.assertTrue(count(source, Items.DIAMOND) == 0, "diamonds came back");
             helper.assertTrue(helper.getLevel().getEntitiesOfClass(ItemEntity.class,
                     new AABB(helper.absolutePos(a)).inflate(4)).isEmpty(), "something was dropped");
@@ -985,8 +1032,7 @@ public final class GravititeGolemTests {
         floor(helper);
         GravititeGolem golem = golem(helper, HOME);
         BlockPos a = new BlockPos(12, 2, 12), b = new BlockPos(20, 2, 12);
-        chest(helper, a, new ItemStack(Items.COBBLESTONE, 64), new ItemStack(Items.COBBLESTONE, 64),
-                new ItemStack(Items.COBBLESTONE, 64), new ItemStack(Items.OAK_LOG, 64));
+        chest(helper, a, join(stacks(Items.COBBLESTONE, 8), stacks(Items.OAK_LOG, 8)));
         chest(helper, b);
         helper.startSequence().thenIdle(5).thenExecute(() -> {
             golem.setYRot(-90);

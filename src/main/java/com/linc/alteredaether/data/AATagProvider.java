@@ -202,6 +202,26 @@ public final class AATagProvider extends JsonDataProvider {
         }
         never.addAll(List.of("create:andesite_table_cloth", "create:brass_table_cloth", "create:copper_table_cloth"));
         tag("block", AlteredAether.id("golem_link_blacklist"), never.toArray(String[]::new));
+
+        // Where tidy mode files items (see GolemPaths): the Aether goes by mod; vanilla's nether and end items are
+        // named here, their raw materials mostly, since what is made from them follows its recipe back to them.
+        tag("item", AlteredAether.id("golem_origin/nether"), "minecraft:netherrack", "minecraft:nether_brick",
+                "minecraft:red_nether_bricks", "minecraft:nether_wart", "minecraft:nether_wart_block",
+                "minecraft:warped_wart_block", "minecraft:crimson_nylium", "minecraft:warped_nylium",
+                "#minecraft:crimson_stems", "#minecraft:warped_stems", "minecraft:crimson_fungus",
+                "minecraft:warped_fungus", "minecraft:crimson_roots", "minecraft:warped_roots", "minecraft:nether_sprouts",
+                "minecraft:weeping_vines", "minecraft:twisting_vines", "minecraft:shroomlight", "minecraft:soul_sand",
+                "minecraft:soul_soil", "minecraft:basalt", "minecraft:blackstone", "minecraft:gilded_blackstone",
+                "minecraft:quartz", "minecraft:nether_quartz_ore", "minecraft:nether_gold_ore", "minecraft:glowstone",
+                "minecraft:glowstone_dust", "minecraft:magma_block", "minecraft:magma_cream", "minecraft:ancient_debris",
+                "minecraft:netherite_scrap", "minecraft:netherite_ingot", "minecraft:blaze_rod", "minecraft:blaze_powder",
+                "minecraft:ghast_tear", "minecraft:wither_skeleton_skull", "minecraft:nether_star", "minecraft:piglin_head");
+        tag("item", AlteredAether.id("golem_origin/end"), "minecraft:end_stone", "minecraft:chorus_fruit",
+                "minecraft:popped_chorus_fruit", "minecraft:chorus_flower", "minecraft:purpur_block",
+                "minecraft:shulker_shell", "minecraft:elytra", "minecraft:dragon_breath", "minecraft:dragon_egg",
+                "minecraft:dragon_head", "minecraft:end_rod", "minecraft:end_crystal");
+        tag("item", AlteredAether.id("golem_origin/aether"));
+        tag("item", AlteredAether.id("golem_origin/overworld"));
     }
 
     /**

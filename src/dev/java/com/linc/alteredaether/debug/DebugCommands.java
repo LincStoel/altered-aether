@@ -92,6 +92,11 @@ public final class DebugCommands {
                                                 net.minecraft.commands.arguments.blocks.BlockStateArgument.getBlock(ctx, "stone").getState(),
                                                 net.minecraft.commands.arguments.blocks.BlockStateArgument.getBlock(ctx, "ore").getState())))))
                 .then(Commands.literal("boulderores").executes(ctx -> BoulderDebug.ores(ctx.getSource())))
+                .then(Commands.literal("golempath")
+                        .executes(ctx -> golemPath(ctx, null))
+                        .then(Commands.argument("item", net.minecraft.commands.arguments.item.ItemArgument.item(event.getBuildContext()))
+                                .executes(ctx -> golemPath(ctx,
+                                        net.minecraft.commands.arguments.item.ItemArgument.getItem(ctx, "item").createItemStack(1, false)))))
                 .then(Commands.literal("rumourwarm").executes(DebugCommands::rumourWarm))
                 .then(Commands.literal("rumourbiomes").executes(DebugCommands::rumourBiomes))
                 .then(Commands.literal("fly")
@@ -101,6 +106,25 @@ public final class DebugCommands {
                                                 .executes(ctx -> fly(ctx, 10))
                                                 .then(Commands.argument("radius", IntegerArgumentType.integer(2, 32))
                                                         .executes(ctx -> fly(ctx, IntegerArgumentType.getInteger(ctx, "radius")))))))));
+    }
+
+    /**
+     * {@code /altered_aether golempath [item]}: where tidy mode files an item (the held one if none is named), and the
+     * recipe chain its material was read from.
+     */
+    private static int golemPath(CommandContext<CommandSourceStack> ctx, @javax.annotation.Nullable net.minecraft.world.item.ItemStack named)
+            throws com.mojang.brigadier.exceptions.CommandSyntaxException {
+        CommandSourceStack source = ctx.getSource();
+        net.minecraft.world.item.ItemStack stack = named != null ? named : source.getPlayerOrException().getMainHandItem();
+        if (stack.isEmpty()) {
+            source.sendFailure(Component.literal("Hold an item or name one."));
+            return 0;
+        }
+        var path = com.linc.alteredaether.entity.golem.group.GolemPaths.path(stack);
+        var chain = com.linc.alteredaether.entity.golem.group.GolemPaths.chain(stack.getItem());
+        source.sendSuccess(() -> Component.literal(BuiltInRegistries.ITEM.getKey(stack.getItem()) + ": " + path
+                + "\n  made from: " + String.join(" <- ", chain)), false);
+        return 1;
     }
 
     /** The made-up player {@code rumourwarm} searches ahead for. */
