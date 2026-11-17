@@ -210,7 +210,8 @@ are shaped round a rolling sheet of cold aercloud at about y -35..-8. Landmasses
 plunging through and their roots hanging out beneath, smaller islands float above it, and sky lakes and holes break it
 up, wider toward its edges. They form under any region's plain islands, and give way to our landforms. Falling water
 washes its own way down through the cloud. The lower islands outside the seas wear **cloud skirts**, collars of the
-same cloud round their rims, which join a sea's sheet where they meet it.
+same cloud round their rims, which join a sea's sheet where they meet it. `/altered_aether sea` finds the nearest sea
+(operators only).
 
 ## Optional mods
 
