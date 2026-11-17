@@ -37,7 +37,7 @@ public final class AAGravititeProvider extends JsonDataProvider {
     private static final String RAW_BLOCK = ID + "raw_gravitite_block";
     private static final String INGOT = ID + "enchanted_gravitite_ingot";
     private static final String NUGGET = ID + "enchanted_gravitite_nugget";
-    private static final String CRUSHED = ID + "crushed_gravitite";
+    private static final String CRUSHED = ID + "crushed_raw_gravitite";
     private static final String DUST = ID + "gravitite_dust";
     private static final String SMALL_DUST = ID + "small_gravitite_dust";
     private static final String ZANITE = "aether:zanite_gemstone";
@@ -172,7 +172,7 @@ public final class AAGravititeProvider extends JsonDataProvider {
 
     /**
      * The altar's enchanting, which Create's fans also run. Ore and raw gravitite take the Aether's own time for the
-     * ore, crushed gravitite too; dust, already fine, half that; small dust a ninth of dust; the raw block nine raw.
+     * ore, crushed raw gravitite too; dust, already fine, half that; small dust a ninth of dust; the raw block nine raw.
      */
     private void altar() {
         enchanting("ore", item(ORE), INGOT, ENCHANT);

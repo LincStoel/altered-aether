@@ -1,9 +1,9 @@
-// 1.21.1	2026-11-17T10:58:10.4285936	Altered Aether blocks and language
+// 1.21.1	2026-11-17T11:11:00.6901665	Altered Aether blocks and language
 cc4a268c9d003718a9458f1257ad3d879abd35d6 assets/altered_aether/blockstates/ambrosium_campfire.json
 9279ad634d42135691b2587520af886dfe5ee4b5 assets/altered_aether/blockstates/gleam_vines.json
 7109808a35c46e4977768327eb3866d2740067cc assets/altered_aether/blockstates/gleam_vines_plant.json
 7e26e3a1b0de3a0ff7afee51b5739dc2682b4b89 assets/altered_aether/blockstates/raw_gravitite_block.json
-04217415d7cbf0fd8d99ecdebc88309183bba3cd assets/altered_aether/lang/en_us.json
+07b8a45ba7d1aa0b4445a206964433fbb7254cb3 assets/altered_aether/lang/en_us.json
 d9ba4bf337d6633fefcee7a328069e422cf6437f assets/altered_aether/models/block/ambrosium_campfire.json
 755e85dd5983a1e575c7421ae51c5c5af233d89c assets/altered_aether/models/block/ambrosium_campfire_off.json
 6ca26b286266763bc972dabc5128e2c663523f28 assets/altered_aether/models/block/gleam_vines.json
@@ -13,7 +13,7 @@ d9ba4bf337d6633fefcee7a328069e422cf6437f assets/altered_aether/models/block/ambr
 c2cead6224b17ad96203159b0dc520f99249e312 assets/altered_aether/models/block/raw_gravitite_block.json
 1d81086443819bd0999f499b79b61864847a9993 assets/altered_aether/models/block/tinted_cross_overlay.json
 0188ed25dc9149716f6936197c95d314e92ded44 assets/altered_aether/models/item/ambrosium_campfire.json
-1c644f7dc490c4943a3d0cc9250e103d5a578c1a assets/altered_aether/models/item/crushed_gravitite.json
+33b4881c516ae7f058e882e258d5d88027361383 assets/altered_aether/models/item/crushed_raw_gravitite.json
 337ff4467158b79068e711c99bd404504546d425 assets/altered_aether/models/item/enchanted_gravitite_ingot.json
 6d59bac61425eed15c0f48a26f60e292ed2b2aea assets/altered_aether/models/item/enchanted_gravitite_nugget.json
 aafd61bac6c10d313e631dd350aa6c236f54bb89 assets/altered_aether/models/item/gleamberries.json

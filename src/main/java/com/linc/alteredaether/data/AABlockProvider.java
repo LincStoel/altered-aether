@@ -67,7 +67,7 @@ public final class AABlockProvider extends JsonDataProvider {
 
     /** The gravitite rework's items and raw block (see data/AAGravititeProvider); their art is placeholder. */
     private static final List<String> GRAVITITE_ITEMS = List.of("raw_gravitite", "enchanted_gravitite_ingot",
-            "enchanted_gravitite_nugget", "crushed_gravitite", "gravitite_dust", "small_gravitite_dust");
+            "enchanted_gravitite_nugget", "crushed_raw_gravitite", "gravitite_dust", "small_gravitite_dust");
     private static final String RAW_GRAVITITE_BLOCK = "raw_gravitite_block";
 
     private void gravitite() {
@@ -418,7 +418,7 @@ public final class AABlockProvider extends JsonDataProvider {
         lang.put("item." + AlteredAether.MOD_ID + ".raw_gravitite", "Raw Gravitite");
         lang.put("item." + AlteredAether.MOD_ID + ".enchanted_gravitite_ingot", "Enchanted Gravitite Ingot");
         lang.put("item." + AlteredAether.MOD_ID + ".enchanted_gravitite_nugget", "Enchanted Gravitite Nugget");
-        lang.put("item." + AlteredAether.MOD_ID + ".crushed_gravitite", "Crushed Gravitite");
+        lang.put("item." + AlteredAether.MOD_ID + ".crushed_raw_gravitite", "Crushed Raw Gravitite");
         lang.put("item." + AlteredAether.MOD_ID + ".gravitite_dust", "Gravitite Dust");
         lang.put("item." + AlteredAether.MOD_ID + ".small_gravitite_dust", "Small Gravitite Dust");
         lang.put("block." + AlteredAether.MOD_ID + "." + RAW_GRAVITITE_BLOCK, "Block of Raw Gravitite");

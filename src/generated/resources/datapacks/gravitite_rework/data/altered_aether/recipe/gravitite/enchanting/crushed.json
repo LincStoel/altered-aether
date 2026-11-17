@@ -10,7 +10,7 @@
   "cookingtime": 750,
   "experience": 1.0,
   "ingredient": {
-    "item": "altered_aether:crushed_gravitite"
+    "item": "altered_aether:crushed_raw_gravitite"
   },
   "result": {
     "count": 1,

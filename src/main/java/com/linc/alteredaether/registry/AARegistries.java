@@ -141,7 +141,7 @@ public final class AARegistries {
     /**
      * Gravitite as a modern ore (see data/AAGravititeProvider): the ore drops raw gravitite, which only enchanting
      * turns into the enchanted ingot. The raw block floats up as the ore does. Every item drifts upward when dropped
-     * (see item/GravititeItem); crushed gravitite is for Create and the dusts for Oritech.
+     * (see item/GravititeItem); crushed raw gravitite is for Create and the dusts for Oritech.
      */
     public static final DeferredBlock<FloatingBlock> RAW_GRAVITITE_BLOCK = BLOCKS.registerBlock("raw_gravitite_block",
             properties -> new FloatingBlock(false, properties),
@@ -150,7 +150,7 @@ public final class AARegistries {
     public static final DeferredItem<GravititeItem> RAW_GRAVITITE = gravitite("raw_gravitite");
     public static final DeferredItem<GravititeItem> ENCHANTED_GRAVITITE_INGOT = gravitite("enchanted_gravitite_ingot");
     public static final DeferredItem<GravititeItem> ENCHANTED_GRAVITITE_NUGGET = gravitite("enchanted_gravitite_nugget");
-    public static final DeferredItem<GravititeItem> CRUSHED_GRAVITITE = gravitite("crushed_gravitite");
+    public static final DeferredItem<GravititeItem> CRUSHED_RAW_GRAVITITE = gravitite("crushed_raw_gravitite");
     public static final DeferredItem<GravititeItem> GRAVITITE_DUST = gravitite("gravitite_dust");
     public static final DeferredItem<GravititeItem> SMALL_GRAVITITE_DUST = gravitite("small_gravitite_dust");
 

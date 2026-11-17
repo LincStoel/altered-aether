@@ -11,7 +11,7 @@
   ],
   "type": "ars_nouveau:imbuement",
   "input": {
-    "item": "altered_aether:crushed_gravitite"
+    "item": "altered_aether:crushed_raw_gravitite"
   },
   "output": {
     "count": 1,

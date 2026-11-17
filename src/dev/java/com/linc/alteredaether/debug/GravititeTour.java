@@ -211,7 +211,7 @@ public final class GravititeTour {
             drop(level, -1.2, AARegistries.RAW_GRAVITITE.get());
             drop(level, -0.4, AARegistries.ENCHANTED_GRAVITITE_INGOT.get());
             drop(level, 0.4, AARegistries.ENCHANTED_GRAVITITE_NUGGET.get());
-            drop(level, 1.2, AARegistries.CRUSHED_GRAVITITE.get());
+            drop(level, 1.2, AARegistries.CRUSHED_RAW_GRAVITITE.get());
             BlockPos hopper = origin.offset(HOPPER);
             ItemEntity over = new ItemEntity(level, hopper.getX() + 0.5, hopper.getY() + 2, hopper.getZ() + 0.5,
                     new ItemStack(AARegistries.RAW_GRAVITITE.get()));
@@ -253,7 +253,7 @@ public final class GravititeTour {
         names.add(Component.translatable(AetherBlocks.ENCHANTED_GRAVITITE.get().getDescriptionId()).getString());
         for (Item item : new Item[]{AARegistries.RAW_GRAVITITE_BLOCK_ITEM.get(), AARegistries.RAW_GRAVITITE.get(),
                 AARegistries.ENCHANTED_GRAVITITE_INGOT.get(), AARegistries.ENCHANTED_GRAVITITE_NUGGET.get(),
-                AARegistries.CRUSHED_GRAVITITE.get(), AARegistries.GRAVITITE_DUST.get(), AARegistries.SMALL_GRAVITITE_DUST.get()}) {
+                AARegistries.CRUSHED_RAW_GRAVITITE.get(), AARegistries.GRAVITITE_DUST.get(), AARegistries.SMALL_GRAVITITE_DUST.get()}) {
             names.add(new ItemStack(item).getHoverName().getString());
         }
         log("names: {}", names);

@@ -15,7 +15,7 @@ PLACEHOLDER art for the gravitite rework, to be redrawn by hand before release.
 
 Recolours other mods' sprites to gravitite's palette by brightness:
 
-- raw_gravitite, crushed_gravitite and the raw block from Create's raw zinc, crushed raw zinc and raw zinc block
+- raw_gravitite, crushed_raw_gravitite and the raw block from Create's raw zinc, crushed raw zinc and raw zinc block
   (the ore's duller purple);
 - the enchanted nugget from Create's zinc nugget, and the dusts from Oritech's iron dusts (enchanted purple / ore
   purple);
@@ -23,7 +23,8 @@ Recolours other mods' sprites to gravitite's palette by brightness:
 
 The palettes are read from the Aether's own enchanted gravitite and gravitite ore textures.
 
-The textures in HAND_DRAWN have been redrawn by hand, and this script leaves them alone.
+The textures in FINAL are no longer placeholders (redrawn by hand, or kept as they are), and this script leaves them
+alone. Only the raw block is still a placeholder.
 
 Usage:  python tools/textures/gravitite_items.py   (needs the Create, Oritech and Aether jars in libs/ and libs/optional)
 """
@@ -35,12 +36,13 @@ from PIL import Image
 
 REPO = pathlib.Path(__file__).resolve().parents[2]
 OUT = REPO / "src/main/resources/assets/altered_aether/textures"
-HAND_DRAWN = {"item/enchanted_gravitite_ingot.png", "item/enchanted_gravitite_nugget.png", "item/gravitite_dust.png"}
+FINAL = {"item/enchanted_gravitite_ingot.png", "item/enchanted_gravitite_nugget.png", "item/gravitite_dust.png",
+         "item/raw_gravitite.png", "item/crushed_raw_gravitite.png", "item/small_gravitite_dust.png"}
 
 
 def save(image, name):
-    if name in HAND_DRAWN:
-        print("leaving hand-drawn", name)
+    if name in FINAL:
+        print("leaving final", name)
         return
     image.save(OUT / name)
 
@@ -137,7 +139,7 @@ def main():
 
     item = "assets/create/textures/item/"
     save(recolour(read(create, item + "raw_zinc.png"), ore), "item/raw_gravitite.png")
-    save(recolour(read(create, item + "crushed_raw_zinc.png"), ore), "item/crushed_gravitite.png")
+    save(recolour(read(create, item + "crushed_raw_zinc.png"), ore), "item/crushed_raw_gravitite.png")
     save(recolour(read(create, item + "zinc_nugget.png"), enchanted), "item/enchanted_gravitite_nugget.png")
     save(recolour(read(create, "assets/create/textures/block/raw_zinc_block.png"), ore), "block/raw_gravitite_block.png")
     dust = "assets/oritech/textures/item/"

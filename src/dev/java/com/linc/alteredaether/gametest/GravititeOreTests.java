@@ -250,7 +250,7 @@ public final class GravititeOreTests {
     }
 
     /**
-     * The Aether's ingredients tab lists the new items, crushed gravitite only with Create and the dusts only with
+     * The Aether's ingredients tab lists the new items, crushed raw gravitite only with Create and the dusts only with
      * Oritech; its natural blocks tab, the raw block.
      */
     @GameTest(template = "arena")
@@ -268,7 +268,7 @@ public final class GravititeOreTests {
                 AARegistries.RAW_GRAVITITE.get(), true,
                 AARegistries.ENCHANTED_GRAVITITE_INGOT.get(), true,
                 AARegistries.ENCHANTED_GRAVITITE_NUGGET.get(), true,
-                AARegistries.CRUSHED_GRAVITITE.get(), loaded.isLoaded("create"),
+                AARegistries.CRUSHED_RAW_GRAVITITE.get(), loaded.isLoaded("create"),
                 AARegistries.GRAVITITE_DUST.get(), loaded.isLoaded("oritech"),
                 AARegistries.SMALL_GRAVITITE_DUST.get(), loaded.isLoaded("oritech"));
         for (var entry : expected.entrySet()) {

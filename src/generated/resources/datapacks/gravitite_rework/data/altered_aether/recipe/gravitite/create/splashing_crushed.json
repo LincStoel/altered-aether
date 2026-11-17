@@ -8,7 +8,7 @@
   "type": "create:splashing",
   "ingredients": [
     {
-      "item": "altered_aether:crushed_gravitite"
+      "item": "altered_aether:crushed_raw_gravitite"
     }
   ],
   "results": [

@@ -14,11 +14,11 @@
   "processing_time": 250,
   "results": [
     {
-      "id": "altered_aether:crushed_gravitite"
+      "id": "altered_aether:crushed_raw_gravitite"
     },
     {
       "chance": 0.75,
-      "id": "altered_aether:crushed_gravitite"
+      "id": "altered_aether:crushed_raw_gravitite"
     },
     {
       "chance": 0.75,

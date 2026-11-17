@@ -37,7 +37,7 @@ import java.util.stream.Collectors;
  * GravititeReworkPack and data/AAGravititeProvider); this is the part that can't be data: two recipes that would
  * undercut it are dropped after every recipe has loaded (the Aether's ore-to-block enchanting, and Deep Aether's
  * poisoning of the block back into ore, which the pack replaces with the ingot's), and the new items are listed in the
- * Aether's creative tabs, crushed gravitite only with Create and the dusts only with Oritech. With the rework off
+ * Aether's creative tabs, crushed raw gravitite only with Create and the dusts only with Oritech. With the rework off
  * ({@code gravitite.rework}), none of it happens and the items stay hidden.
  */
 public final class GravititeRework {
@@ -90,7 +90,7 @@ public final class GravititeRework {
             if (event.getTabKey().equals(AetherCreativeTabs.AETHER_INGREDIENTS.getKey())) {
                 event.accept(AARegistries.RAW_GRAVITITE.get());
                 if (modOn(CreateCompat.MOD)) {
-                    event.accept(AARegistries.CRUSHED_GRAVITITE.get());
+                    event.accept(AARegistries.CRUSHED_RAW_GRAVITITE.get());
                 }
                 if (modOn("oritech")) {
                     event.accept(AARegistries.GRAVITITE_DUST.get());
