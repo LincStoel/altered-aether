@@ -352,6 +352,14 @@ public final class AADecorationProvider extends FeatureData {
         }
         addFeature("cloud/layer_sterling", List.of(IS_AETHER), "top_layer_modification", "deep_aether");
 
+        // The snowline, among the Highlands' highest islets: snow on any ground above y 215 (tall), give or take.
+        JsonObject snowline = new JsonObject();
+        snowline.addProperty("tall_line", 215);
+        snowline.addProperty("wander", 6);
+        configured("snowline", "snowline", snowline);
+        placed("snowline", "snowline", Placement.list());
+        addFeature("snowline", List.of(IS_AETHER), "top_layer_modification");
+
         JsonObject bridge = new JsonObject();
         bridge.add("block", cold);
         configured("cloud/rift_bridge", "aercloud_bridge", bridge);

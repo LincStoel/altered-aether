@@ -360,6 +360,8 @@ public final class AARegistries {
     public static final DeferredHolder<Feature<?>, com.linc.alteredaether.worldgen.feature.CanopyMossFeature>
             CANOPY_MOSS = FEATURES.register("canopy_moss",
             com.linc.alteredaether.worldgen.feature.CanopyMossFeature::new);
+    public static final DeferredHolder<Feature<?>, com.linc.alteredaether.worldgen.feature.SnowlineFeature>
+            SNOWLINE = FEATURES.register("snowline", com.linc.alteredaether.worldgen.feature.SnowlineFeature::new);
     public static final DeferredHolder<Feature<?>, StrikeCraterFeature> STRIKE_CRATER =
             FEATURES.register("strike_crater", StrikeCraterFeature::new);
     public static final DeferredHolder<Feature<?>, TotemFeature> TOTEM =
