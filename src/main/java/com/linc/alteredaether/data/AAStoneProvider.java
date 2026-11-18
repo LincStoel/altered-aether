@@ -63,6 +63,63 @@ public final class AAStoneProvider extends JsonDataProvider {
             }
         }
         celeziteCrushing();
+        sable();
+    }
+
+    /**
+     * Mass under Sable, on its own scale (normal 1, heavy 2, super heavy 4): holystone and every other stone in
+     * {@code #c:stones} is heavy. Celezite, a quartzite, weighs what any stone does, so it is heavy, polished and bricks
+     * as much as the stone. Nadirite, the dense rock of island undersides, is super heavy, weighing what a block of iron
+     * does. Stairs, slabs and walls weigh half the block, and a double slab the whole. Sable's own tiers put slabs and
+     * stairs in "light" and the natural stones (by {@code #c:stones}) in "heavy" at its default priority, so ours are
+     * set a step above to win over both.
+     */
+    private static final Map<String, Double> SABLE_MASS = Map.of("nadirite", 4.0, "celezite", 2.0);
+
+    private void sable() {
+        for (StoneSet stone : StoneSet.ALL) {
+            double mass = SABLE_MASS.get(stone.name);
+            List<String> full = new ArrayList<>();
+            List<String> shapes = new ArrayList<>();
+            for (StoneSet.Form form : stone.forms()) {
+                full.add(NS + form.base());
+                for (String shape : new String[]{"_stairs", "_slab", "_wall"}) {
+                    shapes.add(NS + form.shape() + shape);
+                }
+            }
+            String name = "sable/" + stone.name;
+            blockTag(name, full);
+            blockTag(name + "_shapes", shapes);
+            mass(name, mass, null);
+            mass(name + "_shapes", mass / 2, mass);
+        }
+    }
+
+    private void blockTag(String name, List<String> blocks) {
+        JsonArray values = new JsonArray();
+        blocks.forEach(values::add);
+        JsonObject json = new JsonObject();
+        json.addProperty("replace", false);
+        json.add("values", values);
+        data("tags/block", AlteredAether.id(name), json);
+    }
+
+    /** {@code doubled}: a double slab's mass, or null for blocks without one. */
+    private void mass(String tag, double mass, Double doubled) {
+        JsonObject properties = new JsonObject();
+        properties.addProperty("sable:mass", mass);
+        JsonObject json = new JsonObject();
+        json.addProperty("priority", 1001);
+        json.addProperty("selector", "#" + NS + tag);
+        json.add("properties", properties);
+        if (doubled != null) {
+            JsonObject full = new JsonObject();
+            full.addProperty("sable:mass", doubled);
+            JsonObject overrides = new JsonObject();
+            overrides.add("type=double", full);
+            json.add("overrides", overrides);
+        }
+        data("physics_block_properties", AlteredAether.id(tag.replace("sable/", "")), json, "sable");
     }
 
     /** Names for the language file: "Nadirite", "Polished Nadirite Stairs", "Nadirite Brick Wall" and so on. */

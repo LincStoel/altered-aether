@@ -1,0 +1,13 @@
+{
+  "neoforge:conditions": [
+    {
+      "type": "altered_aether:mod_enabled",
+      "modid": "sable"
+    }
+  ],
+  "priority": 1001,
+  "properties": {
+    "sable:mass": 4.0
+  },
+  "selector": "#altered_aether:sable/nadirite"
+}
