@@ -172,5 +172,10 @@
       "argument2": "altered_aether:terrain/jag"
     }
   },
-  "argument2": "altered_aether:terrain/island_high"
+  "argument2": {
+    "type": "altered_aether:choose",
+    "high": -1.0,
+    "low": "altered_aether:terrain/island_high",
+    "mask": "altered_aether:terrain/island_shed"
+  }
 }

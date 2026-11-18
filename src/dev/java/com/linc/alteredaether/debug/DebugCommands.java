@@ -432,6 +432,7 @@ public final class DebugCommands {
                 image.setRGB(i, j, colour);
             }
         }
+        massMap(aether, name.replace("_groups", "_mass"), minX, minZ, maxX, maxZ);
         AlteredAether.LOGGER.info("Edge map {}: other {} peaks {} woodland {} dunes {} pixels; other cut {}, ours cut {}", name, counts[0], counts[1], counts[2], counts[3], near, wide);
         try {
             java.nio.file.Path folder = aether.getServer().getServerDirectory().resolve("renders");
@@ -439,6 +440,46 @@ public final class DebugCommands {
             javax.imageio.ImageIO.write(image, "png", folder.resolve(name + ".png").toFile());
         } catch (java.io.IOException e) {
             AlteredAether.LOGGER.error("Couldn't write the edge map {}", name, e);
+        }
+    }
+
+    /**
+     * The island mass round the benchmark ({@code ColumnMassField}), 2 blocks a pixel: the thickness of island in each
+     * column as grey (white is 64 blocks or more), tinted red where the smoothed mass is under 4 (shed outright) and
+     * orange under 8 (partly shed). Logs a histogram of the mass.
+     */
+    private static void massMap(ServerLevel aether, String name, int minX, int minZ, int maxX, int maxZ) {
+        var field = com.linc.alteredaether.worldgen.density.ColumnMassField.get(THE_AETHER);
+        if (field == null) {
+            return;
+        }
+        int scale = 2, w = (maxX - minX) / scale, h = (maxZ - minZ) / scale;
+        java.awt.image.BufferedImage image = new java.awt.image.BufferedImage(w, h,
+                java.awt.image.BufferedImage.TYPE_INT_RGB);
+        int[] histogram = new int[9];
+        for (int j = 0; j < h; j++) {
+            for (int i = 0; i < w; i++) {
+                int x = minX + i * scale, z = minZ + j * scale;
+                double mass = field.mass(x, z), thick = field.thickness(x, z);
+                histogram[Math.min(8, (int) (mass / 4))]++;
+                int g = (int) Math.min(255, thick * 4);
+                int colour = thick <= 0 ? 0x1A1E33 : (g << 16) | (g << 8) | g;
+                if (thick > 0 && mass < 4) {
+                    colour = 0xD03030;
+                } else if (thick > 0 && mass < 8) {
+                    colour = 0xE08A30;
+                }
+                image.setRGB(i, j, colour);
+            }
+        }
+        AlteredAether.LOGGER.info("Mass map {}: pixels by mass in steps of 4 (last 32+): {}", name,
+                java.util.Arrays.toString(histogram));
+        try {
+            java.nio.file.Path folder = aether.getServer().getServerDirectory().resolve("renders");
+            java.nio.file.Files.createDirectories(folder);
+            javax.imageio.ImageIO.write(image, "png", folder.resolve(name + ".png").toFile());
+        } catch (java.io.IOException e) {
+            AlteredAether.LOGGER.error("Couldn't write the mass map {}", name, e);
         }
     }
 

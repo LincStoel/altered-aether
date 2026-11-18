@@ -80,7 +80,7 @@ public final class AATerrainProvider extends JsonDataProvider {
             Set.of("crag_3d_noise", "jag", "crags", "tempest", "tempest_spires", "dune_ridges", "dune_centre", "dune_sheet",
                     "plateau", "plateau_terraced", "island", "tall_base_3d_noise", "rift",
                     "grove_land", "grove_land_broken", "island_sea", "island_high", "cloud_sea_mask", "cloud_sea_sheet",
-                    "cloud_sea_land");
+                    "cloud_sea_land", "island_mass");
 
     private final HeightMode mode;
 
@@ -436,11 +436,23 @@ public final class AATerrainProvider extends JsonDataProvider {
         }
         // The island expression gets a file of its own, so every blend below refers to it rather than copying it.
         df("island", island);
+        // Fewer small islands: where little island stands round a column (the average thickness of the Aether's own
+        // islands over a disc 80 blocks across), its land is shed, so scattered fragments go and the landmasses stay.
+        // The rift keeps its pieces.
+        JsonObject mass = Df.type(NS + "island_mass");
+        mass.add("argument", terrain("island"));
+        mass.addProperty("radius", 40);
+        mass.addProperty("min_y", mode.y(-52));
+        mass.addProperty("max_y", mode.y(128));
+        df("island_mass", flatCache(mass));
+        df("island_shed", flatCache(mul(ramp(terrain("island_mass"), 2.0, -0.25),
+                add(1.0, mul(-1.0, terrain("rift_weight"))))));
+        df("island_clean", Df.choose(terrain("island_shed"), terrain("island"), -1.0));
         // In the tall Aether, the island given over to the cloud seas; the stock Aether has none.
         if (mode == HeightMode.TALL) {
             cloudSea(island);
         } else {
-            df("island_sea", terrain("island"));
+            df("island_sea", terrain("island_clean"));
         }
         // The island given over to the dune sheets.
         df("island_dunes", Df.choose(terrain("dune_weight"), terrain("island_sea"), terrain("dune_sheet")));
@@ -531,12 +543,12 @@ public final class AATerrainProvider extends JsonDataProvider {
                 mul(1.0 / 6, add(Df.y(), mul(-1.0, underside)))), footprint), mul(0.3, terrain("jag")));
         // The Aether's own islands, lifted to float above the sheet: fading in from y 8 to 40 rather than -52 to -4.
         df("island_high", reanchor(island, Map.of(-52, 8, -4, 40, 20, 40, 128, 128)));
-        df("cloud_sea_land", max(landmass, terrain("island_high")));
+        df("cloud_sea_land", max(landmass, Df.choose(terrain("island_shed"), terrain("island_high"), -1.0)));
 
         JsonObject marker = Df.type(NS + "cloud_sea");
         marker.add("argument", terrain("cloud_sea_mask"));
         marker.add("sheet", terrain("cloud_sea_sheet"));
-        df("island_sea", Df.choose(marker, terrain("island"), terrain("cloud_sea_land")));
+        df("island_sea", Df.choose(marker, terrain("island_clean"), terrain("cloud_sea_land")));
     }
 
     /** The island expression's height anchors, remapped to the tall band, and its base noise stretched to match. */
