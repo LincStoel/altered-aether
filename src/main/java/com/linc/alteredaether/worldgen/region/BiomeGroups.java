@@ -37,7 +37,12 @@ public enum BiomeGroups {
      * the peaks, dunes, giant-tree biomes or groves (0).
      */
     HIGHLANDS(biome -> !biome.startsWith("altered_aether:") || biome.equals(BiomeTable.PLATEAU)
-            || biome.equals(BiomeTable.BOWL) ? 1 : 0);
+            || biome.equals(BiomeTable.BOWL) ? 1 : 0),
+    /**
+     * Every biome its own class (by its id's hash), so the distance is to the nearest border of any kind: where the
+     * cloud seas' landmasses break apart. Only distances are read from it, never {@code inside}.
+     */
+    BIOME(String::hashCode);
 
     public static final int OTHER = 0, PEAKS = 1, WOODLAND = 2, DUNES = 3;
 

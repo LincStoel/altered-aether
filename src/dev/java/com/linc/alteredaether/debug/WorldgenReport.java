@@ -139,6 +139,7 @@ public final class WorldgenReport {
         }
         basinSurvey(level, originX, originZ, radius, lines);
         seaSurvey(level, originX, originZ, radius, step, lines);
+        seaLandmasses(level, originX, originZ, Math.min(radius, 4000), lines);
         landmarkSurvey(level, originX, originZ, radius, lines);
         if (Boolean.getBoolean("altered_aether.report.structures")) {
             structureHeights(level, originX, originZ, lines);
@@ -355,6 +356,94 @@ public final class WorldgenReport {
         lines.add(String.format("  open sea columns %d: %.0f%% with land below y 8, %.1f%% with ground at y -40..7, "
                         + "%.0f%% hole", columns, columns == 0 ? 0 : 100.0 * land / columns,
                 columns == 0 ? 0 : 100.0 * ground / columns, columns == 0 ? 0 : 100.0 * holes / columns));
+    }
+
+    /**
+     * The seas' landmasses: where the final density is solid at y 0 inside a sea (the landmasses' bodies span it, and
+     * the lifted islands start above it), on an 8-block grid. Logs how big the 4-connected masses are and writes
+     * {@code renders/sea_landmasses.png}: outside the seas dark, open sea pale, land tinted by its biome, so the
+     * channels at biome borders show.
+     */
+    private static void seaLandmasses(ServerLevel level, int originX, int originZ, int radius, List<String> lines) {
+        CloudSea sea = CloudSea.terrain(level.dimension());
+        if (sea == null) {
+            return;
+        }
+        RandomState random = level.getChunkSource().randomState();
+        DensityFunction density = random.router().finalDensity();
+        ChunkGenerator generator = level.getChunkSource().getGenerator();
+        int cell = 8, n = 2 * radius / cell + 1;
+        boolean[] land = new boolean[n * n];
+        java.awt.image.BufferedImage image = new java.awt.image.BufferedImage(n, n,
+                java.awt.image.BufferedImage.TYPE_INT_RGB);
+        int seaCells = 0, landCells = 0;
+        for (int j = 0; j < n; j++) {
+            for (int i = 0; i < n; i++) {
+                int x = originX - radius + i * cell, z = originZ - radius + j * cell;
+                if (sea.weight(x, z) < 0.5) {
+                    image.setRGB(i, j, 0x202024);
+                    continue;
+                }
+                seaCells++;
+                boolean solid = density.compute(new DensityFunction.SinglePointContext(x, 0, z)) > 0;
+                land[j * n + i] = solid;
+                if (!solid) {
+                    image.setRGB(i, j, 0xE8ECF0);
+                    continue;
+                }
+                landCells++;
+                String id = generator.getBiomeSource().getNoiseBiome(QuartPos.fromBlock(x), QuartPos.fromBlock(64),
+                        QuartPos.fromBlock(z), random.sampler()).unwrapKey().map(k -> k.location().toString()).orElse("?");
+                float hue = (id.hashCode() & 0xFFFF) / 65536f;
+                image.setRGB(i, j, java.awt.Color.HSBtoRGB(hue, 0.55f, 0.75f) & 0xFFFFFF);
+            }
+        }
+        List<Double> sizes = new ArrayList<>();
+        boolean[] seen = new boolean[n * n];
+        java.util.ArrayDeque<Integer> queue = new java.util.ArrayDeque<>();
+        int clipped = 0;
+        for (int start = 0; start < n * n; start++) {
+            if (!land[start] || seen[start]) {
+                continue;
+            }
+            seen[start] = true;
+            queue.add(start);
+            int cells = 0;
+            boolean edge = false;
+            while (!queue.isEmpty()) {
+                int at = queue.poll(), i = at % n, j = at / n;
+                cells++;
+                edge |= i == 0 || j == 0 || i == n - 1 || j == n - 1;
+                for (int[] d : new int[][]{{1, 0}, {-1, 0}, {0, 1}, {0, -1}}) {
+                    int ni = i + d[0], nj = j + d[1];
+                    if (ni >= 0 && nj >= 0 && ni < n && nj < n && land[nj * n + ni] && !seen[nj * n + ni]) {
+                        seen[nj * n + ni] = true;
+                        queue.add(nj * n + ni);
+                    }
+                }
+            }
+            if (edge) {
+                clipped++;
+            } else if (cells >= 4) {
+                sizes.add(2 * Math.sqrt(cells * (double) cell * cell / Math.PI));
+            }
+        }
+        sizes.sort(null);
+        double big = sizes.stream().filter(d -> d >= 256).mapToDouble(d -> d * d).sum(),
+                all = sizes.stream().mapToDouble(d -> d * d).sum();
+        lines.add(String.format("  landmasses: %.0f%% of sea is land; %d whole masses (+%d cut by the survey edge), "
+                        + "diameter median %.0f, p90 %.0f, max %.0f; %.0f%% of land in masses 256+ across",
+                seaCells == 0 ? 0 : 100.0 * landCells / seaCells, sizes.size(), clipped,
+                sizes.isEmpty() ? 0 : sizes.get(sizes.size() / 2),
+                sizes.isEmpty() ? 0 : sizes.get(sizes.size() * 9 / 10), sizes.isEmpty() ? 0 : sizes.getLast(),
+                all == 0 ? 0 : 100.0 * big / all));
+        try {
+            java.nio.file.Path folder = level.getServer().getServerDirectory().resolve("renders");
+            java.nio.file.Files.createDirectories(folder);
+            javax.imageio.ImageIO.write(image, "png", folder.resolve("sea_landmasses.png").toFile());
+        } catch (java.io.IOException e) {
+            lines.add("  landmass map not written: " + e);
+        }
     }
 
     /** Every landmark over the area by type, with how each turned out where that varies. */

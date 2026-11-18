@@ -80,7 +80,7 @@ public final class AATerrainProvider extends JsonDataProvider {
             Set.of("crag_3d_noise", "jag", "crags", "tempest", "tempest_spires", "dune_ridges", "dune_centre", "dune_sheet",
                     "plateau", "plateau_terraced", "island", "tall_base_3d_noise", "rift",
                     "grove_land", "grove_land_broken", "island_sea", "island_high", "cloud_sea_mask", "cloud_sea_sheet",
-                    "cloud_sea_land", "island_mass", "highlands", "caves", "tundra_land", "bowl_land");
+                    "cloud_sea_land", "cloud_sea_border", "island_mass", "highlands", "caves", "tundra_land", "bowl_land");
 
     /** Where the Highlands start, in tall-Aether blocks: above the main island band's top (y 128) in both modes. */
     private static final int HIGHLANDS_FLOOR = 140;
@@ -643,6 +643,11 @@ public final class AATerrainProvider extends JsonDataProvider {
      * lifted clear above. The landforms above the plain islands in the chain (dunes, groves, rift, crags, plateau)
      * keep their own terrain, and the sheet thins away where they take over ({@code cloud_sea_sheet}).
      */
+    /** Shifts the cloud seas' landmass footprint noise: below 0, less land, in separate masses. */
+    private static final double FOOTPRINT_BIAS = 0.0;
+    /** The half-width, in blocks, of the open cloud between two biomes' landmasses in a cloud sea. */
+    private static final double FOOTPRINT_BORDER = 12.0;
+
     private void cloudSea(JsonElement island) {
         // Seas a couple of thousand blocks across over about an eighth of the Aether, unbound by our region: the stock
         // Aether's and Deep Aether's islands get them too. The mask rises across noise 0.26..0.38.
@@ -655,13 +660,23 @@ public final class AATerrainProvider extends JsonDataProvider {
 
         // The landmasses: slabs whose ground rolls between y 8 and about 70, on bodies reaching down to y -32..-44,
         // with roots hanging deeper, so every cliff runs down through the sheet. Their footprint leaves broad
-        // channels of open cloud between them.
+        // channels of open cloud between them, and it is cut back from every biome border, a channel FOOTPRINT_BORDER
+        // blocks or so either side (varying along it) opening between one biome's land and the next, so the land
+        // breaks into separate masses rather than running on as one continent. FOOTPRINT_BIAS below 0 thins it further.
         JsonObject roll = shiftedNoise(NS + "cloud_sea_roll", 1.0, 0.0);
         JsonObject summit = clamp(add(add(30.0, mul(22.0, flatCache(shiftedNoise(NS + "cloud_sea_level", 1.0, 0.0)))),
                 add(mul(6.0, roll), mul(3.0, shiftedNoise(NS + "grove_hummock", 1.0, 0.0)))), 8.0, 120.0);
         JsonObject root = square(clamp(add(mul(2.0, shiftedNoise(NS + "cloud_sea_root", 1.0, 0.0)), -0.6), 0.0, 1.0));
         JsonObject underside = add(add(-38.0, mul(6.0, roll)), mul(-24.0, root));
-        JsonObject footprint = mul(6.0, flatCache(shiftedNoise(NS + "cloud_sea_footprint", 1.0, 0.0)));
+        JsonObject border = Df.type(NS + "biome_edge");
+        border.addProperty("classifier", "biome");
+        border.addProperty("reach", 48);
+        df("cloud_sea_border", Df.wrap("minecraft:cache_2d", border));
+        JsonObject borderWidth = add(FOOTPRINT_BORDER, mul(FOOTPRINT_BORDER * 0.4,
+                shiftedNoise(NS + "gap_width", 1.0, 0.0)));
+        JsonObject footprint = min(
+                mul(6.0, add(flatCache(shiftedNoise(NS + "cloud_sea_footprint", 1.0, 0.0)), FOOTPRINT_BIAS)),
+                mul(0.3, add(terrain("cloud_sea_border"), mul(-1.0, borderWidth))));
         JsonObject landmass = add(min(min(mul(0.125, add(summit, mul(-1.0, Df.y()))),
                 mul(1.0 / 6, add(Df.y(), mul(-1.0, underside)))), footprint), mul(0.3, terrain("jag")));
         // The Aether's own islands, lifted to float above the sheet: fading in from y 8 to 40 rather than -52 to -4.

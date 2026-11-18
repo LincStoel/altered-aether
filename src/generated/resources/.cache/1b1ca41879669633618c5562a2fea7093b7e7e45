@@ -1,5 +1,6 @@
-// 1.21.1	2026-11-17T23:29:18.0763181	Altered Aether tags
-e7464272660842a0d5bf4678460191375b83e401 data/aether/tags/block/treated_as_aether_block.json
+// 1.21.1	2026-11-18T13:00:39.8802219	Altered Aether tags
+7d2776eb2dd31e5afa703d02d730e95dcd56b568 data/aether/tags/block/holystone_ore_replaceables.json
+b88b91fbc5e737dba7553b2c25a99cf7edcce9cb data/aether/tags/block/treated_as_aether_block.json
 12f6e9bc14430120790fd0c3c1b67eea8f5644a2 data/aether/tags/worldgen/biome/is_aether.json
 8a23702b05296c8af5014d6aa6e9265ded85c7d9 data/altered_aether/tags/block/boulder_ore_blacklist.json
 7ec09b2e18ab43d296e2d76cad7fe25c11cda07f data/altered_aether/tags/block/breeze_spawnable_on.json
@@ -31,9 +32,9 @@ b9cb72fb4859bb228260166a46afc3921c7f737b data/altered_aether/tags/worldgen/biome
 8cf8a4cb0dc6acc9f95a83ab65901cc331d98695 data/altered_aether/tags/worldgen/biome/has_storms.json
 10a0a888f22292e5dc436f96a92e8168c8b006fd data/altered_aether/tags/worldgen/biome/midair_zephyrs.json
 56ec7456c37fbf5edbd08d84896d3455ded5c0cd data/ars_nouveau/tags/block/harvest/foliage.json
-b418a778e5945f5e927b5117ef8f3fe72b57cde7 data/c/tags/block/stones.json
+a41a7b87bf0e679a7976f8eae0c2be538dde0a74 data/c/tags/block/stones.json
 a0bf1fc0c566444ccfdba18f668aa2501187ba7d data/c/tags/item/foods/berry.json
-b418a778e5945f5e927b5117ef8f3fe72b57cde7 data/c/tags/item/stones.json
+a41a7b87bf0e679a7976f8eae0c2be538dde0a74 data/c/tags/item/stones.json
 166856e80f89d38661a6b7029b50e09f67ca042d data/deep_aether/tags/entity_type/sterling_aercloud_blacklist.json
 480983c81f5804ad1eae130e6c1491ba46ac6f17 data/minecraft/tags/block/bee_growables.json
 3f019e822d3a547bba0a274a48dacbd9e8bfdbc9 data/minecraft/tags/block/campfires.json
@@ -41,17 +42,17 @@ b418a778e5945f5e927b5117ef8f3fe72b57cde7 data/c/tags/item/stones.json
 480983c81f5804ad1eae130e6c1491ba46ac6f17 data/minecraft/tags/block/climbable.json
 c6381fa8eec6c45ea083b0125723f175d95dfe99 data/minecraft/tags/block/dead_bush_may_place_on.json
 321ecb60c5b87a7ca940124f0881814faa6dca7d data/minecraft/tags/block/mineable/axe.json
-b5bbf89d95f96289a7810ea5eace1ae18d24eb3c data/minecraft/tags/block/mineable/pickaxe.json
+28377b6f33bb6ce3687dd42c9f0574982c1b32cb data/minecraft/tags/block/mineable/pickaxe.json
 89e146ad69fe81b721c39c1eb47e7278cd57cef4 data/minecraft/tags/block/needs_iron_tool.json
-b418a778e5945f5e927b5117ef8f3fe72b57cde7 data/minecraft/tags/block/sculk_replaceable.json
-5abfb52fe4bfd456a51c17bc91c61b1b4f375579 data/minecraft/tags/block/slabs.json
-88c93605f733b6603d02ad0fd2e25ab22de7b2d8 data/minecraft/tags/block/stairs.json
+a41a7b87bf0e679a7976f8eae0c2be538dde0a74 data/minecraft/tags/block/sculk_replaceable.json
+3f22dce90afc09c46898eec91ac317ce4a953077 data/minecraft/tags/block/slabs.json
+926d54a77035822dde2b75a01570f3fae3a107e0 data/minecraft/tags/block/stairs.json
 480983c81f5804ad1eae130e6c1491ba46ac6f17 data/minecraft/tags/block/sword_efficient.json
-7726d33e20d0b962e3a61903af040cd8c8fdcdeb data/minecraft/tags/block/walls.json
+3fff526dd0d00e74d93647231692bf5e3fcf3c1f data/minecraft/tags/block/walls.json
 a0bf1fc0c566444ccfdba18f668aa2501187ba7d data/minecraft/tags/item/fox_food.json
-5abfb52fe4bfd456a51c17bc91c61b1b4f375579 data/minecraft/tags/item/slabs.json
-88c93605f733b6603d02ad0fd2e25ab22de7b2d8 data/minecraft/tags/item/stairs.json
-b418a778e5945f5e927b5117ef8f3fe72b57cde7 data/minecraft/tags/item/stone_crafting_materials.json
-7726d33e20d0b962e3a61903af040cd8c8fdcdeb data/minecraft/tags/item/walls.json
+3f22dce90afc09c46898eec91ac317ce4a953077 data/minecraft/tags/item/slabs.json
+926d54a77035822dde2b75a01570f3fae3a107e0 data/minecraft/tags/item/stairs.json
+a41a7b87bf0e679a7976f8eae0c2be538dde0a74 data/minecraft/tags/item/stone_crafting_materials.json
+3fff526dd0d00e74d93647231692bf5e3fcf3c1f data/minecraft/tags/item/walls.json
 c0bce12102bf355810d11f370b26eae472910a8d data/snuffles/tags/block/snuffles_spawnable_on.json
 a0bf1fc0c566444ccfdba18f668aa2501187ba7d data/supplementaries/tags/item/flower_box_tall_plantable.json
