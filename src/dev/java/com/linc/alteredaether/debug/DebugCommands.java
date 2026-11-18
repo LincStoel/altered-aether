@@ -585,6 +585,32 @@ public final class DebugCommands {
                 origin = new BlockPos(found.x(), 64, found.z());
                 AlteredAether.LOGGER.info("Worldgen benchmark: centred on {} at {}: {}", biome, origin.toShortString(),
                         found);
+            } else if (biome != null && biome.equals("stack")) {
+                // The nearest plateau sea stack, searched in growing squares.
+                var field = com.linc.alteredaether.worldgen.landmark.StackField.get(THE_AETHER);
+                com.linc.alteredaether.worldgen.landmark.StackField.Stack found = null;
+                // Stacks stand off the plateau's cliffs: start from the nearest plateau.
+                var plateau = aether.findClosestBiome3d(b -> b.is(com.linc.alteredaether.worldgen.AABiomes.AETHER_PLATEAU),
+                        origin, 12000, 32, 64);
+                if (plateau != null) {
+                    origin = plateau.getFirst().atY(64);
+                }
+                for (int r = 128; r <= 1024 && field != null && found == null; r *= 2) {
+                    var stacks = field.touching(origin.getX() - r, origin.getZ() - r, origin.getX() + r,
+                            origin.getZ() + r);
+                    if (!stacks.isEmpty()) {
+                        int ox = origin.getX(), oz = origin.getZ();
+                        found = stacks.stream().min(java.util.Comparator.comparingDouble(st ->
+                                Math.hypot(st.x() - ox, st.z() - oz))).orElse(null);
+                    }
+                }
+                if (found == null) {
+                    AlteredAether.LOGGER.error("Worldgen benchmark: no stack found");
+                    return;
+                }
+                origin = new BlockPos(found.x(), 64, found.z());
+                AlteredAether.LOGGER.info("Worldgen benchmark: centred on a stack at {}: {}", origin.toShortString(),
+                        found);
             } else if (biome != null && (biome.equals("lake") || biome.equals("lake:poison")
                     || biome.equals("lake:frozen"))) {
                 // The nearest big lake, searched outward ring by ring over the lake grid.

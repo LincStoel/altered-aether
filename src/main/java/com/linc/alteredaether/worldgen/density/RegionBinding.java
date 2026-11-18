@@ -75,6 +75,7 @@ public final class RegionBinding {
         List<BiomeEdge> edges = new ArrayList<>();
         List<IslandMass> masses = new ArrayList<>();
         List<CaveCarve> caves = new ArrayList<>();
+        List<PlateauStacks> stacks = new ArrayList<>();
         RandomState randomState = level.getChunkSource().randomState();
         randomState.router().mapAll(new DensityFunction.Visitor() {
             @Override
@@ -97,6 +98,8 @@ public final class RegionBinding {
                     masses.add(mass);
                 } else if (function instanceof CaveCarve cave && cave.binding() != null) {
                     caves.add(cave);
+                } else if (function instanceof PlateauStacks stack && stack.binding() != null) {
+                    stacks.add(stack);
                 }
                 return function;
             }
@@ -124,7 +127,7 @@ public final class RegionBinding {
                 masses.forEach(mass -> mass.binding().bind(field));
                 ColumnMassField.put(level.dimension(), field);
             }
-            bindFields(level, randomState, source, carves, atolls, fractures, breaks, caves);
+            bindFields(level, randomState, source, carves, atolls, fractures, breaks, caves, stacks);
         } else {
             AlteredAether.LOGGER.warn("{} uses Altered Aether's region mask but its biome source has no TerraBlender "
                     + "regions; our landforms are disabled there.", level.dimension().location());
@@ -138,7 +141,8 @@ public final class RegionBinding {
      */
     private static void bindFields(ServerLevel level, RandomState randomState, BiomeSource source,
                                    List<BasinCarve> carves, List<Atoll> atolls, Set<VoronoiFracture.Binding> fractures,
-                                   List<GroveBreak> breaks, List<CaveCarve> caves) {
+                                   List<GroveBreak> breaks, List<CaveCarve> caves,
+                                   List<PlateauStacks> stacks) {
         if (carves.isEmpty() && atolls.isEmpty() && fractures.isEmpty()
                 || !(level.getChunkSource().getGenerator() instanceof NoiseBasedChunkGenerator generator)) {
             return;
@@ -181,6 +185,12 @@ public final class RegionBinding {
             CaveField caveField = new CaveField(probe, basins, landmarks);
             caves.forEach(cave -> cave.binding().bind(caveField));
         }
+        if (!stacks.isEmpty()) {
+            com.linc.alteredaether.worldgen.landmark.StackField stackField =
+                    new com.linc.alteredaether.worldgen.landmark.StackField(level.getSeed(), probe, landmarks, basins);
+            stacks.forEach(stack -> stack.binding().bind(stackField));
+            com.linc.alteredaether.worldgen.landmark.StackField.put(level.dimension(), stackField);
+        }
         GroveField.put(level.dimension(), new GroveField(level.getSeed(), probe, landmarks, breakField, vertical,
                 level.getMaxBuildHeight()));
         // The cloud skirts are the tall Aether's alone.
@@ -218,6 +228,7 @@ public final class RegionBinding {
             SOLVERS.remove(level.dimension());
             BiomeEdgeField.put(level.dimension(), null);
             ColumnMassField.put(level.dimension(), null);
+            com.linc.alteredaether.worldgen.landmark.StackField.put(level.dimension(), null);
             BasinField.put(level.dimension(), null);
             LandmarkField.put(level.dimension(), null);
             GroveField.put(level.dimension(), null);

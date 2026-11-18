@@ -369,6 +369,11 @@ public final class AADecorationProvider extends FeatureData {
         placed("snowline", "snowline", Placement.list());
         addFeature("snowline", List.of(IS_AETHER), "top_layer_modification");
 
+        // The pools on top of the plateau's sea stacks.
+        configured("stack_pool", "stack_pool", new JsonObject());
+        placed("stack_pool", "stack_pool", Placement.list());
+        addFeature("stack_pool", List.of(IS_AETHER), "lakes");
+
         JsonObject bridge = new JsonObject();
         bridge.add("block", cold);
         configured("cloud/rift_bridge", "aercloud_bridge", bridge);

@@ -579,8 +579,12 @@ public final class AATerrainProvider extends JsonDataProvider {
         caves.add("entrance", terrain("cave_entrance"));
         blend.add("argument", Df.rangeChoice(Df.y(), mode.y(HIGHLANDS_FLOOR), 4096, terrain("highlands"), caves));
         // Basins are cut last, outside the interpolation, so their bowls and water lines are exact to the block.
+        // The plateau's sea stacks, stood in the open sky beside its cliffs: outside the interpolation, like the
+        // basins, since a column a few blocks across is finer than the noise cells.
+        JsonObject stacks = Df.type(NS + "plateau_stacks");
+        stacks.add("argument", squeeze);
         JsonObject carve = Df.type(NS + "basin_carve");
-        carve.add("argument", squeeze);
+        carve.add("argument", stacks);
         carve.addProperty("vertical_scale", vertical());
         router.add("final_density", carve);
 

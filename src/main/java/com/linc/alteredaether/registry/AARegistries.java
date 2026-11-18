@@ -294,6 +294,8 @@ public final class AARegistries {
         DENSITY_FUNCTIONS.register("biome_edge", () -> com.linc.alteredaether.worldgen.density.BiomeEdge.MAP_CODEC);
         DENSITY_FUNCTIONS.register("island_mass", () -> com.linc.alteredaether.worldgen.density.IslandMass.MAP_CODEC);
         DENSITY_FUNCTIONS.register("cave_carve", () -> com.linc.alteredaether.worldgen.density.CaveCarve.MAP_CODEC);
+        DENSITY_FUNCTIONS.register("plateau_stacks",
+                () -> com.linc.alteredaether.worldgen.density.PlateauStacks.MAP_CODEC);
     }
 
     public static final DeferredRegister<SoundEvent> SOUND_EVENTS =
@@ -364,6 +366,8 @@ public final class AARegistries {
             SNOWLINE = FEATURES.register("snowline", com.linc.alteredaether.worldgen.feature.SnowlineFeature::new);
     public static final DeferredHolder<Feature<?>, com.linc.alteredaether.worldgen.feature.FallenLogFeature>
             FALLEN_LOG = FEATURES.register("fallen_log", com.linc.alteredaether.worldgen.feature.FallenLogFeature::new);
+    public static final DeferredHolder<Feature<?>, com.linc.alteredaether.worldgen.feature.StackPoolFeature>
+            STACK_POOL = FEATURES.register("stack_pool", com.linc.alteredaether.worldgen.feature.StackPoolFeature::new);
     public static final DeferredHolder<Feature<?>, StrikeCraterFeature> STRIKE_CRATER =
             FEATURES.register("strike_crater", StrikeCraterFeature::new);
     public static final DeferredHolder<Feature<?>, TotemFeature> TOTEM =
