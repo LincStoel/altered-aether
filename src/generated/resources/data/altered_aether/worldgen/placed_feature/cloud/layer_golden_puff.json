@@ -1,0 +1,31 @@
+{
+  "feature": "altered_aether:cloud/layer_golden_puff",
+  "placement": [
+    {
+      "type": "minecraft:height_range",
+      "height": {
+        "type": "minecraft:uniform",
+        "max_inclusive": {
+          "absolute": 199
+        },
+        "min_inclusive": {
+          "absolute": 146
+        }
+      }
+    },
+    {
+      "type": "minecraft:in_square"
+    },
+    {
+      "type": "altered_aether:config_count",
+      "count": 0.05,
+      "key": "aerclouds"
+    },
+    {
+      "type": "minecraft:biome"
+    },
+    {
+      "type": "aether:dungeon_blacklist_filter"
+    }
+  ]
+}

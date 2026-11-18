@@ -14,7 +14,7 @@
     "size": {
       "type": "minecraft:uniform",
       "max_inclusive": 26,
-      "min_inclusive": 22
+      "min_inclusive": 20
     },
     "thickness": 4
   }

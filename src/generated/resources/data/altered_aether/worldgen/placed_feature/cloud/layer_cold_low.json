@@ -1,0 +1,31 @@
+{
+  "feature": "altered_aether:cloud/layer_cold",
+  "placement": [
+    {
+      "type": "minecraft:height_range",
+      "height": {
+        "type": "minecraft:uniform",
+        "max_inclusive": {
+          "absolute": 73
+        },
+        "min_inclusive": {
+          "absolute": 43
+        }
+      }
+    },
+    {
+      "type": "minecraft:in_square"
+    },
+    {
+      "type": "altered_aether:config_count",
+      "count": 0.01,
+      "key": "aerclouds"
+    },
+    {
+      "type": "minecraft:biome"
+    },
+    {
+      "type": "aether:dungeon_blacklist_filter"
+    }
+  ]
+}

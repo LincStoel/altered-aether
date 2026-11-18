@@ -62,7 +62,6 @@ public final class AADecorationProvider extends FeatureData {
     static final String ASETERITE_BOULDER = NS + "boulder/aseterite";
     static final String CLORITE_BOULDER = NS + "boulder/clorite";
     static final String GROVE_BLUE_CLOUD = NS + "cloud/grove_blue";
-    static final String CLOUD_MASS = NS + "cloud/mass";
     static final String GOLDEN_HIGH_CLOUD = NS + "cloud/golden_high";
     static final String CRAG_CAMPFIRE = NS + "camp/crag_campfire";
     static final String LUSH_GRASS = NS + "vegetation/lush_grass";
@@ -301,23 +300,52 @@ public final class AADecorationProvider extends FeatureData {
         // low blue wisps over the cascading grove and the dunes, a sixth as common as on the crags
         placed("cloud/grove_blue", "cloud/crag", skyPlacement(1 / 6.0, 2, 6));
 
-        // Great drifting banks of cold cloud through the whole Aether, between the heights of 32 and 96 (the stock
-        // Aether's: the tall Aether stretches them). They stand in for the stock large aercloud where it is off, and
-        // replace the stock cold aercloud everywhere: its boxes re-roll their size on every step of the fill, which
-        // leaves them pitted with holes.
-        removeFeatures("cloud/stock_cold", List.of(IS_AETHER), List.of("aether:cold_aercloud"),
-                "top_layer_modification");
-        configured("cloud/mass", "aercloud", cloud(cold, "streak", 22, 26, 4));
-        placed("cloud/mass", "cloud/mass", Placement.list(
-                Placement.heightRange("uniform", Placement.absolute(32), Placement.absolute(96)),
-                Placement.rarity(9), Placement.inSquare(), Placement.configCount(2, "aerclouds"), Placement.biome()));
-        addFeature("cloud/mass", List.of(IS_AETHER), "top_layer_modification");
+        // The sky's clouds thicken with height: none at y 0 (tall), rising steadily to their thickest among the
+        // Highlands, and change colour on the way up, cold banks low, blue in the middle, golden near the Highlands,
+        // with each colour's heights overlapping the next so they mingle at the seams. Above the Highlands, with Deep
+        // Aether, scattered sterling clouds. They replace the stock Aether's cold, blue and golden aerclouds, whose
+        // boxes re-roll their size on every step of the fill and are left pitted with holes. Heights are written in
+        // stock-Aether blocks, which the tall Aether stretches (tall y = 1.5 * stock y - 64); counts are per chunk,
+        // the thickest band matching the old banks of cold cloud (0.22 a chunk over 96 tall blocks).
+        removeFeatures("cloud/stock_cold", List.of(IS_AETHER), List.of("aether:cold_aercloud", "aether:blue_aercloud",
+                "aether:golden_aercloud"), "top_layer_modification");
+        JsonObject sterling = Substitutes.provider("deep_aether:sterling_aercloud");
+        configured("cloud/layer_cold", "aercloud", cloud(cold, "streak", 20, 26, 4));
+        configured("cloud/layer_blue", "aercloud", cloud(blue, "streak", 12, 20, 3));
+        configured("cloud/layer_golden", "aercloud", cloud(golden, "streak", 8, 16, 2));
+        configured("cloud/layer_golden_puff", "aercloud", cloud(golden, "puff", 4, 6, 2));
+        configured("cloud/layer_sterling", "aercloud", cloud(sterling, "streak", 10, 18, 2), "deep_aether");
+        // tall y 0-45, 45-100: few low down, more higher up
+        layer("cloud/layer_cold_low", "cloud/layer_cold", 0.01, 43, 73);
+        layer("cloud/layer_cold_high", "cloud/layer_cold", 0.035, 73, 109);
+        // tall y 80-175, overlapping the cold below and the gold above
+        layer("cloud/layer_blue", "cloud/layer_blue", 0.09, 96, 159);
+        // tall y 155-235, the Highlands' own
+        layer("cloud/layer_golden", "cloud/layer_golden", 0.09, 146, 199);
+        layer("cloud/layer_golden_puff", "cloud/layer_golden_puff", 0.05, 146, 199);
+        placed("cloud/layer_sterling", "cloud/layer_sterling", Placement.list(
+                Placement.heightRange("uniform", Placement.absolute(203), Placement.absolute(243)),
+                Placement.inSquare(), Placement.configCount(0.03, "aerclouds"), Placement.biome(), dungeonBlacklist()),
+                "deep_aether");
+        for (String layer : List.of("cloud/layer_cold_low", "cloud/layer_cold_high", "cloud/layer_blue",
+                "cloud/layer_golden", "cloud/layer_golden_puff")) {
+            addFeature(layer, List.of(IS_AETHER), "top_layer_modification");
+        }
+        addFeature("cloud/layer_sterling", List.of(IS_AETHER), "top_layer_modification", "deep_aether");
 
         JsonObject bridge = new JsonObject();
         bridge.add("block", cold);
         configured("cloud/rift_bridge", "aercloud_bridge", bridge);
         placed("cloud/rift_bridge", "cloud/rift_bridge", Placement.list(Placement.configCount(1.2, "aerclouds"),
                 Placement.inSquare(), Placement.islandEdge(12, 16), Placement.biome()));
+    }
+
+    /** One band of the sky's clouds: {@code perChunk} of them between two stock-Aether heights. */
+    private void layer(String name, String configured, double perChunk, int stockMin, int stockMax) {
+        placed(name, configured, Placement.list(
+                Placement.heightRange("uniform", Placement.absolute(stockMin), Placement.absolute(stockMax)),
+                Placement.inSquare(), Placement.configCount(perChunk, "aerclouds"), Placement.biome(),
+                dungeonBlacklist()));
     }
 
     /** Clouds anchor over the surface, so they sit near the terrain they decorate rather than in empty sky. */

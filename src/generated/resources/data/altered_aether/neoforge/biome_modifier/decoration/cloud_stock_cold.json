@@ -2,7 +2,9 @@
   "type": "neoforge:remove_features",
   "biomes": "#aether:is_aether",
   "features": [
-    "aether:cold_aercloud"
+    "aether:cold_aercloud",
+    "aether:blue_aercloud",
+    "aether:golden_aercloud"
   ],
   "steps": "top_layer_modification"
 }

@@ -1,32 +1,31 @@
 {
-  "feature": "altered_aether:cloud/mass",
+  "feature": "altered_aether:cloud/layer_golden",
   "placement": [
     {
       "type": "minecraft:height_range",
       "height": {
         "type": "minecraft:uniform",
         "max_inclusive": {
-          "absolute": 96
+          "absolute": 199
         },
         "min_inclusive": {
-          "absolute": 32
+          "absolute": 146
         }
       }
-    },
-    {
-      "type": "minecraft:rarity_filter",
-      "chance": 9
     },
     {
       "type": "minecraft:in_square"
     },
     {
       "type": "altered_aether:config_count",
-      "count": 2.0,
+      "count": 0.09,
       "key": "aerclouds"
     },
     {
       "type": "minecraft:biome"
+    },
+    {
+      "type": "aether:dungeon_blacklist_filter"
     }
   ]
 }
