@@ -144,13 +144,13 @@ public final class RegionBinding {
         BasinCarve carve = carves.isEmpty() ? null : carves.getFirst();
         Atoll atoll = atolls.isEmpty() ? null : atolls.getFirst();
         TerrainProbe probe = new TerrainProbe(source, randomState.sampler(), carve == null ? null : carve.argument(),
-                atoll == null ? null : atoll.weight(), noise.minY(), noise.minY() + noise.height());
+                atoll == null ? null : atoll.weight(), noise.minY(), mainTop(noise));
         double vertical = carve != null ? carve.verticalScale() : atoll != null ? atoll.verticalScale() : 1;
         BasinField basins = null;
         if (carve != null || atoll != null) {
             // The atolls read their height off the land as it is before any of them is laid over it.
             TerrainProbe hosts = atoll == null ? null : new TerrainProbe(source, randomState.sampler(), atoll.argument(),
-                    atoll.weight(), noise.minY(), noise.minY() + noise.height());
+                    atoll.weight(), noise.minY(), mainTop(noise));
             BasinField field = new BasinField(level.getSeed(), probe, hosts, vertical,
                     atoll == null ? null : new BasinField.AtollSettings(atoll.surface(), atoll.verticalScale()));
             carves.forEach(c -> c.binding().bind(field));
@@ -163,7 +163,7 @@ public final class RegionBinding {
         if (!breaks.isEmpty()) {
             GroveBreak first = breaks.getFirst();
             breakField = new BreakField(level.getSeed(), new TerrainProbe(source, randomState.sampler(),
-                    first.argument(), atoll == null ? null : atoll.weight(), noise.minY(), noise.minY() + noise.height()),
+                    first.argument(), atoll == null ? null : atoll.weight(), noise.minY(), mainTop(noise)),
                     first.verticalScale());
             BreakField bound = breakField;
             breaks.forEach(b -> b.binding().bind(bound));
@@ -180,6 +180,16 @@ public final class RegionBinding {
         }
     }
 
+    /**
+     * The top of the main island band, where every probe stops: the noise band itself reaches higher, for the
+     * Highlands floating above, and a probe looking for the ground must never land on one of those.
+     */
+    public static final int MAIN_TOP = 128;
+
+    private static int mainTop(NoiseSettings noise) {
+        return Math.min(noise.minY() + noise.height(), MAIN_TOP);
+    }
+
     /** The biome edge distances, read off the same biome map the world generates with. */
     private static void bindEdges(ServerLevel level, RandomState randomState, BiomeSource source, List<BiomeEdge> edges) {
         if (edges.isEmpty() || !(level.getChunkSource().getGenerator() instanceof NoiseBasedChunkGenerator generator)) {
@@ -187,7 +197,7 @@ public final class RegionBinding {
         }
         NoiseSettings noise = generator.generatorSettings().value().noiseSettings();
         BiomeEdgeField field = new BiomeEdgeField(new TerrainProbe(source, randomState.sampler(), null, null,
-                noise.minY(), noise.minY() + noise.height()));
+                noise.minY(), mainTop(noise)));
         edges.forEach(edge -> edge.binding().bind(field.solver(edge.classifier(), edge.reach())));
         BiomeEdgeField.put(level.dimension(), field);
     }

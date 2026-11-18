@@ -80,7 +80,10 @@ public final class AATerrainProvider extends JsonDataProvider {
             Set.of("crag_3d_noise", "jag", "crags", "tempest", "tempest_spires", "dune_ridges", "dune_centre", "dune_sheet",
                     "plateau", "plateau_terraced", "island", "tall_base_3d_noise", "rift",
                     "grove_land", "grove_land_broken", "island_sea", "island_high", "cloud_sea_mask", "cloud_sea_sheet",
-                    "cloud_sea_land", "island_mass");
+                    "cloud_sea_land", "island_mass", "highlands");
+
+    /** Where the Highlands start, in tall-Aether blocks: above the main island band's top (y 128) in both modes. */
+    private static final int HIGHLANDS_FLOOR = 140;
 
     private final HeightMode mode;
 
@@ -174,6 +177,10 @@ public final class AATerrainProvider extends JsonDataProvider {
         noise("cloud_sea_root", -5, 1.0, 0.5);
         // How wide the open sky between two groups of biomes is, varying along the border every hundred-odd blocks.
         noise("gap_width", -7, 1.0, 0.5);
+        // The Highlands: islets on a 64-block footprint noise, their heights drifting on a 256-block one.
+        noise("highlands_footprint", -6, 1.0, 0.5, 0.25);
+        noise("highlands_level", -8, 1.0, 0.5);
+        noise("highlands_root", -5, 1.0, 0.5);
     }
 
     private void noise(String name, int firstOctave, double... amplitudes) {
@@ -334,6 +341,27 @@ public final class AATerrainProvider extends JsonDataProvider {
                 ramp(add(terrain("ours_edge"), mul(-1.0, terrain("group_edge"))), -0.5, 0.25));
         df("gap_cut", flatCache(max(otherSide, betweenOurs)));
 
+        // The Highlands: small islets floating high over the Aether's own biomes, Deep Aether's, the plateau and the
+        // flower bowls, but never over the peaks, dunes, giant-tree biomes or groves. Each islet is a lens on a
+        // footprint noise, 20 to 60 blocks across: a gently domed top at y 175..233 (tall) and an underside hanging
+        // 8 to 30 blocks beneath, deepest under its middle. They fade out 24 blocks short of a biome they can't float
+        // over, so none straddles the border.
+        JsonObject allowed = Df.type(NS + "biome_edge");
+        allowed.addProperty("classifier", "highlands");
+        allowed.addProperty("reach", 32);
+        allowed.addProperty("inside", 1);
+        df("highlands_allowed", flatCache(ramp(allowed, -0.25, 1.0 / 24)));
+        JsonObject core = flatCache(ramp(shiftedNoise(NS + "highlands_footprint", 1.0, 0.0), -0.42 * 5, 5.0));
+        JsonObject isletLevel = add(mode.y(200), mul(mode.height(26), flatCache(shiftedNoise(NS + "highlands_level", 1.0, 0.0))));
+        JsonObject islandTop = add(isletLevel, mul(mode.height(7), core));
+        JsonObject isletBottom = add(isletLevel, mul(-mode.height(1), add(8.0, mul(22.0, mul(core,
+                add(0.7, mul(0.3, shiftedNoise(NS + "highlands_root", 1.0, 0.0))))))));
+        JsonObject lens = min(min(mul(0.125, add(islandTop, mul(-1.0, Df.y()))),
+                        mul(1.0 / 6, add(Df.y(), mul(-1.0, isletBottom)))),
+                add(mul(8.0, add(flatCache(shiftedNoise(NS + "highlands_footprint", 1.0, 0.0)), -0.42)),
+                        mul(10.0, add(terrain("highlands_allowed"), -1.0))));
+        df("highlands", add(lens, mul(0.3, terrain("jag"))));
+
         if (mode == HeightMode.TALL) {
             // The Aether's own island noise, stretched to the taller band (y_factor 160 -> 240).
             df("tall_base_3d_noise", oldBlendedNoise(0.25, 0.25, 80.0, 240.0, 8.0));
@@ -428,11 +456,15 @@ public final class AATerrainProvider extends JsonDataProvider {
         require(blend, "minecraft:blend_density");
 
         JsonElement island = blend.get("argument");
+        // The noise band reaches up past the islands for the Highlands: -64..255 in the tall Aether, 0..215 in the
+        // stock one. Above HIGHLANDS_FLOOR only the Highlands are evaluated, which costs a few cached 2D noises.
+        JsonObject noise = settings.getAsJsonObject("noise");
         if (mode == HeightMode.TALL) {
-            JsonObject noise = settings.getAsJsonObject("noise");
             noise.addProperty("min_y", -64);
-            noise.addProperty("height", 192);
+            noise.addProperty("height", 320);
             island = remapIsland(island);
+        } else {
+            noise.addProperty("height", 216);
         }
         // The island expression gets a file of its own, so every blend below refers to it rather than copying it.
         df("island", island);
@@ -476,7 +508,7 @@ public final class AATerrainProvider extends JsonDataProvider {
         // where there are none.
         atoll.addProperty("surface", mode.y(40));
         atoll.addProperty("vertical_scale", vertical());
-        blend.add("argument", atoll);
+        blend.add("argument", Df.rangeChoice(Df.y(), mode.y(HIGHLANDS_FLOOR), 4096, terrain("highlands"), atoll));
         // Basins are cut last, outside the interpolation, so their bowls and water lines are exact to the block.
         JsonObject carve = Df.type(NS + "basin_carve");
         carve.add("argument", squeeze);
