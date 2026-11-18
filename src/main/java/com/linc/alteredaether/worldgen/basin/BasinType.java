@@ -43,7 +43,9 @@ public enum BasinType {
             "aether:skyroot_forest", "aether:skyroot_woodland", "aether_plateau", "cascading_archwood_grove"),
     /** The big lake of the poisonous biomes: the vexing grove, and Deep Aether's yagroot swamp. */
     POISON_LAKE("poison_lake", 0.8, 85, 130, 6, 11, Fluid.POISON, "vexing_archwood_grove",
-            "deep_aether:yagroot_swamp");
+            "deep_aether:yagroot_swamp"),
+    /** A frozen tarn in the crags' valleys: a big lake at a tarn's size, iced over, with a shore of packed ice. */
+    FROZEN_LAKE("frozen_lake", 0.8, 28, 46, 5, 9, Fluid.FROZEN, "frozen_crags");
 
     public enum Fluid {
         WATER,
@@ -83,7 +85,7 @@ public enum BasinType {
 
     /** One of the big lakes, shaped by a {@link LakeShape} on the lake grid. */
     public boolean lake() {
-        return this == LAKE || this == POISON_LAKE;
+        return this == LAKE || this == POISON_LAKE || this == FROZEN_LAKE;
     }
 
     boolean suits(String biome) {

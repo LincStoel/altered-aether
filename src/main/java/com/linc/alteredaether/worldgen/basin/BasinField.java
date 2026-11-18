@@ -495,7 +495,8 @@ public final class BasinField {
         double roll = random.nextDouble();
         double r1 = random.nextDouble(), r2 = random.nextDouble();
         long shapeSeed = random.nextLong();
-        if (roll >= Math.max(chances[BasinType.LAKE.ordinal()], chances[BasinType.POISON_LAKE.ordinal()])) {
+        if (roll >= Math.max(Math.max(chances[BasinType.LAKE.ordinal()], chances[BasinType.POISON_LAKE.ordinal()]),
+                chances[BasinType.FROZEN_LAKE.ordinal()])) {
             return null;
         }
         double outline = Mth.lerp(r1, BasinType.LAKE.minRadius, BasinType.LAKE.maxRadius);
@@ -510,9 +511,16 @@ public final class BasinField {
             int z = cz * LAKE_CELL + LAKE_CELL / 2 + random.nextInt(2 * jitter + 1) - jitter;
             String biome = biomeAt(x, z);
             BasinType type = BasinType.POISON_LAKE.suits(biome) ? BasinType.POISON_LAKE
-                    : BasinType.LAKE.suits(biome) ? BasinType.LAKE : null;
+                    : BasinType.LAKE.suits(biome) ? BasinType.LAKE
+                    : BasinType.FROZEN_LAKE.suits(biome) ? BasinType.FROZEN_LAKE : null;
             if (type == null || roll >= chances[type.ordinal()]) {
                 continue;
+            }
+            if (type == BasinType.FROZEN_LAKE) {
+                // A tarn: the same outline drawn at a tarn's size.
+                double tarn = Mth.lerp(r1, type.minRadius, type.maxRadius) * scale;
+                shape = new LakeShape(shapeSeed, tarn, (int) Math.round(LAKE_PLANE * vertical));
+                extent = BasinSite.lake(type, 0, 0, 0, 0, shape).extent();
             }
             if (!clearOfAtolls(x, z, extent)) {
                 reject("lake_atoll");

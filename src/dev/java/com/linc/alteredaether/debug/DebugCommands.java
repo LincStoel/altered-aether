@@ -585,9 +585,11 @@ public final class DebugCommands {
                 origin = new BlockPos(found.x(), 64, found.z());
                 AlteredAether.LOGGER.info("Worldgen benchmark: centred on {} at {}: {}", biome, origin.toShortString(),
                         found);
-            } else if (biome != null && (biome.equals("lake") || biome.equals("lake:poison"))) {
+            } else if (biome != null && (biome.equals("lake") || biome.equals("lake:poison")
+                    || biome.equals("lake:frozen"))) {
                 // The nearest big lake, searched outward ring by ring over the lake grid.
-                BasinType type = biome.equals("lake") ? BasinType.LAKE : BasinType.POISON_LAKE;
+                BasinType type = biome.equals("lake") ? BasinType.LAKE
+                        : biome.equals("lake:frozen") ? BasinType.FROZEN_LAKE : BasinType.POISON_LAKE;
                 BasinField field = BasinField.get(THE_AETHER);
                 int cell = field == null ? 1 : field.lakeCell();
                 int ox = Math.floorDiv(origin.getX(), cell), oz = Math.floorDiv(origin.getZ(), cell);

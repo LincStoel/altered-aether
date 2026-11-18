@@ -247,6 +247,7 @@ public final class BasinFillFeature extends Feature<NoneFeatureConfiguration> {
     /**
      * The shore a big lake takes, the same for the whole lake: mostly quicksoil, as round the Aether II's lakes, or
      * with Deep Aether its mud, which the poison lakes favour; now and then none, the grass running down to the water.
+     * A frozen tarn's shore is always packed ice.
      */
     @org.jetbrains.annotations.Nullable
     public static BlockState lakeShore(BasinField field, BasinSite site) {
@@ -254,6 +255,9 @@ public final class BasinFillFeature extends Feature<NoneFeatureConfiguration> {
         Block mud = AACommonConfig.COMPAT_ENABLED.get("deep_aether").get() ? block("deep_aether:aether_mud", null) : null;
         Block quicksoil = block("aether:quicksoil", Blocks.SAND);
         Block shore;
+        if (site.type() == BasinType.FROZEN_LAKE) {
+            return Blocks.PACKED_ICE.defaultBlockState();
+        }
         if (site.type().fluid() == BasinType.Fluid.POISON) {
             shore = mud != null ? roll < 0.7f ? mud : null : roll < 0.6f ? quicksoil : null;
         } else if (mud != null) {
@@ -452,7 +456,7 @@ public final class BasinFillFeature extends Feature<NoneFeatureConfiguration> {
         Block clay = mud != null ? mud : lakeShore != null && !lakeShore.is(block("aether:quicksoil", Blocks.SAND))
                 ? lakeShore.getBlock() : Blocks.CLAY;
         Block bed = switch (site.type()) {
-            case FROZEN_POOL -> block("aether:holystone", Blocks.STONE);
+            case FROZEN_POOL, FROZEN_LAKE -> block("aether:holystone", Blocks.STONE);
             default -> patch > 0.45 ? clay : patch < -0.5 ? block("aether:mossy_holystone", Blocks.MOSSY_COBBLESTONE)
                     : block("aether:aether_dirt", Blocks.DIRT);
         };

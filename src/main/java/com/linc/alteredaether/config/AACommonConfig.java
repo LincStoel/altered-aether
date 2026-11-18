@@ -160,7 +160,7 @@ public final class AACommonConfig {
 
     public static final List<String> BASIN_TYPES =
             List.of("pool", "deep_lake", "cascading_lake", "frozen_pool", "poison_pool", "atoll_lagoon", "lake",
-                    "poison_lake");
+                    "poison_lake", "frozen_lake");
     public static final List<String> FEATURE_FAMILIES =
             List.of("boulders", "copper_spikes", "aerclouds", "rift_debris", "totems", "ruins", "craters",
                     "dried_ghast_fields", "snow_drifts", "hanging_chains", "vegetation", "ancient_boulders");
