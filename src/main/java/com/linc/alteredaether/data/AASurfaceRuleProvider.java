@@ -53,6 +53,8 @@ public final class AASurfaceRuleProvider extends JsonDataProvider {
     private static final String MUD = "deep_aether:aether_mud[double_drops=true]";
     private static final String QUICKSAND = "deep_aether:virulent_quicksand";
     private static final String CLORITE = "deep_aether:clorite";
+    private static final String ASETERITE = "deep_aether:aseterite";
+    private static final String PACKED_ICE = "minecraft:packed_ice";
 
     private static final String PLATEAU = biome("aether_plateau");
     private static final String CRAGS = biome("frozen_crags");
@@ -72,6 +74,7 @@ public final class AASurfaceRuleProvider extends JsonDataProvider {
     protected void generate() {
         data("surface_rules", AlteredAether.id("aether"), seq(
                 when(stoneDepth(false), floor()),
+                when(ceiling(1), underside()),
                 when(stoneDepth(true), under()),
                 body()));
     }
@@ -179,11 +182,51 @@ public final class AASurfaceRuleProvider extends JsonDataProvider {
     }
 
     /**
+     * The undersides of the islands (and the roofs of caves), two blocks deep, mottled: patches of mossy holystone and
+     * bare Aether dirt everywhere, and packed ice under the crags, the peaks and the tundra. Anything not matched keeps
+     * the rock the body rules give it.
+     */
+    private static JsonObject underside() {
+        return seq(
+                when(inBiome(CRAGS, TEMPEST, TUNDRA), when(noiseBand("minecraft:surface", 0.25, BIG), block(PACKED_ICE))),
+                when(noiseBand("minecraft:surface", 0.3, BIG), block(MOSSY_HOLYSTONE)),
+                when(noiseBand("minecraft:surface_secondary", 0.3, BIG), block(DIRT)));
+    }
+
+    /**
+     * Blobs of {@code rule}'s block through the rock, {@code size} blocks across. {@code threshold} sets their share
+     * of the rock: 0.58 is about 6%, 0.45 12%, 0.40 15%, 0.21 30% (measured on the lattice noise).
+     */
+    private static JsonObject patches(JsonObject rule, double size, double flatten, double threshold, int salt) {
+        JsonObject json = typed("altered_aether:stone_patches");
+        json.add("then_run", rule);
+        json.addProperty("size", size);
+        json.addProperty("flatten", flatten);
+        json.addProperty("threshold", threshold);
+        json.addProperty("salt", salt);
+        return json;
+    }
+
+    private static JsonObject ceiling(int offset) {
+        JsonObject json = typed("minecraft:stone_depth");
+        json.addProperty("add_surface_depth", false);
+        json.addProperty("offset", offset);
+        json.addProperty("secondary_depth_range", 0);
+        json.addProperty("surface_type", "ceiling");
+        return json;
+    }
+
+    /**
      * The island bodies. Anything not matched here keeps the dimension's holystone. The plateau's body is banded
      * rock, so every mesa cliff shows sedimentary layers.
      */
     private static JsonObject body() {
         return seq(
+                // Lenses of packed ice in the crags and the peaks, Deep Aether's aseterite through the rift's columns,
+                // and quicksoil seams in the dunes' sheets.
+                when(inBiome(CRAGS, TEMPEST, TUNDRA), patches(block(PACKED_ICE), 10, 0.6, 0.58, 1)),
+                when(inBiome(RIFT), patches(substitute(ASETERITE), 12, 1.0, 0.45, 2)),
+                when(inBiome(DUNES), patches(block(QUICKSOIL), 24, 0.15, 0.40, 3)),
                 when(inBiome(PLATEAU), plateauStrata()),
                 when(inBiome(CRAGS), seq(
                         when(noiseBand("minecraft:surface_secondary", 0.18, BIG), substitute(CLORITE)),

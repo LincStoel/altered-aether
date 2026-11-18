@@ -398,6 +398,7 @@ public final class AARegistries {
         SURFACE_CONDITIONS.register("steep", () -> Steep.MAP_CODEC);
         SURFACE_CONDITIONS.register("island_position", () -> IslandPosition.MAP_CODEC);
         SURFACE_RULES.register("strata", () -> Strata.MAP_CODEC);
+        SURFACE_RULES.register("stone_patches", () -> com.linc.alteredaether.worldgen.surface.StonePatches.MAP_CODEC);
         SURFACE_RULES.register("substitute_block", () -> SubstituteBlock.MAP_CODEC);
     }
 

@@ -940,6 +940,83 @@
       "type": "minecraft:condition",
       "if_true": {
         "type": "minecraft:stone_depth",
+        "add_surface_depth": false,
+        "offset": 1,
+        "secondary_depth_range": 0,
+        "surface_type": "ceiling"
+      },
+      "then_run": {
+        "type": "minecraft:sequence",
+        "sequence": [
+          {
+            "type": "minecraft:condition",
+            "if_true": {
+              "type": "minecraft:biome",
+              "biome_is": [
+                "altered_aether:frozen_crags",
+                "altered_aether:tempest_peaks",
+                "altered_aether:snow_tundra"
+              ]
+            },
+            "then_run": {
+              "type": "minecraft:condition",
+              "if_true": {
+                "type": "minecraft:noise_threshold",
+                "max_threshold": 4.0,
+                "min_threshold": 0.25,
+                "noise": "minecraft:surface"
+              },
+              "then_run": {
+                "type": "minecraft:block",
+                "result_state": {
+                  "Name": "minecraft:packed_ice"
+                }
+              }
+            }
+          },
+          {
+            "type": "minecraft:condition",
+            "if_true": {
+              "type": "minecraft:noise_threshold",
+              "max_threshold": 4.0,
+              "min_threshold": 0.3,
+              "noise": "minecraft:surface"
+            },
+            "then_run": {
+              "type": "minecraft:block",
+              "result_state": {
+                "Name": "aether:mossy_holystone",
+                "Properties": {
+                  "double_drops": "true"
+                }
+              }
+            }
+          },
+          {
+            "type": "minecraft:condition",
+            "if_true": {
+              "type": "minecraft:noise_threshold",
+              "max_threshold": 4.0,
+              "min_threshold": 0.3,
+              "noise": "minecraft:surface_secondary"
+            },
+            "then_run": {
+              "type": "minecraft:block",
+              "result_state": {
+                "Name": "aether:aether_dirt",
+                "Properties": {
+                  "double_drops": "true"
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "type": "minecraft:condition",
+      "if_true": {
+        "type": "minecraft:stone_depth",
         "add_surface_depth": true,
         "offset": 0,
         "secondary_depth_range": 0,
@@ -1067,6 +1144,85 @@
     {
       "type": "minecraft:sequence",
       "sequence": [
+        {
+          "type": "minecraft:condition",
+          "if_true": {
+            "type": "minecraft:biome",
+            "biome_is": [
+              "altered_aether:frozen_crags",
+              "altered_aether:tempest_peaks",
+              "altered_aether:snow_tundra"
+            ]
+          },
+          "then_run": {
+            "type": "altered_aether:stone_patches",
+            "flatten": 0.6,
+            "salt": 1,
+            "size": 10.0,
+            "then_run": {
+              "type": "minecraft:block",
+              "result_state": {
+                "Name": "minecraft:packed_ice"
+              }
+            },
+            "threshold": 0.58
+          }
+        },
+        {
+          "type": "minecraft:condition",
+          "if_true": {
+            "type": "minecraft:biome",
+            "biome_is": [
+              "altered_aether:shattered_rift"
+            ]
+          },
+          "then_run": {
+            "type": "altered_aether:stone_patches",
+            "flatten": 1.0,
+            "salt": 2,
+            "size": 12.0,
+            "then_run": {
+              "type": "altered_aether:substitute_block",
+              "candidates": [
+                {
+                  "Name": "deep_aether:aseterite"
+                },
+                {
+                  "Name": "aether:holystone",
+                  "Properties": {
+                    "double_drops": "true"
+                  }
+                }
+              ]
+            },
+            "threshold": 0.45
+          }
+        },
+        {
+          "type": "minecraft:condition",
+          "if_true": {
+            "type": "minecraft:biome",
+            "biome_is": [
+              "altered_aether:windswept_dunes"
+            ]
+          },
+          "then_run": {
+            "type": "altered_aether:stone_patches",
+            "flatten": 0.15,
+            "salt": 3,
+            "size": 24.0,
+            "then_run": {
+              "type": "minecraft:block",
+              "result_state": {
+                "Name": "aether:quicksoil",
+                "Properties": {
+                  "double_drops": "true"
+                }
+              }
+            },
+            "threshold": 0.4
+          }
+        },
         {
           "type": "minecraft:condition",
           "if_true": {
