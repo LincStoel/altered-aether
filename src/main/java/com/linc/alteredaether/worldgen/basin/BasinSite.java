@@ -40,6 +40,8 @@ public record BasinSite(BasinType type, int x, int z, double radius, double dept
     public static final int SHORE_REACH = 14;
     /** How far past a big lake's shore its sloping bank reaches; ground standing higher beyond is left as a cliff. */
     static final double LAKE_BANK = 18;
+    /** How far past a big lake's shore it builds a lip of ground to hold its water where the island has none. */
+    static final double LAKE_LIP = 4;
 
     public BasinSite(BasinType type, int x, int z, double radius, double depth, int waterLevel, double phase1,
                      double phase2) {
@@ -146,7 +148,7 @@ public record BasinSite(BasinType type, int x, int z, double radius, double dept
         }
         run[1] = waterLevel + lake.plane();
         if (lake.wet(dx, dz)) {
-            run[0] = (int) Math.floor(waterLevel + 1 - depth * lake.depthShare(dx, dz));
+            run[0] = lakeBed(px, pz);
             return true;
         }
         double beyond = lake.beyond(dx, dz);
@@ -155,6 +157,35 @@ public record BasinSite(BasinType type, int x, int z, double radius, double dept
         }
         run[0] = (int) Math.floor(waterLevel + Math.max(0, beyond) / BANK_SLOPE);
         return true;
+    }
+
+    /**
+     * The ground a big lake builds under itself where it runs past the island's edge, as the run
+     * {@code run[0] <= y <= run[1]}: under the water it hangs from the bed, deepening inward to a couple of dozen
+     * blocks, and for {@link #LAKE_LIP} blocks past the shore it stands up to the bank as a lip that holds the water.
+     * Only open blocks of it are filled, from the top down to the first solid one, so it joins whatever island is there.
+     *
+     * @return false where the lake builds nothing in the column
+     */
+    public boolean lakeUnderpin(int px, int pz, int[] run) {
+        if (lake == null || !lakeColumn(px, pz, run)) {
+            return false;
+        }
+        int dx = px - x, dz = pz - z;
+        double beyond = lake.beyond(dx, dz);
+        if (beyond > LAKE_LIP) {
+            return false;
+        }
+        int top = run[0];
+        double hang = 3 + Math.min(22, 0.6 * (LAKE_LIP - beyond)) + 2 * lake.undersideNoise(dx, dz);
+        run[1] = top;
+        run[0] = top - (int) Math.round(Math.max(2, hang));
+        return true;
+    }
+
+    /** A big lake's bed in a column under its water: the solid block the water rests on. */
+    public int lakeBed(int px, int pz) {
+        return (int) Math.floor(waterLevel + 1 - depth * lake.depthShare(px - x, pz - z));
     }
 
     public boolean isLake() {

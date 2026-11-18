@@ -1,8 +1,0 @@
-{
-  "type": "minecraft:flat_cache",
-  "argument": {
-    "type": "altered_aether:biome_edge",
-    "classifier": "group",
-    "reach": 40
-  }
-}

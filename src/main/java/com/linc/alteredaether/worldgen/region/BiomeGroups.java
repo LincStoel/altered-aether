@@ -24,13 +24,10 @@ import java.util.function.ToIntFunction;
  */
 public enum BiomeGroups {
     /**
-     * The landmasses. Open sky separates one group from the next: Peaks (the crags, tempest, rift and the tundra
-     * round them), Woodland (the plateau, the giant-tree biomes, the groves and the flower bowl), the Dunes on their
+     * The landmasses: Peaks (the crags, tempest, rift and the tundra round them), Woodland (the plateau, the giant-tree biomes, the groves and the flower bowl), the Dunes on their
      * own, and Other (the Aether's own biomes, Deep Aether's, and any other mod's).
      */
     GROUP(BiomeGroups::group),
-    /** Our groups (1) against everything else (0): where the open sky between them is cut on the other side. */
-    OURS(biome -> group(biome) != 0 ? 1 : 0),
     /** The snow tundra against everything else; its drifts fade out toward the tundra's edge. */
     TUNDRA(biome -> biome.equals(BiomeTable.TUNDRA) ? 1 : 0),
     /** The flower bowl against everything else; its rim follows the distance in from the bowl's edge. */

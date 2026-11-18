@@ -104,6 +104,7 @@ public final class AATerrainProvider extends JsonDataProvider {
             dimensionType();
             quicksoilShelf();
             aetherStructures();
+            airshipVillage();
             endSea();
             packMeta();
         }
@@ -123,6 +124,16 @@ public final class AATerrainProvider extends JsonDataProvider {
         json.addProperty("depth_gradient", 1.0);
         json.addProperty("drag", 1.0);
         data("end_sea", ResourceLocation.fromNamespaceAndPath("simulated", "the_aether"), json);
+    }
+
+    /**
+     * The airship village floats clear over the Highlands in the tall Aether: their islets top out about y 240 with
+     * their trees, the ships hang about 21 blocks under the start, and the balloons rise about 35 over it, so it starts
+     * at y 272..281 (stock heights 224..230, stretched). The stock Aether has no Highlands and keeps its own heights.
+     */
+    private void airshipVillage() {
+        data("worldgen/structure", com.linc.alteredaether.AlteredAether.id("airship_village"),
+                AACompatProvider.airshipVillageStructure(224, 230), "integrated_villages");
     }
 
     private void packMeta() {
@@ -175,7 +186,7 @@ public final class AATerrainProvider extends JsonDataProvider {
         noise("cloud_sea_level", -8, 1.0, 0.5);
         noise("cloud_sea_roll", -7, 1.0, 0.5);
         noise("cloud_sea_root", -5, 1.0, 0.5);
-        // How wide the open sky between two groups of biomes is, varying along the border every hundred-odd blocks.
+        // A width varying along a biome border every hundred-odd blocks (the cloud seas' channels).
         noise("gap_width", -7, 1.0, 0.5);
         // The Highlands: islets on a 64-block footprint noise, their heights drifting on a 256-block one.
         noise("highlands_footprint", -6, 1.0, 0.5, 0.25);
@@ -338,7 +349,7 @@ public final class AATerrainProvider extends JsonDataProvider {
         // Flower Bowl: an island raised round its edges and sinking gently toward the middle, an irregular bowl of
         // meadow. The rim follows the biome's own edge: from it the ground climbs over 10 blocks to a crest 14 to 26
         // blocks above the floor (lower where a notch cuts it), then eases down over 26 blocks to a broad flat floor
-        // at y 36 (tall). The land itself follows the biome exactly, rather than a soft climate window. Beyond the rim, the open sky the groups keep between them makes the outer face a cliff.
+        // at y 36 (tall). The land itself follows the biome exactly, rather than a soft climate window.
         JsonObject bowlEdge = Df.type(NS + "biome_edge");
         bowlEdge.addProperty("classifier", "bowl");
         bowlEdge.addProperty("reach", 64);
@@ -371,31 +382,6 @@ public final class AATerrainProvider extends JsonDataProvider {
         df("grove_weight", mul(terrain("region_mask"), terrain("grove_mask")));
         df("tundra_weight", mul(terrain("region_mask"), terrain("tundra_mask")));
         df("bowl_weight", mul(terrain("region_mask"), clamp(mul(1.0 / 3, terrain("bowl_edge")), 0.0, 1.0)));
-
-        // Open sky between groups of biomes (BiomeGroups: peaks, woodland, dunes, and everything else), so each group
-        // reads as its own landmass. Where one of our groups meets the rest of the Aether, the rest gives way: its land
-        // is cut back 24 to 48 blocks from the border (varying along it, easing out over 6), and ours keeps its full
-        // extent, so even a small patch of tundra survives. Where two of our groups meet, each gives up half.
-        JsonObject ours = Df.type(NS + "biome_edge");
-        ours.addProperty("classifier", "ours");
-        ours.addProperty("reach", 64);
-        ours.addProperty("inside", 1);
-        ours.addProperty("signed", true);
-        df("ours_edge", flatCache(ours));
-        JsonObject groupEdge = Df.type(NS + "biome_edge");
-        groupEdge.addProperty("classifier", "group");
-        groupEdge.addProperty("reach", 40);
-        df("group_edge", flatCache(groupEdge));
-        df("gap_width", flatCache(add(36.0, mul(12.0, shiftedNoise(NS + "gap_width", 1.0, 0.0)))));
-        // Outside our groups: cut within the full width of the border, fading out a couple of blocks inside ours.
-        JsonObject otherSide = mul(ramp(add(terrain("gap_width"), terrain("ours_edge")), 0.0, 1.0 / 6),
-                ramp(terrain("ours_edge"), 1.0, -0.5));
-        // Inside ours: cut within half the width of another of our groups, unless that border is the rest of the
-        // Aether's (then the nearest other biome is no closer than the nearest other group).
-        JsonObject betweenOurs = mul(ramp(add(mul(0.5, terrain("gap_width")), mul(-1.0, terrain("group_edge"))),
-                        0.0, 1.0 / 6),
-                ramp(add(terrain("ours_edge"), mul(-1.0, terrain("group_edge"))), -0.5, 0.25));
-        df("gap_cut", flatCache(max(otherSide, betweenOurs)));
 
         // The Highlands: small islets floating high over the Aether's own biomes, Deep Aether's, the plateau and the
         // flower bowls, but never over the peaks, dunes, giant-tree biomes or groves. Each islet is a lens on a
@@ -568,8 +554,7 @@ public final class AATerrainProvider extends JsonDataProvider {
         // Atolls are set into whatever tier is beneath them, each kept wholly inside our region by its site check.
         JsonObject atoll = Df.type(NS + "atoll");
         JsonObject landforms = Df.choose(terrain("plateau_weight"), withCrags, terrain("plateau_terraced"));
-        // Open sky between the groups of biomes, cut before anything is sited on the land.
-        atoll.add("argument", Df.choose(terrain("gap_cut"), landforms, -1.0));
+        atoll.add("argument", landforms);
         atoll.add("weight", terrain("region_mask"));
         // Set-in atolls and double atolls take their height from the islands round them; this is a double atoll's
         // where there are none.

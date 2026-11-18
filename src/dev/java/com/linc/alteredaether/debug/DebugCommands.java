@@ -398,8 +398,7 @@ public final class DebugCommands {
 
     /**
      * The biome groups round the benchmark, 2 blocks a pixel: other biomes grey, peaks pale blue, woodland green, dunes
-     * yellow; red where other biomes are cut back from ours (36 blocks, the gap's middle width), orange where two of
-     * our groups each give up half.
+     * yellow.
      */
     private static void edgeMap(ServerLevel aether, String name, int minX, int minZ, int maxX, int maxZ) {
         var field = com.linc.alteredaether.worldgen.density.BiomeEdgeField.get(THE_AETHER);
@@ -408,28 +407,17 @@ public final class DebugCommands {
             return;
         }
         var solver = field.solver(com.linc.alteredaether.worldgen.region.BiomeGroups.GROUP, 40);
-        var ours = field.solver(com.linc.alteredaether.worldgen.region.BiomeGroups.OURS, 64);
         int scale = 2, w = (maxX - minX) / scale, h = (maxZ - minZ) / scale;
         java.awt.image.BufferedImage image = new java.awt.image.BufferedImage(w, h,
                 java.awt.image.BufferedImage.TYPE_INT_RGB);
         int[] colours = {0x808080, 0xC8DCF0, 0x3C963C, 0xE6C850};
         int[] counts = new int[4];
-        int near = 0, wide = 0;
         for (int j = 0; j < h; j++) {
             for (int i = 0; i < w; i++) {
                 int x = minX + i * scale, z = minZ + j * scale;
                 int group = solver.classAt(x, z);
-                double d = solver.distance(x, z), signed = ours.signed(x, z, 1);
                 counts[group]++;
-                int colour = colours[group];
-                if (signed < 0 && signed > -36) {
-                    colour = 0xD03030;
-                    near++;
-                } else if (signed > 0 && d < 18 && signed - d > 4) {
-                    colour = 0xE08A30;
-                    wide++;
-                }
-                image.setRGB(i, j, colour);
+                image.setRGB(i, j, colours[group]);
             }
         }
         massMap(aether, name.replace("_groups", "_mass"), minX, minZ, maxX, maxZ);
@@ -442,7 +430,8 @@ public final class DebugCommands {
             profile.append(String.format(" %d:%.0f", ground, bowl.inside(x, midZ, 1)));
         }
         AlteredAether.LOGGER.info("Profile {} (ground:bowl depth, every 8 blocks):{}", name, profile);
-        AlteredAether.LOGGER.info("Edge map {}: other {} peaks {} woodland {} dunes {} pixels; other cut {}, ours cut {}", name, counts[0], counts[1], counts[2], counts[3], near, wide);
+        AlteredAether.LOGGER.info("Edge map {}: other {} peaks {} woodland {} dunes {} pixels", name, counts[0], counts[1],
+                counts[2], counts[3]);
         try {
             java.nio.file.Path folder = aether.getServer().getServerDirectory().resolve("renders");
             java.nio.file.Files.createDirectories(folder);

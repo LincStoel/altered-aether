@@ -59,10 +59,6 @@ public final class BasinSealFeature extends Feature<NoneFeatureConfiguration> {
                     if (site.reach(x, z) > 1.3) {
                         continue;
                     }
-                    // A big lake spills off the island's edge, where a column has no ground under the water.
-                    if (site.isLake() && open(level, x, z, water, bottom, pos)) {
-                        continue;
-                    }
                     // Top down, so a block sealed here no longer counts as open beside the one under it.
                     for (int y = water; y >= bottom; y--) {
                         if (level.getBlockState(pos.set(x, y, z)).isAir() && besideWater(level, site, x, y, z)) {
@@ -74,18 +70,6 @@ public final class BasinSealFeature extends Feature<NoneFeatureConfiguration> {
             }
         }
         return placed;
-    }
-
-    /** Whether a column has no solid block from the water line down to the bottom of the search. */
-    private static boolean open(WorldGenLevel level, int x, int z, int water, int bottom,
-                                BlockPos.MutableBlockPos pos) {
-        for (int y = water; y > bottom; y--) {
-            BlockState state = level.getBlockState(pos.set(x, y, z));
-            if (!state.isAir() && state.getFluidState().isEmpty()) {
-                return false;
-            }
-        }
-        return true;
     }
 
     /** Whether the basin's own water lies over this block or beside it. */

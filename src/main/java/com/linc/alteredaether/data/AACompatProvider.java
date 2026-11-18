@@ -325,14 +325,25 @@ public final class AACompatProvider extends FeatureData {
     /**
      * Integrated Villages' airship village, set drifting through the Aether. Its own structure set puts it in the
      * overworld, and AirshipVillageSetMixin keeps that one from placing anywhere; this one is ours, with the village's
-     * own template pools, on the Aether's biomes. The start height is
-     * a stock-Aether height (166 to 176), which the tall Aether stretches to 185..200 like any other.
+     * own template pools, on the Aether's biomes. The start height is a stock-Aether height, 166 to 176; the tall pack
+     * replaces the structure with a higher one (see {@link #airshipVillageStructure}).
      */
     private void airshipVillage() {
+        data("worldgen/structure", com.linc.alteredaether.AlteredAether.id("airship_village"),
+                airshipVillageStructure(166, 176), "integrated_villages");
+        airshipVillageSet();
+    }
+
+    /**
+     * The airship village's structure, starting between two stock-Aether heights (the tall Aether stretches them like
+     * any other: {@code y' = -64 + 1.5 y}). Its ships hang about 21 blocks under the start and their balloons rise
+     * about 35 over it.
+     */
+    static JsonObject airshipVillageStructure(int minY, int maxY) {
         JsonObject start = new JsonObject();
         start.addProperty("type", "minecraft:uniform");
-        start.add("min_inclusive", Placement.absolute(166));
-        start.add("max_inclusive", Placement.absolute(176));
+        start.add("min_inclusive", Placement.absolute(minY));
+        start.add("max_inclusive", Placement.absolute(maxY));
         JsonObject structure = new JsonObject();
         structure.addProperty("type", "integrated_api:generic_structure");
         structure.addProperty("start_pool", "integrated_villages:airship_village/intersection");
@@ -346,9 +357,10 @@ public final class AACompatProvider extends FeatureData {
         structure.add("start_height", start);
         structure.addProperty("use_bounding_box_hack", false);
         structure.add("spawn_overrides", new JsonObject());
-        data("worldgen/structure", com.linc.alteredaether.AlteredAether.id("airship_village"), structure,
-                "integrated_villages");
+        return structure;
+    }
 
+    private void airshipVillageSet() {
         JsonObject placement = new JsonObject();
         placement.addProperty("type", "minecraft:random_spread");
         placement.addProperty("salt", 1982700830);

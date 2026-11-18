@@ -168,7 +168,7 @@ public final class BasinFillFeature extends Feature<NoneFeatureConfiguration> {
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
         List<BlockPos> beds = new ArrayList<>();
         List<int[]> filled = new ArrayList<>();
-        boolean placed = false;
+        boolean placed = site.isLake() && underpin(level, chunk, site, seal, pos);
         // Water first, so the seal pass below sees this chunk's columns as they'll finally be.
         for (int x = chunk.getMinBlockX(); x <= chunk.getMaxBlockX(); x++) {
             for (int z = chunk.getMinBlockZ(); z <= chunk.getMaxBlockZ(); z++) {
@@ -177,10 +177,6 @@ public final class BasinFillFeature extends Feature<NoneFeatureConfiguration> {
                 }
                 int waterBottom = waterBottom(level, site, x, z, bottom, pos);
                 if (waterBottom > water) {
-                    continue;
-                }
-                if (site.isLake() && waterBottom <= bottom) {
-                    // Past the island's edge: left dry, and the water beside it pours off.
                     continue;
                 }
                 for (int y = water; y >= waterBottom; y--) {
@@ -223,10 +219,6 @@ public final class BasinFillFeature extends Feature<NoneFeatureConfiguration> {
         for (int x = chunk.getMinBlockX(); x <= chunk.getMaxBlockX(); x++) {
             for (int z = chunk.getMinBlockZ(); z <= chunk.getMaxBlockZ(); z++) {
                 if (site.reach(x, z) > 1.3) {
-                    continue;
-                }
-                // A big lake is free to spill where the island ends; only its holes into the ground are sealed.
-                if (site.isLake() && waterBottom(level, site, x, z, bottom, pos) <= bottom) {
                     continue;
                 }
                 int own = site.inFootprint(x, z) ? waterBottom(level, site, x, z, bottom, pos) : water + 1;
@@ -346,6 +338,45 @@ public final class BasinFillFeature extends Feature<NoneFeatureConfiguration> {
     }
 
     /**
+     * Where a big lake runs past the island's edge, the ground it builds to hold itself up (see
+     * {@link BasinSite#lakeUnderpin}): rock under the water, and a lip past the shore, topped with grass (or with
+     * packed ice round a frozen tarn) over a little dirt. Only open blocks are filled, from the top of each column's run
+     * down to the first solid block, and the run is pure geometry, so a neighbouring chunk can count on it before it is
+     * built. Only this chunk's columns are written.
+     */
+    private static boolean underpin(WorldGenLevel level, ChunkPos chunk, BasinSite site, BlockState rock,
+                                    BlockPos.MutableBlockPos pos) {
+        BlockState grass = site.type() == BasinType.FROZEN_LAKE ? Blocks.PACKED_ICE.defaultBlockState()
+                : block("aether:aether_grass_block", Blocks.GRASS_BLOCK).defaultBlockState();
+        BlockState dirt = site.type() == BasinType.FROZEN_LAKE ? rock
+                : block("aether:aether_dirt", Blocks.DIRT).defaultBlockState();
+        int[] run = new int[2];
+        boolean placed = false;
+        for (int x = chunk.getMinBlockX(); x <= chunk.getMaxBlockX(); x++) {
+            for (int z = chunk.getMinBlockZ(); z <= chunk.getMaxBlockZ(); z++) {
+                if (!site.lakeUnderpin(x, z, run)) {
+                    continue;
+                }
+                boolean lip = !site.inFootprint(x, z), built = false;
+                for (int y = run[1]; y >= run[0]; y--) {
+                    if (!level.getBlockState(pos.set(x, y, z)).isAir()) {
+                        break;
+                    }
+                    int depth = run[1] - y;
+                    level.setBlock(pos, !lip ? rock : depth == 0 ? grass : depth < 3 ? dirt : rock,
+                            Block.UPDATE_CLIENTS);
+                    built = true;
+                }
+                if (built) {
+                    placed = true;
+                    FeatureStats.placed("lake_underpin");
+                }
+            }
+        }
+        return placed;
+    }
+
+    /**
      * The lowest block of the column's open run down from the water line: everything from here up holds water. The
      * run is measured on blocks as the noise left them, counting water already placed as open, and the reef grown in
      * it too, so a neighbouring chunk that runs before or after this one gets the same answer.
@@ -363,6 +394,11 @@ public final class BasinFillFeature extends Feature<NoneFeatureConfiguration> {
                 && !open(level.getBlockState(pos.set(x, water - 2, z)))) {
             return water - 1;
         }
+        // A big lake's own columns are underpinned to the bed wherever the island runs out under them, so a
+        // neighbouring chunk not yet built is read as it will be.
+        if (site.isLake() && site.inFootprint(x, z)) {
+            return Math.max(y + 1, site.lakeBed(x, z) + 1);
+        }
         return y + 1;
     }
 
@@ -372,12 +408,12 @@ public final class BasinFillFeature extends Feature<NoneFeatureConfiguration> {
         }
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
         int waterBottom = waterBottom(level, site, x, z, bottom, pos);
-        // A big lake leaves the columns past the island's edge dry.
-        return y >= waterBottom && !(site.isLake() && waterBottom <= bottom);
+        return y >= waterBottom;
     }
 
     /**
-     * Wakes a big lake's water wherever it stands beside open air, so it pours off the island's edge as the Aether
+     * Wakes a big lake's water wherever it stands beside open air (rare now that a lake builds a lip where the island
+     * runs out), so it pours off the island's edge as the Aether
      * II's lakes do, instead of waiting, frozen in place, for something to disturb it.
      */
     private static void spill(WorldGenLevel level, BasinSite site, BlockState liquid, int x, int z, int waterBottom,

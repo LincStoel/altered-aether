@@ -160,10 +160,6 @@ public final class Tour {
                     tarnShots(spawn, shots);
                     continue;
                 }
-                if (stop.equals("gap")) {
-                    gapShots(spawn, shots);
-                    continue;
-                }
                 if (stop.equals("highlands")) {
                     highlandsShots(spawn, shots);
                     continue;
@@ -295,58 +291,6 @@ public final class Tour {
             double x = found.x() + 0.5, z = found.z() + 0.5, w = found.waterLevel(), out = found.radius() * 0.9;
             shots.add(new Shot("tarn", x + out, w + 6, z + out * 0.4, x, w, z, 6000, false, false));
             shots.add(new Shot("tarn_above", x - out, w + out, z - out, x, w, z, 6000, false, false));
-        }
-
-        /**
-         * Open sky between one of our groups of biomes and the rest of the Aether: a spot in the middle of the gap,
-         * found outward from spawn, framed from high on the far side looking across it at our land, low along it, and
-         * from straight above.
-         */
-        private static void gapShots(BlockPos spawn, List<Shot> shots) {
-            var field = com.linc.alteredaether.worldgen.density.BiomeEdgeField.get(THE_AETHER);
-            if (field == null) {
-                AlteredAether.LOGGER.error("Tour: no biome edge field");
-                return;
-            }
-            var ours = field.solver(com.linc.alteredaether.worldgen.region.BiomeGroups.OURS, 64);
-            int[] found = null;
-            for (int r = 1; r < 200 && found == null; r++) {
-                for (int i = -r; i <= r && found == null; i++) {
-                    for (int[] p : new int[][]{{i, -r}, {i, r}, {-r, i}, {r, i}}) {
-                        int x = spawn.getX() + p[0] * 48, z = spawn.getZ() + p[1] * 48;
-                        double d = ours.signed(x, z, 1);
-                        if (d > 3 && d < 8) {
-                            found = new int[]{x, z};
-                            break;
-                        }
-                    }
-                }
-            }
-            if (found == null) {
-                AlteredAether.LOGGER.error("Tour: no gap found");
-                return;
-            }
-            int x = found[0], z = found[1];
-            // the way out across the gap: the bearing on which the signed distance falls fastest
-            double best = 1e9, bx = 1, bz = 0;
-            for (int d = 0; d < 16; d++) {
-                double a = d * Math.PI / 8, cx = Math.cos(a), cz = Math.sin(a);
-                double v = ours.signed(x + (int) (cx * 24), z + (int) (cz * 24), 1);
-                if (v < best) {
-                    best = v;
-                    bx = cx;
-                    bz = cz;
-                }
-            }
-            AlteredAether.LOGGER.info("Tour: edge of our land at {} {}, the gap toward {} {}", x, z, bx, bz);
-            // from just back from our land's edge, out across the gap to the land beyond
-            shots.add(new Shot("gap_across", x - bx * 20, 95, z - bz * 20, x + bx * 90, 55, z + bz * 90, 6000, false,
-                    false));
-            // from out over the gap, back at our land's cliff
-            shots.add(new Shot("gap_back", x + bx * 45 + bz * 50, 80, z + bz * 45 - bx * 50, x, 50, z, 6000, false,
-                    false));
-            shots.add(new Shot("gap_above", x + bx * 30 + 0.01, 190, z + bz * 30 + 0.5, x + bx * 30, 30, z + bz * 30,
-                    6000, false, false));
         }
 
         /** The Highlands, from below among the main islands looking up at them, among them, and from above. */

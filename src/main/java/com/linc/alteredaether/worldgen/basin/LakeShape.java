@@ -101,6 +101,11 @@ public final class LakeShape {
         return share * (0.8 + 0.2 * noise(seed ^ 0x1B873593L, dx / 14.0, dz / 14.0));
     }
 
+    /** A slow wobble in [-1, 1] for the underside of the ground a lake builds where the island runs out. */
+    public double undersideNoise(int dx, int dz) {
+        return noise(seed ^ 0x5851F42D4C957F2DL, dx / 9.0, dz / 9.0);
+    }
+
     // -------------------------------------------------------------------------------------------- noise --
 
     /** Smooth value noise in [-1, 1], features a unit apart. */

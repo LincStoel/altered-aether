@@ -69,8 +69,8 @@ public final class BasinField {
     private static final int LAKE_ATTEMPTS = 24;
     private static final double LAKE_SHRINK = 0.45;
     /**
-     * Rim bearings a big lake may have with no ground, where it runs to the island's edge and spills off, and the
-     * share of its water (one in this many) that may lie past the edge.
+     * Rim bearings a big lake may have with no ground, where it runs past the island's edge (the fill builds ground
+     * under it and a lip to hold it there), and the share of its water (one in this many) that may lie past the edge.
      */
     private static final int LAKE_OPEN_RIM = 8, LAKE_VOID_SHARE = 4;
     /** How far under the rim's middling height a rim point may drop before it counts as a spill, in tall blocks. */
