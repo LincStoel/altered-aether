@@ -116,7 +116,11 @@ public final class CaveField {
         if (top == Integer.MIN_VALUE) {
             return new long[]{EMPTY, 0, 0};
         }
-        return new long[]{top, lowest(x, z, top), guarded(x, z) ? 0 : 1};
+        int bottom = lowest(x, z, top);
+        // Too thin for a cave: every cell this column bounds has no more room than it does, so weight() ends at 0
+        // whatever the guard says, and the basins and landmarks (often not yet searched here) need not be asked.
+        boolean closed = top - bottom <= MIN_THICKNESS || guarded(x, z);
+        return new long[]{top, bottom, closed ? 0 : 1};
     }
 
     /** The lowest solid block in the column, up to {@code top}. */

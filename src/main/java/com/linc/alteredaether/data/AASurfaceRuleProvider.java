@@ -147,18 +147,20 @@ public final class AASurfaceRuleProvider extends JsonDataProvider {
     private static JsonObject cliffs() {
         JsonObject holystoneRock = seq(when(noiseBand("minecraft:calcite", 0.26, BIG), block(MOSSY_HOLYSTONE)),
                 block(HOLYSTONE));
+        // The biome is asked before the slope: the slope reads neighbouring columns, the biome only this block.
         return seq(
                 // The mountains show rock on any real slope.
-                when(steep(3), seq(
+                when(inBiome(PLATEAU, CRAGS, TEMPEST), when(steep(3), seq(
                         when(inBiome(PLATEAU), plateauStrata()),
                         when(inBiome(CRAGS), seq(when(noiseBand("minecraft:surface_secondary", 0.18, BIG),
                                 substitute(CLORITE)), block(ICESTONE))),
                         when(inBiome(TEMPEST), seq(when(noiseBand("minecraft:surface_secondary", 0.18, BIG),
-                                block(BLACKSTONE)), block(DEEPSLATE))))),
+                                block(BLACKSTONE)), block(DEEPSLATE)))))),
                 // Forested and gentler islands only on true cliffs, so ordinary lumpy ground stays green.
-                when(steep(5), when(inBiome(TUNDRA), block(ICESTONE))),
-                when(steep(5), when(inBiome(RIFT, CATHEDRAL, NURSELOG, SHROUDED, grove("blazing"), grove("cascading"), grove("flashing"),
-                        grove("flourishing"), grove("vexing")), holystoneRock)));
+                when(inBiome(TUNDRA, RIFT, CATHEDRAL, NURSELOG, SHROUDED, grove("blazing"), grove("cascading"),
+                        grove("flashing"), grove("flourishing"), grove("vexing")), when(steep(5), seq(
+                        when(inBiome(TUNDRA), block(ICESTONE)),
+                        holystoneRock))));
     }
 
     private static JsonObject steep(int rise) {

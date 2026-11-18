@@ -18,8 +18,10 @@ import com.mojang.serialization.Codec;
 import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.SectionPos;
 import net.minecraft.util.KeyDispatchDataCodec;
 import net.minecraft.world.level.chunk.ChunkAccess;
+import net.minecraft.world.level.chunk.LevelChunkSection;
 import net.minecraft.world.level.levelgen.SurfaceRules;
 
 /**
@@ -72,21 +74,31 @@ public record IslandPosition(double min, double max, int minThickness) implement
 
     /** Solid runs in a column as (bottom, top) pairs, lowest first. */
     static int[] scan(ChunkAccess chunk, int x, int z) {
-        BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
         int[] found = new int[16];
         int count = 0;
         int start = Integer.MIN_VALUE;
-        for (int y = chunk.getMinBuildHeight(); y < chunk.getMaxBuildHeight(); y++) {
-            boolean solid = !chunk.getBlockState(cursor.set(x, y, z)).isAir();
-            if (solid && start == Integer.MIN_VALUE) {
-                start = y;
-            } else if (!solid && start != Integer.MIN_VALUE) {
-                if (count + 2 > found.length) {
-                    found = java.util.Arrays.copyOf(found, found.length * 2);
+        int lx = x & 15, lz = z & 15;
+        LevelChunkSection[] sections = chunk.getSections();
+        for (int i = 0; i < sections.length; i++) {
+            LevelChunkSection section = sections[i];
+            int base = SectionPos.sectionToBlockCoord(chunk.getSectionYFromSectionIndex(i));
+            // An empty section (most of the tall Aether's sky) is sixteen blocks of air: read none of them.
+            int height = section.hasOnlyAir() ? 0 : 16;
+            for (int dy = 0; dy < 16; dy++) {
+                boolean solid = dy < height && !section.getBlockState(lx, dy, lz).isAir();
+                if (solid && start == Integer.MIN_VALUE) {
+                    start = base + dy;
+                } else if (!solid && start != Integer.MIN_VALUE) {
+                    if (count + 2 > found.length) {
+                        found = java.util.Arrays.copyOf(found, found.length * 2);
+                    }
+                    found[count++] = start;
+                    found[count++] = base + dy - 1;
+                    start = Integer.MIN_VALUE;
                 }
-                found[count++] = start;
-                found[count++] = y - 1;
-                start = Integer.MIN_VALUE;
+                if (height == 0 && start == Integer.MIN_VALUE) {
+                    break;
+                }
             }
         }
         if (start != Integer.MIN_VALUE) {

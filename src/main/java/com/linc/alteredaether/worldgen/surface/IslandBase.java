@@ -53,6 +53,8 @@ public record IslandBase(int depth, int variation, double maxFraction, int minTh
     private static final double BROAD = 1 / 40.0, FINE = 1 / 7.0;
     /** Blocks the fine noise moves the top of the base up or down. */
     private static final double ROUGH = 2.0;
+    /** Slack for rounding in the noise's interpolation when deciding without it. */
+    private static final double MARGIN = 1e-6;
 
     /** Each world's pre-cave terrain, keyed on its random state (one per level); see RegionBinding. */
     private static final Map<RandomState, TerrainProbe> PROBES = Collections.synchronizedMap(new WeakHashMap<>());
@@ -98,8 +100,16 @@ public record IslandBase(int depth, int variation, double maxFraction, int minTh
                             return false;
                         }
                         double limit = Math.min(depth + variation * broad, maxFraction * thickness);
+                        // The fine noise lies within ±1, so it can only matter within ROUGH of the limit.
+                        int above = y - bottom;
+                        if (above < limit - ROUGH - MARGIN) {
+                            return true;
+                        }
+                        if (above >= limit + ROUGH + MARGIN) {
+                            return false;
+                        }
                         double rough = ROUGH * LatticeNoise.value(x * FINE, y * FINE, z * FINE, 0x4ad2);
-                        return y - bottom < limit + rough;
+                        return above < limit + rough;
                     }
                 }
                 return false;
