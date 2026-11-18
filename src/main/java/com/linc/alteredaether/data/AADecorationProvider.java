@@ -348,9 +348,10 @@ public final class AADecorationProvider extends FeatureData {
         layer("cloud/layer_cold_high", "cloud/layer_cold", 0.035, 73, 109);
         // tall y 80-175, overlapping the cold below and the gold above
         layer("cloud/layer_blue", "cloud/layer_blue", 0.09, 96, 159);
-        // tall y 155-235, the Highlands' own
-        layer("cloud/layer_golden", "cloud/layer_golden", 0.09, 146, 199);
-        layer("cloud/layer_golden_puff", "cloud/layer_golden_puff", 0.05, 146, 199);
+        // tall y 155-235, the Highlands' own: thinner than the blue, so the islets stand in clear air with a few
+        // golden streaks drifting among them, and the odd puff
+        layer("cloud/layer_golden", "cloud/layer_golden", 0.045, 146, 199);
+        layer("cloud/layer_golden_puff", "cloud/layer_golden_puff", 0.008, 146, 199);
         placed("cloud/layer_sterling", "cloud/layer_sterling", Placement.list(
                 Placement.heightRange("uniform", Placement.absolute(203), Placement.absolute(243)),
                 Placement.inSquare(), Placement.configCount(0.03, "aerclouds"), Placement.biome(), dungeonBlacklist()),

@@ -360,7 +360,10 @@ public final class AATerrainProvider extends JsonDataProvider {
                 mul(1.0 / 6, add(Df.y(), mul(-1.0, bowlUnderside)))));
 
         // Each landform's weight, confined to our region.
-        df("plateau_weight", mul(terrain("region_mask"), terrain("plateau_mask")));
+        // The plateau's ramp is broad, but in the tundra's band it would raise half-terraces under the tundra's drifts;
+        // there the plateau rises sharply at its biome's edge instead.
+        df("plateau_weight", mul(terrain("region_mask"), Df.lerp(terrain("tundra_mask"), terrain("plateau_mask"),
+                ramp(terrain("continentalness"), -0.53 / 0.03, 1 / 0.03))));
         df("crag_weight", mul(terrain("region_mask"), terrain("crag_mask")));
         df("rift_weight", mul(mul(terrain("region_mask"), terrain("rift_mask")),
                 add(1.0, mul(-1.0, terrain("tundra_mask")))));
