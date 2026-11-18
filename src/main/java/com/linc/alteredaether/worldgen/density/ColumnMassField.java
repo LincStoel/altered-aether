@@ -16,6 +16,7 @@ package com.linc.alteredaether.worldgen.density;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
+import it.unimi.dsi.fastutil.HashCommon;
 import net.minecraft.util.Mth;
 import net.minecraft.world.level.levelgen.DensityFunction;
 
@@ -87,7 +88,7 @@ public final class ColumnMassField {
     private float gridMass(int cx, int cz) {
         long key = ((long) cx << 32) ^ (cz & 0xFFFFFFFFL);
         try {
-            return masses.get(key, () -> {
+            return masses.get(HashCommon.mix(key), () -> {
                 float sum = 0;
                 for (int[] o : disc) {
                     sum += gridThickness(cx + o[0], cz + o[1]);
@@ -102,7 +103,7 @@ public final class ColumnMassField {
     private float gridThickness(int cx, int cz) {
         long key = ((long) cx << 32) ^ (cz & 0xFFFFFFFFL);
         try {
-            return thickness.get(key, () -> {
+            return thickness.get(HashCommon.mix(key), () -> {
                 int x = cx * CELL + CELL / 2, z = cz * CELL + CELL / 2, solid = 0;
                 for (int y = minY; y < maxY; y += STEP) {
                     if (terrain.compute(new DensityFunction.SinglePointContext(x, y, z)) > 0) {

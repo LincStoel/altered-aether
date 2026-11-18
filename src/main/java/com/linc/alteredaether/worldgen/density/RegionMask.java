@@ -19,6 +19,7 @@ import com.google.common.cache.CacheBuilder;
 import com.linc.alteredaether.AlteredAether;
 import com.linc.alteredaether.worldgen.region.AlteredRegion;
 import com.mojang.serialization.MapCodec;
+import it.unimi.dsi.fastutil.HashCommon;
 import net.minecraft.core.QuartPos;
 import net.minecraft.util.KeyDispatchDataCodec;
 import net.minecraft.util.Mth;
@@ -95,7 +96,7 @@ public final class RegionMask implements DensityFunction {
         private float cell(int cx, int cz) {
             long key = ((long) cx << 32) ^ (cz & 0xFFFFFFFFL);
             try {
-                return cells.get(key, () -> solve(cx * CELL, cz * CELL));
+                return cells.get(HashCommon.mix(key), () -> solve(cx * CELL, cz * CELL));
             } catch (ExecutionException e) {
                 throw new IllegalStateException(e.getCause());
             }

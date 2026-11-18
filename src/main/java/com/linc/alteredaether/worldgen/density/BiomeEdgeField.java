@@ -18,6 +18,7 @@ import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.linc.alteredaether.worldgen.TerrainProbe;
 import com.linc.alteredaether.worldgen.region.BiomeGroups;
+import it.unimi.dsi.fastutil.HashCommon;
 import net.minecraft.core.QuartPos;
 import net.minecraft.util.Mth;
 import net.minecraft.world.level.Level;
@@ -68,7 +69,7 @@ public final class BiomeEdgeField {
         int qx = QuartPos.fromBlock(x), qz = QuartPos.fromBlock(z);
         long key = ((long) qx << 32) ^ (qz & 0xFFFFFFFFL);
         try {
-            return biomes.get(key, () -> probe.biomeAt(QuartPos.toBlock(qx), QuartPos.toBlock(qz)));
+            return biomes.get(HashCommon.mix(key), () -> probe.biomeAt(QuartPos.toBlock(qx), QuartPos.toBlock(qz)));
         } catch (ExecutionException e) {
             throw new IllegalStateException(e.getCause());
         }
@@ -128,7 +129,7 @@ public final class BiomeEdgeField {
         private long[] cell(int cx, int cz) {
             long key = ((long) cx << 32) ^ (cz & 0xFFFFFFFFL);
             try {
-                return cells.get(key, () -> {
+                return cells.get(HashCommon.mix(key), () -> {
                     int x = cx * CELL, z = cz * CELL;
                     float d = (float) EdgeSearch.distance(x, z, reach, this::classAt);
                     return new long[]{Float.floatToIntBits(d), classAt(x, z)};

@@ -19,6 +19,7 @@ import com.google.common.cache.CacheBuilder;
 import com.linc.alteredaether.config.AACommonConfig;
 import com.linc.alteredaether.worldgen.TerrainProbe;
 import com.linc.alteredaether.worldgen.basin.BasinField;
+import it.unimi.dsi.fastutil.HashCommon;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.util.RandomSource;
@@ -227,7 +228,7 @@ public final class LandmarkField {
     private Optional<Landmark> in(LandmarkType type, int cx, int cz) {
         long key = ((long) cx << 32) ^ (cz & 0xFFFFFFFFL);
         try {
-            return cells.get(type).get(key, () -> Optional.ofNullable(find(type, cx, cz)));
+            return cells.get(type).get(HashCommon.mix(key), () -> Optional.ofNullable(find(type, cx, cz)));
         } catch (ExecutionException e) {
             throw new IllegalStateException(e.getCause());
         }

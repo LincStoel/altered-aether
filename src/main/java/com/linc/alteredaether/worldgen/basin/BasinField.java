@@ -19,6 +19,7 @@ import com.google.common.cache.CacheBuilder;
 import com.linc.alteredaether.config.AACommonConfig;
 import com.linc.alteredaether.worldgen.AABiomes;
 import com.linc.alteredaether.worldgen.TerrainProbe;
+import it.unimi.dsi.fastutil.HashCommon;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
@@ -1027,7 +1028,7 @@ public final class BasinField {
     private static <T> T cached(Cache<Long, T> cache, int cx, int cz, Callable<T> loader) {
         long key = ((long) cx << 32) ^ (cz & 0xFFFFFFFFL);
         try {
-            return cache.get(key, loader);
+            return cache.get(HashCommon.mix(key), loader);
         } catch (ExecutionException e) {
             throw new IllegalStateException(e.getCause());
         }

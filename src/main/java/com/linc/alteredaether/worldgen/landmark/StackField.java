@@ -18,6 +18,7 @@ import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.linc.alteredaether.worldgen.TerrainProbe;
 import com.linc.alteredaether.worldgen.basin.BasinField;
+import it.unimi.dsi.fastutil.HashCommon;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
@@ -117,7 +118,7 @@ public final class StackField {
     private Optional<Stack> stack(int cx, int cz) {
         long key = ((long) cx << 32) ^ (cz & 0xFFFFFFFFL);
         try {
-            return cells.get(key, () -> Optional.ofNullable(find(cx, cz)));
+            return cells.get(HashCommon.mix(key), () -> Optional.ofNullable(find(cx, cz)));
         } catch (ExecutionException e) {
             throw new IllegalStateException(e.getCause());
         }
@@ -144,6 +145,11 @@ public final class StackField {
     @Nullable
     private Stack validate(int x, int z, RandomSource random) {
         double radius = 4 + random.nextDouble() * 4;
+        // The ring search below only ever accepts plateau ground, and a biome is far cheaper to read than the terrain:
+        // where no ring point is plateau, the answer is no before a single column is probed.
+        if (!plateauNear(x, z)) {
+            return null;
+        }
         // open sky over the whole footprint
         for (int d = 0; d < 8; d++) {
             double a = d * Math.PI / 4;
@@ -187,6 +193,20 @@ public final class StackField {
         }
         int pond = radius >= 5.5 && random.nextDouble() < POND_CHANCE ? 2 + random.nextInt(2) : 0;
         return new Stack(x, z, radius, top, Math.max(probe.minY() + 2, bottom), pond, random.nextLong());
+    }
+
+    /** Whether any point of the ring search lies in the plateau: the same points, in the same order. */
+    private boolean plateauNear(int x, int z) {
+        for (int r = NEAR; r <= FAR; r += 4) {
+            for (int d = 0; d < 16; d++) {
+                double a = d * Math.PI / 8;
+                if (probe.biomeAt(x + (int) Math.round(Math.cos(a) * r), z + (int) Math.round(Math.sin(a) * r))
+                        .equals(PLATEAU)) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     /** The lowest solid block in a column under {@code top}. */

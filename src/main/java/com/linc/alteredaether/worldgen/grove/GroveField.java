@@ -23,6 +23,7 @@ import com.linc.alteredaether.worldgen.TerrainProbe;
 import com.linc.alteredaether.worldgen.basin.BasinField;
 import com.linc.alteredaether.worldgen.landmark.LandmarkField;
 import com.linc.alteredaether.worldgen.landmark.LandmarkType;
+import it.unimi.dsi.fastutil.HashCommon;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
@@ -259,7 +260,7 @@ public final class GroveField {
 
     private static <T> T cached(Cache<Long, T> cache, long key, Callable<T> loader) {
         try {
-            return cache.get(key, loader);
+            return cache.get(HashCommon.mix(key), loader);
         } catch (ExecutionException e) {
             throw new IllegalStateException(e.getCause());
         }

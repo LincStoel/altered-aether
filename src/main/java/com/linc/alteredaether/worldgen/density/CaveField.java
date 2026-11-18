@@ -19,6 +19,7 @@ import com.google.common.cache.CacheBuilder;
 import com.linc.alteredaether.worldgen.TerrainProbe;
 import com.linc.alteredaether.worldgen.basin.BasinField;
 import com.linc.alteredaether.worldgen.landmark.LandmarkField;
+import it.unimi.dsi.fastutil.HashCommon;
 import net.minecraft.util.Mth;
 import org.jetbrains.annotations.Nullable;
 
@@ -103,7 +104,7 @@ public final class CaveField {
     private long[] column(int cx, int cz) {
         long key = ((long) cx << 32) ^ (cz & 0xFFFFFFFFL);
         try {
-            return columns.get(key, () -> solve(cx, cz));
+            return columns.get(HashCommon.mix(key), () -> solve(cx, cz));
         } catch (ExecutionException e) {
             throw new IllegalStateException(e.getCause());
         }

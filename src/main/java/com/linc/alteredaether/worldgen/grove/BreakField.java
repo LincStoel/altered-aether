@@ -19,6 +19,7 @@ import com.google.common.cache.CacheBuilder;
 import com.linc.alteredaether.config.AACommonConfig;
 import com.linc.alteredaether.worldgen.TerrainProbe;
 import com.linc.alteredaether.worldgen.basin.BasinField;
+import it.unimi.dsi.fastutil.HashCommon;
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.levelgen.XoroshiroRandomSource;
@@ -172,7 +173,7 @@ public final class BreakField {
     Optional<Site> site(int cx, int cz) {
         long key = ((long) cx << 32) ^ (cz & 0xFFFFFFFFL);
         try {
-            return sites.get(key, () -> Optional.ofNullable(find(cx, cz)));
+            return sites.get(HashCommon.mix(key), () -> Optional.ofNullable(find(cx, cz)));
         } catch (ExecutionException e) {
             throw new IllegalStateException(e.getCause());
         }
