@@ -1,0 +1,38 @@
+{
+  "parent": "altered_aether:root",
+  "criteria": {
+    "visit": {
+      "conditions": {
+        "player": [
+          {
+            "condition": "minecraft:entity_properties",
+            "entity": "this",
+            "predicate": {
+              "location": {
+                "biomes": "altered_aether:snow_tundra"
+              }
+            }
+          }
+        ]
+      },
+      "trigger": "minecraft:location"
+    }
+  },
+  "display": {
+    "description": {
+      "translate": "advancements.altered_aether.snow_tundra.description"
+    },
+    "frame": "task",
+    "icon": {
+      "id": "minecraft:snow_block"
+    },
+    "title": {
+      "translate": "advancements.altered_aether.snow_tundra.title"
+    }
+  },
+  "requirements": [
+    [
+      "visit"
+    ]
+  ]
+}

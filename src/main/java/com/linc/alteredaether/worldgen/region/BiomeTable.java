@@ -56,9 +56,17 @@ public final class BiomeTable {
     public static final String FLASHING = "altered_aether:flashing_archwood_grove";
     public static final String FLOURISHING = "altered_aether:flourishing_archwood_grove";
     public static final String VEXING = "altered_aether:vexing_archwood_grove";
+    public static final String TUNDRA = "altered_aether:snow_tundra";
+    public static final String BOWL = "altered_aether:flower_bowl";
+    public static final String SHROUDED = "altered_aether:shrouded_forest";
 
     /** Plateau tier, mid-ramp of plateau_mask. P(continents &gt; this) = 6.1%. */
     public static final float PLATEAU_C = 0.545f;
+    /**
+     * Snow Tundra, the erosion band just under the crags: every crag range stands in a ring of it. Measured with
+     * {@code -PaaReport}; about as much tundra as crags.
+     */
+    public static final float TUNDRA_E = 0.52f;
     /** Frozen Crags tier, mid-ramp of crag_mask. P(erosion &gt; this) = 4.0%. */
     public static final float CRAG_E = 0.6125f;
     /** Tempest Peaks, past the top of the crag_mask ramp. P(erosion &gt; this) = 1.0%. */
@@ -126,6 +134,11 @@ public final class BiomeTable {
             rect(-0.51f, 0.03f, 0.17f, 0.63f, NURSELOG),
             // A cooler, drier solo window, for the occasional dead colony with no living one beside it.
             rect(-0.60f, -0.44f, -0.44f, -0.20f, NURSELOG),
+            // The shrouded forest hangs off the humid side of the nurselog frame, so the three giant-tree biomes read
+            // as one woodland: living cathedral, its fallen elders, and a dark, mossy edge.
+            rect(-0.50f, 0.03f, 0.63f, 0.80f, SHROUDED),
+            // Flower bowls in the open middle, between the solo nurselog and the dunes.
+            rect(-0.36f, 0.04f, -0.14f, 0.10f, BOWL),
             // The archwood groves hold the four corners and the humid middle. Humidity rarely passes +/-0.4 here (its
             // 5% tails), so each window reaches well inside that: about 2% of the island tier apiece. The flashing
             // grove gives up a corner to the solo nurselog, so it reaches a little further toward the middle.
@@ -158,7 +171,8 @@ public final class BiomeTable {
         rows.addAll(placed);
 
         Span islandC = new Span(LOW, PLATEAU_C);
-        Span islandE = new Span(LOW, CRAG_E);
+        boolean tundra = present.contains(TUNDRA);
+        Span islandE = new Span(LOW, tundra ? TUNDRA_E : CRAG_E);
         boolean rift = present.contains(RIFT);
         Span islandW = rift ? new Span(LOW, RIFT_W) : Span.ALL;
 
@@ -168,6 +182,10 @@ public final class BiomeTable {
         }
         if (rift) {
             entries.add(new Entry(RIFT, Span.ALL, Span.ALL, islandC, islandE, new Span(RIFT_W, HIGH)));
+        }
+        if (tundra) {
+            // A ring round the crags at every temperature; the rift never cuts into it.
+            entries.add(new Entry(TUNDRA, Span.ALL, Span.ALL, islandC, new Span(TUNDRA_E, CRAG_E), Span.ALL));
         }
         // A disabled landform hands its tier back to the tier beneath it: the crags to the island table (one
         // erosion band wider), tempest to the crags, the plateau to everything below it.

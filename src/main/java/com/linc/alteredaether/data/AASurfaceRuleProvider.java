@@ -61,6 +61,8 @@ public final class AASurfaceRuleProvider extends JsonDataProvider {
     private static final String DUNES = biome("windswept_dunes");
     private static final String CATHEDRAL = biome("skyroot_cathedral");
     private static final String NURSELOG = biome("nurselog_hollow");
+    private static final String TUNDRA = biome("snow_tundra");
+    private static final String SHROUDED = biome("shrouded_forest");
 
     public AASurfaceRuleProvider(PackOutput output) {
         super(output, "surface rules");
@@ -117,9 +119,16 @@ public final class AASurfaceRuleProvider extends JsonDataProvider {
                         when(noiseBand("minecraft:calcite", 0.26, BIG), block(MOSSY_HOLYSTONE)),
                         block(HOLYSTONE))),
                 when(inBiome(DUNES), block(QUICKSOIL)),
+                // Snowfields, with icestone breaking through here and there and coarse dirt where trees once stood.
+                when(inBiome(TUNDRA), seq(
+                        when(noiseBand("minecraft:surface", 0.5, BIG), substitute(COARSE_DIRT)),
+                        when(noiseBand("minecraft:powder_snow", 0.3, BIG), block(ICESTONE)),
+                        block(SNOW_BLOCK))),
                 // Root litter: coarse dirt patches in the cathedral's shade, and wide worn ground between the fallen
                 // logs, with bare aether dirt in bands.
                 when(inBiome(CATHEDRAL), when(noiseBand("minecraft:surface", 0.44, BIG), substitute(COARSE_DIRT))),
+                // The shrouded forest's floor is deep in litter: more coarse dirt than the cathedral's.
+                when(inBiome(SHROUDED), when(noiseBand("minecraft:surface", 0.2, BIG), substitute(COARSE_DIRT))),
                 when(inBiome(NURSELOG), seq(
                         when(noiseBand("minecraft:surface", 0.15, BIG), substitute(COARSE_DIRT)),
                         when(noiseBand("minecraft:surface_secondary", 0.18, BIG), block(DIRT)))),
@@ -144,7 +153,8 @@ public final class AASurfaceRuleProvider extends JsonDataProvider {
                         when(inBiome(TEMPEST), seq(when(noiseBand("minecraft:surface_secondary", 0.18, BIG),
                                 block(BLACKSTONE)), block(DEEPSLATE))))),
                 // Forested and gentler islands only on true cliffs, so ordinary lumpy ground stays green.
-                when(steep(5), when(inBiome(RIFT, CATHEDRAL, NURSELOG, grove("blazing"), grove("cascading"), grove("flashing"),
+                when(steep(5), when(inBiome(TUNDRA), block(ICESTONE))),
+                when(steep(5), when(inBiome(RIFT, CATHEDRAL, NURSELOG, SHROUDED, grove("blazing"), grove("cascading"), grove("flashing"),
                         grove("flourishing"), grove("vexing")), holystoneRock)));
     }
 
@@ -160,6 +170,7 @@ public final class AASurfaceRuleProvider extends JsonDataProvider {
                 when(inBiome(grove("vexing")), substitute(MUD)),
                 // The crags, peaks and rift are stone all the way down; no dirt under the snow.
                 when(inBiome(CRAGS), block(ICESTONE)),
+                when(inBiome(TUNDRA), block(SNOW_BLOCK)),
                 when(inBiome(TEMPEST), block(DEEPSLATE)),
                 when(inBiome(RIFT), block(HOLYSTONE)),
                 // A few blocks of quicksoil under the dunes, so digging in doesn't hit ordinary dirt.

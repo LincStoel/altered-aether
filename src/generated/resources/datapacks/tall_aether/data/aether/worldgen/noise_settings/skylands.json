@@ -37,19 +37,24 @@
               "type": "altered_aether:atoll",
               "argument": {
                 "type": "altered_aether:choose",
-                "high": "altered_aether:terrain/plateau_terraced",
+                "high": -1.0,
                 "low": {
                   "type": "altered_aether:choose",
-                  "high": "altered_aether:terrain/crag_tier",
+                  "high": "altered_aether:terrain/plateau_terraced",
                   "low": {
                     "type": "altered_aether:choose",
-                    "high": "altered_aether:terrain/rift",
-                    "low": "altered_aether:terrain/island_groves",
-                    "mask": "altered_aether:terrain/rift_weight"
+                    "high": "altered_aether:terrain/crag_tier",
+                    "low": {
+                      "type": "altered_aether:choose",
+                      "high": "altered_aether:terrain/rift",
+                      "low": "altered_aether:terrain/island_groves",
+                      "mask": "altered_aether:terrain/rift_weight"
+                    },
+                    "mask": "altered_aether:terrain/crag_weight"
                   },
-                  "mask": "altered_aether:terrain/crag_weight"
+                  "mask": "altered_aether:terrain/plateau_weight"
                 },
-                "mask": "altered_aether:terrain/plateau_weight"
+                "mask": "altered_aether:terrain/gap_cut"
               },
               "surface": 40,
               "vertical_scale": 1.0,

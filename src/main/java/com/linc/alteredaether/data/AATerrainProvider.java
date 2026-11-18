@@ -172,6 +172,8 @@ public final class AATerrainProvider extends JsonDataProvider {
         noise("cloud_sea_level", -8, 1.0, 0.5);
         noise("cloud_sea_roll", -7, 1.0, 0.5);
         noise("cloud_sea_root", -5, 1.0, 0.5);
+        // How wide the open sky between two groups of biomes is, varying along the border every hundred-odd blocks.
+        noise("gap_width", -7, 1.0, 0.5);
     }
 
     private void noise(String name, int firstOctave, double... amplitudes) {
@@ -209,10 +211,11 @@ public final class AATerrainProvider extends JsonDataProvider {
         df("plateau_terraced", terraced);
 
         // Crag tier, on erosion: the same field drives the biome (erosion > 0.6125) and this mask, which ramps
-        // 0 -> 1 across 0.4875..0.7375, so the biome edge sits mid-ramp. Tempest Peaks is the top slice of the same
-        // tier (erosion > 0.8044), where the crag mask is saturated and the tempest mask takes over.
+        // 0 -> 1 across 0.5625..0.6625, so the biome edge sits mid-ramp; the band below belongs to the Snow Tundra
+        // (erosion > 0.52), which rings the crags. Tempest Peaks is the top slice of the same tier (erosion > 0.8044),
+        // where the crag mask is saturated and the tempest mask takes over.
         df("crag_noise", flatCache(shiftedNoise(NS + "crags", 0.25, 0.0)));
-        df("crag_mask", ramp(terrain("crag_noise"), -1.95, 4.0));
+        df("crag_mask", ramp(terrain("crag_noise"), -5.625, 10.0));
         df("tempest_mask", ramp(terrain("crag_noise"), -0.76 / 0.09, 1 / 0.09));
         // The island noise made half as wide and twice as tall, for overhangs and hollows inside the massifs.
         df("crag_3d_noise", oldBlendedNoise(0.25, 0.25, 40.0, mode.height(480.0), 8.0));
@@ -305,6 +308,31 @@ public final class AATerrainProvider extends JsonDataProvider {
         df("rift_weight", mul(terrain("region_mask"), terrain("rift_mask")));
         df("dune_weight", mul(terrain("region_mask"), terrain("dune_mask")));
         df("grove_weight", mul(terrain("region_mask"), terrain("grove_mask")));
+
+        // Open sky between groups of biomes (BiomeGroups: peaks, woodland, dunes, and everything else), so each group
+        // reads as its own landmass. Where one of our groups meets the rest of the Aether, the rest gives way: its land
+        // is cut back 24 to 48 blocks from the border (varying along it, easing out over 6), and ours keeps its full
+        // extent, so even a small patch of tundra survives. Where two of our groups meet, each gives up half.
+        JsonObject ours = Df.type(NS + "biome_edge");
+        ours.addProperty("classifier", "ours");
+        ours.addProperty("reach", 64);
+        ours.addProperty("inside", 1);
+        ours.addProperty("signed", true);
+        df("ours_edge", flatCache(ours));
+        JsonObject groupEdge = Df.type(NS + "biome_edge");
+        groupEdge.addProperty("classifier", "group");
+        groupEdge.addProperty("reach", 40);
+        df("group_edge", flatCache(groupEdge));
+        df("gap_width", flatCache(add(36.0, mul(12.0, shiftedNoise(NS + "gap_width", 1.0, 0.0)))));
+        // Outside our groups: cut within the full width of the border, fading out a couple of blocks inside ours.
+        JsonObject otherSide = mul(ramp(add(terrain("gap_width"), terrain("ours_edge")), 0.0, 1.0 / 6),
+                ramp(terrain("ours_edge"), 1.0, -0.5));
+        // Inside ours: cut within half the width of another of our groups, unless that border is the rest of the
+        // Aether's (then the nearest other biome is no closer than the nearest other group).
+        JsonObject betweenOurs = mul(ramp(add(mul(0.5, terrain("gap_width")), mul(-1.0, terrain("group_edge"))),
+                        0.0, 1.0 / 6),
+                ramp(add(terrain("ours_edge"), mul(-1.0, terrain("group_edge"))), -0.5, 0.25));
+        df("gap_cut", flatCache(max(otherSide, betweenOurs)));
 
         if (mode == HeightMode.TALL) {
             // The Aether's own island noise, stretched to the taller band (y_factor 160 -> 240).
@@ -428,7 +456,9 @@ public final class AATerrainProvider extends JsonDataProvider {
         JsonObject withCrags = Df.choose(terrain("crag_weight"), islandTier, terrain("crag_tier"));
         // Atolls are set into whatever tier is beneath them, each kept wholly inside our region by its site check.
         JsonObject atoll = Df.type(NS + "atoll");
-        atoll.add("argument", Df.choose(terrain("plateau_weight"), withCrags, terrain("plateau_terraced")));
+        JsonObject landforms = Df.choose(terrain("plateau_weight"), withCrags, terrain("plateau_terraced"));
+        // Open sky between the groups of biomes, cut before anything is sited on the land.
+        atoll.add("argument", Df.choose(terrain("gap_cut"), landforms, -1.0));
         atoll.add("weight", terrain("region_mask"));
         // Set-in atolls and double atolls take their height from the islands round them; this is a double atoll's
         // where there are none.

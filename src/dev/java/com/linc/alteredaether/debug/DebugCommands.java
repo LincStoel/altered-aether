@@ -397,6 +397,52 @@ public final class DebugCommands {
     }
 
     /**
+     * The biome groups round the benchmark, 2 blocks a pixel: other biomes grey, peaks pale blue, woodland green, dunes
+     * yellow; red where other biomes are cut back from ours (36 blocks, the gap's middle width), orange where two of
+     * our groups each give up half.
+     */
+    private static void edgeMap(ServerLevel aether, String name, int minX, int minZ, int maxX, int maxZ) {
+        var field = com.linc.alteredaether.worldgen.density.BiomeEdgeField.get(THE_AETHER);
+        if (field == null) {
+            AlteredAether.LOGGER.warn("Edge map: no biome edge field for the Aether");
+            return;
+        }
+        var solver = field.solver(com.linc.alteredaether.worldgen.region.BiomeGroups.GROUP, 40);
+        var ours = field.solver(com.linc.alteredaether.worldgen.region.BiomeGroups.OURS, 64);
+        int scale = 2, w = (maxX - minX) / scale, h = (maxZ - minZ) / scale;
+        java.awt.image.BufferedImage image = new java.awt.image.BufferedImage(w, h,
+                java.awt.image.BufferedImage.TYPE_INT_RGB);
+        int[] colours = {0x808080, 0xC8DCF0, 0x3C963C, 0xE6C850};
+        int[] counts = new int[4];
+        int near = 0, wide = 0;
+        for (int j = 0; j < h; j++) {
+            for (int i = 0; i < w; i++) {
+                int x = minX + i * scale, z = minZ + j * scale;
+                int group = solver.classAt(x, z);
+                double d = solver.distance(x, z), signed = ours.signed(x, z, 1);
+                counts[group]++;
+                int colour = colours[group];
+                if (signed < 0 && signed > -36) {
+                    colour = 0xD03030;
+                    near++;
+                } else if (signed > 0 && d < 18 && signed - d > 4) {
+                    colour = 0xE08A30;
+                    wide++;
+                }
+                image.setRGB(i, j, colour);
+            }
+        }
+        AlteredAether.LOGGER.info("Edge map {}: other {} peaks {} woodland {} dunes {} pixels; other cut {}, ours cut {}", name, counts[0], counts[1], counts[2], counts[3], near, wide);
+        try {
+            java.nio.file.Path folder = aether.getServer().getServerDirectory().resolve("renders");
+            java.nio.file.Files.createDirectories(folder);
+            javax.imageio.ImageIO.write(image, "png", folder.resolve(name + ".png").toFile());
+        } catch (java.io.IOException e) {
+            AlteredAether.LOGGER.error("Couldn't write the edge map {}", name, e);
+        }
+    }
+
+    /**
      * Generates every Aether chunk within {@code radius} chunks of the origin, logs how long it took, then stops
      * the server. All chunks are requested at once, so the time reflects worldgen throughput across the worker
      * threads, as when a player explores.
@@ -656,6 +702,9 @@ public final class DebugCommands {
                 }
             }
             if (Boolean.getBoolean("altered_aether.render")) {
+                int r = radius * 16;
+                edgeMap(aether, (biome == null ? "bench" : biome.replace(':', '_')) + "_groups", origin.getX() - r,
+                        origin.getZ() - r, origin.getX() + r, origin.getZ() + r);
                 for (int i = 0; i < spots.size(); i++) {
                     skirtRenders(server, aether, "spot" + i, spots.get(i));
                 }

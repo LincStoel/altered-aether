@@ -177,9 +177,33 @@
                   "if_true": {
                     "type": "minecraft:biome",
                     "biome_is": [
+                      "altered_aether:snow_tundra"
+                    ]
+                  },
+                  "then_run": {
+                    "type": "minecraft:block",
+                    "result_state": {
+                      "Name": "aether:icestone"
+                    }
+                  }
+                }
+              },
+              {
+                "type": "minecraft:condition",
+                "if_true": {
+                  "type": "altered_aether:steep",
+                  "distance": 2,
+                  "rise": 5
+                },
+                "then_run": {
+                  "type": "minecraft:condition",
+                  "if_true": {
+                    "type": "minecraft:biome",
+                    "biome_is": [
                       "altered_aether:shattered_rift",
                       "altered_aether:skyroot_cathedral",
                       "altered_aether:nurselog_hollow",
+                      "altered_aether:shrouded_forest",
                       "altered_aether:blazing_archwood_grove",
                       "altered_aether:cascading_archwood_grove",
                       "altered_aether:flashing_archwood_grove",
@@ -697,6 +721,67 @@
             "if_true": {
               "type": "minecraft:biome",
               "biome_is": [
+                "altered_aether:snow_tundra"
+              ]
+            },
+            "then_run": {
+              "type": "minecraft:sequence",
+              "sequence": [
+                {
+                  "type": "minecraft:condition",
+                  "if_true": {
+                    "type": "minecraft:noise_threshold",
+                    "max_threshold": 4.0,
+                    "min_threshold": 0.5,
+                    "noise": "minecraft:surface"
+                  },
+                  "then_run": {
+                    "type": "altered_aether:substitute_block",
+                    "candidates": [
+                      {
+                        "Name": "deep_aether:aether_coarse_dirt",
+                        "Properties": {
+                          "double_drops": "true"
+                        }
+                      },
+                      {
+                        "Name": "aether:aether_dirt",
+                        "Properties": {
+                          "double_drops": "true"
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "type": "minecraft:condition",
+                  "if_true": {
+                    "type": "minecraft:noise_threshold",
+                    "max_threshold": 4.0,
+                    "min_threshold": 0.3,
+                    "noise": "minecraft:powder_snow"
+                  },
+                  "then_run": {
+                    "type": "minecraft:block",
+                    "result_state": {
+                      "Name": "aether:icestone"
+                    }
+                  }
+                },
+                {
+                  "type": "minecraft:block",
+                  "result_state": {
+                    "Name": "minecraft:snow_block"
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "type": "minecraft:condition",
+            "if_true": {
+              "type": "minecraft:biome",
+              "biome_is": [
                 "altered_aether:skyroot_cathedral"
               ]
             },
@@ -706,6 +791,41 @@
                 "type": "minecraft:noise_threshold",
                 "max_threshold": 4.0,
                 "min_threshold": 0.44,
+                "noise": "minecraft:surface"
+              },
+              "then_run": {
+                "type": "altered_aether:substitute_block",
+                "candidates": [
+                  {
+                    "Name": "deep_aether:aether_coarse_dirt",
+                    "Properties": {
+                      "double_drops": "true"
+                    }
+                  },
+                  {
+                    "Name": "aether:aether_dirt",
+                    "Properties": {
+                      "double_drops": "true"
+                    }
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "type": "minecraft:condition",
+            "if_true": {
+              "type": "minecraft:biome",
+              "biome_is": [
+                "altered_aether:shrouded_forest"
+              ]
+            },
+            "then_run": {
+              "type": "minecraft:condition",
+              "if_true": {
+                "type": "minecraft:noise_threshold",
+                "max_threshold": 4.0,
+                "min_threshold": 0.2,
                 "noise": "minecraft:surface"
               },
               "then_run": {
@@ -863,6 +983,21 @@
               "type": "minecraft:block",
               "result_state": {
                 "Name": "aether:icestone"
+              }
+            }
+          },
+          {
+            "type": "minecraft:condition",
+            "if_true": {
+              "type": "minecraft:biome",
+              "biome_is": [
+                "altered_aether:snow_tundra"
+              ]
+            },
+            "then_run": {
+              "type": "minecraft:block",
+              "result_state": {
+                "Name": "minecraft:snow_block"
               }
             }
           },

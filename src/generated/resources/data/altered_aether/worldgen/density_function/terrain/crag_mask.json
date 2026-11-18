@@ -2,10 +2,10 @@
   "type": "minecraft:clamp",
   "input": {
     "type": "minecraft:add",
-    "argument1": -1.95,
+    "argument1": -5.625,
     "argument2": {
       "type": "minecraft:mul",
-      "argument1": 4.0,
+      "argument1": 10.0,
       "argument2": "altered_aether:terrain/crag_noise"
     }
   },

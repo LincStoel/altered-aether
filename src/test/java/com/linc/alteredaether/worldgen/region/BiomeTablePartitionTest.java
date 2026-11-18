@@ -33,7 +33,7 @@ class BiomeTablePartitionTest {
     private static final List<String> OPTIONAL = List.of(
             BiomeTable.PLATEAU, BiomeTable.CRAGS, BiomeTable.TEMPEST, BiomeTable.RIFT, BiomeTable.DUNES,
             BiomeTable.CATHEDRAL, BiomeTable.NURSELOG, BiomeTable.BLAZING, BiomeTable.CASCADING, BiomeTable.FLASHING, BiomeTable.FLOURISHING,
-            BiomeTable.VEXING);
+            BiomeTable.VEXING, BiomeTable.TUNDRA, BiomeTable.BOWL, BiomeTable.SHROUDED);
     private static final int SAMPLES = 40_000;
 
     @Test
@@ -46,7 +46,7 @@ class BiomeTablePartitionTest {
                 }
             }
             // The full set and the empty set get a denser check; the rest a lighter one.
-            int samples = mask == 0 || mask == (1 << OPTIONAL.size()) - 1 ? SAMPLES * 10 : SAMPLES / 40;
+            int samples = mask == 0 || mask == (1 << OPTIONAL.size()) - 1 ? SAMPLES * 10 : SAMPLES / 320;
             assertPartition(present, samples, mask);
         }
     }

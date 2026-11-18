@@ -17,6 +17,22 @@
       },
       "trigger": "minecraft:location"
     },
+    "flower_bowl": {
+      "conditions": {
+        "player": [
+          {
+            "condition": "minecraft:entity_properties",
+            "entity": "this",
+            "predicate": {
+              "location": {
+                "biomes": "altered_aether:flower_bowl"
+              }
+            }
+          }
+        ]
+      },
+      "trigger": "minecraft:location"
+    },
     "frozen_crags": {
       "conditions": {
         "player": [
@@ -65,6 +81,22 @@
       },
       "trigger": "minecraft:location"
     },
+    "shrouded_forest": {
+      "conditions": {
+        "player": [
+          {
+            "condition": "minecraft:entity_properties",
+            "entity": "this",
+            "predicate": {
+              "location": {
+                "biomes": "altered_aether:shrouded_forest"
+              }
+            }
+          }
+        ]
+      },
+      "trigger": "minecraft:location"
+    },
     "skyroot_cathedral": {
       "conditions": {
         "player": [
@@ -74,6 +106,22 @@
             "predicate": {
               "location": {
                 "biomes": "altered_aether:skyroot_cathedral"
+              }
+            }
+          }
+        ]
+      },
+      "trigger": "minecraft:location"
+    },
+    "snow_tundra": {
+      "conditions": {
+        "player": [
+          {
+            "condition": "minecraft:entity_properties",
+            "entity": "this",
+            "predicate": {
+              "location": {
+                "biomes": "altered_aether:snow_tundra"
               }
             }
           }
@@ -147,6 +195,15 @@
     ],
     [
       "nurselog_hollow"
+    ],
+    [
+      "snow_tundra"
+    ],
+    [
+      "flower_bowl"
+    ],
+    [
+      "shrouded_forest"
     ]
   ],
   "rewards": {

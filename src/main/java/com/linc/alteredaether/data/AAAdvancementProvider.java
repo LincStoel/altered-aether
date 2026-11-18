@@ -71,6 +71,8 @@ public final class AAAdvancementProvider extends JsonDataProvider {
         biome(all, "frozen_crags", AABiomes.FROZEN_CRAGS, "aether:icestone", "Thin Air", "Climb into the Frozen Crags");
         landmark(all, "frozen_spire", "frozen_crags", LandmarkType.FROZEN_SPIRE.id(), "minecraft:blue_ice",
                 "Spire of Ice", "Find a frozen spire twisting up out of the crags");
+        biome(all, "snow_tundra", AABiomes.SNOW_TUNDRA, "minecraft:snow_block", "Snowbound",
+                "Wade through the drifts of the Snow Tundra");
         biome(all, "tempest_peaks", AABiomes.TEMPEST_PEAKS, "minecraft:oxidized_copper", "Lightning Country",
                 "Brave the Tempest Peaks");
         // Awarded in code by TempestStorms, checked once a second.
@@ -91,6 +93,8 @@ public final class AAAdvancementProvider extends JsonDataProvider {
                 "Walk the Windswept Dunes");
         biome(all, "aether_plateau", AABiomes.AETHER_PLATEAU, "aether:aether_grass_block", "High Ground",
                 "Reach the Aether Plateau");
+        biome(all, "flower_bowl", AABiomes.FLOWER_BOWL, "aether:purple_flower", "In Full Bloom",
+                "Step down into a Flower Bowl");
         landmark(all, "grand_cascade", "aether_plateau", LandmarkType.GRAND_CASCADE.id(), "aether:skyroot_water_bucket",
                 "The Grand Cascade", "Follow a staircase of pools to where it spills into the sky");
         biome(all, "skyroot_cathedral", AABiomes.SKYROOT_CATHEDRAL, "aether:skyroot_sapling", "Cathedral of Skyroot",
@@ -101,6 +105,8 @@ public final class AAAdvancementProvider extends JsonDataProvider {
                 "Long Gone", "Find a village tree its people left behind");
         biome(all, "nurselog_hollow", AABiomes.NURSELOG_HOLLOW, "aether:skyroot_log", "Fallen Elders",
                 "Wander the Nurselog Hollow");
+        biome(all, "shrouded_forest", AABiomes.SHROUDED_FOREST, "aether:skyroot_leaves", "Under the Moss",
+                "Lose the sky in the Shrouded Forest");
         // either cache counts, the full one or the leftovers
         JsonObject cache = criterion("minecraft:player_generates_container_loot");
         cache.getAsJsonObject("conditions").addProperty("loot_table", AlteredAether.MOD_ID + ":chests/grove/stump");

@@ -8,6 +8,9 @@
     "altered_aether:windswept_dunes",
     "altered_aether:skyroot_cathedral",
     "altered_aether:nurselog_hollow",
+    "altered_aether:snow_tundra",
+    "altered_aether:flower_bowl",
+    "altered_aether:shrouded_forest",
     {
       "id": "altered_aether:blazing_archwood_grove",
       "required": false

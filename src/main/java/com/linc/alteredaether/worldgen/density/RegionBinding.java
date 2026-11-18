@@ -72,6 +72,8 @@ public final class RegionBinding {
         Set<VoronoiFracture.Binding> fractures = Collections.newSetFromMap(new IdentityHashMap<>());
         List<GroveBreak> breaks = new ArrayList<>();
         List<CloudSeaMarker> seas = new ArrayList<>();
+        List<BiomeEdge> edges = new ArrayList<>();
+        List<IslandMass> masses = new ArrayList<>();
         RandomState randomState = level.getChunkSource().randomState();
         randomState.router().mapAll(new DensityFunction.Visitor() {
             @Override
@@ -88,6 +90,10 @@ public final class RegionBinding {
                     breaks.add(groveBreak);
                 } else if (function instanceof CloudSeaMarker sea) {
                     seas.add(sea);
+                } else if (function instanceof BiomeEdge edge && edge.binding() != null) {
+                    edges.add(edge);
+                } else if (function instanceof IslandMass mass && mass.binding() != null) {
+                    masses.add(mass);
                 }
                 return function;
             }
@@ -107,6 +113,14 @@ public final class RegionBinding {
             bindings.forEach(binding -> binding.bind(solver));
             SOLVERS.put(level.dimension(), solver);
             AlteredAether.LOGGER.info("Bound Altered Aether's region mask for {}", level.dimension().location());
+            bindEdges(level, randomState, source, edges);
+            // The island mass is read off its own argument: the Aether's islands before any of them is shed.
+            if (!masses.isEmpty()) {
+                IslandMass first = masses.getFirst();
+                ColumnMassField field = new ColumnMassField(first.argument(), first.radius(), first.minY(), first.maxY());
+                masses.forEach(mass -> mass.binding().bind(field));
+                ColumnMassField.put(level.dimension(), field);
+            }
             bindFields(level, randomState, source, carves, atolls, fractures, breaks);
         } else {
             AlteredAether.LOGGER.warn("{} uses Altered Aether's region mask but its biome source has no TerraBlender "
@@ -166,10 +180,24 @@ public final class RegionBinding {
         }
     }
 
+    /** The biome edge distances, read off the same biome map the world generates with. */
+    private static void bindEdges(ServerLevel level, RandomState randomState, BiomeSource source, List<BiomeEdge> edges) {
+        if (edges.isEmpty() || !(level.getChunkSource().getGenerator() instanceof NoiseBasedChunkGenerator generator)) {
+            return;
+        }
+        NoiseSettings noise = generator.generatorSettings().value().noiseSettings();
+        BiomeEdgeField field = new BiomeEdgeField(new TerrainProbe(source, randomState.sampler(), null, null,
+                noise.minY(), noise.minY() + noise.height()));
+        edges.forEach(edge -> edge.binding().bind(field.solver(edge.classifier(), edge.reach())));
+        BiomeEdgeField.put(level.dimension(), field);
+    }
+
     @SubscribeEvent
     public static void onLevelUnload(LevelEvent.Unload event) {
         if (event.getLevel() instanceof ServerLevel level) {
             SOLVERS.remove(level.dimension());
+            BiomeEdgeField.put(level.dimension(), null);
+            ColumnMassField.put(level.dimension(), null);
             BasinField.put(level.dimension(), null);
             LandmarkField.put(level.dimension(), null);
             GroveField.put(level.dimension(), null);

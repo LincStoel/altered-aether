@@ -61,6 +61,9 @@ public final class AABiomeProvider extends JsonDataProvider {
         biome("windswept_dunes", windsweptDunes());
         biome("skyroot_cathedral", skyrootCathedral());
         biome("nurselog_hollow", nurselogHollow());
+        biome("snow_tundra", snowTundra());
+        biome("flower_bowl", flowerBowl());
+        biome("shrouded_forest", shroudedForest());
 
         biome("blazing_archwood_grove", grove("blazing", ARIA)
                 .add(BiomeJson.LOCAL, AADecorationProvider.ASETERITE_BOULDER)
@@ -261,6 +264,48 @@ public final class AABiomeProvider extends JsonDataProvider {
                 .drop("aether:water_lake", "aether:holiday_tree")
                 .effect("fog_color", 0xCFC8AE).effect("foliage_color", 0x7F9152).effect("grass_color", 0x92A267)
                 .effect("water_color", 0x5E7552).effect("water_fog_color", 0x2C3524);
+    }
+
+    /** Wind-packed snowfields round the crags: drifts, buried trees, and the crags' hardy wildlife. */
+    private BiomeJson snowTundra() {
+        return base()
+                .climate(-0.1f, 0.4f)
+                .drop(BARREN).drop(FOREST_TREES)
+                .drop("aether:water_lake")
+                .effect("fog_color", 13626862).effect("foliage_color", 9418436).effect("grass_color", 10470345)
+                .sky(12510199).effect("water_color", 4025996).effect("water_fog_color", 1981520)
+                .particle(BiomeJson.particleType("minecraft:snowflake"), 0.005f)
+                .add(BiomeJson.LOCAL, AADecorationProvider.CRAG_BOULDER, AADecorationProvider.SNOW_DRIFT,
+                        AADecorationProvider.ICESTONE_SHARD)
+                .spawners("creature",
+                        spawner("aether:aerbunny", 12, 2, 4),
+                        spawner("aether:sheepuff", 10, 2, 4))
+                .spawners("aether:aether_surface_monster",
+                        spawner("aether:blue_swet", 20, 1, 1),
+                        spawner("aether:whirlwind", 4, 1, 1))
+                .dropCost("aether:aechor_plant", "aether:golden_swet");
+    }
+
+    /** A bowl of meadow inside a raised rim: flowers wall to wall, berry bushes, a lone skyroot here and there. */
+    private BiomeJson flowerBowl() {
+        return base()
+                .climate(0.7f, 0.6f)
+                .replace(FOREST_TREES, "aether:skyroot_meadow_trees")
+                .add(BiomeJson.VEG, AADecorationProvider.LUSH_GRASS)
+                .effect("foliage_color", 0x7FC25E).effect("grass_color", 0x8FD46A).sky(0x9ED4FF)
+                .creatureProbability(0.09f);
+    }
+
+    /**
+     * The giant forest's dark, mossy edge: closer, lower giants under a canopy furred with moss. Deeper green and
+     * dimmer than the cathedral.
+     */
+    private BiomeJson shroudedForest() {
+        return base()
+                .climate(0.55f, 1.0f)
+                .drop("aether:water_lake", "aether:holiday_tree")
+                .effect("fog_color", 0x7FA394).effect("foliage_color", 0x2F6E3A).effect("grass_color", 0x4C8A48)
+                .effect("water_color", 0x3E5F48).effect("water_fog_color", 0x1C2B20);
     }
 
     private BiomeJson grove(String colour, String music) {
