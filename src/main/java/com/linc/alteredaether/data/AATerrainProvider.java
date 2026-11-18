@@ -80,7 +80,7 @@ public final class AATerrainProvider extends JsonDataProvider {
             Set.of("crag_3d_noise", "jag", "crags", "tempest", "tempest_spires", "dune_ridges", "dune_centre", "dune_sheet",
                     "plateau", "plateau_terraced", "island", "tall_base_3d_noise", "rift",
                     "grove_land", "grove_land_broken", "island_sea", "island_high", "cloud_sea_mask", "cloud_sea_sheet",
-                    "cloud_sea_land", "island_mass", "highlands");
+                    "cloud_sea_land", "island_mass", "highlands", "caves");
 
     /** Where the Highlands start, in tall-Aether blocks: above the main island band's top (y 128) in both modes. */
     private static final int HIGHLANDS_FLOOR = 140;
@@ -181,6 +181,12 @@ public final class AATerrainProvider extends JsonDataProvider {
         noise("highlands_footprint", -6, 1.0, 0.5, 0.25);
         noise("highlands_level", -8, 1.0, 0.5);
         noise("highlands_root", -5, 1.0, 0.5);
+        // Where a cave breaks through to daylight: rare patches a few dozen blocks across.
+        noise("cave_entrance", -5, 1.0, 0.5);
+        // The caves: caverns on a 64-block 3D noise, tunnels where two 32-block ones both pass near zero.
+        noise("cave_cavern", -6, 1.0, 0.5, 0.25);
+        noise("cave_tunnel_a", -5, 1.0, 0.3);
+        noise("cave_tunnel_b", -5, 1.0, 0.3);
     }
 
     private void noise(String name, int firstOctave, double... amplitudes) {
@@ -362,6 +368,15 @@ public final class AATerrainProvider extends JsonDataProvider {
                         mul(10.0, add(terrain("highlands_allowed"), -1.0))));
         df("highlands", add(lens, mul(0.3, terrain("jag"))));
 
+        // The caves themselves, negative inside: broad caverns where the cheese noise dips, and winding tunnels where
+        // two spaghetti noises both pass near zero. Where a cave may open is the cave field's business (CaveField):
+        // thick bodies only, with rock above and below.
+        JsonObject cheese = add(shiftedNoise(NS + "cave_cavern", 1.0, mode.frequency(1.5)), 0.2);
+        JsonObject tunnels = add(max(abs(shiftedNoise(NS + "cave_tunnel_a", 1.0, mode.frequency(1.2))),
+                abs(shiftedNoise(NS + "cave_tunnel_b", 1.0, mode.frequency(1.2)))), -0.16);
+        df("caves", min(cheese, tunnels));
+        df("cave_entrance", flatCache(ramp(shiftedNoise(NS + "cave_entrance", 1.0, 0.0), -0.55 * 5, 5.0)));
+
         if (mode == HeightMode.TALL) {
             // The Aether's own island noise, stretched to the taller band (y_factor 160 -> 240).
             df("tall_base_3d_noise", oldBlendedNoise(0.25, 0.25, 80.0, 240.0, 8.0));
@@ -508,7 +523,12 @@ public final class AATerrainProvider extends JsonDataProvider {
         // where there are none.
         atoll.addProperty("surface", mode.y(40));
         atoll.addProperty("vertical_scale", vertical());
-        blend.add("argument", Df.rangeChoice(Df.y(), mode.y(HIGHLANDS_FLOOR), 4096, terrain("highlands"), atoll));
+        // Caves in the thick island bodies, cut last so everything sited on the land is sited on rock.
+        JsonObject caves = Df.type(NS + "cave_carve");
+        caves.add("argument", atoll);
+        caves.add("caves", terrain("caves"));
+        caves.add("entrance", terrain("cave_entrance"));
+        blend.add("argument", Df.rangeChoice(Df.y(), mode.y(HIGHLANDS_FLOOR), 4096, terrain("highlands"), caves));
         // Basins are cut last, outside the interpolation, so their bowls and water lines are exact to the block.
         JsonObject carve = Df.type(NS + "basin_carve");
         carve.add("argument", squeeze);

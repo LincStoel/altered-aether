@@ -293,6 +293,7 @@ public final class AARegistries {
         DENSITY_FUNCTIONS.register("cloud_sea", () -> com.linc.alteredaether.worldgen.density.CloudSeaMarker.MAP_CODEC);
         DENSITY_FUNCTIONS.register("biome_edge", () -> com.linc.alteredaether.worldgen.density.BiomeEdge.MAP_CODEC);
         DENSITY_FUNCTIONS.register("island_mass", () -> com.linc.alteredaether.worldgen.density.IslandMass.MAP_CODEC);
+        DENSITY_FUNCTIONS.register("cave_carve", () -> com.linc.alteredaether.worldgen.density.CaveCarve.MAP_CODEC);
     }
 
     public static final DeferredRegister<SoundEvent> SOUND_EVENTS =

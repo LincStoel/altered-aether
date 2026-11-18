@@ -46,31 +46,36 @@
               "min_inclusive": 136.0,
               "when_in_range": "altered_aether:terrain/highlands",
               "when_out_of_range": {
-                "type": "altered_aether:atoll",
+                "type": "altered_aether:cave_carve",
                 "argument": {
-                  "type": "altered_aether:choose",
-                  "high": -1.0,
-                  "low": {
+                  "type": "altered_aether:atoll",
+                  "argument": {
                     "type": "altered_aether:choose",
-                    "high": "altered_aether:terrain/plateau_terraced",
+                    "high": -1.0,
                     "low": {
                       "type": "altered_aether:choose",
-                      "high": "altered_aether:terrain/crag_tier",
+                      "high": "altered_aether:terrain/plateau_terraced",
                       "low": {
                         "type": "altered_aether:choose",
-                        "high": "altered_aether:terrain/rift",
-                        "low": "altered_aether:terrain/island_groves",
-                        "mask": "altered_aether:terrain/rift_weight"
+                        "high": "altered_aether:terrain/crag_tier",
+                        "low": {
+                          "type": "altered_aether:choose",
+                          "high": "altered_aether:terrain/rift",
+                          "low": "altered_aether:terrain/island_groves",
+                          "mask": "altered_aether:terrain/rift_weight"
+                        },
+                        "mask": "altered_aether:terrain/crag_weight"
                       },
-                      "mask": "altered_aether:terrain/crag_weight"
+                      "mask": "altered_aether:terrain/plateau_weight"
                     },
-                    "mask": "altered_aether:terrain/plateau_weight"
+                    "mask": "altered_aether:terrain/gap_cut"
                   },
-                  "mask": "altered_aether:terrain/gap_cut"
+                  "surface": 69,
+                  "vertical_scale": 0.6666666666666666,
+                  "weight": "altered_aether:terrain/region_mask"
                 },
-                "surface": 69,
-                "vertical_scale": 0.6666666666666666,
-                "weight": "altered_aether:terrain/region_mask"
+                "caves": "altered_aether:terrain/caves",
+                "entrance": "altered_aether:terrain/cave_entrance"
               }
             }
           }

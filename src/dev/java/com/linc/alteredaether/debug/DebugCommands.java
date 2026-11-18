@@ -717,6 +717,7 @@ public final class DebugCommands {
                 Thread.currentThread().interrupt();
             }
             server.submit(() -> basinTally(aether, positions)).join();
+            server.submit(() -> caveTally(aether, positions)).join();
             server.submit(() -> mireTally(aether, positions)).join();
             server.submit(() -> landmarkTally(aether, positions)).join();
             // The debug command at the centre, so its output can be checked headlessly.
@@ -746,6 +747,13 @@ public final class DebugCommands {
                 int r = radius * 16;
                 edgeMap(aether, (biome == null ? "bench" : biome.replace(':', '_')) + "_groups", origin.getX() - r,
                         origin.getZ() - r, origin.getX() + r, origin.getZ() + r);
+                // Sections east-west and north-south through the middle, to see inside the islands (caves).
+                String slice = (biome == null ? "bench" : biome.replace(':', '_')) + "_slice";
+                int sx = origin.getX(), sz = origin.getZ(), sr = Math.min(r, 192);
+                server.submit(() -> WorldRender.render(aether, slice + "_x", sx - sr, sz, sx + sr, sz, -64, 140, 3))
+                        .join();
+                server.submit(() -> WorldRender.render(aether, slice + "_z", sx, sz - sr, sx, sz + sr, -64, 140, 3))
+                        .join();
                 for (int i = 0; i < spots.size(); i++) {
                     skirtRenders(server, aether, "spot" + i, spots.get(i));
                 }
@@ -1027,6 +1035,48 @@ public final class DebugCommands {
     }
 
     /** The basins over the given chunks, the water they hold, and any water that has since started to flow. */
+    /**
+     * Air shut inside the islands: gaps of air at most 20 tall between rock above and rock below in a column, split by
+     * how far under the ground they lie. Mostly caves, plus the odd overhang; compare runs, not absolutes.
+     */
+    private static void caveTally(ServerLevel level, List<ChunkPos> positions) {
+        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
+        long enclosed = 0, deep = 0, columns = 0, wet = 0;
+        for (ChunkPos chunk : positions) {
+            for (int dx = 0; dx < 16; dx++) {
+                for (int dz = 0; dz < 16; dz++) {
+                    int x = chunk.getMinBlockX() + dx, z = chunk.getMinBlockZ() + dz;
+                    int top = level.getHeight(Heightmap.Types.WORLD_SURFACE, x, z);
+                    int gap = 0, lastSolid = Integer.MIN_VALUE;
+                    boolean seenRock = false, gapWet = false;
+                    for (int y = Math.min(top, 128); y >= -64; y--) {
+                        var state = level.getBlockState(pos.set(x, y, z));
+                        boolean rock = state.isSolidRender(level, pos);
+                        if (rock) {
+                            if (seenRock && gap > 0 && gap <= 20) {
+                                enclosed += gap;
+                                if (top - lastSolid > 12) {
+                                    deep += gap;
+                                }
+                                wet += gapWet ? 1 : 0;
+                            }
+                            seenRock = true;
+                            gap = 0;
+                            gapWet = false;
+                            lastSolid = y;
+                        } else if (seenRock) {
+                            gap++;
+                            gapWet |= !state.getFluidState().isEmpty();
+                        }
+                    }
+                    columns++;
+                }
+            }
+        }
+        AlteredAether.LOGGER.info("Caves: {} enclosed air blocks over {} columns ({} more than 12 under the ground); {} "
+                + "enclosed gaps hold fluid", enclosed, columns, deep, wet);
+    }
+
     private static void basinTally(ServerLevel level, List<ChunkPos> positions) {
         BasinField field = BasinField.get(level.dimension());
         if (field == null) {
