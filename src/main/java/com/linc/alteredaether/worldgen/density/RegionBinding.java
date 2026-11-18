@@ -14,6 +14,7 @@
  */
 package com.linc.alteredaether.worldgen.density;
 
+import com.linc.alteredaether.worldgen.surface.IslandBase;
 import com.linc.alteredaether.AlteredAether;
 import com.linc.alteredaether.config.AACommonConfig;
 import net.minecraft.server.level.ServerLevel;
@@ -155,6 +156,8 @@ public final class RegionBinding {
         DensityFunction sited = !caves.isEmpty() ? caves.getFirst().argument() : carve == null ? null : carve.argument();
         TerrainProbe probe = new TerrainProbe(source, randomState.sampler(), sited,
                 atoll == null ? null : atoll.weight(), noise.minY(), mainTop(noise));
+        // Island bases (nadirite) tell a cave's roof from an underside by the terrain before the caves.
+        IslandBase.bind(randomState, probe);
         double vertical = carve != null ? carve.verticalScale() : atoll != null ? atoll.verticalScale() : 1;
         BasinField basins = null;
         if (carve != null || atoll != null) {
@@ -226,6 +229,7 @@ public final class RegionBinding {
     public static void onLevelUnload(LevelEvent.Unload event) {
         if (event.getLevel() instanceof ServerLevel level) {
             SOLVERS.remove(level.dimension());
+            IslandBase.bind(level.getChunkSource().randomState(), null);
             BiomeEdgeField.put(level.dimension(), null);
             ColumnMassField.put(level.dimension(), null);
             com.linc.alteredaether.worldgen.landmark.StackField.put(level.dimension(), null);

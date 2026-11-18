@@ -84,6 +84,7 @@ import com.linc.alteredaether.worldgen.modifier.ConfiguredSpawnsModifier;
 import com.linc.alteredaether.worldgen.modifier.OverworldArchwoodModifier;
 import com.linc.alteredaether.worldgen.modifier.ScaleSpawnCostModifier;
 import com.linc.alteredaether.worldgen.provider.SubstituteStateProvider;
+import com.linc.alteredaether.worldgen.surface.IslandBase;
 import com.linc.alteredaether.worldgen.surface.IslandPosition;
 import com.linc.alteredaether.worldgen.surface.Steep;
 import com.linc.alteredaether.worldgen.surface.Strata;
@@ -446,6 +447,7 @@ public final class AARegistries {
     static {
         SURFACE_CONDITIONS.register("steep", () -> Steep.MAP_CODEC);
         SURFACE_CONDITIONS.register("island_position", () -> IslandPosition.MAP_CODEC);
+        SURFACE_CONDITIONS.register("island_base", () -> IslandBase.MAP_CODEC);
         SURFACE_RULES.register("strata", () -> Strata.MAP_CODEC);
         SURFACE_RULES.register("stone_patches", () -> com.linc.alteredaether.worldgen.surface.StonePatches.MAP_CODEC);
         SURFACE_RULES.register("substitute_block", () -> SubstituteBlock.MAP_CODEC);

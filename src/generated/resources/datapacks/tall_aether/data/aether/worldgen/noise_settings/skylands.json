@@ -175,6 +175,25 @@
             }
           }
         }
+      },
+      {
+        "type": "minecraft:condition",
+        "if_true": {
+          "type": "altered_aether:island_base",
+          "depth": 8,
+          "max_fraction": 0.4,
+          "min_thickness": 24,
+          "variation": 14
+        },
+        "then_run": {
+          "type": "minecraft:block",
+          "result_state": {
+            "Name": "altered_aether:nadirite",
+            "Properties": {
+              "double_drops": "true"
+            }
+          }
+        }
       }
     ]
   }

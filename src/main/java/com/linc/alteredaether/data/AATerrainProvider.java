@@ -576,7 +576,37 @@ public final class AATerrainProvider extends JsonDataProvider {
         carve.addProperty("vertical_scale", vertical());
         router.add("final_density", carve);
 
+        if (mode == HeightMode.TALL) {
+            settings.getAsJsonObject("surface_rule").getAsJsonArray("sequence").add(nadiriteBase());
+        }
         data("worldgen/noise_settings", ResourceLocation.fromNamespaceAndPath("aether", "skylands"), settings);
+    }
+
+    /**
+     * Nadirite through the base of every thick island in the tall Aether, measured from its true underside (a cave's
+     * roof doesn't count; see IslandBase): 8 blocks, up to 14 more where a broad noise rises, never past 40% of the
+     * island's height, and none in islands under 24 blocks. It sits in the dimension's own surface rule, which
+     * TerraBlender falls back to wherever a biome's rules leave the rock alone, so it reaches the Aether's, Deep
+     * Aether's and our biomes alike; biomes whose rules give their own rock (the crags, the peaks, the rift, the
+     * plateau's strata) keep it all the way down.
+     */
+    private static JsonObject nadiriteBase() {
+        JsonObject base = Df.type(NS + "island_base");
+        base.addProperty("depth", 8);
+        base.addProperty("variation", 14);
+        base.addProperty("max_fraction", 0.4);
+        base.addProperty("min_thickness", 24);
+        JsonObject state = new JsonObject();
+        state.addProperty("Name", NS + "nadirite");
+        JsonObject properties = new JsonObject();
+        properties.addProperty("double_drops", "true");
+        state.add("Properties", properties);
+        JsonObject block = Df.type("minecraft:block");
+        block.add("result_state", state);
+        JsonObject rule = Df.type("minecraft:condition");
+        rule.add("if_true", base);
+        rule.add("then_run", block);
+        return rule;
     }
 
     private double vertical() {

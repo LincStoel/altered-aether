@@ -70,7 +70,8 @@ public record IslandPosition(double min, double max, int minThickness) implement
         };
     }
 
-    private static int[] scan(ChunkAccess chunk, int x, int z) {
+    /** Solid runs in a column as (bottom, top) pairs, lowest first. */
+    static int[] scan(ChunkAccess chunk, int x, int z) {
         BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
         int[] found = new int[16];
         int count = 0;

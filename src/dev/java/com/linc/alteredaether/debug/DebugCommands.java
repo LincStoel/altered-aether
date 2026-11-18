@@ -744,6 +744,7 @@ public final class DebugCommands {
             }
             server.submit(() -> basinTally(aether, positions)).join();
             server.submit(() -> caveTally(aether, positions)).join();
+            server.submit(() -> nadiriteTally(aether, positions)).join();
             server.submit(() -> mireTally(aether, positions)).join();
             server.submit(() -> landmarkTally(aether, positions)).join();
             // The debug command at the centre, so its output can be checked headlessly.
@@ -1101,6 +1102,95 @@ public final class DebugCommands {
         }
         AlteredAether.LOGGER.info("Caves: {} enclosed air blocks over {} columns ({} more than 12 under the ground); {} "
                 + "enclosed gaps hold fluid", enclosed, columns, deep, wet);
+    }
+
+    /**
+     * Nadirite in the island bases: how many columns have a band, its mean and largest thickness, and two faults:
+     * nadirite on a cave's roof (an air gap of at most 20 under it with rock below), and nadirite in an island under
+     * 24 blocks thick.
+     */
+    private static void nadiriteTally(ServerLevel level, List<ChunkPos> positions) {
+        var nadirite = BuiltInRegistries.BLOCK.get(AlteredAether.id("nadirite"));
+        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
+        long blocks = 0, banded = 0, columns = 0, roofs = 0, thin = 0;
+        java.util.TreeMap<Integer, Integer> roofGaps = new java.util.TreeMap<>();
+        var probe = com.linc.alteredaether.worldgen.surface.IslandBase.probe(level.getChunkSource().randomState());
+        long missed = 0;
+        java.util.TreeMap<Integer, Integer> missedReach = new java.util.TreeMap<>();
+        int widest = 0;
+        for (ChunkPos chunk : positions) {
+            for (int dx = 0; dx < 16; dx++) {
+                for (int dz = 0; dz < 16; dz++) {
+                    int x = chunk.getMinBlockX() + dx, z = chunk.getMinBlockZ() + dz;
+                    int top = level.getHeight(Heightmap.Types.WORLD_SURFACE, x, z);
+                    columns++;
+                    // Runs of solid blocks top down; for each, its nadirite count and the gap of air under it.
+                    int runTop = Integer.MIN_VALUE, runNadirite = 0, columnNadirite = 0;
+                    for (int y = top; y >= level.getMinBuildHeight() - 1; y--) {
+                        var state = y < level.getMinBuildHeight() ? null : level.getBlockState(pos.set(x, y, z));
+                        boolean solid = state != null && !state.isAir() && state.getFluidState().isEmpty();
+                        if (solid) {
+                            if (runTop == Integer.MIN_VALUE) {
+                                runTop = y;
+                                runNadirite = 0;
+                            }
+                            if (state.is(nadirite)) {
+                                runNadirite++;
+                            }
+                        } else if (runTop != Integer.MIN_VALUE) {
+                            int bottom = y + 1;
+                            if (runNadirite > 0) {
+                                blocks += runNadirite;
+                                columnNadirite += runNadirite;
+                                widest = Math.max(widest, runNadirite);
+                                // Rock within 20 blocks below this run's bottom: a cave's roof (or a near island).
+                                for (int d = 1; d <= 20 && y - d + 1 >= level.getMinBuildHeight(); d++) {
+                                    var below = level.getBlockState(pos.set(x, y - d + 1, z));
+                                    if (!below.isAir() && below.getFluidState().isEmpty()) {
+                                        // Only island ground counts: clouds, leaves and roots hang under islands.
+                                        if (below.is(nadirite) || below.is(com.aetherteam.aether.AetherTags.Blocks.AETHER_ISLAND_BLOCKS)
+                                                || below.is(com.aetherteam.aether.AetherTags.Blocks.HOLYSTONE)) {
+                                            roofs += runNadirite;
+                                            roofGaps.merge(d, 1, Integer::sum);
+                                            // A cave the pre-cave terrain says was rock: a roof IslandBase should have closed.
+                                            if (probe != null && probe.solid(x, y - d / 2, z)) {
+                                                // How high this nadirite reaches above the bottom of the rock under
+                                                // the cave: within the band's reach (22 + 2 rough) it is the band
+                                                // carrying on across a low cave, as it should.
+                                                int floor = y - d + 1;
+                                                while (floor > level.getMinBuildHeight() && !level.getBlockState(
+                                                        pos.set(x, floor - 1, z)).isAir()) {
+                                                    floor--;
+                                                }
+                                                int reach = (bottom + runNadirite - 1) - floor + 1;
+                                                if (reach > 24) {
+                                                    missed++;
+                                                }
+                                                missedReach.merge(Math.min(reach / 4 * 4, 60), 1, Integer::sum);
+                                            }
+                                        }
+                                        break;
+                                    }
+                                }
+                                if (runTop - bottom + 1 < 24) {
+                                    thin += runNadirite;
+                                }
+                            }
+                            runTop = Integer.MIN_VALUE;
+                        }
+                    }
+                    if (columnNadirite > 0) {
+                        banded++;
+                    }
+                }
+            }
+        }
+        AlteredAether.LOGGER.info("Nadirite: {} blocks in {} of {} columns (mean {} a banded column, widest run {}); {} "
+                        + "over a gap of 20 or less with island ground below, {} in runs under 24 thick", blocks, banded, columns,
+                String.format("%.1f", blocks / (double) Math.max(1, banded)), widest, roofs, thin);
+        AlteredAether.LOGGER.info("Nadirite roofs by gap height: {}; {} over a cave reaching past the band "
+                + "(probe bound: {}); over caves, nadirite top above the true bottom (by 4s): {}", roofGaps, missed,
+                probe != null, missedReach);
     }
 
     private static void basinTally(ServerLevel level, List<ChunkPos> positions) {

@@ -332,6 +332,8 @@ public final class AATagProvider extends JsonDataProvider {
         tag("item", ResourceLocation.withDefaultNamespace("stone_crafting_materials"), AAStoneProvider.naturalIds());
         tag("block", ResourceLocation.withDefaultNamespace("sculk_replaceable"), AAStoneProvider.naturalIds());
         tag("block", ResourceLocation.fromNamespaceAndPath("aether", "treated_as_aether_block"), AAStoneProvider.ids(null));
+        // Nadirite lines the bases of the islands (see AASurfaceRuleProvider); the Aether's ores still spawn through it.
+        tag("block", ResourceLocation.fromNamespaceAndPath("aether", "holystone_ore_replaceables"), "altered_aether:nadirite");
     }
 
     private static String[] concat(String[] first, String[] second) {
