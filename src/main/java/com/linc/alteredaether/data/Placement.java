@@ -63,6 +63,15 @@ final class Placement {
         return json;
     }
 
+    /** Keeps positions only in clumps where a 2D noise passes {@code threshold} (see NoiseClump). */
+    static JsonObject noiseClump(double scale, double threshold, int salt) {
+        JsonObject json = type("altered_aether:noise_clump");
+        json.addProperty("scale", scale);
+        json.addProperty("threshold", threshold);
+        json.addProperty("salt", salt);
+        return json;
+    }
+
     /** Moves the position to the top of the nearest island edge column (see IslandEdge). */
     static JsonObject islandEdge(int reach, int drop) {
         JsonObject json = type("altered_aether:island_edge");

@@ -44,6 +44,7 @@ public final class AADecorationProvider extends FeatureData {
     static final String SNOW_DRIFT = NS + "drift/snow";
     static final String TUNDRA_DRIFTS = NS + "drift/tundra";
     static final String CANOPY_MOSS = NS + "vegetation/canopy_moss";
+    static final String FALLEN_LOG = NS + "vegetation/fallen_log";
     static final String ICE_SPIKE = NS + "drift/ice_spike";
     static final String ICESTONE_SHARD = NS + "shard/icestone";
     static final String HANGING_CHAIN = NS + "hanging/chain";
@@ -204,6 +205,14 @@ public final class AADecorationProvider extends FeatureData {
         moss.addProperty("cover", 0.6);
         configured("vegetation/canopy_moss", "canopy_moss", moss);
         placed("vegetation/canopy_moss", "vegetation/canopy_moss", Placement.list());
+        // Small fallen skyroot logs among the giants, mossed (Deep Aether's moss; vanilla's without it), in clumps.
+        JsonObject log = new JsonObject();
+        log.add("log", simple("aether:skyroot_log[double_drops=true]"));
+        log.add("moss", Substitutes.provider("deep_aether:aether_moss_carpet"));
+        log.add("length", uniform(4, 9));
+        log.addProperty("moss_chance", 0.45);
+        configured("vegetation/fallen_log", "fallen_log", log);
+        placed("vegetation/fallen_log", "vegetation/fallen_log", surface(1.0, "fallen_logs"));
 
         // Vanilla's tapered packed-ice spire grows only from snow blocks, so it rises out of the drifts and
         // nowhere else, which is the whole spacing rule.
@@ -461,10 +470,18 @@ public final class AADecorationProvider extends FeatureData {
 
     // ---------------------------------------------------------------------------------------- helpers
 
+    /**
+     * Scattered decoration on the ground, in clumps: the positions are kept only where a noise 48 blocks across passes
+     * its threshold, about 40% of the ground, so the count is raised to match and the total stays as it was. Each
+     * family clumps in places of its own.
+     */
     private static JsonArray surface(double perChunk, String family) {
-        return Placement.list(Placement.configCount(perChunk, family), Placement.inSquare(),
-                Placement.heightmap(SURFACE), Placement.biome());
+        return Placement.list(Placement.configCount(perChunk / CLUMP_SHARE, family), Placement.inSquare(),
+                Placement.noiseClump(48, 0.125, family.hashCode()), Placement.heightmap(SURFACE), Placement.biome());
     }
+
+    /** The share of the ground {@link #surface}'s clumps cover (the 0.125 threshold, measured). */
+    private static final double CLUMP_SHARE = 0.4;
 
     private void spike(String name, int minHeight, int maxHeight, float radius, float lean, float taper,
                        float branch, float rod, JsonArray blocks, int minVeins, int maxVeins) {

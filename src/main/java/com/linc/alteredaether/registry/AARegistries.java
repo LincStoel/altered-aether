@@ -362,6 +362,8 @@ public final class AARegistries {
             com.linc.alteredaether.worldgen.feature.CanopyMossFeature::new);
     public static final DeferredHolder<Feature<?>, com.linc.alteredaether.worldgen.feature.SnowlineFeature>
             SNOWLINE = FEATURES.register("snowline", com.linc.alteredaether.worldgen.feature.SnowlineFeature::new);
+    public static final DeferredHolder<Feature<?>, com.linc.alteredaether.worldgen.feature.FallenLogFeature>
+            FALLEN_LOG = FEATURES.register("fallen_log", com.linc.alteredaether.worldgen.feature.FallenLogFeature::new);
     public static final DeferredHolder<Feature<?>, StrikeCraterFeature> STRIKE_CRATER =
             FEATURES.register("strike_crater", StrikeCraterFeature::new);
     public static final DeferredHolder<Feature<?>, TotemFeature> TOTEM =
@@ -384,6 +386,10 @@ public final class AARegistries {
             PLACEMENT_MODIFIERS.register("biome_edge_falloff", () -> () -> BiomeEdgeFalloff.CODEC);
     public static final DeferredHolder<PlacementModifierType<?>, PlacementModifierType<Overhang>> OVERHANG =
             PLACEMENT_MODIFIERS.register("overhang", () -> () -> Overhang.CODEC);
+    public static final DeferredHolder<PlacementModifierType<?>,
+            PlacementModifierType<com.linc.alteredaether.worldgen.placement.NoiseClump>> NOISE_CLUMP =
+            PLACEMENT_MODIFIERS.register("noise_clump",
+                    () -> () -> com.linc.alteredaether.worldgen.placement.NoiseClump.CODEC);
     public static final DeferredHolder<PlacementModifierType<?>, PlacementModifierType<LandmarkPoints>> LANDMARK_POINTS =
             PLACEMENT_MODIFIERS.register("landmark_points", () -> () -> LandmarkPoints.CODEC);
     public static final DeferredHolder<PlacementModifierType<?>, PlacementModifierType<ArchwoodRegion>> ARCHWOOD_REGION =

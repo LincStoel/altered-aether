@@ -3,11 +3,17 @@
   "placement": [
     {
       "type": "altered_aether:config_count",
-      "count": 0.3,
+      "count": 0.7499999999999999,
       "key": "copper_spikes"
     },
     {
       "type": "minecraft:in_square"
+    },
+    {
+      "type": "altered_aether:noise_clump",
+      "salt": -1003446509,
+      "scale": 48.0,
+      "threshold": 0.125
     },
     {
       "type": "minecraft:heightmap",

@@ -1,0 +1,26 @@
+{
+  "feature": "altered_aether:vegetation/fallen_log",
+  "placement": [
+    {
+      "type": "altered_aether:config_count",
+      "count": 2.5,
+      "key": "fallen_logs"
+    },
+    {
+      "type": "minecraft:in_square"
+    },
+    {
+      "type": "altered_aether:noise_clump",
+      "salt": -490157142,
+      "scale": 48.0,
+      "threshold": 0.125
+    },
+    {
+      "type": "minecraft:heightmap",
+      "heightmap": "WORLD_SURFACE_WG"
+    },
+    {
+      "type": "minecraft:biome"
+    }
+  ]
+}

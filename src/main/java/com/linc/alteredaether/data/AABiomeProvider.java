@@ -248,7 +248,7 @@ public final class AABiomeProvider extends JsonDataProvider {
         return base()
                 .climate(0.6f, 0.9f)
                 .replace(FOREST_TREES, AAFeatureProvider.UNDERSTORY)
-                .add(BiomeJson.VEG, AAFeatureProvider.RUIN)
+                .add(BiomeJson.VEG, AAFeatureProvider.RUIN, AADecorationProvider.FALLEN_LOG)
                 .drop("aether:water_lake", "aether:holiday_tree")
                 .effect("fog_color", 0xA9D3C6).effect("foliage_color", 0x4E9A45).effect("grass_color", 0x6BAA5A)
                 // Swamp water, green and murky, for the lakes round the giants' feet.
@@ -260,7 +260,7 @@ public final class AABiomeProvider extends JsonDataProvider {
         return base()
                 .climate(0.45f, 0.5f)
                 .replace(FOREST_TREES, AAFeatureProvider.UNDERSTORY)
-                .add(BiomeJson.VEG, AAFeatureProvider.RUIN)
+                .add(BiomeJson.VEG, AAFeatureProvider.RUIN, AADecorationProvider.FALLEN_LOG)
                 .drop("aether:water_lake", "aether:holiday_tree")
                 .effect("fog_color", 0xCFC8AE).effect("foliage_color", 0x7F9152).effect("grass_color", 0x92A267)
                 .effect("water_color", 0x5E7552).effect("water_fog_color", 0x2C3524);
@@ -304,6 +304,7 @@ public final class AABiomeProvider extends JsonDataProvider {
         return base()
                 .climate(0.55f, 1.0f)
                 .replace(FOREST_TREES, AAFeatureProvider.UNDERSTORY)
+                .add(BiomeJson.VEG, AADecorationProvider.FALLEN_LOG)
                 .add(BiomeJson.TOP, AADecorationProvider.CANOPY_MOSS)
                 .drop("aether:water_lake", "aether:holiday_tree")
                 .effect("fog_color", 0x7FA394).effect("foliage_color", 0x2F6E3A).effect("grass_color", 0x4C8A48)
