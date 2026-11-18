@@ -6,6 +6,9 @@
     "altered_aether:nadirite_brick_wall",
     "altered_aether:celezite_wall",
     "altered_aether:polished_celezite_wall",
-    "altered_aether:celezite_brick_wall"
+    "altered_aether:celezite_brick_wall",
+    "altered_aether:sylicite_wall",
+    "altered_aether:polished_sylicite_wall",
+    "altered_aether:sylicite_brick_wall"
   ]
 }

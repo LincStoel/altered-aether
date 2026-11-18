@@ -147,9 +147,10 @@ public final class AARegistries {
             () -> new ItemNameBlockItem(GLEAM_VINES.get(), new Item.Properties().food(Foods.GLOW_BERRIES)));
 
     /*
-     * Two Aether stones beside holystone (strength 0.5; its bricks 2.0, resisting 6.0). Nadirite, the heavy igneous
+     * Three Aether stones beside holystone (strength 0.5; its bricks 2.0, resisting 6.0). Nadirite, the heavy igneous
      * rock of island undersides, is the slowest to mine and shrugs off blasts. Celezite, a pink quartzite, is harder
-     * than holystone but resists blasts no better.
+     * than holystone but resists blasts no better. Sylicite, an opal found as boulders in the lakes, rings like
+     * amethyst and mines a little faster than vanilla stone.
      */
     public static final StoneSet NADIRITE = new StoneSet(BLOCKS, ITEMS, "nadirite",
             () -> stone(MapColor.STONE, SoundType.DEEPSLATE, 1.5F, 12.0F),
@@ -159,6 +160,10 @@ public final class AARegistries {
             () -> stone(MapColor.TERRACOTTA_WHITE, SoundType.CALCITE, 1.0F, 0.5F),
             () -> stone(MapColor.TERRACOTTA_WHITE, SoundType.CALCITE, 2.5F, 6.0F),
             () -> stone(MapColor.TERRACOTTA_WHITE, SoundType.CALCITE, 2.5F, 6.0F));
+    public static final StoneSet SYLICITE = new StoneSet(BLOCKS, ITEMS, "sylicite",
+            () -> stone(MapColor.RAW_IRON, SoundType.AMETHYST, 1.2F, 6.0F),
+            () -> stone(MapColor.RAW_IRON, SoundType.AMETHYST, 2.0F, 6.0F),
+            () -> stone(MapColor.RAW_IRON, SoundType.AMETHYST, 2.0F, 6.0F));
 
     private static BlockBehaviour.Properties stone(MapColor color, SoundType sound, float hardness, float resistance) {
         return BlockBehaviour.Properties.of().mapColor(color).instrument(NoteBlockInstrument.BASEDRUM)

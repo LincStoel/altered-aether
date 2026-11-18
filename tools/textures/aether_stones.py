@@ -12,7 +12,7 @@
 # You should have received a copy of the GNU General Public License along with this program. If not, see
 # <https://www.gnu.org/licenses/>.
 """
-First-pass polished and bricks textures for nadirite and celezite, derived from their hand-drawn base textures, to be
+First-pass polished and bricks textures for nadirite, celezite and sylicite, derived from their hand-drawn base textures, to be
 touched up by hand.
 
 Bricks follow holystone bricks' layout: four courses of 3px brick over a 1px mortar line, 8px bricks with the joints
@@ -20,11 +20,12 @@ offset by half a brick each course. Each brick face is the base texture with its
 darkened.
 
 Polished is the base with its grain flattened toward the mean, framed by a 1px bevel (lit top and left, shaded bottom
-and right). Celezite, a quartzite, also gets a diagonal sheen.
+and right). Celezite, a quartzite, and sylicite, an opal, also get a diagonal sheen.
 
 The base textures are made fully opaque in place (celezite's had stray partial alpha).
 
-Usage:  python tools/textures/aether_stones.py
+Usage:  python tools/textures/aether_stones.py [stone ...]     (only the stones named; all of them by default, which
+                                                            overwrites any hand touch-ups)
         python tools/textures/aether_stones.py --preview out.png    (also draws every texture side by side, x8)
 """
 import pathlib
@@ -38,6 +39,7 @@ BLOCKS = pathlib.Path(__file__).resolve().parents[2] / "src/main/resources/asset
 STONES = {
     "nadirite": (0.62, 1.10, 0.45, 0.0),
     "celezite": (0.80, 1.05, 0.35, 0.10),
+    "sylicite": (0.78, 1.06, 0.40, 0.14),
 }
 
 
@@ -97,7 +99,12 @@ def polished(base, keep, sheen):
 
 def main():
     made = []
+    args = sys.argv[1:]
+    if "--preview" in args:
+        del args[args.index("--preview"):args.index("--preview") + 2]
     for stone, (mortar, lift, keep, sheen) in STONES.items():
+        if args and stone not in args:
+            continue
         base = opaque(BLOCKS / f"{stone}.png")
         b = bricks(base, mortar, lift)
         p = polished(base, keep, sheen)

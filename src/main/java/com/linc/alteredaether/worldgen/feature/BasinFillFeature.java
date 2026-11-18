@@ -16,6 +16,7 @@ package com.linc.alteredaether.worldgen.feature;
 
 import com.linc.alteredaether.AlteredAether;
 import com.linc.alteredaether.config.AACommonConfig;
+import com.linc.alteredaether.registry.AARegistries;
 import com.linc.alteredaether.worldgen.LootChest;
 import com.linc.alteredaether.worldgen.basin.AtollSite;
 import com.linc.alteredaether.worldgen.basin.BasinField;
@@ -65,6 +66,8 @@ import java.util.Map;
  * is sealed with stone, so nothing can leak when the water first ticks. Frozen basins freeze only at the surface: a
  * column that would be ice lying straight on the bed is dug one block deeper, so there is always water under the ice.
  * The holystone under every basin's bed is richer in zanite and gravitite.
+ *
+ * <p>Lakes and pools that aren't poisonous get sylicite boulders (see {@link LakeBoulders}).
  *
  * <p>Lagoons get a reef (see {@link #colonies}): branching coral colonies built from a seeded grid, each chunk placing
  * the blocks of every colony that reaches into it.
@@ -206,6 +209,7 @@ public final class BasinFillFeature extends Feature<NoneFeatureConfiguration> {
             placed |= shore(level, field, chunk, site, pos, lakeShore);
         }
         if (!placed) {
+            LakeBoulders.place(level, field, chunk, site);
             return false;
         }
         if (site.type() == BasinType.ATOLL_LAGOON) {
@@ -233,6 +237,7 @@ public final class BasinFillFeature extends Feature<NoneFeatureConfiguration> {
                 }
             }
         }
+        LakeBoulders.place(level, field, chunk, site);
         return true;
     }
 
@@ -446,9 +451,14 @@ public final class BasinFillFeature extends Feature<NoneFeatureConfiguration> {
         return state.isAir() || !state.getFluidState().isEmpty() || state.is(Blocks.ICE);
     }
 
-    /** Open as far as the reef is concerned: the reef's own blocks count as the water they stand in. */
+    /**
+     * Open as far as the reef is concerned: the reef's own blocks count as the water they stand in, and so do the
+     * sylicite boulders (see {@link LakeBoulders}), so a chunk reading a neighbour's column finds the same bed whether
+     * or not the neighbour has placed its boulders yet.
+     */
     private static boolean reefOpen(BlockState state) {
-        return open(state) || state.is(BlockTags.CORAL_BLOCKS) || state.is(Blocks.GLOWSTONE);
+        return open(state) || state.is(BlockTags.CORAL_BLOCKS) || state.is(Blocks.GLOWSTONE)
+                || state.is(AARegistries.SYLICITE.natural.block());
     }
 
     private static BlockState liquid(BasinType type) {

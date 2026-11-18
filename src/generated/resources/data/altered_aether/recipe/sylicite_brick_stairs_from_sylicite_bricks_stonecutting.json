@@ -1,0 +1,10 @@
+{
+  "type": "minecraft:stonecutting",
+  "ingredient": {
+    "item": "altered_aether:sylicite_bricks"
+  },
+  "result": {
+    "count": 1,
+    "id": "altered_aether:sylicite_brick_stairs"
+  }
+}

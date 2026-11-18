@@ -14,6 +14,8 @@
  */
 package com.linc.alteredaether.worldgen.basin;
 
+import net.minecraft.util.Mth;
+
 /**
  * One body of water: a bowl of {@code radius} around (x, z), {@code depth} blocks deep at the centre, holding water up
  * to {@code waterLevel}. The shoreline wobbles with the bearing from the centre, so no two basins are round. With a
@@ -186,6 +188,14 @@ public record BasinSite(BasinType type, int x, int z, double radius, double dept
     /** A big lake's bed in a column under its water: the solid block the water rests on. */
     public int lakeBed(int px, int pz) {
         return (int) Math.floor(waterLevel + 1 - depth * lake.depthShare(px - x, pz - z));
+    }
+
+    /**
+     * The bed under the water in a column, as the carve shapes it: the solid block the water rests on, unless the
+     * island had a hole there already. Only meaningful where {@link #inFootprint} holds; not for atoll lagoons.
+     */
+    public int bed(int px, int pz) {
+        return lake != null ? lakeBed(px, pz) : Mth.floor(floor(reach(px, pz)));
     }
 
     public boolean isLake() {

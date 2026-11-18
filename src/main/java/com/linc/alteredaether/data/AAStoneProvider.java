@@ -70,11 +70,11 @@ public final class AAStoneProvider extends JsonDataProvider {
      * Mass under Sable, on its own scale (normal 1, heavy 2, super heavy 4): holystone and every other stone in
      * {@code #c:stones} is heavy. Celezite, a quartzite, weighs what any stone does, so it is heavy, polished and bricks
      * as much as the stone. Nadirite, the dense rock of island undersides, is super heavy, weighing what a block of iron
-     * does. Stairs, slabs and walls weigh half the block, and a double slab the whole. Sable's own tiers put slabs and
+     * does. Sylicite, an opal, is heavy as any stone. Stairs, slabs and walls weigh half the block, and a double slab the whole. Sable's own tiers put slabs and
      * stairs in "light" and the natural stones (by {@code #c:stones}) in "heavy" at its default priority, so ours are
      * set a step above to win over both.
      */
-    private static final Map<String, Double> SABLE_MASS = Map.of("nadirite", 4.0, "celezite", 2.0);
+    private static final Map<String, Double> SABLE_MASS = Map.of("nadirite", 4.0, "celezite", 2.0, "sylicite", 2.0);
 
     private void sable() {
         for (StoneSet stone : StoneSet.ALL) {
