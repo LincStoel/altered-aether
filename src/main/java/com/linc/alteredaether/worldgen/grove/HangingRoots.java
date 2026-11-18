@@ -90,7 +90,8 @@ public final class HangingRoots {
     }
 
     private static boolean grove(Holder<Biome> biome) {
-        return biome.is(AABiomes.SKYROOT_CATHEDRAL) || biome.is(AABiomes.NURSELOG_HOLLOW);
+        return biome.is(AABiomes.SKYROOT_CATHEDRAL) || biome.is(AABiomes.NURSELOG_HOLLOW)
+                || biome.is(AABiomes.SHROUDED_FOREST);
     }
 
     /**

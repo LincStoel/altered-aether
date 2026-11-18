@@ -141,10 +141,14 @@ public final class Understory {
         return n.clumps.getValue(x / 44.0, z / 44.0);
     }
 
-    /** How much of the growth a column's biome takes: all in the Cathedral, a share in the Hollow, none elsewhere. */
+    /**
+     * How much of the growth a column's biome takes: all in the Cathedral and the shrouded forest, a share in the
+     * Hollow, none elsewhere.
+     */
     private static double share(WorldGenLevel level, BlockPos pos) {
         Holder<Biome> biome = level.getBiome(pos);
-        return biome.is(AABiomes.SKYROOT_CATHEDRAL) ? 1 : biome.is(AABiomes.NURSELOG_HOLLOW) ? NURSELOG_SHARE : 0;
+        return biome.is(AABiomes.SKYROOT_CATHEDRAL) || biome.is(AABiomes.SHROUDED_FOREST) ? 1
+                : biome.is(AABiomes.NURSELOG_HOLLOW) ? NURSELOG_SHARE : 0;
     }
 
     /**

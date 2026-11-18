@@ -357,6 +357,9 @@ public final class AARegistries {
     public static final DeferredHolder<Feature<?>, com.linc.alteredaether.worldgen.feature.TundraDriftsFeature>
             TUNDRA_DRIFTS = FEATURES.register("tundra_drifts",
             com.linc.alteredaether.worldgen.feature.TundraDriftsFeature::new);
+    public static final DeferredHolder<Feature<?>, com.linc.alteredaether.worldgen.feature.CanopyMossFeature>
+            CANOPY_MOSS = FEATURES.register("canopy_moss",
+            com.linc.alteredaether.worldgen.feature.CanopyMossFeature::new);
     public static final DeferredHolder<Feature<?>, StrikeCraterFeature> STRIKE_CRATER =
             FEATURES.register("strike_crater", StrikeCraterFeature::new);
     public static final DeferredHolder<Feature<?>, TotemFeature> TOTEM =

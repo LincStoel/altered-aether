@@ -50,6 +50,10 @@ import java.util.concurrent.ExecutionException;
 public final class GroveField {
     static final String CATHEDRAL = "altered_aether:skyroot_cathedral";
     static final String NURSELOG = "altered_aether:nurselog_hollow";
+    /** The cathedral's dark, mossy edge: its giants are the cathedral's own kinds, grown lower. */
+    static final String SHROUDED = "altered_aether:shrouded_forest";
+    /** How tall the shrouded forest's giants grow, against the cathedral's. */
+    private static final double SHROUDED_HEIGHT = 0.75;
     /** How far any giant may reach from its centre. */
     public static final int REACH = 64;
     /** Grid cell size at the default spacing. */
@@ -272,7 +276,9 @@ public final class GroveField {
             int x = cx * cell + cell / 2 + random.nextInt(2 * jitter + 1) - jitter;
             int z = cz * cell + cell / 2 + random.nextInt(2 * jitter + 1) - jitter;
             String biome = probe.biomeAt(x, z);
-            GiantType type = pick(biome, random);
+            // The shrouded forest grows the cathedral's kinds of giant (drawn lower, below).
+            String kind = biome.equals(SHROUDED) ? CATHEDRAL : biome;
+            GiantType type = pick(kind, random);
             if (type == null || probe.regionWeight(x, z) < 0.99) {
                 continue;
             }
@@ -291,7 +297,7 @@ public final class GroveField {
                 return null;
             }
             // Now and then one of the Cathedral's giants has come down among the living.
-            if (biome.equals(CATHEDRAL) && random.nextDouble() < CATHEDRAL_FALLEN) {
+            if (kind.equals(CATHEDRAL) && random.nextDouble() < CATHEDRAL_FALLEN) {
                 type = GiantType.FALLEN_COLOSSUS;
             }
             // Now and then a stump holds a spring. The roll draws on a stream of its own, so every other stump is
@@ -319,7 +325,8 @@ public final class GroveField {
     /** Draws one giant of a type at a site, with its lake and its roots under the island if it has them. */
     private Sketch draw(GiantType type, int cx, int cz, int attempt, int x, int z, int ground, String biome,
                         RandomSource random) {
-        Sketch sketch = new Sketch(probe, random, vertical, buildTop, x, z, ground);
+        Sketch sketch = new Sketch(probe, random, biome.equals(SHROUDED) ? vertical * SHROUDED_HEIGHT : vertical,
+                buildTop, x, z, ground);
         sketch.palette = palette(x, z, biome);
         sketch.arching = type.crowned();
         sketch.tended = random.nextDouble() < AACommonConfig.TENDED_FRACTION.get();

@@ -38,7 +38,7 @@
       "aether:water_spring"
     ],
     [
-      "aether:skyroot_forest_trees",
+      "altered_aether:grove/understory",
       "aether:grass_patch",
       "aether:tall_grass_patch",
       "aether:white_flower_patch",
@@ -49,7 +49,8 @@
       "aether:crystal_island",
       "aether:cold_aercloud",
       "aether:blue_aercloud",
-      "aether:golden_aercloud"
+      "aether:golden_aercloud",
+      "altered_aether:vegetation/canopy_moss"
     ]
   ],
   "has_precipitation": false,

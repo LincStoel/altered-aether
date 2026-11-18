@@ -295,7 +295,8 @@ public final class AATerrainProvider extends JsonDataProvider {
         // Skyroot Cathedral and Nurselog Hollow: broad, gentle forest islands for the giants to stand on, in place of
         // the Aether's scattered ones. The mask covers the nurselog frame (and so the cathedral inside it) and the
         // nurselog's own solo window.
-        df("grove_mask", max(climateBox(-0.51, 0.03, 0.17, 0.63), climateBox(-0.60, -0.44, -0.44, -0.20)));
+        df("grove_mask", max(max(climateBox(-0.51, 0.03, 0.17, 0.63), climateBox(-0.60, -0.44, -0.44, -0.20)),
+                climateBox(-0.50, 0.03, 0.63, 0.80)));
         // Broad swells, and over them low mounds and hollows a few dozen blocks across, so the forest floor is never
         // a lawn.
         // The whole island is lifted or dropped by a level that sits flat over large tracts: a 256-block noise, held at

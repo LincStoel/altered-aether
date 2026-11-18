@@ -43,6 +43,7 @@ public final class AADecorationProvider extends FeatureData {
     static final String TEMPEST_COPPER_VEIN = NS + "copper_vein/tempest";
     static final String SNOW_DRIFT = NS + "drift/snow";
     static final String TUNDRA_DRIFTS = NS + "drift/tundra";
+    static final String CANOPY_MOSS = NS + "vegetation/canopy_moss";
     static final String ICE_SPIKE = NS + "drift/ice_spike";
     static final String ICESTONE_SHARD = NS + "shard/icestone";
     static final String HANGING_CHAIN = NS + "hanging/chain";
@@ -197,6 +198,12 @@ public final class AADecorationProvider extends FeatureData {
         // The Snow Tundra's great drifts and buried trees, built a chunk at a time (TundraDriftsFeature).
         configured("drift/tundra", "tundra_drifts", new JsonObject());
         placed("drift/tundra", "drift/tundra", Placement.list());
+        // Moss over the shrouded forest's canopy, in broad patches (Deep Aether's moss; vanilla's without it).
+        JsonObject moss = new JsonObject();
+        moss.add("moss", Substitutes.provider("deep_aether:aether_moss_carpet"));
+        moss.addProperty("cover", 0.6);
+        configured("vegetation/canopy_moss", "canopy_moss", moss);
+        placed("vegetation/canopy_moss", "vegetation/canopy_moss", Placement.list());
 
         // Vanilla's tapered packed-ice spire grows only from snow blocks, so it rises out of the drifts and
         // nowhere else, which is the whole spacing rule.

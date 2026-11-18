@@ -37,6 +37,7 @@ public final class Substitutes {
                     List.of("aether:enchanted_aether_grass_block[snowy=false]")),
             Map.entry("deep_aether:skyjade_block", List.of("aether:zanite_block")),
             Map.entry("deep_aether:skyjade_chain", List.of("minecraft:chain")),
+            Map.entry("deep_aether:aether_moss_carpet", List.of("minecraft:moss_carpet")),
             Map.entry("deep_aether:sterling_aercloud", List.of("aether:cold_aercloud[double_drops=true]")));
 
     /**

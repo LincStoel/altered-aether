@@ -303,6 +303,8 @@ public final class AABiomeProvider extends JsonDataProvider {
     private BiomeJson shroudedForest() {
         return base()
                 .climate(0.55f, 1.0f)
+                .replace(FOREST_TREES, AAFeatureProvider.UNDERSTORY)
+                .add(BiomeJson.TOP, AADecorationProvider.CANOPY_MOSS)
                 .drop("aether:water_lake", "aether:holiday_tree")
                 .effect("fog_color", 0x7FA394).effect("foliage_color", 0x2F6E3A).effect("grass_color", 0x4C8A48)
                 .effect("water_color", 0x3E5F48).effect("water_fog_color", 0x1C2B20);
