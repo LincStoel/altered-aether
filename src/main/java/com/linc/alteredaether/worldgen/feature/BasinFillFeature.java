@@ -249,7 +249,7 @@ public final class BasinFillFeature extends Feature<NoneFeatureConfiguration> {
      * with Deep Aether its mud, which the poison lakes favour; now and then none, the grass running down to the water.
      */
     @org.jetbrains.annotations.Nullable
-    private static BlockState lakeShore(BasinField field, BasinSite site) {
+    public static BlockState lakeShore(BasinField field, BasinSite site) {
         float roll = field.randomAt(SHORE_SALT, site.x(), site.z()).nextFloat();
         Block mud = AACommonConfig.COMPAT_ENABLED.get("deep_aether").get() ? block("deep_aether:aether_mud", null) : null;
         Block quicksoil = block("aether:quicksoil", Blocks.SAND);

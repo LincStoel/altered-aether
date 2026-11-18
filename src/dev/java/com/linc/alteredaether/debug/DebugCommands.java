@@ -966,11 +966,21 @@ public final class DebugCommands {
                                     Integer::sum);
                             if (ours && !fluid.isSource() && leaks.size() < 12) {
                                 leaks.add(cursor.toShortString() + " below=" + BuiltInRegistries.BLOCK.getKey(
-                                        level.getBlockState(cursor.below()).getBlock()).getPath());
+                                        level.getBlockState(cursor.below()).getBlock()).getPath()
+                                        + (sites.stream().anyMatch(site -> site.inFootprint(fx, fz)) ? " wet" : " dry"));
                             }
                         }
                         if (state.is(net.minecraft.tags.BlockTags.CORAL_BLOCKS)) {
                             blocks.merge("coral", 1, Integer::sum);
+                        }
+                        // What a big lake is filled with and what its shore and bed are made of.
+                        String id = BuiltInRegistries.BLOCK.getKey(state.getBlock()).toString();
+                        if (id.equals("deep_aether:poison") || id.equals("deep_aether:aether_mud")
+                                || id.equals("aether:quicksoil") || id.equals("minecraft:clay")) {
+                            final int lx = x, lz = z;
+                            if (sites.stream().anyMatch(site -> site.isLake() && site.reach(lx, lz) < 1.3)) {
+                                blocks.merge("lake_" + id.substring(id.indexOf(':') + 1), 1, Integer::sum);
+                            }
                         }
                     }
                 }
@@ -985,6 +995,11 @@ public final class DebugCommands {
         }
         sites.forEach(site -> AlteredAether.LOGGER.info("  {} at {} {} radius {} water {}: {}", site.type(), site.x(),
                 site.z(), String.format("%.1f", site.radius()), site.waterLevel(), column(level, site)));
+        sites.stream().filter(BasinSite::isLake).forEach(site -> {
+            var shore = com.linc.alteredaether.worldgen.feature.BasinFillFeature.lakeShore(field, site);
+            AlteredAether.LOGGER.info("  lake shore: {}", shore == null ? "grass" : BuiltInRegistries.BLOCK.getKey(
+                    shore.getBlock()));
+        });
     }
 
     /**
