@@ -68,7 +68,8 @@ public final class AATagProvider extends JsonDataProvider {
         tag("block", ResourceLocation.withDefaultNamespace("mineable/axe"), "altered_aether:ambrosium_campfire",
                 "altered_aether:gleam_vines", "altered_aether:gleam_vines_plant");
         // the raw gravitite block mines like the ore it comes from
-        tag("block", ResourceLocation.withDefaultNamespace("mineable/pickaxe"), "altered_aether:raw_gravitite_block");
+        tag("block", ResourceLocation.withDefaultNamespace("mineable/pickaxe"),
+                concat(new String[]{"altered_aether:raw_gravitite_block"}, AAStoneProvider.ids(null)));
         tag("block", ResourceLocation.withDefaultNamespace("needs_iron_tool"), "altered_aether:raw_gravitite_block");
         // dead bushes may stand on the dunes' quicksoil
         tag("block", ResourceLocation.withDefaultNamespace("dead_bush_may_place_on"), "aether:quicksoil");
@@ -91,6 +92,7 @@ public final class AATagProvider extends JsonDataProvider {
         tag("item", AlteredAether.id("aerwhale_taming_food"), "aether:blue_gummy_swet");
         tag("item", AlteredAether.id("aerwhale_breeding_food"), "aether:enchanted_berry");
         gleamVines();
+        stones();
         aetherBiomes();
         golem();
     }
@@ -313,6 +315,29 @@ public final class AATagProvider extends JsonDataProvider {
         json.addProperty("replace", false);
         json.add("values", values);
         data("tags/worldgen/biome", ResourceLocation.fromNamespaceAndPath("aether", "is_aether"), json);
+    }
+
+    /**
+     * The stone sets (see data/AAStoneProvider): shapes in vanilla's shape tags, the natural stones wherever holystone
+     * is as a stone, and everything counted as an Aether block, so non-Aether tools are slowed on it as on holystone.
+     */
+    private void stones() {
+        for (String registry : new String[]{"block", "item"}) {
+            for (String shape : new String[]{"stairs", "slabs", "walls"}) {
+                tag(registry, ResourceLocation.withDefaultNamespace(shape),
+                        AAStoneProvider.ids(shape.substring(0, shape.length() - (shape.equals("stairs") ? 0 : 1))));
+            }
+            tag(registry, ResourceLocation.fromNamespaceAndPath("c", "stones"), AAStoneProvider.naturalIds());
+        }
+        tag("item", ResourceLocation.withDefaultNamespace("stone_crafting_materials"), AAStoneProvider.naturalIds());
+        tag("block", ResourceLocation.withDefaultNamespace("sculk_replaceable"), AAStoneProvider.naturalIds());
+        tag("block", ResourceLocation.fromNamespaceAndPath("aether", "treated_as_aether_block"), AAStoneProvider.ids(null));
+    }
+
+    private static String[] concat(String[] first, String[] second) {
+        String[] out = java.util.Arrays.copyOf(first, first.length + second.length);
+        System.arraycopy(second, 0, out, first.length, second.length);
+        return out;
     }
 
     private void tag(String registry, ResourceLocation id, String... entries) {

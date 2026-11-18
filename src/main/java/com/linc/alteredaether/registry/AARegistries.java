@@ -20,6 +20,9 @@ import com.linc.alteredaether.advancement.VisitLandmarkTrigger;
 import com.linc.alteredaether.block.AmbrosiumCampfireBlock;
 import com.linc.alteredaether.block.GleamVinesBlock;
 import com.linc.alteredaether.block.GleamVinesPlantBlock;
+import com.linc.alteredaether.block.StoneSet;
+import net.minecraft.world.level.block.SoundType;
+import net.minecraft.world.level.block.state.properties.NoteBlockInstrument;
 import com.linc.alteredaether.compat.ModEnabled;
 import com.linc.alteredaether.entity.Squall;
 import com.linc.alteredaether.entity.TamedAerwhale;
@@ -137,6 +140,25 @@ public final class AARegistries {
     /** Like the glow berry, the berry is the vine's item: it is eaten, and planted under a ceiling. */
     public static final DeferredItem<ItemNameBlockItem> GLEAMBERRIES = ITEMS.register("gleamberries",
             () -> new ItemNameBlockItem(GLEAM_VINES.get(), new Item.Properties().food(Foods.GLOW_BERRIES)));
+
+    /*
+     * Two Aether stones beside holystone (strength 0.5; its bricks 2.0, resisting 6.0). Nadirite, the heavy igneous
+     * rock of island undersides, is the slowest to mine and shrugs off blasts. Celezite, a pink quartzite, is harder
+     * than holystone but resists blasts no better.
+     */
+    public static final StoneSet NADIRITE = new StoneSet(BLOCKS, ITEMS, "nadirite",
+            () -> stone(MapColor.STONE, SoundType.DEEPSLATE, 1.5F, 12.0F),
+            () -> stone(MapColor.STONE, SoundType.POLISHED_DEEPSLATE, 3.0F, 12.0F),
+            () -> stone(MapColor.STONE, SoundType.DEEPSLATE_BRICKS, 3.0F, 12.0F));
+    public static final StoneSet CELEZITE = new StoneSet(BLOCKS, ITEMS, "celezite",
+            () -> stone(MapColor.TERRACOTTA_WHITE, SoundType.CALCITE, 1.0F, 0.5F),
+            () -> stone(MapColor.TERRACOTTA_WHITE, SoundType.CALCITE, 2.5F, 6.0F),
+            () -> stone(MapColor.TERRACOTTA_WHITE, SoundType.CALCITE, 2.5F, 6.0F));
+
+    private static BlockBehaviour.Properties stone(MapColor color, SoundType sound, float hardness, float resistance) {
+        return BlockBehaviour.Properties.of().mapColor(color).instrument(NoteBlockInstrument.BASEDRUM)
+                .requiresCorrectToolForDrops().strength(hardness, resistance).sound(sound);
+    }
 
     /**
      * Gravitite as a modern ore (see data/AAGravititeProvider): the ore drops raw gravitite, which only enchanting

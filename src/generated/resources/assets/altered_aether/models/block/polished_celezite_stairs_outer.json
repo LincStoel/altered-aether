@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/outer_stairs",
+  "textures": {
+    "bottom": "altered_aether:block/polished_celezite",
+    "side": "altered_aether:block/polished_celezite",
+    "top": "altered_aether:block/polished_celezite"
+  }
+}

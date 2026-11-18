@@ -429,6 +429,7 @@ public final class AABlockProvider extends JsonDataProvider {
         lang.put("jade." + AlteredAether.MOD_ID + ".gravitite.inert", "Unpowered: needs redstone to lift");
         AAAdvancementProvider.language(lang);
         AABoulderProvider.language(lang);
+        AAStoneProvider.language(lang);
         AAGolemProvider.language(lang);
         JsonObject json = new JsonObject();
         lang.forEach(json::addProperty);

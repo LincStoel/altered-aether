@@ -1,0 +1,13 @@
+{
+  "variants": {
+    "type=bottom": {
+      "model": "altered_aether:block/nadirite_brick_slab"
+    },
+    "type=double": {
+      "model": "altered_aether:block/nadirite_bricks"
+    },
+    "type=top": {
+      "model": "altered_aether:block/nadirite_brick_slab_top"
+    }
+  }
+}

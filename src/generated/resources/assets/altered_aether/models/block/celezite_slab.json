@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/slab",
+  "textures": {
+    "bottom": "altered_aether:block/celezite",
+    "side": "altered_aether:block/celezite",
+    "top": "altered_aether:block/celezite"
+  }
+}

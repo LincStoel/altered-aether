@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/inner_stairs",
+  "textures": {
+    "bottom": "altered_aether:block/celezite_bricks",
+    "side": "altered_aether:block/celezite_bricks",
+    "top": "altered_aether:block/celezite_bricks"
+  }
+}
