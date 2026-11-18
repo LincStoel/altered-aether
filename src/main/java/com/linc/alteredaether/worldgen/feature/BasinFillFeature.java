@@ -446,9 +446,11 @@ public final class BasinFillFeature extends Feature<NoneFeatureConfiguration> {
             return;
         }
         double patch = field.noise(FLOOR_SALT, floor.getX(), floor.getZ(), 6);
-        // A mud-shored lake has a muddy bed where the others have clay.
-        Block clay = lakeShore != null && !lakeShore.is(block("aether:quicksoil", Blocks.SAND)) ? lakeShore.getBlock()
-                : Blocks.CLAY;
+        // A mud-shored lake has a muddy bed where the others have clay, and so does every poison lake Deep Aether fills.
+        Block mud = site.type() == BasinType.POISON_LAKE && AACommonConfig.COMPAT_ENABLED.get("deep_aether").get()
+                ? block("deep_aether:aether_mud", null) : null;
+        Block clay = mud != null ? mud : lakeShore != null && !lakeShore.is(block("aether:quicksoil", Blocks.SAND))
+                ? lakeShore.getBlock() : Blocks.CLAY;
         Block bed = switch (site.type()) {
             case FROZEN_POOL -> block("aether:holystone", Blocks.STONE);
             default -> patch > 0.45 ? clay : patch < -0.5 ? block("aether:mossy_holystone", Blocks.MOSSY_COBBLESTONE)
