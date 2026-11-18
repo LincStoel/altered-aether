@@ -51,6 +51,8 @@ public final class TundraDriftsFeature extends Feature<NoneFeatureConfiguration>
     private static final double MIN_PEAK = 5, MAX_PEAK = 26;
     /** Blocks over which the drifts fade out toward the tundra's edge. */
     private static final double FADE = 24;
+    /** The broad warp that swings the ridges round: its depth in blocks and its size. */
+    private static final double BEND = 130, BEND_SCALE = 420;
 
     private record Noises(long seed, SimplexNoise wind, SimplexNoise peak, SimplexNoise warp) {
     }
@@ -77,6 +79,8 @@ public final class TundraDriftsFeature extends Feature<NoneFeatureConfiguration>
         int[] ground = new int[256];
         double[] peak = new double[256], along = new double[256];
         boolean any = false;
+        double bearing = Math.toRadians(AACommonConfig.DUNE_WIND_DIRECTION.get());
+        double windX = Math.sin(bearing), windZ = -Math.cos(bearing);
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
         for (int i = 0; i < 256; i++) {
             int x = minX + (i & 15), z = minZ + (i >> 4);
@@ -85,12 +89,12 @@ public final class TundraDriftsFeature extends Feature<NoneFeatureConfiguration>
             if (fade <= 0 || ground[i] == Integer.MIN_VALUE) {
                 continue;
             }
-            // The wind: the configured prevailing direction, swinging up to 35 degrees either way over a few hundred
-            // blocks; north is -Z.
-            double angle = Math.toRadians(AACommonConfig.DUNE_WIND_DIRECTION.get() + 35 * n.wind.getValue(x / 700.0, z / 700.0));
-            double windX = Math.sin(angle), windZ = -Math.cos(angle);
-            // Position along the wind, bent a little so ridges meander instead of running ruler-straight.
-            along[i] = x * windX + z * windZ + 9 * n.warp.getValue(x / 90.0, z / 90.0);
+            // Position along the configured prevailing wind (north is -Z), bent by a broad, deep warp so the ridges
+            // swing round by a few tens of degrees over a few hundred blocks, and a small one so they meander. The
+            // bend lives in the warp, never in the bearing: a bearing that varied would be multiplied by the distance
+            // from the origin, crushing the spacing into a comb of thin fins far out.
+            along[i] = x * windX + z * windZ + BEND * n.wind.getValue(x / BEND_SCALE, z / BEND_SCALE)
+                    + 9 * n.warp.getValue(x / 90.0, z / 90.0);
             double size = 0.5 + 0.5 * n.peak.getValue(x / 140.0, z / 140.0);
             peak[i] = fade * Mth.lerp(size * size, MIN_PEAK, MAX_PEAK);
             any = true;

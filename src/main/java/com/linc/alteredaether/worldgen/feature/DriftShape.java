@@ -22,11 +22,11 @@ package com.linc.alteredaether.worldgen.feature;
  */
 public final class DriftShape {
     /** Blocks from one crest to the next, along the wind. */
-    public static final double SPACING = 46;
+    public static final double SPACING = 64;
     /** Where the crest sits along a ridge's span, 0 to 1 from its windward foot. */
-    static final double CREST = 0.62;
+    static final double CREST = 0.7;
     /** The lee face's width, as a share of the span. */
-    static final double LEE = 0.16;
+    static final double LEE = 0.12;
     /** How far the top of a full-height drift is carried downwind, as a share of its height. */
     static final double SHEAR = 0.55;
 
