@@ -787,9 +787,9 @@ public final class DebugCommands {
                 // Sections east-west and north-south through the middle, to see inside the islands (caves).
                 String slice = (biome == null ? "bench" : biome.replace(':', '_')) + "_slice";
                 int sx = origin.getX(), sz = origin.getZ(), sr = Math.min(r, 192);
-                server.submit(() -> WorldRender.render(aether, slice + "_x", sx - sr, sz, sx + sr, sz, -64, 140, 3))
+                server.submit(() -> WorldRender.render(aether, slice + "_x", sx - sr, sz, sx + sr, sz, -64, 260, 3))
                         .join();
-                server.submit(() -> WorldRender.render(aether, slice + "_z", sx, sz - sr, sx, sz + sr, -64, 140, 3))
+                server.submit(() -> WorldRender.render(aether, slice + "_z", sx, sz - sr, sx, sz + sr, -64, 260, 3))
                         .join();
                 for (int i = 0; i < spots.size(); i++) {
                     skirtRenders(server, aether, "spot" + i, spots.get(i));
