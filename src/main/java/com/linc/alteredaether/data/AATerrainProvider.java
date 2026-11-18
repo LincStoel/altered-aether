@@ -80,7 +80,7 @@ public final class AATerrainProvider extends JsonDataProvider {
             Set.of("crag_3d_noise", "jag", "crags", "tempest", "tempest_spires", "dune_ridges", "dune_centre", "dune_sheet",
                     "plateau", "plateau_terraced", "island", "tall_base_3d_noise", "rift",
                     "grove_land", "grove_land_broken", "island_sea", "island_high", "cloud_sea_mask", "cloud_sea_sheet",
-                    "cloud_sea_land", "island_mass", "highlands", "caves", "tundra_land");
+                    "cloud_sea_land", "island_mass", "highlands", "caves", "tundra_land", "bowl_land");
 
     /** Where the Highlands start, in tall-Aether blocks: above the main island band's top (y 128) in both modes. */
     private static final int HIGHLANDS_FLOOR = 140;
@@ -187,6 +187,9 @@ public final class AATerrainProvider extends JsonDataProvider {
         noise("tundra_footprint", -8, 1.0, 0.5);
         noise("tundra_roll", -7, 1.0, 0.5);
         noise("tundra_root", -6, 1.0, 0.5);
+        // The flower bowls' rims: the crest's height wandering along it, and the notches where it dips.
+        noise("bowl_crest", -6, 1.0, 0.5);
+        noise("bowl_notch", -5, 1.0);
         // The caves: caverns on a 64-block 3D noise, tunnels where two 32-block ones both pass near zero.
         noise("cave_cavern", -6, 1.0, 0.5, 0.25);
         noise("cave_tunnel_a", -5, 1.0, 0.3);
@@ -331,6 +334,30 @@ public final class AATerrainProvider extends JsonDataProvider {
                         mul(1.0 / 6, add(Df.y(), mul(-1.0, tundraUnderside)))),
                 mul(6.0, add(flatCache(shiftedNoise(NS + "tundra_footprint", 1.0, 0.0)), 0.25))));
 
+        // Flower Bowl: an island raised round its edges and sinking gently toward the middle, an irregular bowl of
+        // meadow. The rim follows the biome's own edge: from it the ground climbs over 10 blocks to a crest 14 to 26
+        // blocks above the floor (lower where a notch cuts it), then eases down over 26 blocks to a broad flat floor
+        // at y 36 (tall). The land itself follows the biome exactly, rather than a soft climate window. Beyond the rim, the open sky the groups keep between them makes the outer face a cliff.
+        JsonObject bowlEdge = Df.type(NS + "biome_edge");
+        bowlEdge.addProperty("classifier", "bowl");
+        bowlEdge.addProperty("reach", 64);
+        bowlEdge.addProperty("inside", 1);
+        df("bowl_edge", flatCache(bowlEdge));
+        JsonObject bowlCrest = mul(add(20.0, mul(6.0, shiftedNoise(NS + "bowl_crest", 1.0, 0.0))),
+                add(1.0, mul(-0.65, clamp(mul(4.0, add(shiftedNoise(NS + "bowl_notch", 1.0, 0.0), -0.45)), 0.0, 1.0))));
+        // up the outer slope (sqrt-like: steep at first, rounding over the crest), then down the inner one
+        JsonObject up = clamp(mul(1.0 / 10, terrain("bowl_edge")), 0.0, 1.0);
+        JsonObject rise = add(mul(2.0, up), mul(-1.0, mul(up, up)));
+        JsonObject down = clamp(mul(1.0 / 26, add(terrain("bowl_edge"), -10.0)), 0.0, 1.0);
+        JsonObject fall = add(1.0, mul(mul(down, down), add(-3.0, mul(2.0, down))));
+        df("bowl_rim", flatCache(mul(bowlCrest, mul(rise, fall))));
+        JsonObject bowlSummit = add(add(mode.y(36), mul(mode.height(1), terrain("bowl_rim"))),
+                mul(mode.height(2), shiftedNoise(NS + "grove_hummock", 1.0, 0.0)));
+        JsonObject bowlUnderside = add(mode.y(10), mul(-mode.height(24),
+                clamp(add(shiftedNoise(NS + "grove_root", 1.0, 0.0), 0.2), 0.0, 1.0)));
+        df("bowl_land", min(mul(0.125, add(bowlSummit, mul(-1.0, Df.y()))),
+                mul(1.0 / 6, add(Df.y(), mul(-1.0, bowlUnderside)))));
+
         // Each landform's weight, confined to our region.
         df("plateau_weight", mul(terrain("region_mask"), terrain("plateau_mask")));
         df("crag_weight", mul(terrain("region_mask"), terrain("crag_mask")));
@@ -339,6 +366,7 @@ public final class AATerrainProvider extends JsonDataProvider {
         df("dune_weight", mul(terrain("region_mask"), terrain("dune_mask")));
         df("grove_weight", mul(terrain("region_mask"), terrain("grove_mask")));
         df("tundra_weight", mul(terrain("region_mask"), terrain("tundra_mask")));
+        df("bowl_weight", mul(terrain("region_mask"), clamp(mul(1.0 / 3, terrain("bowl_edge")), 0.0, 1.0)));
 
         // Open sky between groups of biomes (BiomeGroups: peaks, woodland, dunes, and everything else), so each group
         // reads as its own landmass. Where one of our groups meets the rest of the Aether, the rest gives way: its land
@@ -389,9 +417,9 @@ public final class AATerrainProvider extends JsonDataProvider {
         // The caves themselves, negative inside: broad caverns where the cheese noise dips, and winding tunnels where
         // two spaghetti noises both pass near zero. Where a cave may open is the cave field's business (CaveField):
         // thick bodies only, with rock above and below.
-        JsonObject cheese = add(shiftedNoise(NS + "cave_cavern", 1.0, mode.frequency(1.5)), 0.2);
+        JsonObject cheese = add(shiftedNoise(NS + "cave_cavern", 1.0, mode.frequency(1.5)), 0.27);
         JsonObject tunnels = add(max(abs(shiftedNoise(NS + "cave_tunnel_a", 1.0, mode.frequency(1.2))),
-                abs(shiftedNoise(NS + "cave_tunnel_b", 1.0, mode.frequency(1.2)))), -0.16);
+                abs(shiftedNoise(NS + "cave_tunnel_b", 1.0, mode.frequency(1.2)))), -0.13);
         df("caves", min(cheese, tunnels));
         df("cave_entrance", flatCache(ramp(shiftedNoise(NS + "cave_entrance", 1.0, 0.0), -0.55 * 5, 5.0)));
 
@@ -528,7 +556,8 @@ public final class AATerrainProvider extends JsonDataProvider {
         df("grove_land_broken", broken);
         df("island_groves", Df.choose(terrain("grove_weight"), terrain("island_dunes"), terrain("grove_land_broken")));
         // The rift: the same island broken into drifting slabs, so the slabs carry the dunes and groves too.
-        df("island_tundra", Df.choose(terrain("tundra_weight"), terrain("island_groves"), terrain("tundra_land")));
+        df("island_bowls", Df.choose(terrain("bowl_weight"), terrain("island_groves"), terrain("bowl_land")));
+        df("island_tundra", Df.choose(terrain("tundra_weight"), terrain("island_bowls"), terrain("tundra_land")));
         rift(terrain("island_tundra"));
         JsonObject islandTier = Df.choose(terrain("rift_weight"), terrain("island_tundra"), terrain("rift"));
         JsonObject withCrags = Df.choose(terrain("crag_weight"), islandTier, terrain("crag_tier"));

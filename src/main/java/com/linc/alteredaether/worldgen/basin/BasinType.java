@@ -24,7 +24,7 @@ import java.util.Set;
  * probability that a grid cell over a matching biome holds one, before the config's rarity multiplier.
  */
 public enum BasinType {
-    POOL("pool", 0.55, 5, 9, 3, 5, Fluid.WATER, "aether_plateau"),
+    POOL("pool", 0.55, 5, 9, 3, 5, Fluid.WATER, "aether_plateau", "flower_bowl"),
     DEEP_LAKE("deep_lake", 0.12, 10, 15, 8, 12, Fluid.WATER, "aether_plateau"),
     CASCADING_LAKE("cascading_lake", 0.7, 7, 12, 4, 7, Fluid.WATER, "cascading_archwood_grove"),
     FROZEN_POOL("frozen_pool", 0.6, 4, 7, 3, 5, Fluid.FROZEN, "frozen_crags"),

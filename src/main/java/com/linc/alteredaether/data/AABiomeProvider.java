@@ -291,7 +291,7 @@ public final class AABiomeProvider extends JsonDataProvider {
         return base()
                 .climate(0.7f, 0.6f)
                 .replace(FOREST_TREES, "aether:skyroot_meadow_trees")
-                .add(BiomeJson.VEG, AADecorationProvider.LUSH_GRASS)
+                .add(BiomeJson.VEG, AADecorationProvider.LUSH_GRASS, AADecorationProvider.BOWL_FLOWERS)
                 .effect("foliage_color", 0x7FC25E).effect("grass_color", 0x8FD46A).sky(0x9ED4FF)
                 .creatureProbability(0.09f);
     }

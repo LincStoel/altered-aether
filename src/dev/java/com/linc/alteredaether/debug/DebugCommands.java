@@ -433,6 +433,15 @@ public final class DebugCommands {
             }
         }
         massMap(aether, name.replace("_groups", "_mass"), minX, minZ, maxX, maxZ);
+        // A profile across the area's middle, east-west: the ground's height and how far inside a flower bowl.
+        var bowl = field.solver(com.linc.alteredaether.worldgen.region.BiomeGroups.BOWL, 64);
+        StringBuilder profile = new StringBuilder();
+        int midZ = (minZ + maxZ) / 2;
+        for (int x = minX; x <= maxX; x += 8) {
+            int ground = aether.getHeight(Heightmap.Types.OCEAN_FLOOR, x, midZ);
+            profile.append(String.format(" %d:%.0f", ground, bowl.inside(x, midZ, 1)));
+        }
+        AlteredAether.LOGGER.info("Profile {} (ground:bowl depth, every 8 blocks):{}", name, profile);
         AlteredAether.LOGGER.info("Edge map {}: other {} peaks {} woodland {} dunes {} pixels; other cut {}, ours cut {}", name, counts[0], counts[1], counts[2], counts[3], near, wide);
         try {
             java.nio.file.Path folder = aether.getServer().getServerDirectory().resolve("renders");

@@ -137,8 +137,9 @@ public final class BiomeTable {
             // The shrouded forest hangs off the humid side of the nurselog frame, so the three giant-tree biomes read
             // as one woodland: living cathedral, its fallen elders, and a dark, mossy edge.
             rect(-0.50f, 0.03f, 0.63f, 0.80f, SHROUDED),
-            // Flower bowls in the open middle, between the solo nurselog and the dunes.
-            rect(-0.36f, 0.04f, -0.14f, 0.10f, BOWL),
+            // Flower bowls between the cathedral and the dunes: narrow on the slow temperature axis and wide on the
+            // fast humidity one, like the dunes, so they come in broad patches rather than slivers.
+            rect(0.04f, 0.20f, -0.60f, 0.28f, BOWL),
             // The archwood groves hold the four corners and the humid middle. Humidity rarely passes +/-0.4 here (its
             // 5% tails), so each window reaches well inside that: about 2% of the island tier apiece. The flashing
             // grove gives up a corner to the solo nurselog, so it reaches a little further toward the middle.

@@ -11,7 +11,7 @@
       "xz_scale": 1.0,
       "y_scale": 1.5
     },
-    "argument2": 0.2
+    "argument2": 0.27
   },
   "argument2": {
     "type": "minecraft:add",
@@ -42,6 +42,6 @@
         }
       }
     },
-    "argument2": -0.16
+    "argument2": -0.13
   }
 }

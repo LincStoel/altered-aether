@@ -66,6 +66,7 @@ public final class AADecorationProvider extends FeatureData {
     static final String GOLDEN_HIGH_CLOUD = NS + "cloud/golden_high";
     static final String CRAG_CAMPFIRE = NS + "camp/crag_campfire";
     static final String LUSH_GRASS = NS + "vegetation/lush_grass";
+    static final String BOWL_FLOWERS = NS + "vegetation/bowl_flowers";
 
     private static final String SURFACE = "WORLD_SURFACE_WG";
     private static final String CRAG_ROCK = NS + "frozen_crag_ore_replaceables";
@@ -271,6 +272,13 @@ public final class AADecorationProvider extends FeatureData {
         // the flourishing grove should read as visibly lusher than the other four: the stock grass patch, at 20 a chunk
         placed("vegetation/lush_grass", "aether:grass_patch", Placement.list(
                 Placement.configCount(20, "vegetation"), Placement.inSquare(), Placement.heightmap("MOTION_BLOCKING"),
+                Placement.biome()));
+        // The flower bowls' carpet: the Aether's white and purple flowers wall to wall (Deep Aether's join them with
+        // that mod), dense patches a few blocks across, several to a chunk.
+        configured("vegetation/bowl_flowers", "minecraft:random_patch", patch(64, 6, 2,
+                weighted("aether:white_flower", 3, "aether:purple_flower", 2), airOnTag("minecraft:dirt")));
+        placed("vegetation/bowl_flowers", "vegetation/bowl_flowers", Placement.list(
+                Placement.configCount(5, "vegetation"), Placement.inSquare(), Placement.heightmap("MOTION_BLOCKING"),
                 Placement.biome()));
         placed("vegetation/dead_bush", "minecraft:patch_dead_bush", Placement.list(
                 Placement.configCount(1 / 8.0, "vegetation"), Placement.inSquare(), Placement.heightmap(SURFACE),
