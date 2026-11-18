@@ -1,0 +1,8 @@
+{
+  "biomes": [
+    "altered_aether:aether_plateau"
+  ],
+  "max_temp": 33,
+  "min_temp": 53,
+  "units": "F"
+}

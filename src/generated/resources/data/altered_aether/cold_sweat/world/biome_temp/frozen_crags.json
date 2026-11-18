@@ -1,0 +1,8 @@
+{
+  "biomes": [
+    "altered_aether:frozen_crags"
+  ],
+  "max_temp": -22,
+  "min_temp": 8,
+  "units": "F"
+}

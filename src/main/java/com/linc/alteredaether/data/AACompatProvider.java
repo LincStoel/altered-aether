@@ -51,6 +51,53 @@ public final class AACompatProvider extends FeatureData {
         deepAetherCover();
         snuffles();
         airshipVillage();
+        coldSweat();
+    }
+
+    // -------------------------------------------------------------------------------------- cold sweat
+
+    /**
+     * What each biome feels like under Cold Sweat, in °F: {low, high}. Without these Cold Sweat works the heat out from
+     * the vanilla temperature, which puts the dunes and the rift at 130-175°F.
+     */
+    private static final Map<String, int[]> COLD_SWEAT_TEMPS = Map.ofEntries(
+            Map.entry("snow_tundra", new int[]{10, 48}),
+            Map.entry("frozen_crags", new int[]{10, 40}),
+            Map.entry("cascading_archwood_grove", new int[]{45, 65}),
+            Map.entry("nurselog_hollow", new int[]{55, 75}),
+            Map.entry("blazing_archwood_grove", new int[]{73, 100}),
+            Map.entry("shrouded_forest", new int[]{50, 70}),
+            Map.entry("skyroot_cathedral", new int[]{50, 70}),
+            Map.entry("flourishing_archwood_grove", new int[]{60, 75}),
+            Map.entry("flower_bowl", new int[]{60, 75}),
+            Map.entry("aether_plateau", new int[]{65, 85}),
+            Map.entry("vexing_archwood_grove", new int[]{75, 95}),
+            Map.entry("flashing_archwood_grove", new int[]{85, 95}),
+            Map.entry("shattered_rift", new int[]{35, 45}),
+            Map.entry("tempest_peaks", new int[]{75, 100}),
+            Map.entry("windswept_dunes", new int[]{35, 120}));
+
+    /** Cold Sweat's default config adds this to the whole Aether, on top of the biome. */
+    private static final int COLD_SWEAT_AETHER_OFFSET = 32;
+
+    /**
+     * Cold Sweat's biome temperatures. It blends min_temp to max_temp by {@code sin(dayTime)} on a 24000-tick day, and
+     * the Aether's eternal day holds dayTime at 18000 (a quarter of its 72000-tick day), which Cold Sweat reads as
+     * midnight: min_temp is what players feel. So the high goes in min_temp, the low in max_temp. With the daylight
+     * cycle off the Aether's clock sits at -1, and players feel the midpoint. Only Cold Sweat reads this folder, so the
+     * files need no mod condition.
+     */
+    private void coldSweat() {
+        COLD_SWEAT_TEMPS.forEach((biome, temps) -> {
+            JsonObject json = new JsonObject();
+            com.google.gson.JsonArray biomes = new com.google.gson.JsonArray();
+            biomes.add(NS + biome);
+            json.add("biomes", biomes);
+            json.addProperty("min_temp", temps[1] - COLD_SWEAT_AETHER_OFFSET);
+            json.addProperty("max_temp", temps[0] - COLD_SWEAT_AETHER_OFFSET);
+            json.addProperty("units", "F");
+            data("cold_sweat/world/biome_temp", AlteredAether.id(biome), json);
+        });
     }
 
     // ------------------------------------------------------------------------------ overworld ores

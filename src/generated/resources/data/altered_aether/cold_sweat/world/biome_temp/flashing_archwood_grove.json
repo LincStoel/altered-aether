@@ -1,0 +1,8 @@
+{
+  "biomes": [
+    "altered_aether:flashing_archwood_grove"
+  ],
+  "max_temp": 53,
+  "min_temp": 63,
+  "units": "F"
+}
