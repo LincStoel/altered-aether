@@ -354,6 +354,9 @@ public final class AARegistries {
             FEATURES.register("ruined_pillar", RuinedPillarFeature::new);
     public static final DeferredHolder<Feature<?>, SnowDriftFeature> SNOW_DRIFT =
             FEATURES.register("snow_drift", SnowDriftFeature::new);
+    public static final DeferredHolder<Feature<?>, com.linc.alteredaether.worldgen.feature.TundraDriftsFeature>
+            TUNDRA_DRIFTS = FEATURES.register("tundra_drifts",
+            com.linc.alteredaether.worldgen.feature.TundraDriftsFeature::new);
     public static final DeferredHolder<Feature<?>, StrikeCraterFeature> STRIKE_CRATER =
             FEATURES.register("strike_crater", StrikeCraterFeature::new);
     public static final DeferredHolder<Feature<?>, TotemFeature> TOTEM =

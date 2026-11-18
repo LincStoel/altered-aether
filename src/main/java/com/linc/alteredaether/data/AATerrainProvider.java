@@ -80,7 +80,7 @@ public final class AATerrainProvider extends JsonDataProvider {
             Set.of("crag_3d_noise", "jag", "crags", "tempest", "tempest_spires", "dune_ridges", "dune_centre", "dune_sheet",
                     "plateau", "plateau_terraced", "island", "tall_base_3d_noise", "rift",
                     "grove_land", "grove_land_broken", "island_sea", "island_high", "cloud_sea_mask", "cloud_sea_sheet",
-                    "cloud_sea_land", "island_mass", "highlands", "caves");
+                    "cloud_sea_land", "island_mass", "highlands", "caves", "tundra_land");
 
     /** Where the Highlands start, in tall-Aether blocks: above the main island band's top (y 128) in both modes. */
     private static final int HIGHLANDS_FLOOR = 140;
@@ -183,6 +183,10 @@ public final class AATerrainProvider extends JsonDataProvider {
         noise("highlands_root", -5, 1.0, 0.5);
         // Where a cave breaks through to daylight: rare patches a few dozen blocks across.
         noise("cave_entrance", -5, 1.0, 0.5);
+        // The Snow Tundra's plates: broad and low, gently rolling, with lobes hanging beneath.
+        noise("tundra_footprint", -8, 1.0, 0.5);
+        noise("tundra_roll", -7, 1.0, 0.5);
+        noise("tundra_root", -6, 1.0, 0.5);
         // The caves: caverns on a 64-block 3D noise, tunnels where two 32-block ones both pass near zero.
         noise("cave_cavern", -6, 1.0, 0.5, 0.25);
         noise("cave_tunnel_a", -5, 1.0, 0.3);
@@ -315,12 +319,26 @@ public final class AATerrainProvider extends JsonDataProvider {
                 add(mul(6.0, add(flatCache(shiftedNoise(NS + "grove_footprint", 1.0, 0.0)), 0.3)),
                         mul(-14.0, mul(groveSeam, groveGap)))));
 
+        // Snow Tundra, on the erosion band under the crags (0.52..0.6125): its mask ramps in across 0.49..0.55 and the
+        // crags take over above it. Broad, low snowfields on plates a few hundred blocks across with sky between,
+        // their ground at y 30..42 (tall), hanging lobes beneath; the drifts are built on them by TundraDriftsFeature.
+        df("tundra_mask", ramp(terrain("crag_noise"), -0.49 / 0.06, 1 / 0.06));
+        JsonObject tundraSummit = add(add(mode.y(36), mul(mode.height(5), shiftedNoise(NS + "tundra_roll", 1.0, 0.0))),
+                mul(mode.height(2), shiftedNoise(NS + "grove_hummock", 1.0, 0.0)));
+        JsonObject tundraUnderside = add(mode.y(14), mul(-mode.height(20),
+                clamp(add(shiftedNoise(NS + "tundra_root", 1.0, 0.0), 0.15), 0.0, 1.0)));
+        df("tundra_land", min(min(mul(0.125, add(tundraSummit, mul(-1.0, Df.y()))),
+                        mul(1.0 / 6, add(Df.y(), mul(-1.0, tundraUnderside)))),
+                mul(6.0, add(flatCache(shiftedNoise(NS + "tundra_footprint", 1.0, 0.0)), 0.25))));
+
         // Each landform's weight, confined to our region.
         df("plateau_weight", mul(terrain("region_mask"), terrain("plateau_mask")));
         df("crag_weight", mul(terrain("region_mask"), terrain("crag_mask")));
-        df("rift_weight", mul(terrain("region_mask"), terrain("rift_mask")));
+        df("rift_weight", mul(mul(terrain("region_mask"), terrain("rift_mask")),
+                add(1.0, mul(-1.0, terrain("tundra_mask")))));
         df("dune_weight", mul(terrain("region_mask"), terrain("dune_mask")));
         df("grove_weight", mul(terrain("region_mask"), terrain("grove_mask")));
+        df("tundra_weight", mul(terrain("region_mask"), terrain("tundra_mask")));
 
         // Open sky between groups of biomes (BiomeGroups: peaks, woodland, dunes, and everything else), so each group
         // reads as its own landmass. Where one of our groups meets the rest of the Aether, the rest gives way: its land
@@ -510,8 +528,9 @@ public final class AATerrainProvider extends JsonDataProvider {
         df("grove_land_broken", broken);
         df("island_groves", Df.choose(terrain("grove_weight"), terrain("island_dunes"), terrain("grove_land_broken")));
         // The rift: the same island broken into drifting slabs, so the slabs carry the dunes and groves too.
-        rift(terrain("island_groves"));
-        JsonObject islandTier = Df.choose(terrain("rift_weight"), terrain("island_groves"), terrain("rift"));
+        df("island_tundra", Df.choose(terrain("tundra_weight"), terrain("island_groves"), terrain("tundra_land")));
+        rift(terrain("island_tundra"));
+        JsonObject islandTier = Df.choose(terrain("rift_weight"), terrain("island_tundra"), terrain("rift"));
         JsonObject withCrags = Df.choose(terrain("crag_weight"), islandTier, terrain("crag_tier"));
         // Atolls are set into whatever tier is beneath them, each kept wholly inside our region by its site check.
         JsonObject atoll = Df.type(NS + "atoll");

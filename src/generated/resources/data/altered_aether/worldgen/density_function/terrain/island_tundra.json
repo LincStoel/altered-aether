@@ -1,0 +1,6 @@
+{
+  "type": "altered_aether:choose",
+  "high": "altered_aether:terrain/tundra_land",
+  "low": "altered_aether:terrain/island_groves",
+  "mask": "altered_aether:terrain/tundra_weight"
+}

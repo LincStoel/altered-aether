@@ -61,7 +61,7 @@
                         "low": {
                           "type": "altered_aether:choose",
                           "high": "altered_aether:terrain/rift",
-                          "low": "altered_aether:terrain/island_groves",
+                          "low": "altered_aether:terrain/island_tundra",
                           "mask": "altered_aether:terrain/rift_weight"
                         },
                         "mask": "altered_aether:terrain/crag_weight"

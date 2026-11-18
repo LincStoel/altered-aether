@@ -276,7 +276,7 @@ public final class AABiomeProvider extends JsonDataProvider {
                 .sky(12510199).effect("water_color", 4025996).effect("water_fog_color", 1981520)
                 .particle(BiomeJson.particleType("minecraft:snowflake"), 0.005f)
                 .add(BiomeJson.LOCAL, AADecorationProvider.CRAG_BOULDER, AADecorationProvider.SNOW_DRIFT,
-                        AADecorationProvider.ICESTONE_SHARD)
+                        AADecorationProvider.ICESTONE_SHARD, AADecorationProvider.TUNDRA_DRIFTS)
                 .spawners("creature",
                         spawner("aether:aerbunny", 12, 2, 4),
                         spawner("aether:sheepuff", 10, 2, 4))

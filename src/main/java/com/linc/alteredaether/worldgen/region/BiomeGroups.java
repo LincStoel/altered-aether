@@ -31,6 +31,8 @@ public enum BiomeGroups {
     GROUP(BiomeGroups::group),
     /** Our groups (1) against everything else (0): where the open sky between them is cut on the other side. */
     OURS(biome -> group(biome) != 0 ? 1 : 0),
+    /** The snow tundra against everything else; its drifts fade out toward the tundra's edge. */
+    TUNDRA(biome -> biome.equals(BiomeTable.TUNDRA) ? 1 : 0),
     /** The flower bowl against everything else; its rim follows the distance in from the bowl's edge. */
     BOWL(biome -> biome.equals(BiomeTable.BOWL) ? 1 : 0),
     /**

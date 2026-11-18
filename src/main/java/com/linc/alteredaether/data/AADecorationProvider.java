@@ -42,6 +42,7 @@ public final class AADecorationProvider extends FeatureData {
     static final String TEMPEST_LONE_SPIKE = NS + "copper_spike/lone";
     static final String TEMPEST_COPPER_VEIN = NS + "copper_vein/tempest";
     static final String SNOW_DRIFT = NS + "drift/snow";
+    static final String TUNDRA_DRIFTS = NS + "drift/tundra";
     static final String ICE_SPIKE = NS + "drift/ice_spike";
     static final String ICESTONE_SHARD = NS + "shard/icestone";
     static final String HANGING_CHAIN = NS + "hanging/chain";
@@ -192,6 +193,9 @@ public final class AADecorationProvider extends FeatureData {
         config.addProperty("wind_aligned", true);
         configured("drift/snow", "snow_drift", config);
         placed("drift/snow", "drift/snow", surface(0.5, "snow_drifts"));
+        // The Snow Tundra's great drifts and buried trees, built a chunk at a time (TundraDriftsFeature).
+        configured("drift/tundra", "tundra_drifts", new JsonObject());
+        placed("drift/tundra", "drift/tundra", Placement.list());
 
         // Vanilla's tapered packed-ice spire grows only from snow blocks, so it rises out of the drifts and
         // nowhere else, which is the whole spacing rule.
