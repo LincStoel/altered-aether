@@ -370,6 +370,7 @@ public final class AABlockProvider extends JsonDataProvider {
 
     private void language() {
         Map<String, String> lang = new TreeMap<>();
+        lang.put("itemGroup." + AlteredAether.MOD_ID, "Altered Aether");
         lang.put("block." + AlteredAether.MOD_ID + "." + CAMPFIRE, "Ambrosium Campfire");
         lang.put("block." + AlteredAether.MOD_ID + "." + GLEAM_VINES, "Gleam Vines");
         lang.put("block." + AlteredAether.MOD_ID + "." + GLEAM_VINES_PLANT, "Gleam Vines Plant");

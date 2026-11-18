@@ -101,7 +101,11 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.MobCategory;
 import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.food.Foods;
+import com.aetherteam.aether.item.AetherCreativeTabs;
+import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.BlockItem;
+import net.minecraft.world.item.CreativeModeTab;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemNameBlockItem;
 import net.minecraft.world.level.block.Blocks;
@@ -225,6 +229,17 @@ public final class AARegistries {
     /** Links storage and golems to the golem it came from. */
     public static final DeferredItem<StoragePebbleItem> STORAGE_PEBBLE = ITEMS.register("storage_pebble",
             () -> new StoragePebbleItem(new Item.Properties().stacksTo(1)));
+
+    public static final DeferredRegister<CreativeModeTab> CREATIVE_MODE_TABS =
+            DeferredRegister.create(Registries.CREATIVE_MODE_TAB, AlteredAether.MOD_ID);
+    /** Everything the mod adds, after the Aether's own tabs; see registry/AACreativeTab. */
+    public static final DeferredHolder<CreativeModeTab, CreativeModeTab> CREATIVE_TAB = CREATIVE_MODE_TABS.register(
+            AlteredAether.MOD_ID, () -> CreativeModeTab.builder()
+                    .title(Component.translatable("itemGroup." + AlteredAether.MOD_ID))
+                    .icon(() -> new ItemStack(WHALE_WHISTLE.get()))
+                    .withTabsBefore(AetherCreativeTabs.AETHER_SPAWN_EGGS.getKey())
+                    .displayItems(AACreativeTab::displayItems)
+                    .build());
 
     public static final DeferredRegister<AttachmentType<?>> ATTACHMENT_TYPES =
             DeferredRegister.create(NeoForgeRegistries.Keys.ATTACHMENT_TYPES, AlteredAether.MOD_ID);
@@ -446,6 +461,7 @@ public final class AARegistries {
         BLOCKS.register(modBus);
         DATA_COMPONENTS.register(modBus);
         ITEMS.register(modBus);
+        CREATIVE_MODE_TABS.register(modBus);
         ENTITY_TYPES.register(modBus);
         MENUS.register(modBus);
         ATTACHMENT_TYPES.register(modBus);

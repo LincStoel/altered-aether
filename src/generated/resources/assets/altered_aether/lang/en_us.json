@@ -162,6 +162,7 @@
   "item.altered_aether.whale_whistle.an_aerwhale": "an aerwhale",
   "item.altered_aether.whale_whistle.summons": "Summons %s",
   "item.altered_aether.whale_whistle.unlinked": "Use on an aerwhale you have tamed to link it",
+  "itemGroup.altered_aether": "Altered Aether",
   "jade.altered_aether.golem.blocked": "%s storage walled in",
   "jade.altered_aether.golem.bulk": "Bulk storage",
   "jade.altered_aether.golem.encased": "Walled in: no golem can get at it",
