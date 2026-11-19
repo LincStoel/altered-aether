@@ -129,21 +129,50 @@ Nothing in worldgen may log once per chunk, column or block, and a stack trace n
 
 ## 8. Before committing a worldgen change
 
-1. **Fallback check:** run a dev server with ByePregen (`-PoptionalMods=all` or `byepregen`). Grep the log for
+The dev server's perf probe (`debug/PerfProbe`) does the measuring. It runs at startup, writes to
+`run-server/perf/`, and stops the server.
+
+```
+./gradlew runServer -PoptionalMods=none -PaaPerf=fingerprint,bench,chunkhash,jfr -PaaPerfTag=before -PaaWorld=perf_before
+```
+
+- **`-PaaWorld`** plays a world of that name, made fresh if it doesn't exist, without editing `server.properties`.
+  Use a new name for every run with `bench`, since a bench on an existing world just loads chunks from disk.
+- **The seed** comes from `server.properties`. Keep it the same for both sides of a comparison.
+- **Steps:**
+
+  | Step | What it does |
+  |---|---|
+  | `fingerprint` | Noise-column hash (no fresh world needed) |
+  | `bench` | 484 fixed chunks: wall and worker-CPU ms per chunk, `ms/<feature>` timings |
+  | `chunkhash` | Each bench chunk's hash and block counts |
+  | `fly` | The flight (`-PaaPerfFly="x0 z0 x1 z1 speed radius"`) |
+  | `spark` | A spark profile round the flight, saved to file, if spark is in `run-server/mods` |
+  | `jfr` | JFR over bench and flight |
+
+- **On an existing world:** `/altered_aether fingerprint` gives the noise fingerprint without a restart.
+
+The checks:
+
+1. **Fallback check:** run with ByePregen (`-PoptionalMods=all`, or `byepregen`). Grep the log for
    `Disabling final-density column evaluator`; it must be 0.
-2. **Benchmark** before and after, on a fresh world each time (fixed and named origins reuse chunks already on disk):
-   `-PaaBench=<radius>[,origin]`, which prints ms per chunk and `ms/<feature>` timings.
-   - Run each side twice: at around 35 ms per chunk, runs differ by up to 10-15%.
+2. **Speed:** a `bench` before and after.
+   - Run each side twice: at around 35 ms per chunk, runs differ by up to 10-15%, and worker CPU is the steadier
+     figure.
    - Leave the machine idle while it runs (no builds).
-3. **Exploring check:** `/altered_aether fly <x0 z0> <x1 z1> 40 10` in the Aether. Watch "missing near" and the
-   longest tick, especially in the first 30 seconds.
-4. **When something is slow, profile it.**
-   - Attach JFR: `jcmd <pid> JFR.configure stackdepth=256`, then `JFR.start settings=profile`.
-   - Attribute the samples by generation step, first by whether they fall in structure starts or features.
-   - Read the file with `jdk.jfr.consumer.RecordingFile` in a small Java program. Exporting it to JSON writes
-     gigabytes.
-5. **Changes meant to be invisible must prove it.** Fingerprint the noise columns (`getBaseColumn` block states over a
-   grid round the affected features) before and after. For features, compare per-chunk block counts of the blocks you
-   touch; whole-chunk hashes vary between runs.
-6. **Check the stock-height world too:** `initial-disabled-packs=mod/altered_aether:datapacks/tall_aether`, on a fresh
-   world. It must load. A noise band's height must be a multiple of 16; 04c1e05 fixed a world that didn't load.
+   - To compare against an older commit, build it in a separate `git worktree` with its own `run-server`.
+3. **Exploring check:** add `fly` and read the "Flight done" line: chunks missing near the player on average, and the
+   longest tick. Missing chunks in the first 30 seconds mean the structure-start backlog has grown.
+4. **When something is slow, profile it:**
+   `java tools/perf/JfrAgg.java run-server/perf/<tag>.jfr [cpu|park|alloc] [top] [thread prefix|-] [only stacks containing]`.
+   - It shows how many threads each generation step keeps busy; about 1 means one chunk at a time.
+   - It shows where the samples go by step, by our class and call chain, by the Aether structure whose placement probe
+     they fall under, and by feature.
+5. **Changes meant to be invisible must prove it:**
+   `python -I tools/perf/compare.py before after --watch block.aether.cold_aercloud,...`.
+   - The fingerprints must be equal.
+   - The blocks the change touches must match in every chunk.
+   - Other differences in leaves, grass, ores or the odd water block are cross-chunk ordering noise (§4.5).
+6. **Check the stock-height world too:** `initial-disabled-packs=mod/altered_aether:datapacks/tall_aether` (back the
+   file up), on a fresh world. It must load. A noise band's height must be a multiple of 16; 04c1e05 fixed a world
+   that didn't load.

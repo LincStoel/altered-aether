@@ -353,6 +353,10 @@ Worldgen tools, all on the dev server:
   `campfire`, `biome:<name>`, `giant:<type>`) into `run/screenshots/tour/`.
 - `/altered_aether fly <from> <to> <speed> [radius]` (run in the Aether, e.g. through RCON) moves a chunk ticket
   along a line like a flying player and logs tick times, chunks generated and how many near it are still missing.
+- `-PaaPerf=fingerprint,bench,chunkhash,fly,spark,jfr` (with `-PaaPerfTag=<name>` and `-PaaWorld=<fresh world>`)
+  measures worldgen for before/after comparisons and writes to `run-server/perf/`; `/altered_aether fingerprint`
+  hashes the terrain of a running world. `tools/perf/compare.py` and `tools/perf/JfrAgg.java` read the results. See
+  [docs/worldgen-performance.md](docs/worldgen-performance.md).
 - `python tools/parity/parity.py` compares the biomes with the World Traveler 2 datapack they replace.
 
 ## License

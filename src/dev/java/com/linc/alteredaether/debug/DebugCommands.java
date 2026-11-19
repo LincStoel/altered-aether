@@ -99,6 +99,7 @@ public final class DebugCommands {
                         .then(Commands.argument("item", net.minecraft.commands.arguments.item.ItemArgument.item(event.getBuildContext()))
                                 .executes(ctx -> golemPath(ctx,
                                         net.minecraft.commands.arguments.item.ItemArgument.getItem(ctx, "item").createItemStack(1, false)))))
+                .then(Commands.literal("fingerprint").executes(DebugCommands::fingerprint))
                 .then(Commands.literal("rumourwarm").executes(DebugCommands::rumourWarm))
                 .then(Commands.literal("rumourbiomes").executes(DebugCommands::rumourBiomes))
                 .then(Commands.literal("fly")
@@ -108,6 +109,34 @@ public final class DebugCommands {
                                                 .executes(ctx -> fly(ctx, 10))
                                                 .then(Commands.argument("radius", IntegerArgumentType.integer(2, 32))
                                                         .executes(ctx -> fly(ctx, IntegerArgumentType.getInteger(ctx, "radius")))))))));
+    }
+
+    /**
+     * {@code /altered_aether fingerprint}: hashes the Aether's noise columns over PerfProbe's fixed areas (and round the
+     * nearest plateau's sea stacks), so two builds can be checked for the same terrain without a fresh world. Runs in
+     * the background; the result goes to the chat, the log and run-server/perf/command-fingerprint.txt.
+     */
+    private static int fingerprint(CommandContext<CommandSourceStack> ctx) {
+        CommandSourceStack source = ctx.getSource();
+        ServerLevel aether = source.getServer().getLevel(THE_AETHER);
+        if (aether == null) {
+            source.sendFailure(Component.literal("The Aether isn't loaded."));
+            return 0;
+        }
+        source.sendSuccess(() -> Component.literal("Fingerprinting the Aether's terrain..."), false);
+        CompletableFuture.runAsync(() -> {
+            try {
+                PerfProbe.fingerprint(aether, line -> {
+                    AlteredAether.LOGGER.info("PERF {}", line);
+                    String hash = line.replaceAll(".*hash=([0-9a-f]+).*", "$1");
+                    source.getServer().execute(() -> source.sendSuccess(() -> Component.literal(
+                            "Terrain fingerprint " + hash + " (per area in the log)"), false));
+                }, "command");
+            } catch (Exception e) {
+                AlteredAether.LOGGER.error("Fingerprint failed", e);
+            }
+        }, Util.backgroundExecutor());
+        return 1;
     }
 
     /**

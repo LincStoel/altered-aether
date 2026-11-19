@@ -36,7 +36,7 @@ public final class Flight {
     private static final TicketType<ChunkPos> TICKET =
             TicketType.create("altered_aether_flight", Comparator.comparingLong(ChunkPos::toLong));
 
-    private static Flight active;
+    private static volatile Flight active;
     private static volatile int generated;
 
     private final ServerLevel level;
@@ -57,6 +57,11 @@ public final class Flight {
         this.speed = speed;
         this.radius = radius;
         this.length = Math.hypot(x1 - x0, z1 - z0);
+    }
+
+    /** Whether a flight is under way; read from other threads (see PerfProbe). */
+    static boolean flying() {
+        return active != null;
     }
 
     static boolean start(ServerLevel level, double x0, double z0, double x1, double z1, double speed, int radius) {
