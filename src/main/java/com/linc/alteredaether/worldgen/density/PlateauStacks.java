@@ -15,6 +15,7 @@
 package com.linc.alteredaether.worldgen.density;
 
 import com.linc.alteredaether.worldgen.landmark.StackField;
+import com.linc.alteredaether.worldgen.skirt.SkirtField;
 import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.util.KeyDispatchDataCodec;
@@ -163,6 +164,9 @@ public final class PlateauStacks implements DensityFunctions.TwoArgumentSimpleFu
         Column column = COLUMN.get();
         int chunkX = x >> 4, chunkZ = z >> 4;
         if (column.field.get() != field || column.x != chunkX || column.z != chunkZ) {
+            // This is the first look at a chunk's terrain, on whichever worker builds it (or probes it for a
+            // structure): the moment to have its cloud-skirt tiles worked out off the one-at-a-time features step.
+            SkirtField.prefetch(chunkX, chunkZ);
             List<StackField.Stack> stacks = field.touching(chunkX << 4, chunkZ << 4, (chunkX << 4) + 15,
                     (chunkZ << 4) + 15);
             column.field = new java.lang.ref.WeakReference<>(field);

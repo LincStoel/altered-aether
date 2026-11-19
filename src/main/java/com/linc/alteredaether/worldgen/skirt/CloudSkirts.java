@@ -45,6 +45,8 @@ public final class CloudSkirts {
     private static final int OPEN_HEIGHT = 8;
     /** Blocks either way the clearance under the collar is averaged over. */
     private static final int CLEAR_BLUR = 4;
+    /** Blocks round a chunk whose collar the feature reads, for the clearance it measures there. */
+    static final int MARGIN = SkirtGrid.CLEAR_MIN + CLEAR_BLUR;
 
     @Nullable
     public static SkirtField field(WorldGenLevel level) {
@@ -63,7 +65,7 @@ public final class CloudSkirts {
      * averaged over {@link #CLEAR_BLUR} blocks either way so the collar thins smoothly rather than in steps.
      */
     public static int place(WorldGenLevel level, SkirtField field, int x0, int z0) {
-        int margin = SkirtGrid.CLEAR_MIN + CLEAR_BLUR, side = 16 + 2 * margin;
+        int margin = MARGIN, side = 16 + 2 * margin;
         double[][] spans = new double[side * side][];
         double[] out = new double[2];
         boolean any = false;

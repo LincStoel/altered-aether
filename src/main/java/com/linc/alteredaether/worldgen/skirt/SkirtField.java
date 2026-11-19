@@ -106,7 +106,7 @@ public final class SkirtField {
         int tx = Math.floorDiv(Math.floorDiv(x, STEP), TILE), tz = Math.floorDiv(Math.floorDiv(z, STEP), TILE);
         Collar collar = collars.getIfPresent(SkirtGrid.key(tx, tz));
         if (collar == null) {
-            Util.backgroundExecutor().execute(() -> collarTile(tx, tz));
+            prefetchTile(tx, tz);
             return true;
         }
         double[] out = new double[2];
@@ -175,6 +175,74 @@ public final class SkirtField {
         double rim = collar.lerp(collar.height, i, j, fx, fz), wide = collar.lerp(collar.wide, i, j, fx, fz);
         return SkirtGrid.span(distance, rim, g, SkirtGrid.width(seed, x, z, wide), SkirtGrid.thickness(seed, x, z),
                 SkirtGrid.billowTop(seed, x, z), SkirtGrid.billowBottom(seed, x, z), out);
+    }
+
+    /**
+     * Starts working out, in the background, the collar tiles the cloud-skirt feature will read for a chunk. The
+     * feature runs in the features step, which worldgen runs one chunk at a time, while the terrain before it runs on
+     * every worker; asked for from the terrain, the tiles are usually ready by the time the feature wants them, and
+     * the feature only reads them.
+     */
+    public static void prefetch(int chunkX, int chunkZ) {
+        if (FIELDS.isEmpty()) {
+            return;
+        }
+        int margin = CloudSkirts.MARGIN;
+        int tx0 = Math.floorDiv(Math.floorDiv((chunkX << 4) - margin, STEP), TILE);
+        int tx1 = Math.floorDiv(Math.floorDiv((chunkX << 4) + 15 + margin, STEP), TILE);
+        int tz0 = Math.floorDiv(Math.floorDiv((chunkZ << 4) - margin, STEP), TILE);
+        int tz1 = Math.floorDiv(Math.floorDiv((chunkZ << 4) + 15 + margin, STEP), TILE);
+        for (SkirtField field : FIELDS.values()) {
+            for (int tx = tx0; tx <= tx1; tx++) {
+                for (int tz = tz0; tz <= tz1; tz++) {
+                    field.prefetchTile(tx, tz);
+                }
+            }
+        }
+    }
+
+    /** Tiles queued or being worked out in the background, so each is asked for once. */
+    private final java.util.Set<Long> prefetching = ConcurrentHashMap.newKeySet();
+
+    private void prefetchTile(int tx, int tz) {
+        long key = SkirtGrid.key(tx, tz);
+        if (collars.getIfPresent(key) != null || !prefetching.add(key)) {
+            return;
+        }
+        try {
+            Prefetch.EXECUTOR.execute(() -> {
+                try {
+                    collarTile(tx, tz);
+                } catch (RuntimeException ignored) {
+                    // The feature works the tile out itself if it is still missing.
+                } finally {
+                    prefetching.remove(key);
+                }
+            });
+        } catch (java.util.concurrent.RejectedExecutionException full) {
+            prefetching.remove(key);
+        }
+    }
+
+    /**
+     * A few low-priority threads of their own, with a bounded queue that drops what it can't take: on the shared
+     * worldgen pool the tiles would queue ahead of the terrain the features step is waiting for.
+     */
+    private static final class Prefetch {
+        static final java.util.concurrent.ThreadPoolExecutor EXECUTOR;
+
+        static {
+            int threads = Math.max(1, Math.min(4, Runtime.getRuntime().availableProcessors() / 6));
+            java.util.concurrent.atomic.AtomicInteger count = new java.util.concurrent.atomic.AtomicInteger();
+            EXECUTOR = new java.util.concurrent.ThreadPoolExecutor(threads, threads, 30, java.util.concurrent.TimeUnit.SECONDS,
+                    new java.util.concurrent.ArrayBlockingQueue<>(256), runnable -> {
+                Thread thread = new Thread(runnable, "Altered Aether skirt prefetch " + count.incrementAndGet());
+                thread.setDaemon(true);
+                thread.setPriority(Thread.MIN_PRIORITY);
+                return thread;
+            }, new java.util.concurrent.ThreadPoolExecutor.AbortPolicy());
+            EXECUTOR.allowCoreThreadTimeOut(true);
+        }
     }
 
     private Collar collar(int x, int z) {
