@@ -103,8 +103,10 @@ public record VoronoiFracture(DensityFunction argument, NoiseHolder seed, double
      * each thread keeps the last two columns it worked out (the rift's slabs and its pillars are two functions).
      */
     private static final class Column {
-        VoronoiFracture owner;
-        LandmarkField field;
+        /** Weak, so a worker thread doesn't keep a closed world's terrain and landmarks alive. */
+        java.lang.ref.WeakReference<VoronoiFracture> owner = new java.lang.ref.WeakReference<>(null);
+        java.lang.ref.WeakReference<LandmarkField> field = new java.lang.ref.WeakReference<>(null);
+        double vertical;
         int blockX = Integer.MIN_VALUE, blockZ = Integer.MIN_VALUE;
         double size, drift, x, z;
         int gx, gz;
@@ -122,7 +124,7 @@ public record VoronoiFracture(DensityFunction argument, NoiseHolder seed, double
         LandmarkField field = binding == null ? null : binding.field;
         Column[] columns = COLUMNS.get();
         for (Column c : columns) {
-            if (c.owner == this && c.blockX == blockX && c.blockZ == blockZ && c.field == field && c.size == size
+            if (c.owner.get() == this && c.blockX == blockX && c.blockZ == blockZ && c.field.get() == field && c.size == size
                     && c.drift == drift) {
                 return c;
             }
@@ -130,8 +132,8 @@ public record VoronoiFracture(DensityFunction argument, NoiseHolder seed, double
         Column c = columns[1];
         columns[1] = columns[0];
         columns[0] = c;
-        c.owner = this;
-        c.field = field;
+        c.owner = new java.lang.ref.WeakReference<>(this);
+        c.field = new java.lang.ref.WeakReference<>(field);
         c.blockX = blockX;
         c.blockZ = blockZ;
         c.size = size;
@@ -143,6 +145,7 @@ public record VoronoiFracture(DensityFunction argument, NoiseHolder seed, double
         c.gx = gx;
         c.gz = gz;
         c.fracture = field == null ? null : field.fractureNear(blockX, blockZ).orElse(null);
+        c.vertical = field == null ? 0 : field.vertical();
         if (c.fracture != null) {
             return c;
         }
@@ -192,7 +195,7 @@ public record VoronoiFracture(DensityFunction argument, NoiseHolder seed, double
     public double compute(FunctionContext context) {
         Column c = column(context.blockX(), context.blockZ());
         if (c.fracture != null) {
-            return great(context, c.fracture, c.field.vertical(), c.size, c.drift, c.x, c.z, c.gx, c.gz);
+            return great(context, c.fracture, c.vertical, c.size, c.drift, c.x, c.z, c.gx, c.gz);
         }
         if (pillars.isPresent()) {
             return pillar(context, pillars.get(), c.size, c.edge, c.rise, c.bestX, c.bestZ, c.secondX, c.secondZ);

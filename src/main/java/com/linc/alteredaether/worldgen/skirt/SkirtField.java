@@ -245,8 +245,26 @@ public final class SkirtField {
         }
     }
 
+    /** The last collar tile each thread read: the feature reads some 900 columns of one or two tiles per chunk. */
+    private static final class LastTile {
+        /** Weak, so a worker thread doesn't keep a closed world's field alive. */
+        java.lang.ref.WeakReference<SkirtField> owner = new java.lang.ref.WeakReference<>(null);
+        int tx = Integer.MIN_VALUE, tz = Integer.MIN_VALUE;
+        Collar collar;
+    }
+
+    private static final ThreadLocal<LastTile> LAST_TILE = ThreadLocal.withInitial(LastTile::new);
+
     private Collar collar(int x, int z) {
-        return collarTile(Math.floorDiv(Math.floorDiv(x, STEP), TILE), Math.floorDiv(Math.floorDiv(z, STEP), TILE));
+        int tx = Math.floorDiv(Math.floorDiv(x, STEP), TILE), tz = Math.floorDiv(Math.floorDiv(z, STEP), TILE);
+        LastTile last = LAST_TILE.get();
+        if (last.owner.get() != this || last.tx != tx || last.tz != tz) {
+            last.collar = collarTile(tx, tz);
+            last.owner = new java.lang.ref.WeakReference<>(this);
+            last.tx = tx;
+            last.tz = tz;
+        }
+        return last.collar;
     }
 
     private Collar collarTile(int tx, int tz) {

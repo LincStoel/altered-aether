@@ -84,10 +84,30 @@ public final class RegionMask implements DensityFunction {
             this.falloff = falloff;
         }
 
+        /** The four corners of the last cell each thread sampled: samples come in runs within one cell. */
+        private static final class Corners {
+            /** Weak, so a worker thread doesn't keep a closed world's solver alive. */
+            java.lang.ref.WeakReference<Solver> owner = new java.lang.ref.WeakReference<>(null);
+            int cx = Integer.MIN_VALUE, cz = Integer.MIN_VALUE;
+            float c00, c10, c01, c11;
+        }
+
+        private static final ThreadLocal<Corners> CORNERS = ThreadLocal.withInitial(Corners::new);
+
         public double sample(int x, int z) {
             int cx = Math.floorDiv(x, CELL), cz = Math.floorDiv(z, CELL);
             double fx = (x - cx * CELL) / (double) CELL, fz = (z - cz * CELL) / (double) CELL;
-            return Mth.lerp2(fx, fz, cell(cx, cz), cell(cx + 1, cz), cell(cx, cz + 1), cell(cx + 1, cz + 1));
+            Corners c = CORNERS.get();
+            if (c.owner.get() != this || c.cx != cx || c.cz != cz) {
+                c.c00 = cell(cx, cz);
+                c.c10 = cell(cx + 1, cz);
+                c.c01 = cell(cx, cz + 1);
+                c.c11 = cell(cx + 1, cz + 1);
+                c.owner = new java.lang.ref.WeakReference<>(this);
+                c.cx = cx;
+                c.cz = cz;
+            }
+            return Mth.lerp2(fx, fz, c.c00, c.c10, c.c01, c.c11);
         }
 
         private float cell(int cx, int cz) {

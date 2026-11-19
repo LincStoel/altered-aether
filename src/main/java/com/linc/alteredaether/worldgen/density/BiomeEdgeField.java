@@ -87,8 +87,8 @@ public final class BiomeEdgeField {
         public double distance(int x, int z) {
             int cx = Math.floorDiv(x, CELL), cz = Math.floorDiv(z, CELL);
             double fx = (x - cx * CELL) / (double) CELL, fz = (z - cz * CELL) / (double) CELL;
-            return Mth.lerp2(fx, fz, distance(cell(cx, cz)), distance(cell(cx + 1, cz)), distance(cell(cx, cz + 1)),
-                    distance(cell(cx + 1, cz + 1)));
+            long[][] c = corners(cx, cz);
+            return Mth.lerp2(fx, fz, distance(c[0]), distance(c[1]), distance(c[2]), distance(c[3]));
         }
 
         /**
@@ -98,16 +98,50 @@ public final class BiomeEdgeField {
         public double inside(int x, int z, int inside) {
             int cx = Math.floorDiv(x, CELL), cz = Math.floorDiv(z, CELL);
             double fx = (x - cx * CELL) / (double) CELL, fz = (z - cz * CELL) / (double) CELL;
-            return Math.max(0, Mth.lerp2(fx, fz, signed(cell(cx, cz), inside), signed(cell(cx + 1, cz), inside),
-                    signed(cell(cx, cz + 1), inside), signed(cell(cx + 1, cz + 1), inside)));
+            long[][] c = corners(cx, cz);
+            return Math.max(0, Mth.lerp2(fx, fz, signed(c[0], inside), signed(c[1], inside), signed(c[2], inside),
+                    signed(c[3], inside)));
         }
 
         /** Blocks in to the edge of class {@code inside}, positive inside it and negative outside. */
         public double signed(int x, int z, int inside) {
             int cx = Math.floorDiv(x, CELL), cz = Math.floorDiv(z, CELL);
             double fx = (x - cx * CELL) / (double) CELL, fz = (z - cz * CELL) / (double) CELL;
-            return Mth.lerp2(fx, fz, signed(cell(cx, cz), inside), signed(cell(cx + 1, cz), inside),
-                    signed(cell(cx, cz + 1), inside), signed(cell(cx + 1, cz + 1), inside));
+            long[][] c = corners(cx, cz);
+            return Mth.lerp2(fx, fz, signed(c[0], inside), signed(c[1], inside), signed(c[2], inside),
+                    signed(c[3], inside));
+        }
+
+        /** The four corners of the last cell each thread read, per solver: reads come in runs within one cell. */
+        private static final class Corners {
+            /** Weak, so a worker thread doesn't keep a closed world's solver alive. */
+            java.lang.ref.WeakReference<Solver> owner = new java.lang.ref.WeakReference<>(null);
+            int cx = Integer.MIN_VALUE, cz = Integer.MIN_VALUE;
+            final long[][] cells = new long[4][];
+        }
+
+        private static final ThreadLocal<Corners[]> CORNERS = ThreadLocal.withInitial(() -> new Corners[]{
+                new Corners(), new Corners(), new Corners()});
+
+        private long[][] corners(int cx, int cz) {
+            Corners[] all = CORNERS.get();
+            for (Corners c : all) {
+                if (c.owner.get() == this && c.cx == cx && c.cz == cz) {
+                    return c.cells;
+                }
+            }
+            // A few solvers are read in turn (biome groups, the bowl, the Highlands): replace the oldest.
+            Corners c = all[all.length - 1];
+            System.arraycopy(all, 0, all, 1, all.length - 1);
+            all[0] = c;
+            c.cells[0] = cell(cx, cz);
+            c.cells[1] = cell(cx + 1, cz);
+            c.cells[2] = cell(cx, cz + 1);
+            c.cells[3] = cell(cx + 1, cz + 1);
+            c.owner = new java.lang.ref.WeakReference<>(this);
+            c.cx = cx;
+            c.cz = cz;
+            return c.cells;
         }
 
         private static double distance(long[] cell) {
