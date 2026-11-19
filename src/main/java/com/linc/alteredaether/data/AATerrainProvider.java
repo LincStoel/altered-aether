@@ -509,15 +509,15 @@ public final class AATerrainProvider extends JsonDataProvider {
         require(blend, "minecraft:blend_density");
 
         JsonElement island = blend.get("argument");
-        // The noise band reaches up past the islands for the Highlands: -64..255 in the tall Aether, 0..215 in the
-        // stock one. Above HIGHLANDS_FLOOR only the Highlands are evaluated, which costs a few cached 2D noises.
+        // The noise band reaches up past the islands for the Highlands: -64..255 in the tall Aether, 0..223 in the
+        // stock one (a noise band's height must be a multiple of 16, or the world won't load). Above HIGHLANDS_FLOOR only the Highlands are evaluated, which costs a few cached 2D noises.
         JsonObject noise = settings.getAsJsonObject("noise");
         if (mode == HeightMode.TALL) {
             noise.addProperty("min_y", -64);
             noise.addProperty("height", 320);
             island = remapIsland(island);
         } else {
-            noise.addProperty("height", 216);
+            noise.addProperty("height", 224);
         }
         // The island expression gets a file of its own, so every blend below refers to it rather than copying it.
         df("island", island);
