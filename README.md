@@ -313,6 +313,8 @@ small:
 With ByePregen installed, its compiled terrain evaluator handles our terrain
 too.
 
+Rules for keeping it this way when adding terrain or features: [docs/worldgen-performance.md](docs/worldgen-performance.md).
+
 ## Development
 
 The Aether and the mods it needs (Aeroblender, TerraBlender, Accessories, owo-lib), and Create and JEI to compile
