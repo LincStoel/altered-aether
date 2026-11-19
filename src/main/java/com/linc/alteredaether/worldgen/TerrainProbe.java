@@ -18,6 +18,7 @@ import net.minecraft.core.QuartPos;
 import net.minecraft.world.level.biome.BiomeSource;
 import net.minecraft.world.level.biome.Climate;
 import net.minecraft.world.level.levelgen.DensityFunction;
+import net.minecraft.world.level.levelgen.DensityFunctions;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -34,6 +35,87 @@ public record TerrainProbe(BiomeSource biomes, Climate.Sampler sampler, @Nullabl
                            @Nullable DensityFunction region, int minY, int maxY) {
     /** Coarse step of the column surface search. */
     private static final int SCAN_STEP = 6;
+
+    public TerrainProbe {
+        terrain = columnMemo(terrain);
+        region = columnMemo(region);
+    }
+
+    /**
+     * {@code function} with each of its 2D caches ({@code flat_cache}, {@code cache_2d}) remembered, per thread, for
+     * the last column asked. Sampled one point at a time those markers cache nothing, so a probe scanning down a
+     * column worked out every 2D noise again at each height. The cached parts depend on x and z alone (a NoiseChunk
+     * samples them once per column too), so the answers are the same.
+     */
+    @Nullable
+    public static DensityFunction columnMemo(@Nullable DensityFunction function) {
+        if (function == null) {
+            return null;
+        }
+        java.util.Map<DensityFunction, DensityFunction> memos = new java.util.HashMap<>();
+        return function.mapAll(new DensityFunction.Visitor() {
+            @Override
+            public DensityFunction apply(DensityFunction f) {
+                if (f instanceof DensityFunctions.Marker marker && (marker.type() == DensityFunctions.Marker.Type.FlatCache
+                        || marker.type() == DensityFunctions.Marker.Type.Cache2D)) {
+                    return memos.computeIfAbsent(marker.wrapped(), ColumnMemo::new);
+                }
+                return f;
+            }
+        });
+    }
+
+    /** A 2D function's value at the last column each thread asked about. */
+    private static final class ColumnMemo implements DensityFunction {
+        private static final class Last {
+            int x = Integer.MIN_VALUE, z = Integer.MIN_VALUE;
+            double value;
+        }
+
+        private final DensityFunction wrapped;
+        private final ThreadLocal<Last> last = ThreadLocal.withInitial(Last::new);
+
+        ColumnMemo(DensityFunction wrapped) {
+            this.wrapped = wrapped;
+        }
+
+        @Override
+        public double compute(FunctionContext context) {
+            Last memo = last.get();
+            int x = context.blockX(), z = context.blockZ();
+            if (memo.x != x || memo.z != z) {
+                memo.value = wrapped.compute(context);
+                memo.x = x;
+                memo.z = z;
+            }
+            return memo.value;
+        }
+
+        @Override
+        public void fillArray(double[] array, ContextProvider provider) {
+            provider.fillAllDirectly(array, this);
+        }
+
+        @Override
+        public DensityFunction mapAll(Visitor visitor) {
+            return visitor.apply(new ColumnMemo(wrapped.mapAll(visitor)));
+        }
+
+        @Override
+        public double minValue() {
+            return wrapped.minValue();
+        }
+
+        @Override
+        public double maxValue() {
+            return wrapped.maxValue();
+        }
+
+        @Override
+        public net.minecraft.util.KeyDispatchDataCodec<? extends DensityFunction> codec() {
+            return wrapped.codec();
+        }
+    }
 
     public String biomeAt(int x, int z) {
         return biomes.getNoiseBiome(QuartPos.fromBlock(x), QuartPos.fromBlock((minY + maxY) / 2), QuartPos.fromBlock(z),

@@ -124,7 +124,8 @@ public final class RegionBinding {
             // The island mass is read off its own argument: the Aether's islands before any of them is shed.
             if (!masses.isEmpty()) {
                 IslandMass first = masses.getFirst();
-                ColumnMassField field = new ColumnMassField(first.argument(), first.radius(), first.minY(), first.maxY());
+                ColumnMassField field = new ColumnMassField(TerrainProbe.columnMemo(first.argument()), first.radius(),
+                        first.minY(), first.maxY());
                 masses.forEach(mass -> mass.binding().bind(field));
                 ColumnMassField.put(level.dimension(), field);
             }
