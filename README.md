@@ -287,24 +287,31 @@ wetness and darkening. Storm fog is left to the shaderpack when one is active. S
 
 ## Performance
 
-Measured with the dev server's benchmark: fresh worlds with the same seed, 225 chunks around each of two points,
-twice each. The baseline is the same mod with its worldgen switched off in the config (region weight 0, no
-landmarks, no basins), so the terrain is the stock Aether's.
+Measured with the dev server's benchmark: a fresh world on one seed, the same 484 chunks in four places, the tall
+Aether, on an i7-13700KF; and with `/altered_aether fly`, a server-side stand-in for a player crossing 6,000 blocks at
+40 blocks a second with a view distance of 10.
 
-| Area | Stock terrain | Altered Aether | Cost |
-|---|---|---|---|
-| Around 0, 0 | 28.3 ms per chunk | 35.1 ms | +24% |
-| Around 3000, -2000 | 16.1 ms | 17.0 ms | +6% |
+| | 1.3.0 | This version |
+|---|---|---|
+| Generation, no other mods | 25.6 ms per chunk | 35.5 ms |
+| Generation, with ByePregen, Deep Aether, Lithium and a pack's worth of other mods | 23.5 ms | 36.6 ms |
+| Flying: chunks missing near the player, on average | 0 | 0 |
+| Flying: longest server tick | 2.4 s | 1.0 s |
 
-Overall the difference is about 18%. Most of it goes on the extra terrain the plateau's mesas and the groves'
-islands put where stock islands leave sky: more blocks to surface, light and decorate.
+The stock-height Aether is quicker still, at about 24 ms per chunk with no other mods. This version does a good deal
+more than 1.3.0 (cloud skirts and seas, big lakes, caves, the Highlands, sea stacks, nadirite), and still keeps up
+with flight.
 
-Exploring keeps up with flight: a server-side stand-in for a player crossing 11,000 blocks at 30 blocks a second
-(`/altered_aether fly`) has every chunk near it generated in time, at an average tick of under 4 ms.
+Minecraft works out structures and places features one chunk at a time; only the terrain itself is shared out among
+the worker threads. So what costs time while exploring is the work done in those steps, and Altered Aether keeps it
+small:
 
-The Skyroot Cathedral's forest islands cost about the same as the plateau, for the same reason. The giants
-themselves are cheap: planning and building every giant in a 289-chunk benchmark takes 2 to 3 seconds of worker
-time in all (the benchmark reports it as `ms/grove_plan` and `ms/grove_build`).
+- every site search (lakes, stacks, caves, landmarks) is cached per world;
+- the terrain probes that site searches use sample each 2D noise once per column;
+- the cloud skirts' collars are worked out ahead, on threads of their own.
+
+With ByePregen installed, its compiled terrain evaluator handles our terrain
+too.
 
 ## Development
 
