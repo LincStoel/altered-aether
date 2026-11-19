@@ -14,16 +14,15 @@
  */
 package com.linc.alteredaether.worldgen.grove;
 
-import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import com.linc.alteredaether.config.AACommonConfig;
+import com.linc.alteredaether.worldgen.CellCache;
 import com.linc.alteredaether.worldgen.TerrainProbe;
 import com.linc.alteredaether.worldgen.basin.BasinField;
 import com.linc.alteredaether.worldgen.landmark.LandmarkField;
 import com.linc.alteredaether.worldgen.landmark.LandmarkType;
-import it.unimi.dsi.fastutil.HashCommon;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
@@ -37,9 +36,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutionException;
 
 /**
  * Every giant tree in one world, as a pure function of the seed, in the manner of the landmark field but far denser:
@@ -101,11 +98,11 @@ public final class GroveField {
                 return new double[]{(cellX(key) + 0.15 + random.nextDouble() * 0.7) * REGION,
                         (cellZ(key) + 0.15 + random.nextDouble() * 0.7) * REGION};
             }));
-    private final Cache<Long, Optional<Giant>> sites = CacheBuilder.newBuilder().maximumSize(1 << 10).build();
-    private final Cache<Long, List<Long>> neighbours = CacheBuilder.newBuilder().maximumSize(1 << 12).build();
-    private final Cache<Long, List<Giant>> links = CacheBuilder.newBuilder().maximumSize(1 << 10).build();
-    private final Cache<Long, Optional<Mire>> mires = CacheBuilder.newBuilder().maximumSize(1 << 10).build();
-    private final Cache<Long, Optional<Giant>> bridges = CacheBuilder.newBuilder().maximumSize(1 << 8).build();
+    private final CellCache<Optional<Giant>> sites = new CellCache<>(1 << 10);
+    private final CellCache<List<Long>> neighbours = new CellCache<>(1 << 12);
+    private final CellCache<List<Giant>> links = new CellCache<>(1 << 10);
+    private final CellCache<Optional<Mire>> mires = new CellCache<>(1 << 10);
+    private final CellCache<Optional<Giant>> bridges = new CellCache<>(1 << 8);
 
     /**
      * @param vertical vertical scale for the height mode: 1 in the tall Aether
@@ -258,12 +255,8 @@ public final class GroveField {
         return cached(sites, key(cx, cz), () -> Optional.ofNullable(find(cx, cz)));
     }
 
-    private static <T> T cached(Cache<Long, T> cache, long key, Callable<T> loader) {
-        try {
-            return cache.get(HashCommon.mix(key), loader);
-        } catch (ExecutionException e) {
-            throw new IllegalStateException(e.getCause());
-        }
+    private static <T> T cached(CellCache<T> cache, long key, java.util.function.Supplier<T> loader) {
+        return cache.get(key, k -> loader.get());
     }
 
     @Nullable

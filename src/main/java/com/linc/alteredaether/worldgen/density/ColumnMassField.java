@@ -14,13 +14,10 @@
  */
 package com.linc.alteredaether.worldgen.density;
 
-import com.google.common.cache.Cache;
-import com.google.common.cache.CacheBuilder;
-import it.unimi.dsi.fastutil.HashCommon;
+import com.linc.alteredaether.worldgen.CellCache;
 import net.minecraft.util.Mth;
 import net.minecraft.world.level.levelgen.DensityFunction;
 
-import java.util.concurrent.ExecutionException;
 
 /**
  * The thickness of solid ground in one density function, column by column on a 16-block grid, and its average over a
@@ -40,8 +37,8 @@ public final class ColumnMassField {
     private final int minY, maxY;
     /** The disc's grid offsets. */
     private final int[][] disc;
-    private final Cache<Long, Float> thickness = CacheBuilder.newBuilder().maximumSize(1 << 16).build();
-    private final Cache<Long, Float> masses = CacheBuilder.newBuilder().maximumSize(1 << 16).build();
+    private final CellCache<Float> thickness = new CellCache<>(1 << 16);
+    private final CellCache<Float> masses = new CellCache<>(1 << 16);
 
     public ColumnMassField(DensityFunction terrain, int radius, int minY, int maxY) {
         this.terrain = terrain;
@@ -87,33 +84,25 @@ public final class ColumnMassField {
 
     private float gridMass(int cx, int cz) {
         long key = ((long) cx << 32) ^ (cz & 0xFFFFFFFFL);
-        try {
-            return masses.get(HashCommon.mix(key), () -> {
-                float sum = 0;
-                for (int[] o : disc) {
-                    sum += gridThickness(cx + o[0], cz + o[1]);
-                }
-                return sum / disc.length;
-            });
-        } catch (ExecutionException e) {
-            throw new IllegalStateException(e.getCause());
-        }
+        return masses.get(key, k -> {
+            float sum = 0;
+            for (int[] o : disc) {
+                sum += gridThickness(cx + o[0], cz + o[1]);
+            }
+            return sum / disc.length;
+        });
     }
 
     private float gridThickness(int cx, int cz) {
         long key = ((long) cx << 32) ^ (cz & 0xFFFFFFFFL);
-        try {
-            return thickness.get(HashCommon.mix(key), () -> {
-                int x = cx * CELL + CELL / 2, z = cz * CELL + CELL / 2, solid = 0;
-                for (int y = minY; y < maxY; y += STEP) {
-                    if (terrain.compute(new DensityFunction.SinglePointContext(x, y, z)) > 0) {
-                        solid++;
-                    }
+        return thickness.get(key, k -> {
+            int x = cx * CELL + CELL / 2, z = cz * CELL + CELL / 2, solid = 0;
+            for (int y = minY; y < maxY; y += STEP) {
+                if (terrain.compute(new DensityFunction.SinglePointContext(x, y, z)) > 0) {
+                    solid++;
                 }
-                return (float) solid * STEP;
-            });
-        } catch (ExecutionException e) {
-            throw new IllegalStateException(e.getCause());
-        }
+            }
+            return (float) solid * STEP;
+        });
     }
 }

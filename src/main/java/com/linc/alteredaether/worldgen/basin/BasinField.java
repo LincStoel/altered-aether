@@ -14,12 +14,10 @@
  */
 package com.linc.alteredaether.worldgen.basin;
 
-import com.google.common.cache.Cache;
-import com.google.common.cache.CacheBuilder;
 import com.linc.alteredaether.config.AACommonConfig;
 import com.linc.alteredaether.worldgen.AABiomes;
+import com.linc.alteredaether.worldgen.CellCache;
 import com.linc.alteredaether.worldgen.TerrainProbe;
-import it.unimi.dsi.fastutil.HashCommon;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
@@ -31,9 +29,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutionException;
 
 /**
  * Every basin and atoll in one world, as a pure function of the seed: the carve density function, the atoll density
@@ -139,11 +135,11 @@ public final class BasinField {
     /** Why candidates were turned down, for the debug tools' tuning output. */
     private final Map<String, java.util.concurrent.atomic.AtomicInteger> rejections = new ConcurrentHashMap<>();
 
-    private final Cache<Long, Optional<BasinSite>> basins = CacheBuilder.newBuilder().maximumSize(1 << 14).build();
-    private final Cache<Long, Optional<AtollSite>> atolls = CacheBuilder.newBuilder().maximumSize(1 << 12).build();
-    private final Cache<Long, Optional<AtollSite>> minors = CacheBuilder.newBuilder().maximumSize(1 << 13).build();
-    private final Cache<Long, Optional<AtollSite>> doubles = CacheBuilder.newBuilder().maximumSize(1 << 10).build();
-    private final Cache<Long, Optional<BasinSite>> lakes = CacheBuilder.newBuilder().maximumSize(1 << 11).build();
+    private final CellCache<Optional<BasinSite>> basins = new CellCache<>(1 << 14);
+    private final CellCache<Optional<AtollSite>> atolls = new CellCache<>(1 << 12);
+    private final CellCache<Optional<AtollSite>> minors = new CellCache<>(1 << 13);
+    private final CellCache<Optional<AtollSite>> doubles = new CellCache<>(1 << 10);
+    private final CellCache<Optional<BasinSite>> lakes = new CellCache<>(1 << 11);
 
     /**
      * @param probe    the terrain before basins are cut; when it has none, the world has no basin carve and only atoll
@@ -1025,13 +1021,8 @@ public final class BasinField {
         return new XoroshiroRandomSource(mix(seed ^ salt) ^ mix(cx * 0x9E3779B97F4A7C15L + cz));
     }
 
-    private static <T> T cached(Cache<Long, T> cache, int cx, int cz, Callable<T> loader) {
-        long key = ((long) cx << 32) ^ (cz & 0xFFFFFFFFL);
-        try {
-            return cache.get(HashCommon.mix(key), loader);
-        } catch (ExecutionException e) {
-            throw new IllegalStateException(e.getCause());
-        }
+    private static <T> T cached(CellCache<T> cache, int cx, int cz, java.util.function.Supplier<T> loader) {
+        return cache.get(((long) cx << 32) ^ (cz & 0xFFFFFFFFL), k -> loader.get());
     }
 
     // --------------------------------------------------------------------------------------------- helpers --

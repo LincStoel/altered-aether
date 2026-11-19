@@ -14,12 +14,10 @@
  */
 package com.linc.alteredaether.worldgen.grove;
 
-import com.google.common.cache.Cache;
-import com.google.common.cache.CacheBuilder;
 import com.linc.alteredaether.config.AACommonConfig;
+import com.linc.alteredaether.worldgen.CellCache;
 import com.linc.alteredaether.worldgen.TerrainProbe;
 import com.linc.alteredaether.worldgen.basin.BasinField;
-import it.unimi.dsi.fastutil.HashCommon;
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.levelgen.XoroshiroRandomSource;
@@ -28,7 +26,6 @@ import org.jetbrains.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.ExecutionException;
 
 /**
  * Where the Nurselog Hollow's islands have broken apart, with no living roots left to hold them: as a pure function of
@@ -120,7 +117,7 @@ public final class BreakField {
     private final long seed;
     private final TerrainProbe probe;
     private final double vertical;
-    private final Cache<Long, Optional<Site>> sites = CacheBuilder.newBuilder().maximumSize(1 << 12).build();
+    private final CellCache<Optional<Site>> sites = new CellCache<>(1 << 12);
 
     /** @param probe the grove islands as they are before anything breaks */
     public BreakField(long seed, TerrainProbe probe, double vertical) {
@@ -172,11 +169,7 @@ public final class BreakField {
 
     Optional<Site> site(int cx, int cz) {
         long key = ((long) cx << 32) ^ (cz & 0xFFFFFFFFL);
-        try {
-            return sites.get(HashCommon.mix(key), () -> Optional.ofNullable(find(cx, cz)));
-        } catch (ExecutionException e) {
-            throw new IllegalStateException(e.getCause());
-        }
+        return sites.get(key, k -> Optional.ofNullable(find(cx, cz)));
     }
 
     @Nullable

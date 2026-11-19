@@ -14,12 +14,10 @@
  */
 package com.linc.alteredaether.worldgen.skirt;
 
-import com.google.common.cache.Cache;
-import com.google.common.cache.CacheBuilder;
+import com.linc.alteredaether.worldgen.CellCache;
 import com.linc.alteredaether.worldgen.TerrainProbe;
 import com.linc.alteredaether.worldgen.sea.CloudSea;
 import com.linc.alteredaether.worldgen.sea.CloudSeaMath;
-import it.unimi.dsi.fastutil.HashCommon;
 import net.minecraft.Util;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.level.Level;
@@ -27,9 +25,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutionException;
 
 import static com.linc.alteredaether.worldgen.skirt.SkirtGrid.STEP;
 
@@ -77,10 +73,10 @@ public final class SkirtField {
     /** The world's cloud sea, which collars near it join or give way to; null where there is none. */
     @Nullable
     private final CloudSea sea;
-    private final Cache<Long, Terrain> terrain = CacheBuilder.newBuilder().maximumSize(1 << 13).build();
-    private final Cache<Long, int[]> coarse = CacheBuilder.newBuilder().maximumSize(1 << 13).build();
-    private final Cache<Long, Collar> collars = CacheBuilder.newBuilder().maximumSize(1 << 12).build();
-    private final Cache<Long, Boolean> votes = CacheBuilder.newBuilder().maximumSize(1 << 14).build();
+    private final CellCache<Terrain> terrain = new CellCache<>(1 << 13);
+    private final CellCache<int[]> coarse = new CellCache<>(1 << 13);
+    private final CellCache<Collar> collars = new CellCache<>(1 << 12);
+    private final CellCache<Boolean> votes = new CellCache<>(1 << 14);
 
     public SkirtField(long seed, TerrainProbe probe, @Nullable CloudSea sea) {
         this.seed = seed;
@@ -108,7 +104,7 @@ public final class SkirtField {
      */
     public boolean inCollarQuickly(int x, int y, int z) {
         int tx = Math.floorDiv(Math.floorDiv(x, STEP), TILE), tz = Math.floorDiv(Math.floorDiv(z, STEP), TILE);
-        Collar collar = collars.getIfPresent(HashCommon.mix(SkirtGrid.key(tx, tz)));
+        Collar collar = collars.getIfPresent(SkirtGrid.key(tx, tz));
         if (collar == null) {
             Util.backgroundExecutor().execute(() -> collarTile(tx, tz));
             return true;
@@ -423,14 +419,8 @@ public final class SkirtField {
         return probe.surface(x, z, SkirtGrid.PROBE_TOP - 1, probe.minY());
     }
 
-    private static <T> T cached(Cache<Long, T> cache, long key, Callable<T> loader) {
-        try {
-            return cache.get(HashCommon.mix(key), loader);
-        } catch (ExecutionException e) {
-            throw new IllegalStateException(e.getCause());
-        } catch (com.google.common.util.concurrent.UncheckedExecutionException e) {
-            throw e.getCause() instanceof RuntimeException runtime ? runtime : new IllegalStateException(e.getCause());
-        }
+    private static <T> T cached(CellCache<T> cache, long key, java.util.function.Supplier<T> loader) {
+        return cache.get(key, k -> loader.get());
     }
 
     /**

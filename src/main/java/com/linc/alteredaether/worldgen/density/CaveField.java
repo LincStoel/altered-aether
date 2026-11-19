@@ -14,16 +14,13 @@
  */
 package com.linc.alteredaether.worldgen.density;
 
-import com.google.common.cache.Cache;
-import com.google.common.cache.CacheBuilder;
+import com.linc.alteredaether.worldgen.CellCache;
 import com.linc.alteredaether.worldgen.TerrainProbe;
 import com.linc.alteredaether.worldgen.basin.BasinField;
 import com.linc.alteredaether.worldgen.landmark.LandmarkField;
-import it.unimi.dsi.fastutil.HashCommon;
 import net.minecraft.util.Mth;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.concurrent.ExecutionException;
 
 /**
  * Where caves may open ({@link CaveCarve}): inside thick island bodies only, with a roof of rock under the ground and
@@ -49,7 +46,7 @@ public final class CaveField {
     @Nullable
     private final LandmarkField landmarks;
     /** Top, bottom and guard of each grid column, packed: top in the high int, bottom in the low, guard as a flag. */
-    private final Cache<Long, long[]> columns = CacheBuilder.newBuilder().maximumSize(1 << 16).build();
+    private final CellCache<long[]> columns = new CellCache<>(1 << 16);
 
     public CaveField(TerrainProbe probe, @Nullable BasinField basins, @Nullable LandmarkField landmarks) {
         this.probe = probe;
@@ -103,11 +100,7 @@ public final class CaveField {
 
     private long[] column(int cx, int cz) {
         long key = ((long) cx << 32) ^ (cz & 0xFFFFFFFFL);
-        try {
-            return columns.get(HashCommon.mix(key), () -> solve(cx, cz));
-        } catch (ExecutionException e) {
-            throw new IllegalStateException(e.getCause());
-        }
+        return columns.get(key, k -> solve(cx, cz));
     }
 
     private long[] solve(int cx, int cz) {

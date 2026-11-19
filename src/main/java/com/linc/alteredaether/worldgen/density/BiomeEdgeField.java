@@ -14,19 +14,16 @@
  */
 package com.linc.alteredaether.worldgen.density;
 
-import com.google.common.cache.Cache;
-import com.google.common.cache.CacheBuilder;
+import com.linc.alteredaether.worldgen.CellCache;
 import com.linc.alteredaether.worldgen.TerrainProbe;
 import com.linc.alteredaether.worldgen.region.BiomeGroups;
-import it.unimi.dsi.fastutil.HashCommon;
 import net.minecraft.core.QuartPos;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.util.Mth;
 import net.minecraft.world.level.Level;
-import net.minecraft.resources.ResourceKey;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutionException;
 
 /**
  * One world's biome map, read without generating it, and the distances from each column to the nearest biome of
@@ -40,7 +37,7 @@ public final class BiomeEdgeField {
     private static final Map<ResourceKey<Level>, BiomeEdgeField> FIELDS = new ConcurrentHashMap<>();
 
     private final TerrainProbe probe;
-    private final Cache<Long, String> biomes = CacheBuilder.newBuilder().maximumSize(1 << 18).build();
+    private final CellCache<String> biomes = new CellCache<>(1 << 18);
     private final Map<String, Solver> solvers = new ConcurrentHashMap<>();
 
     public BiomeEdgeField(TerrainProbe probe) {
@@ -68,18 +65,14 @@ public final class BiomeEdgeField {
     public String biomeAt(int x, int z) {
         int qx = QuartPos.fromBlock(x), qz = QuartPos.fromBlock(z);
         long key = ((long) qx << 32) ^ (qz & 0xFFFFFFFFL);
-        try {
-            return biomes.get(HashCommon.mix(key), () -> probe.biomeAt(QuartPos.toBlock(qx), QuartPos.toBlock(qz)));
-        } catch (ExecutionException e) {
-            throw new IllegalStateException(e.getCause());
-        }
+        return biomes.get(key, k -> probe.biomeAt(QuartPos.toBlock(qx), QuartPos.toBlock(qz)));
     }
 
     /** Distances for one classifier, up to {@code reach} blocks. */
     public final class Solver {
         private final BiomeGroups classifier;
         private final int reach;
-        private final Cache<Long, long[]> cells = CacheBuilder.newBuilder().maximumSize(1 << 16).build();
+        private final CellCache<long[]> cells = new CellCache<>(1 << 16);
 
         private Solver(BiomeGroups classifier, int reach) {
             this.classifier = classifier;
@@ -128,15 +121,11 @@ public final class BiomeEdgeField {
 
         private long[] cell(int cx, int cz) {
             long key = ((long) cx << 32) ^ (cz & 0xFFFFFFFFL);
-            try {
-                return cells.get(HashCommon.mix(key), () -> {
-                    int x = cx * CELL, z = cz * CELL;
-                    float d = (float) EdgeSearch.distance(x, z, reach, this::classAt);
-                    return new long[]{Float.floatToIntBits(d), classAt(x, z)};
-                });
-            } catch (ExecutionException e) {
-                throw new IllegalStateException(e.getCause());
-            }
+            return cells.get(key, k -> {
+                int x = cx * CELL, z = cz * CELL;
+                float d = (float) EdgeSearch.distance(x, z, reach, this::classAt);
+                return new long[]{Float.floatToIntBits(d), classAt(x, z)};
+            });
         }
     }
 }

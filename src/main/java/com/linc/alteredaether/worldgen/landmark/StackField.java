@@ -14,11 +14,9 @@
  */
 package com.linc.alteredaether.worldgen.landmark;
 
-import com.google.common.cache.Cache;
-import com.google.common.cache.CacheBuilder;
+import com.linc.alteredaether.worldgen.CellCache;
 import com.linc.alteredaether.worldgen.TerrainProbe;
 import com.linc.alteredaether.worldgen.basin.BasinField;
-import it.unimi.dsi.fastutil.HashCommon;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
@@ -32,7 +30,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutionException;
 
 /**
  * The Aether Plateau's sea stacks: columns of rock standing alone in the open sky a little off the plateau's cliffs,
@@ -81,7 +78,7 @@ public final class StackField {
     private final LandmarkField landmarks;
     @Nullable
     private final BasinField basins;
-    private final Cache<Long, Optional<Stack>> cells = CacheBuilder.newBuilder().maximumSize(1 << 14).build();
+    private final CellCache<Optional<Stack>> cells = new CellCache<>(1 << 14);
 
     public StackField(long seed, TerrainProbe probe, @Nullable LandmarkField landmarks, @Nullable BasinField basins) {
         this.seed = seed;
@@ -117,11 +114,7 @@ public final class StackField {
 
     private Optional<Stack> stack(int cx, int cz) {
         long key = ((long) cx << 32) ^ (cz & 0xFFFFFFFFL);
-        try {
-            return cells.get(HashCommon.mix(key), () -> Optional.ofNullable(find(cx, cz)));
-        } catch (ExecutionException e) {
-            throw new IllegalStateException(e.getCause());
-        }
+        return cells.get(key, k -> Optional.ofNullable(find(cx, cz)));
     }
 
     @Nullable

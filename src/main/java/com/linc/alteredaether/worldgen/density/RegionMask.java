@@ -14,12 +14,10 @@
  */
 package com.linc.alteredaether.worldgen.density;
 
-import com.google.common.cache.Cache;
-import com.google.common.cache.CacheBuilder;
 import com.linc.alteredaether.AlteredAether;
+import com.linc.alteredaether.worldgen.CellCache;
 import com.linc.alteredaether.worldgen.region.AlteredRegion;
 import com.mojang.serialization.MapCodec;
-import it.unimi.dsi.fastutil.HashCommon;
 import net.minecraft.core.QuartPos;
 import net.minecraft.util.KeyDispatchDataCodec;
 import net.minecraft.util.Mth;
@@ -27,7 +25,6 @@ import net.minecraft.world.level.levelgen.DensityFunction;
 import terrablender.api.Region;
 import terrablender.worldgen.IExtendedParameterList;
 
-import java.util.concurrent.ExecutionException;
 
 /**
  * 1 inside Altered Aether's TerraBlender region, easing to 0 over {@code falloff} blocks toward its edge, and 0
@@ -80,7 +77,7 @@ public final class RegionMask implements DensityFunction {
     public static final class Solver {
         private final IExtendedParameterList<?> parameters;
         private final double falloff;
-        private final Cache<Long, Float> cells = CacheBuilder.newBuilder().maximumSize(1 << 16).build();
+        private final CellCache<Float> cells = new CellCache<>(1 << 16);
 
         public Solver(IExtendedParameterList<?> parameters, double falloff) {
             this.parameters = parameters;
@@ -95,11 +92,7 @@ public final class RegionMask implements DensityFunction {
 
         private float cell(int cx, int cz) {
             long key = ((long) cx << 32) ^ (cz & 0xFFFFFFFFL);
-            try {
-                return cells.get(HashCommon.mix(key), () -> solve(cx * CELL, cz * CELL));
-            } catch (ExecutionException e) {
-                throw new IllegalStateException(e.getCause());
-            }
+            return cells.get(key, k -> solve(cx * CELL, cz * CELL));
         }
 
         /** Distance from (x, z) to the nearest point outside our region, as a 0..1 ramp over the falloff. */
