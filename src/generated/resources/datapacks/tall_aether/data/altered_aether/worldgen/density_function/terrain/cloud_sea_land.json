@@ -41,26 +41,32 @@
                     "type": "minecraft:mul",
                     "argument1": 6.0,
                     "argument2": {
-                      "type": "minecraft:shifted_noise",
-                      "noise": "altered_aether:cloud_sea_roll",
-                      "shift_x": "minecraft:shift_x",
-                      "shift_y": 0.0,
-                      "shift_z": "minecraft:shift_z",
-                      "xz_scale": 1.0,
-                      "y_scale": 0.0
+                      "type": "minecraft:cache_2d",
+                      "argument": {
+                        "type": "minecraft:shifted_noise",
+                        "noise": "altered_aether:cloud_sea_roll",
+                        "shift_x": "minecraft:shift_x",
+                        "shift_y": 0.0,
+                        "shift_z": "minecraft:shift_z",
+                        "xz_scale": 1.0,
+                        "y_scale": 0.0
+                      }
                     }
                   },
                   "argument2": {
                     "type": "minecraft:mul",
                     "argument1": 3.0,
                     "argument2": {
-                      "type": "minecraft:shifted_noise",
-                      "noise": "altered_aether:grove_hummock",
-                      "shift_x": "minecraft:shift_x",
-                      "shift_y": 0.0,
-                      "shift_z": "minecraft:shift_z",
-                      "xz_scale": 1.0,
-                      "y_scale": 0.0
+                      "type": "minecraft:cache_2d",
+                      "argument": {
+                        "type": "minecraft:shifted_noise",
+                        "noise": "altered_aether:grove_hummock",
+                        "shift_x": "minecraft:shift_x",
+                        "shift_y": 0.0,
+                        "shift_z": "minecraft:shift_z",
+                        "xz_scale": 1.0,
+                        "y_scale": 0.0
+                      }
                     }
                   }
                 }
@@ -105,13 +111,16 @@
                     "type": "minecraft:mul",
                     "argument1": 6.0,
                     "argument2": {
-                      "type": "minecraft:shifted_noise",
-                      "noise": "altered_aether:cloud_sea_roll",
-                      "shift_x": "minecraft:shift_x",
-                      "shift_y": 0.0,
-                      "shift_z": "minecraft:shift_z",
-                      "xz_scale": 1.0,
-                      "y_scale": 0.0
+                      "type": "minecraft:cache_2d",
+                      "argument": {
+                        "type": "minecraft:shifted_noise",
+                        "noise": "altered_aether:cloud_sea_roll",
+                        "shift_x": "minecraft:shift_x",
+                        "shift_y": 0.0,
+                        "shift_z": "minecraft:shift_z",
+                        "xz_scale": 1.0,
+                        "y_scale": 0.0
+                      }
                     }
                   }
                 },
@@ -128,13 +137,16 @@
                           "type": "minecraft:mul",
                           "argument1": 2.0,
                           "argument2": {
-                            "type": "minecraft:shifted_noise",
-                            "noise": "altered_aether:cloud_sea_root",
-                            "shift_x": "minecraft:shift_x",
-                            "shift_y": 0.0,
-                            "shift_z": "minecraft:shift_z",
-                            "xz_scale": 1.0,
-                            "y_scale": 0.0
+                            "type": "minecraft:cache_2d",
+                            "argument": {
+                              "type": "minecraft:shifted_noise",
+                              "noise": "altered_aether:cloud_sea_root",
+                              "shift_x": "minecraft:shift_x",
+                              "shift_y": 0.0,
+                              "shift_z": "minecraft:shift_z",
+                              "xz_scale": 1.0,
+                              "y_scale": 0.0
+                            }
                           }
                         },
                         "argument2": -0.6
@@ -187,13 +199,16 @@
                   "type": "minecraft:mul",
                   "argument1": 4.800000000000001,
                   "argument2": {
-                    "type": "minecraft:shifted_noise",
-                    "noise": "altered_aether:gap_width",
-                    "shift_x": "minecraft:shift_x",
-                    "shift_y": 0.0,
-                    "shift_z": "minecraft:shift_z",
-                    "xz_scale": 1.0,
-                    "y_scale": 0.0
+                    "type": "minecraft:cache_2d",
+                    "argument": {
+                      "type": "minecraft:shifted_noise",
+                      "noise": "altered_aether:gap_width",
+                      "shift_x": "minecraft:shift_x",
+                      "shift_y": 0.0,
+                      "shift_z": "minecraft:shift_z",
+                      "xz_scale": 1.0,
+                      "y_scale": 0.0
+                    }
                   }
                 }
               }

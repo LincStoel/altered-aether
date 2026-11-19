@@ -97,18 +97,54 @@ public record VoronoiFracture(DensityFunction argument, NoiseHolder seed, double
     /** Density subtracted at the centre of a crack: far below anything the terrain reaches, so cracks are open air. */
     private static final double CRACK_DEPTH = 8.0;
 
-    @Override
-    public double compute(FunctionContext context) {
+    /**
+     * Everything about a column that doesn't depend on height: the nearest cell points, the slab's rise and the
+     * distance to the crack, or the great fracture the column lies in. NoiseChunk asks down each column in turn, so
+     * each thread keeps the last two columns it worked out (the rift's slabs and its pillars are two functions).
+     */
+    private static final class Column {
+        VoronoiFracture owner;
+        LandmarkField field;
+        int blockX = Integer.MIN_VALUE, blockZ = Integer.MIN_VALUE;
+        double size, drift, x, z;
+        int gx, gz;
+        GreatFracture fracture;
+        int bestX, bestZ, secondX, secondZ;
+        double rise, edge;
+    }
+
+    private static final ThreadLocal<Column[]> COLUMNS = ThreadLocal.withInitial(() -> new Column[]{new Column(),
+            new Column()});
+
+    private Column column(int blockX, int blockZ) {
         double size = cellSize * AACommonConfig.RIFT_FRACTURE_SIZE.get();
         double drift = AACommonConfig.RIFT_DRIFT.get();
-        double x = context.blockX() / size, z = context.blockZ() / size;
-        int gx = Mth.floor(x), gz = Mth.floor(z);
         LandmarkField field = binding == null ? null : binding.field;
-        if (field != null) {
-            GreatFracture fracture = field.fractureNear(context.blockX(), context.blockZ()).orElse(null);
-            if (fracture != null) {
-                return great(context, fracture, field.vertical(), size, drift, x, z, gx, gz);
+        Column[] columns = COLUMNS.get();
+        for (Column c : columns) {
+            if (c.owner == this && c.blockX == blockX && c.blockZ == blockZ && c.field == field && c.size == size
+                    && c.drift == drift) {
+                return c;
             }
+        }
+        Column c = columns[1];
+        columns[1] = columns[0];
+        columns[0] = c;
+        c.owner = this;
+        c.field = field;
+        c.blockX = blockX;
+        c.blockZ = blockZ;
+        c.size = size;
+        c.drift = drift;
+        double x = blockX / size, z = blockZ / size;
+        int gx = Mth.floor(x), gz = Mth.floor(z);
+        c.x = x;
+        c.z = z;
+        c.gx = gx;
+        c.gz = gz;
+        c.fracture = field == null ? null : field.fractureNear(blockX, blockZ).orElse(null);
+        if (c.fracture != null) {
+            return c;
         }
 
         // Nearest and second-nearest cell points, searching the 3x3 neighbourhood of grid cells.
@@ -142,21 +178,34 @@ public record VoronoiFracture(DensityFunction argument, NoiseHolder seed, double
         double lift = maxOffset * drift * hash(bestX, bestZ, 2);
         double tiltX = maxTilt * drift * hash(bestX, bestZ, 3);
         double tiltZ = maxTilt * drift * hash(bestX, bestZ, 4);
-        double rise = lift + tiltX * (x - bestPx) * size + tiltZ * (z - bestPz) * size;
+        c.rise = lift + tiltX * (x - bestPx) * size + tiltZ * (z - bestPz) * size;
+        // Distance to the cell boundary in blocks.
+        c.edge = (second - best) * size * 0.5;
+        c.bestX = bestX;
+        c.bestZ = bestZ;
+        c.secondX = secondX;
+        c.secondZ = secondZ;
+        return c;
+    }
+
+    @Override
+    public double compute(FunctionContext context) {
+        Column c = column(context.blockX(), context.blockZ());
+        if (c.fracture != null) {
+            return great(context, c.fracture, c.field.vertical(), c.size, c.drift, c.x, c.z, c.gx, c.gz);
+        }
         if (pillars.isPresent()) {
-            return pillar(context, pillars.get(), size, (second - best) * size * 0.5, rise, bestX, bestZ, secondX,
-                    secondZ);
+            return pillar(context, pillars.get(), c.size, c.edge, c.rise, c.bestX, c.bestZ, c.secondX, c.secondZ);
         }
         double slab = argument.compute(new SinglePointContext(context.blockX(),
-                context.blockY() - (int) Math.round(rise), context.blockZ()));
+                context.blockY() - (int) Math.round(c.rise), context.blockZ()));
 
-        // Distance to the cell boundary in blocks, and the crack carved along it.
-        double edge = (second - best) * size * 0.5;
+        // The crack carved along the cell boundary.
         double width = crackWidth * (1 + 0.5 * roughness.compute(context));
-        if (edge >= width) {
+        if (c.edge >= width) {
             return slab;
         }
-        double t = edge / Math.max(width, 1e-3);
+        double t = c.edge / Math.max(width, 1e-3);
         return slab - CRACK_DEPTH * (1 - t * t * (3 - 2 * t));
     }
 

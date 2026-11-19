@@ -232,7 +232,7 @@ public final class AATerrainProvider extends JsonDataProvider {
                                 mul(terrain("mesa_mask"), add(0.25, mul(0.125,
                                         flatCache(shiftedNoise(NS + "mesa_height", 0.25, 0.0)))))),
                         yGradient(mode.y(-40), -1.0, mode.y(0), 1.0)),
-                mul(0.125, shiftedNoise(NS + "plateau_relief", 0.35, 0.0))));
+                mul(0.125, column(shiftedNoise(NS + "plateau_relief", 0.35, 0.0)))));
 
         // Stepped mesas: the plateau sampled at stepped heights. The config's step height is in tall-Aether blocks.
         JsonObject terraced = Df.type(NS + "terrace");
@@ -249,9 +249,10 @@ public final class AATerrainProvider extends JsonDataProvider {
         df("crag_mask", ramp(terrain("crag_noise"), -5.625, 10.0));
         df("tempest_mask", ramp(terrain("crag_noise"), -0.76 / 0.09, 1 / 0.09));
         // The island noise made half as wide and twice as tall, for overhangs and hollows inside the massifs.
-        df("crag_3d_noise", oldBlendedNoise(0.25, 0.25, 40.0, mode.height(480.0), 8.0));
+        // cache_once: the crags and the tempest both read it at the same points where they blend.
+        df("crag_3d_noise", Df.wrap("minecraft:cache_once", oldBlendedNoise(0.25, 0.25, 40.0, mode.height(480.0), 8.0)));
         // A fine wobble that roughens isosurfaces so cliffs and crack walls don't look stamped.
-        df("jag", shiftedNoise(NS + "crag_jag", 1.0, mode.frequency(0.5)));
+        df("jag", Df.wrap("minecraft:cache_once", shiftedNoise(NS + "crag_jag", 1.0, mode.frequency(0.5))));
 
         // Ridgelines: sharp crests along the zero contours of a 64-block noise, with 16-block spurs branching off
         // them. 1 on a crest, falling to 0 between crests.
@@ -325,10 +326,10 @@ public final class AATerrainProvider extends JsonDataProvider {
         JsonObject groveGap = flatCache(clamp(mul(6.0, add(shiftedNoise(NS + "grove_gap", 1.0, 0.0), -0.12)),
                 0.0, 1.0));
         JsonObject groveSummit = add(add(add(mode.y(44), groveLevel),
-                        mul(mode.height(7), shiftedNoise(NS + "grove_roll", 1.0, 0.0))),
-                mul(mode.height(3), shiftedNoise(NS + "grove_hummock", 1.0, 0.0)));
+                        mul(mode.height(7), column(shiftedNoise(NS + "grove_roll", 1.0, 0.0)))),
+                mul(mode.height(3), column(shiftedNoise(NS + "grove_hummock", 1.0, 0.0))));
         JsonObject groveUnderside = add(add(mode.y(22), groveLevel), mul(-mode.height(26),
-                clamp(add(shiftedNoise(NS + "grove_root", 1.0, 0.0), 0.2), 0.0, 1.0)));
+                clamp(add(column(shiftedNoise(NS + "grove_root", 1.0, 0.0)), 0.2), 0.0, 1.0)));
         df("grove_land", min(min(mul(0.125, add(groveSummit, mul(-1.0, Df.y()))),
                         mul(1.0 / 6, add(Df.y(), mul(-1.0, groveUnderside)))),
                 add(mul(6.0, add(flatCache(shiftedNoise(NS + "grove_footprint", 1.0, 0.0)), 0.3)),
@@ -338,10 +339,10 @@ public final class AATerrainProvider extends JsonDataProvider {
         // crags take over above it. Broad, low snowfields on plates a few hundred blocks across with sky between,
         // their ground at y 30..42 (tall), hanging lobes beneath; the drifts are built on them by TundraDriftsFeature.
         df("tundra_mask", ramp(terrain("crag_noise"), -0.49 / 0.06, 1 / 0.06));
-        JsonObject tundraSummit = add(add(mode.y(36), mul(mode.height(5), shiftedNoise(NS + "tundra_roll", 1.0, 0.0))),
-                mul(mode.height(2), shiftedNoise(NS + "grove_hummock", 1.0, 0.0)));
+        JsonObject tundraSummit = add(add(mode.y(36), mul(mode.height(5), column(shiftedNoise(NS + "tundra_roll", 1.0, 0.0)))),
+                mul(mode.height(2), column(shiftedNoise(NS + "grove_hummock", 1.0, 0.0))));
         JsonObject tundraUnderside = add(mode.y(14), mul(-mode.height(20),
-                clamp(add(shiftedNoise(NS + "tundra_root", 1.0, 0.0), 0.15), 0.0, 1.0)));
+                clamp(add(column(shiftedNoise(NS + "tundra_root", 1.0, 0.0)), 0.15), 0.0, 1.0)));
         df("tundra_land", min(min(mul(0.125, add(tundraSummit, mul(-1.0, Df.y()))),
                         mul(1.0 / 6, add(Df.y(), mul(-1.0, tundraUnderside)))),
                 mul(6.0, add(flatCache(shiftedNoise(NS + "tundra_footprint", 1.0, 0.0)), 0.25))));
@@ -364,9 +365,9 @@ public final class AATerrainProvider extends JsonDataProvider {
         JsonObject fall = add(1.0, mul(mul(down, down), add(-3.0, mul(2.0, down))));
         df("bowl_rim", flatCache(mul(bowlCrest, mul(rise, fall))));
         JsonObject bowlSummit = add(add(mode.y(36), mul(mode.height(1), terrain("bowl_rim"))),
-                mul(mode.height(2), shiftedNoise(NS + "grove_hummock", 1.0, 0.0)));
+                mul(mode.height(2), column(shiftedNoise(NS + "grove_hummock", 1.0, 0.0))));
         JsonObject bowlUnderside = add(mode.y(10), mul(-mode.height(24),
-                clamp(add(shiftedNoise(NS + "grove_root", 1.0, 0.0), 0.2), 0.0, 1.0)));
+                clamp(add(column(shiftedNoise(NS + "grove_root", 1.0, 0.0)), 0.2), 0.0, 1.0)));
         df("bowl_land", min(mul(0.125, add(bowlSummit, mul(-1.0, Df.y()))),
                 mul(1.0 / 6, add(Df.y(), mul(-1.0, bowlUnderside)))));
 
@@ -397,7 +398,7 @@ public final class AATerrainProvider extends JsonDataProvider {
         JsonObject isletLevel = add(mode.y(200), mul(mode.height(26), flatCache(shiftedNoise(NS + "highlands_level", 1.0, 0.0))));
         JsonObject islandTop = add(isletLevel, mul(mode.height(7), core));
         JsonObject isletBottom = add(isletLevel, mul(-mode.height(1), add(8.0, mul(22.0, mul(core,
-                add(0.7, mul(0.3, shiftedNoise(NS + "highlands_root", 1.0, 0.0))))))));
+                add(0.7, mul(0.3, column(shiftedNoise(NS + "highlands_root", 1.0, 0.0)))))))));
         JsonObject lens = min(min(mul(0.125, add(islandTop, mul(-1.0, Df.y()))),
                         mul(1.0 / 6, add(Df.y(), mul(-1.0, isletBottom)))),
                 add(mul(8.0, add(flatCache(shiftedNoise(NS + "highlands_footprint", 1.0, 0.0)), -0.42)),
@@ -415,7 +416,8 @@ public final class AATerrainProvider extends JsonDataProvider {
 
         if (mode == HeightMode.TALL) {
             // The Aether's own island noise, stretched to the taller band (y_factor 160 -> 240).
-            df("tall_base_3d_noise", oldBlendedNoise(0.25, 0.25, 80.0, 240.0, 8.0));
+            // cache_once: the cloud sea reads it twice at each point (the islands and the landmass).
+            df("tall_base_3d_noise", Df.wrap("minecraft:cache_once", oldBlendedNoise(0.25, 0.25, 80.0, 240.0, 8.0)));
         }
     }
 
@@ -663,17 +665,17 @@ public final class AATerrainProvider extends JsonDataProvider {
         // channels of open cloud between them, and it is cut back from every biome border, a channel FOOTPRINT_BORDER
         // blocks or so either side (varying along it) opening between one biome's land and the next, so the land
         // breaks into separate masses rather than running on as one continent. FOOTPRINT_BIAS below 0 thins it further.
-        JsonObject roll = shiftedNoise(NS + "cloud_sea_roll", 1.0, 0.0);
+        JsonObject roll = column(shiftedNoise(NS + "cloud_sea_roll", 1.0, 0.0));
         JsonObject summit = clamp(add(add(30.0, mul(22.0, flatCache(shiftedNoise(NS + "cloud_sea_level", 1.0, 0.0)))),
-                add(mul(6.0, roll), mul(3.0, shiftedNoise(NS + "grove_hummock", 1.0, 0.0)))), 8.0, 120.0);
-        JsonObject root = square(clamp(add(mul(2.0, shiftedNoise(NS + "cloud_sea_root", 1.0, 0.0)), -0.6), 0.0, 1.0));
+                add(mul(6.0, roll), mul(3.0, column(shiftedNoise(NS + "grove_hummock", 1.0, 0.0))))), 8.0, 120.0);
+        JsonObject root = square(clamp(add(mul(2.0, column(shiftedNoise(NS + "cloud_sea_root", 1.0, 0.0))), -0.6), 0.0, 1.0));
         JsonObject underside = add(add(-38.0, mul(6.0, roll)), mul(-24.0, root));
         JsonObject border = Df.type(NS + "biome_edge");
         border.addProperty("classifier", "biome");
         border.addProperty("reach", 48);
         df("cloud_sea_border", Df.wrap("minecraft:cache_2d", border));
         JsonObject borderWidth = add(FOOTPRINT_BORDER, mul(FOOTPRINT_BORDER * 0.4,
-                shiftedNoise(NS + "gap_width", 1.0, 0.0)));
+                column(shiftedNoise(NS + "gap_width", 1.0, 0.0))));
         JsonObject footprint = min(
                 mul(6.0, add(flatCache(shiftedNoise(NS + "cloud_sea_footprint", 1.0, 0.0)), FOOTPRINT_BIAS)),
                 mul(0.3, add(terrain("cloud_sea_border"), mul(-1.0, borderWidth))));
@@ -843,4 +845,13 @@ public final class AATerrainProvider extends JsonDataProvider {
                     + node.get("type"));
         }
     }
+
+    /**
+     * A 2D noise read at the 3D cell corners of a landform: cache_2d keeps it for the column, so the corners down one
+     * column sample it once. It is lazy, unlike flat_cache, so chunks the landform's choose never reaches pay nothing.
+     */
+    private static JsonObject column(JsonObject noise) {
+        return Df.wrap("minecraft:cache_2d", noise);
+    }
+
 }
