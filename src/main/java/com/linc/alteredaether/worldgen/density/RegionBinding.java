@@ -199,8 +199,7 @@ public final class RegionBinding {
                 level.getMaxBuildHeight()));
         // The cloud skirts are the tall Aether's alone.
         if (level.getMinBuildHeight() < 0 && carve != null) {
-            SkirtField.put(level.dimension(), new SkirtField(level.getSeed(), probe,
-                    CloudSea.get(level.dimension())));
+            SkirtField.put(level.dimension(), new SkirtField(level.getSeed(), probe));
         }
     }
 

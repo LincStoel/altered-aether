@@ -38,7 +38,7 @@ public final class AAFeatureProvider extends JsonDataProvider {
     static final String HANGING_ROOTS = NS + "grove/hanging_roots";
     /** The young trees and ground cover between the giants, in place of the stock forest's trees. */
     static final String UNDERSTORY = NS + "grove/understory";
-    /** The cloud skirts round the tall Aether's low islands. */
+    /** The cloud skirts round some of the tall Aether's Highlands islets. */
     static final String CLOUD_SKIRT = NS + "cloud_skirt";
     /** The sheet of cloud over the tall Aether's cloud seas. */
     static final String CLOUD_SEA = NS + "cloud_sea";

@@ -359,7 +359,7 @@ public final class Tour {
         }
 
         /**
-         * The cloud skirt round a low island: the nearest low rim to a point well away from spawn ({@code skirt} or
+         * The cloud skirt round a Highlands islet: the nearest skirted rim to a point well away from spawn ({@code skirt} or
          * {@code skirt:dx:dz} for the offset), so its chunks are new and wear the skirt, framed from four sides
          * just above the rim and once from high up.
          */

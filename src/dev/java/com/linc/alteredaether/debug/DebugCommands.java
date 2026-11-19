@@ -395,7 +395,9 @@ public final class DebugCommands {
                 } else if (top == com.linc.alteredaether.worldgen.skirt.SkirtGrid.HIGH) {
                     colour = new java.awt.Color(0x8A8A8A);
                 } else {
-                    float t = Math.max(0, Math.min(1, (top + 64) / 87f)) * 0.7f + 0.3f;
+                    float t = Math.max(0, Math.min(1, (top - com.linc.alteredaether.worldgen.skirt.SkirtGrid.PROBE_BOTTOM)
+                            / (float) (com.linc.alteredaether.worldgen.skirt.SkirtGrid.PROBE_TOP
+                            - com.linc.alteredaether.worldgen.skirt.SkirtGrid.PROBE_BOTTOM))) * 0.7f + 0.3f;
                     int[] tint = switch (column[2]) {
                         case 1 -> new int[]{80, 230, 90};
                         case 2 -> new int[]{80, 120, 240};
@@ -656,7 +658,7 @@ public final class DebugCommands {
                         biome, origin.toShortString(), String.format("%.0f", found.radius()), found.waterLevel(),
                         String.format("%.1f", found.depth()));
             } else if (biome != null && biome.equals("skirt")) {
-                // The nearest rim of a low island, which wears a cloud skirt.
+                // The nearest rim of a skirted islet.
                 SkirtField field = SkirtField.get(THE_AETHER);
                 int[] rim = field == null ? null : field.nearestRim(origin.getX(), origin.getZ(), 4000).orElse(null);
                 if (rim == null) {
@@ -665,7 +667,7 @@ public final class DebugCommands {
                     return;
                 }
                 origin = new BlockPos(rim[0], rim[1], rim[2]);
-                AlteredAether.LOGGER.info("Worldgen benchmark: centred on a low island's rim at {}", origin.toShortString());
+                AlteredAether.LOGGER.info("Worldgen benchmark: centred on a skirted islet's rim at {}", origin.toShortString());
             } else if (biome != null && (biome.equals("sea") || biome.equals("sea:edge"))) {
                 // Open cloud sea, or its border where the sheet breaks up, searched outward on a 128-block spiral.
                 CloudSea sea = CloudSea.terrain(THE_AETHER);

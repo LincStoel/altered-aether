@@ -57,9 +57,9 @@ public final class AABiomeModifierProvider extends JsonDataProvider {
         seal.addProperty("features", AAFeatureProvider.BASIN_SEAL);
         seal.addProperty("step", "top_layer_modification");
         data(FOLDER, AlteredAether.id("basin_seal"), seal);
-        // The cloud sea's sheet, then the cloud skirts round the tall Aether's low islands, in every Aether biome and
-        // last of all, so what lies under them is already in place; the skirts see the sea's cloud as laid. The rift
-        // is left out by the skirts' field itself.
+        // The cloud sheet, then the cloud skirts round some of the tall Aether's Highlands islets, in every Aether
+        // biome and last of all, so what lies under them is already in place. The rift is left out by the skirts'
+        // field itself.
         JsonObject skirts = new JsonObject();
         skirts.addProperty("type", "neoforge:add_features");
         skirts.addProperty("biomes", IS_AETHER);

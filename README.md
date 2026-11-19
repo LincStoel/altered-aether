@@ -205,13 +205,13 @@ for the stock 0..255 Aether. The height can't change once a world's Aether has b
 
 With the tall pack, other mods' Aether structures and ores are moved to the matching heights automatically.
 
-The tall Aether also has **cloud seas**: broad stretches, a thousand to three thousand blocks across, where the islands
-are shaped round a rolling sheet of cold aercloud at about y -35..-8. Landmasses stand in it with their cliffs
-plunging through and their roots hanging out beneath, smaller islands float above it, and sky lakes and holes break it
-up, wider toward its edges. They form under any region's plain islands, and give way to our landforms. Falling water
-washes its own way down through the cloud. The lower islands outside the seas wear **cloud skirts**, collars of the
-same cloud round their rims, which join a sea's sheet where they meet it. `/altered_aether sea` finds the nearest sea
-(operators only).
+The tall Aether also has a **cloud sea**: a rolling sheet of cold aercloud at about y -35..-8 under every region's
+plain islands, level with the dunes. The bigger islands plunge through it, sky lakes and holes break it up, and it
+gives way to our landforms. Falling water washes its own way down through the cloud. In the **Cloud Reaches**, broad
+stretches a thousand to three thousand blocks across, the islands are shaped round the sheet: landmasses stand in it
+with their cliffs plunging through and their roots hanging out beneath, and smaller islands float well above it.
+About one in five of the Highlands' islets wears a **cloud skirt**, a collar of the same cloud round its rim.
+`/altered_aether sea` finds the nearest open stretch of sheet (operators only).
 
 ## Optional mods
 

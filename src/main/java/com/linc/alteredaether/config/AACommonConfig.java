@@ -211,16 +211,16 @@ public final class AACommonConfig {
                 .defineInRange("atoll_chest_chance", 0.35, 0.0, 1.0);
         LANDMARK_RARITY = b.comment("Multiplier on how rare landmarks are. Higher is rarer, 0 disables them.")
                 .defineInRange("landmark_rarity", 1.0, 0.0, 10.0);
-        CLOUD_SKIRTS = b.comment("Collars of cold aercloud round the islands whose rim lies mostly below y 0, in the tall",
+        CLOUD_SKIRTS = b.comment("Collars of cold aercloud round about one in five of the Highlands' islets, in the tall",
                         "Aether only. Not in the Shattered Rift.")
                 .define("cloud_skirts", true);
         CLOUD_SKIRT_BREEZE_CHANCE = b.comment("Share of the breezes that would spawn on a cloud skirt that do. The skirts",
                         "are wide, so all of them would bring swarms.")
                 .defineInRange("cloud_skirt_breeze_chance", 0.25, 0.0, 1.0);
-        CLOUD_SEA = b.comment("The sheet of cold aercloud laid over the tall Aether's cloud seas, where the islands are shaped",
-                        "round it. Off leaves the islands as they are, with open sky between them.")
+        CLOUD_SEA = b.comment("The sheet of cold aercloud at about y -35..-8 under the tall Aether's plain islands. Off leaves",
+                        "open sky below the islands (the Cloud Reaches keep their shape).")
                 .define("cloud_sea", true);
-        CLOUD_SEA_BREEZE_CHANCE = b.comment("Share of the breezes that would spawn on a cloud sea that do.")
+        CLOUD_SEA_BREEZE_CHANCE = b.comment("Share of the breezes that would spawn on the cloud sheet that do.")
                 .defineInRange("cloud_sea_breeze_chance", 0.25, 0.0, 1.0);
         b.pop();
 

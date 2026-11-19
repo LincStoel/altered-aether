@@ -27,7 +27,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/** The cloud skirts' grid arithmetic: which islands are low, and the collar's shape. */
+/** The cloud skirts' grid arithmetic: which islands are skirted, and the collar's shape. */
 class SkirtGridTest {
     /** A hand-drawn terrain: sky wherever nothing is drawn. */
     private static class Drawn implements SkirtGrid.Columns {
@@ -57,100 +57,42 @@ class SkirtGridTest {
     }
 
     @Test
-    void anIslandWithItsRimBelowZeroIsLow() {
-        Drawn low = new Drawn().disc(0, 0, 8, -12);
-        assertTrue(SkirtGrid.flood(low, 0, 0).low());
-        Drawn high = new Drawn().disc(0, 0, 8, 12);
-        assertFalse(SkirtGrid.flood(high, 0, 0).low());
-        Drawn tall = new Drawn().disc(0, 0, 8, SkirtGrid.HIGH);
-        assertFalse(SkirtGrid.flood(tall, 0, 0).low());
-    }
-
-    @Test
-    void aRimAtZeroIsLow() {
-        assertTrue(SkirtGrid.lowRim(0));
-        assertFalse(SkirtGrid.lowRim(1));
-        assertTrue(SkirtGrid.flood(new Drawn().disc(0, 0, 8, 0), 0, 0).low());
-    }
-
-    @Test
-    void aBigCragGetsAWideCollarRoundItsCrossSection() {
-        // A tall crag (high columns) whose rock reaches y 0 over a disc: its edge there is a crag edge, in the
-        // Frozen Crags only, and the cross-section is big once it reaches CRAG_MIN columns.
-        Set<Long> crags = new HashSet<>();
-        Drawn big = new Drawn() {
-            @Override
-            public boolean crag(int gx, int gz) {
-                return crags.contains(SkirtGrid.key(gx, gz));
+    void aboutOneIslandInFiveIsSkirted() {
+        // Islands big enough for a collar, at different places, drawn for with one seed.
+        int skirted = 0, n = 2000;
+        for (int i = 0; i < n; i++) {
+            Drawn drawn = new Drawn().disc(i * 40, i * -17, 6, 200);
+            if (SkirtGrid.flood(drawn, 42, i * 40, i * -17).skirted()) {
+                skirted++;
             }
-        }.disc(0, 0, 7, SkirtGrid.HIGH);
-        big.tops.keySet().forEach(crags::add);
-        assertTrue(big.tops.size() >= SkirtGrid.CRAG_MIN);
-        assertTrue(SkirtGrid.cragEdge(big, 7, 0));
-        assertFalse(SkirtGrid.cragEdge(big, 0, 0));
-        assertTrue(SkirtGrid.crossSection(big, 7, 0).low());
-        assertTrue(SkirtGrid.crossSection(big, -7, 0).low());
-        // The same shape outside the Crags has no crag edge; a slim one inside them is too small.
-        assertFalse(SkirtGrid.cragEdge(new Drawn().disc(0, 0, 7, SkirtGrid.HIGH), 7, 0));
-        Drawn slim = new Drawn().disc(0, 0, 4, SkirtGrid.HIGH);
-        assertTrue(slim.tops.size() < SkirtGrid.CRAG_MIN);
-        assertFalse(SkirtGrid.crossSection(slim, 0, 0).low());
+        }
+        double share = skirted / (double) n;
+        assertTrue(Math.abs(share - SkirtGrid.CHANCE) < 0.04, "share " + share);
     }
 
     @Test
-    void aCragCollarIsWiderAndBlendsIntoAnOrdinaryOne() {
-        for (int i = 0; i < 500; i++) {
-            double x = i * 13.7, z = i * -5.1;
-            double w = SkirtGrid.width(7, x, z, 1);
-            assertTrue(w >= SkirtGrid.MIN_WIDTH + SkirtGrid.CRAG_WIDE - 1e-9
-                    && w <= SkirtGrid.MAX_WIDTH + SkirtGrid.CRAG_WIDE + 1e-9, "width " + w);
+    void anIslandsDrawIsTheSameFromWhereverItIsFound() {
+        for (int i = 0; i < 200; i++) {
+            Drawn drawn = new Drawn().disc(i * 40, 0, 6, 190);
+            boolean first = SkirtGrid.flood(drawn, 7, i * 40, 0).skirted();
+            assertEquals(first, SkirtGrid.flood(drawn, 7, i * 40 + 6, 0).skirted());
+            assertEquals(first, SkirtGrid.flood(drawn, 7, i * 40 - 3, 4).skirted());
         }
-        SkirtGrid.Sources sources = new SkirtGrid.Sources();
-        sources.add(0, 0, SkirtGrid.CRAG_TOP + SkirtGrid.GAP, 1);
-        sources.add(60, 0, -4);
-        double[] out = new double[3];
-        SkirtGrid.sample(sources, 2, 0, out);
-        assertEquals(1, out[2], 1e-6);
-        SkirtGrid.sample(sources, 58, 0, out);
-        assertEquals(0, out[2], 1e-6);
-        // A crag collar's top sits at CRAG_TOP at the cliff.
-        double[] at = new double[2];
-        SkirtGrid.span(0, SkirtGrid.CRAG_TOP + SkirtGrid.GAP, 1, 56, 4, 0, 0, at);
-        assertEquals(SkirtGrid.CRAG_TOP, at[1], 1e-9);
     }
 
     @Test
     void aScrapOfRockGetsNoCollar() {
-        Drawn scrap = new Drawn().disc(0, 0, 1, -12);
+        Drawn scrap = new Drawn().disc(0, 0, 1, 200);
         assertTrue(scrap.tops.size() < SkirtGrid.MIN_ISLAND);
-        assertFalse(SkirtGrid.flood(scrap, 0, 0).low());
-    }
-
-    @Test
-    void anIslandAcrossZeroGoesByMostOfItsRim() {
-        // A disc 33 columns across, tilted: below 0 to the west of x = 6, so most of its rim is low.
-        Drawn mostlyLow = tilted(6);
-        assertTrue(SkirtGrid.flood(mostlyLow, 0, 0).low());
-        Drawn mostlyHigh = tilted(-6);
-        assertFalse(SkirtGrid.flood(mostlyHigh, 0, 0).low());
-    }
-
-    private static Drawn tilted(int split) {
-        Drawn drawn = new Drawn();
-        for (int x = -16; x <= 16; x++) {
-            for (int z = -16; z <= 16; z++) {
-                if (x * x + z * z <= 256) {
-                    drawn.tops.put(SkirtGrid.key(x, z), x < split ? -4 : 4);
-                }
-            }
+        for (long seed = 0; seed < 50; seed++) {
+            assertFalse(SkirtGrid.flood(scrap, seed, 0, 0).skirted());
         }
-        return drawn;
     }
 
     @Test
     void anIslandIsTheSameFromWhereverItIsFound() {
         Drawn drawn = new Drawn().disc(0, 0, 10, -8).disc(14, 0, 6, -2);
-        long[] a = SkirtGrid.flood(drawn, 0, 0).points(), b = SkirtGrid.flood(drawn, 17, 1).points();
+        long[] a = SkirtGrid.flood(drawn, 1, 0, 0).points(), b = SkirtGrid.flood(drawn, 1, 17, 1).points();
         Arrays.sort(a);
         Arrays.sort(b);
         assertArrayEquals(a, b);
@@ -158,34 +100,34 @@ class SkirtGridTest {
 
     @Test
     void aDropSeparatesIslands() {
-        // A low island right beside one far higher: two islands, the higher one not low.
-        Drawn drawn = new Drawn().disc(0, 0, 6, -30).disc(12, 0, 6, 10);
-        assertTrue(SkirtGrid.flood(drawn, 0, 0).low());
-        assertFalse(SkirtGrid.flood(drawn, 12, 0).low());
-        assertEquals(SkirtGrid.flood(drawn, 0, 0).points().length + SkirtGrid.flood(drawn, 12, 0).points().length,
+        // An islet right beside one far higher: two islands.
+        Drawn drawn = new Drawn().disc(0, 0, 6, 180).disc(12, 0, 6, 220);
+        assertEquals(SkirtGrid.flood(drawn, 1, 0, 0).points().length + SkirtGrid.flood(drawn, 1, 12, 0).points().length,
                 drawn.tops.size());
     }
 
     @Test
-    void aHugeLandmassIsOverTheCap() {
+    void aHugeLandmassIsOverTheCapAndBare() {
         Drawn drawn = new Drawn();
         for (int x = 0; x < 100; x++) {
             for (int z = 0; z < 100; z++) {
-                drawn.tops.put(SkirtGrid.key(x, z), -10);
+                drawn.tops.put(SkirtGrid.key(x, z), 200);
             }
         }
-        SkirtGrid.Island island = SkirtGrid.flood(drawn, 50, 50);
+        SkirtGrid.Island island = SkirtGrid.flood(drawn, 1, 50, 50);
         assertTrue(island.overCap());
-        assertTrue(SkirtGrid.localLow(drawn, 0, 0));
+        assertFalse(island.skirted());
     }
 
     @Test
     void riftColumnsAreNeverRim() {
-        Drawn drawn = new Drawn().disc(0, 0, 6, -10);
+        Drawn drawn = new Drawn().disc(0, 0, 6, 200);
         drawn.tops.keySet().forEach(drawn.rift::add);
         assertFalse(SkirtGrid.rim(drawn, 6, 0));
-        // No rim left to vote, so no collar.
-        assertFalse(SkirtGrid.flood(drawn, 0, 0).low());
+        // No rim, so no collar, whatever the draw.
+        for (long seed = 0; seed < 50; seed++) {
+            assertFalse(SkirtGrid.flood(drawn, seed, 0, 0).skirted());
+        }
         assertEquals(0, SkirtGrid.riftFade(0));
         assertEquals(1, SkirtGrid.riftFade(SkirtGrid.RIFT_FADE));
     }
@@ -244,22 +186,6 @@ class SkirtGridTest {
         assertArrayEquals(a, b);
         SkirtGrid.sample(near, 500, 500, a);
         assertEquals(SkirtGrid.FAR, a[0]);
-    }
-
-    @Test
-    void aCollarThatSuitsTheSeaJoinsItAndOneThatDoesntGivesWay() {
-        // Far from the sea, nothing changes.
-        assertEquals(-12, SkirtGrid.seaRim(-12, 0, -18));
-        assertEquals(1, SkirtGrid.seaFade(0, 1));
-        assertEquals(1, SkirtGrid.seaFade(0, 0));
-        // A close match is drawn level with the sheet by the join, and survives up to it.
-        assertEquals(-18, SkirtGrid.seaRim(-14, SkirtGrid.SEA_JOIN, -18), 1e-9);
-        assertEquals(1, SkirtGrid.seaFade(SkirtGrid.SEA_JOIN, 1), 1e-9);
-        assertEquals(0, SkirtGrid.seaFade(SkirtGrid.SEA_JOIN + SkirtGrid.SEA_FADE, 1), 1e-9);
-        // A collar far below the sheet stays where it is and is gone before the join.
-        assertEquals(-50, SkirtGrid.seaRim(-50, SkirtGrid.SEA_JOIN, -18), 1e-9);
-        assertEquals(0, SkirtGrid.seaMatch(-50, -18), 1e-9);
-        assertEquals(0, SkirtGrid.seaFade(SkirtGrid.SEA_FADE, 0), 1e-9);
     }
 
     @Test
