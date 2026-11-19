@@ -1,4 +1,4 @@
-// 1.21.1	2026-11-17T12:06:21.2188714	Altered Aether biome modifiers
+// 1.21.1	2026-11-18T21:44:07.859507	Altered Aether biome modifiers
 a6b67b4c1c313dc7fdb12bbc3331f85be76ab355 data/altered_aether/neoforge/biome_modifier/aether_exclusive.json
 5aa795e9611228495aa045b613bafcf69423632e data/altered_aether/neoforge/biome_modifier/basin_fill.json
 7fb8c799e30de1bc657c97a9046a2e637c6525ba data/altered_aether/neoforge/biome_modifier/basin_seal.json
@@ -41,3 +41,4 @@ a35a70b02b6f7254b422d8ae0523ec1a646a3c3d data/altered_aether/neoforge/biome_modi
 9f4ec9cc899a275e769ca0559de5a1d33b6b35ed data/altered_aether/neoforge/biome_modifier/spawns/wilden_stalker_tempest.json
 4fa4972d68de45784d403d28d3e1579762343455 data/altered_aether/neoforge/biome_modifier/spawns/wilden_stalker_vexing.json
 fb15252a092c37a9ce85e7897f0833a0b31b38be data/altered_aether/neoforge/biome_modifier/spawns/wilden_stalker_yagroot.json
+7f97d9870469653010390769de72b044eae29abf data/altered_aether/neoforge/biome_modifier/water_color.json

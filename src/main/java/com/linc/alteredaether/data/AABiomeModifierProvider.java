@@ -185,6 +185,15 @@ public final class AABiomeModifierProvider extends JsonDataProvider {
 
         data(FOLDER, AlteredAether.id("climate"), climate());
 
+        // Pale sea-glass water for every Aether biome still on vanilla's default blue; themed waters are kept.
+        JsonObject water = new JsonObject();
+        water.addProperty("type", "altered_aether:water_color");
+        water.addProperty("biomes", IS_AETHER);
+        water.addProperty("from", 0x3F76E4);
+        water.addProperty("water_color", 0x9AD4BE);
+        water.addProperty("water_fog_color", 0x2B5A4E);
+        data(FOLDER, AlteredAether.id("water_color"), water);
+
         // Ars Nouveau's archwood mix and Ars Elemental's flashing archwood, both added to #minecraft:is_overworld.
         // Our own Aether archwood placements live under our namespace and are untouched.
         JsonObject archwood = new JsonObject();

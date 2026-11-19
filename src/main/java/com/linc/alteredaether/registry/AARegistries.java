@@ -80,6 +80,7 @@ import com.linc.alteredaether.worldgen.density.VoronoiFracture;
 import com.linc.alteredaether.worldgen.density.WindRidges;
 import com.linc.alteredaether.worldgen.modifier.AetherExclusiveModifier;
 import com.linc.alteredaether.worldgen.modifier.ClimateModifier;
+import com.linc.alteredaether.worldgen.modifier.WaterColorModifier;
 import com.linc.alteredaether.worldgen.modifier.ConfiguredSpawnsModifier;
 import com.linc.alteredaether.worldgen.modifier.OverworldArchwoodModifier;
 import com.linc.alteredaether.worldgen.modifier.ScaleSpawnCostModifier;
@@ -310,6 +311,8 @@ public final class AARegistries {
             BIOME_MODIFIER_SERIALIZERS.register("climate", () -> ClimateModifier.CODEC);
     public static final DeferredHolder<MapCodec<? extends BiomeModifier>, MapCodec<OverworldArchwoodModifier>> OVERWORLD_ARCHWOOD =
             BIOME_MODIFIER_SERIALIZERS.register("overworld_archwood", () -> OverworldArchwoodModifier.CODEC);
+    public static final DeferredHolder<MapCodec<? extends BiomeModifier>, MapCodec<WaterColorModifier>> WATER_COLOR =
+            BIOME_MODIFIER_SERIALIZERS.register("water_color", () -> WaterColorModifier.CODEC);
 
     public static final DeferredRegister<BlockStateProviderType<?>> BLOCK_STATE_PROVIDERS =
             DeferredRegister.create(Registries.BLOCK_STATE_PROVIDER_TYPE, AlteredAether.MOD_ID);
