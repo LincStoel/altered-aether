@@ -15,9 +15,12 @@
 First-pass polished and bricks textures for nadirite, celezite and sylicite, derived from their hand-drawn base textures, to be
 touched up by hand.
 
-Bricks follow holystone bricks' layout: four courses of 3px brick over a 1px mortar line, 8px bricks with the joints
-offset by half a brick each course. Each brick face is the base texture with its top row lit; the mortar is the base
-darkened.
+Nadirite's bricks follow holystone bricks' layout: four courses of 3px brick over a 1px mortar line, 8px bricks with
+the joints offset by half a brick each course, each brick face lit along its top row.
+
+Celezite's and sylicite's bricks follow vanilla stone bricks' layout: two courses of 7px brick over a 1px mortar line, 16px bricks with the
+joints offset by half a brick each course. Each brick is bevelled like a cut stone block: its top row and left column
+lit, its bottom row shaded; the mortar is the base darkened.
 
 Polished is the base with its grain flattened toward the mean, framed by a 1px bevel (lit top and left, shaded bottom
 and right). Celezite, a quartzite, and sylicite, an opal, also get a diagonal sheen.
@@ -35,11 +38,11 @@ from PIL import Image
 
 BLOCKS = pathlib.Path(__file__).resolve().parents[2] / "src/main/resources/assets/altered_aether/textures/block"
 
-# stone: (mortar darkening, brick top-row lift, polished grain kept, sheen strength)
+# stone: (mortar darkening, brick top-row lift, polished grain kept, sheen strength, brick style)
 STONES = {
-    "nadirite": (0.62, 1.10, 0.45, 0.0),
-    "celezite": (0.80, 1.05, 0.35, 0.10),
-    "sylicite": (0.78, 1.06, 0.40, 0.14),
+    "nadirite": (0.62, 1.10, 0.45, 0.0, "clay"),
+    "celezite": (0.80, 1.08, 0.35, 0.10, "stone"),
+    "sylicite": (0.78, 1.10, 0.40, 0.14, "stone"),
 }
 
 
@@ -59,7 +62,7 @@ def opaque(path):
     return flat.convert("RGB")
 
 
-def bricks(base, mortar, lift):
+def clay_bricks(base, mortar, lift):
     out = Image.new("RGB", (16, 16))
     for y in range(16):
         course, row = divmod(y, 4)
@@ -73,6 +76,29 @@ def bricks(base, mortar, lift):
                 out.putpixel((x, y), scale(px, lift))
             else:
                 out.putpixel((x, y), px)
+    return out
+
+
+def stone_bricks(base, mortar, lift):
+    shade = 1 - (1 - mortar) * 0.55
+    out = Image.new("RGB", (16, 16))
+    for y in range(16):
+        course, row = divmod(y, 8)
+        joint = 15 if course == 0 else 7
+        for x in range(16):
+            # sample a shifted copy so the bricks don't trace the base texture's own pattern
+            px = base.getpixel(((x + 5 * course) % 16, (y + 7) % 16))
+            if row == 7 or x == joint:
+                f = mortar
+            elif row == 6:
+                f = shade
+            elif row == 0 or x == (joint + 1) % 16:
+                f = lift
+            elif x == (joint - 1) % 16:
+                f = 1 - (1 - shade) * 0.5
+            else:
+                f = 1.0
+            out.putpixel((x, y), scale(px, f))
     return out
 
 
@@ -102,11 +128,11 @@ def main():
     args = sys.argv[1:]
     if "--preview" in args:
         del args[args.index("--preview"):args.index("--preview") + 2]
-    for stone, (mortar, lift, keep, sheen) in STONES.items():
+    for stone, (mortar, lift, keep, sheen, style) in STONES.items():
         if args and stone not in args:
             continue
         base = opaque(BLOCKS / f"{stone}.png")
-        b = bricks(base, mortar, lift)
+        b = (clay_bricks if style == "clay" else stone_bricks)(base, mortar, lift)
         p = polished(base, keep, sheen)
         b.save(BLOCKS / f"{stone}_bricks.png")
         p.save(BLOCKS / f"polished_{stone}.png")
