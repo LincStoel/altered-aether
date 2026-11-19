@@ -107,8 +107,7 @@ public final class RegionBinding {
         });
         // The cloud sea's sheet, in the tall Aether, whose terrain alone carries the marker.
         if (!seas.isEmpty() && level.getMinBuildHeight() < 0) {
-            CloudSea.put(level.dimension(), new CloudSea(level.getSeed(), seas.getFirst().argument(),
-                    seas.getFirst().sheet()));
+            CloudSea.put(level.dimension(), new CloudSea(level.getSeed(), seas.getFirst().argument()));
         }
         if (bindings.isEmpty()) {
             return;

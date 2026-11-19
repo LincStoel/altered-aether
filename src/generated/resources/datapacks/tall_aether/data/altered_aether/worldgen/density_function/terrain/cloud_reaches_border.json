@@ -1,8 +1,0 @@
-{
-  "type": "minecraft:cache_2d",
-  "argument": {
-    "type": "altered_aether:biome_edge",
-    "classifier": "biome",
-    "reach": 48
-  }
-}

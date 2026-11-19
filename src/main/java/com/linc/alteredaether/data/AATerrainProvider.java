@@ -79,13 +79,12 @@ public final class AATerrainProvider extends JsonDataProvider {
     private static final Set<String> HEIGHT_DEPENDENT =
             Set.of("crag_3d_noise", "jag", "crags", "tempest", "tempest_spires", "dune_ridges", "dune_centre", "dune_sheet",
                     "plateau", "plateau_terraced", "island", "tall_base_3d_noise", "rift",
-                    "grove_land", "grove_land_broken", "island_reaches", "island_high", "cloud_reaches_mask", "cloud_sheet",
-                    "cloud_reaches_land", "cloud_reaches_border", "island_mass", "highlands", "caves", "tundra_land", "bowl_land");
+                    "grove_land", "grove_land_broken", "cloud_sheet", "island_mass", "highlands", "caves", "tundra_land", "bowl_land");
 
     /**
      * The tall Aether's island floor: where the Aether's own island noise starts to fade in, its stock y 8. Raised from
      * -52 (a plain 1.5 stretch of the stock band) so that no plain island's ground lies lower than the dune sheets', and
-     * the cloud sheet at y -35..-8 meets only the bodies of the big islands plunging through it.
+     * the cloud sheet at y -35..-8 meets mostly the bodies of the big islands plunging through it.
      */
     private static final int ISLAND_FLOOR = -38;
 
@@ -186,15 +185,6 @@ public final class AATerrainProvider extends JsonDataProvider {
         noise("path_region", -6, 1.0);
         noise("plateau_path", -8, 1.0, 1.2, 0.7, 1.2, 1.0);
         noise("plateau_quicksoil_vein", -7, 1.0, 0.5, 0.0, 0.5, 1.0);
-        // The tall Aether's Cloud Reaches: the rift's recipe an octave broader and stretched, for tracts a couple of
-        // thousand blocks across; their landmasses, heights, and the roots hanging from them.
-        noise("cloud_sea", -10, 1.0, 1.5, 1.2, 0.6);
-        noise("cloud_sea_footprint", -8, 1.0, 0.5, 0.25);
-        noise("cloud_sea_level", -8, 1.0, 0.5);
-        noise("cloud_sea_roll", -7, 1.0, 0.5);
-        noise("cloud_sea_root", -5, 1.0, 0.5);
-        // A width varying along a biome border every hundred-odd blocks (the Cloud Reaches' channels).
-        noise("gap_width", -7, 1.0, 0.5);
         // The Highlands: islets on a 64-block footprint noise, their heights drifting on a 256-block one.
         noise("highlands_footprint", -6, 1.0, 0.5, 0.25);
         noise("highlands_level", -8, 1.0, 0.5);
@@ -423,8 +413,7 @@ public final class AATerrainProvider extends JsonDataProvider {
 
         if (mode == HeightMode.TALL) {
             // The Aether's own island noise, stretched to the taller band (y_factor 160 -> 240).
-            // cache_once: the Cloud Reaches read it twice at each point (the islands and the landmass).
-            df("tall_base_3d_noise", Df.wrap("minecraft:cache_once", oldBlendedNoise(0.25, 0.25, 80.0, 240.0, 8.0)));
+            df("tall_base_3d_noise", oldBlendedNoise(0.25, 0.25, 80.0, 240.0, 8.0));
         }
     }
 
@@ -540,14 +529,8 @@ public final class AATerrainProvider extends JsonDataProvider {
         df("island_shed", flatCache(mul(ramp(terrain("island_mass"), 2.0, -0.25),
                 add(1.0, mul(-1.0, terrain("rift_weight"))))));
         df("island_clean", Df.choose(terrain("island_shed"), terrain("island"), -1.0));
-        // In the tall Aether, the island given over to the Cloud Reaches; the stock Aether has none.
-        if (mode == HeightMode.TALL) {
-            cloudReaches(island);
-        } else {
-            df("island_reaches", terrain("island_clean"));
-        }
         // The island given over to the dune sheets.
-        df("island_dunes", Df.choose(terrain("dune_weight"), terrain("island_reaches"), terrain("dune_sheet")));
+        df("island_dunes", Df.choose(terrain("dune_weight"), terrain("island_clean"), terrain("dune_sheet")));
         // The grove islands broken apart where the Nurselog Hollow's have drifted (see BreakField).
         JsonObject broken = Df.type(NS + "grove_break");
         broken.add("argument", terrain("grove_land"));
@@ -584,6 +567,9 @@ public final class AATerrainProvider extends JsonDataProvider {
         carve.add("argument", stacks);
         carve.addProperty("vertical_scale", vertical());
         router.add("final_density", carve);
+        if (mode == HeightMode.TALL) {
+            cloudSheet(router);
+        }
 
         if (mode == HeightMode.TALL) {
             settings.getAsJsonObject("surface_rule").getAsJsonArray("sequence").add(nadiriteBase());
@@ -646,65 +632,22 @@ public final class AATerrainProvider extends JsonDataProvider {
     }
 
     /**
-     * The tall Aether's cloud sheet and the Cloud Reaches.
+     * The tall Aether's cloud sheet: a layer of cloud at about y -35..-8 (laid by {@code CloudSea}) under the plain
+     * islands of every region, thinning away where a landform (dunes, groves, rift, crags, plateau) takes over.
      *
-     * <p>The sheet is a layer of cloud at about y -35..-8 (laid by {@code CloudSea}) under the plain islands of every
-     * region. The landforms above the plain islands in the chain (dunes, groves, rift, crags, plateau) keep their own
-     * terrain, and the sheet thins away where they take over ({@code cloud_sheet}).
-     *
-     * <p>The Cloud Reaches are an overlay on the plain islands of every region, in tracts a couple of thousand blocks
-     * across: broad landmasses whose ground stays well above the sheet and whose bodies, with roots hanging beneath,
-     * plunge right through it, and the Aether's own islands lifted clear above.
+     * <p>Its weight reaches {@code CloudSea} through a {@code CloudSeaMarker} in the router's {@code barrier} slot,
+     * which nothing evaluates: the Aether has no aquifers. So the sheet costs the terrain nothing.
      */
-    /** Shifts the Cloud Reaches' landmass footprint noise: below 0, less land, in separate masses. */
-    private static final double FOOTPRINT_BIAS = 0.0;
-    /** The half-width, in blocks, of the open cloud between two biomes' landmasses in the Cloud Reaches. */
-    private static final double FOOTPRINT_BORDER = 12.0;
-
-    private void cloudReaches(JsonElement island) {
-        // The sheet, everywhere but under the landforms. Read only by CloudSea, so lazily cached.
+    private void cloudSheet(JsonObject router) {
         JsonObject sheet = null;
         for (String landform : new String[]{"dune", "grove", "rift", "crag", "plateau"}) {
             JsonObject open = add(1.0, mul(-1.0, terrain(landform + "_weight")));
             sheet = sheet == null ? open : mul(sheet, open);
         }
         df("cloud_sheet", Df.wrap("minecraft:cache_2d", sheet));
-
-        // The Reaches: a couple of thousand blocks across over about an eighth of the Aether, unbound by our region:
-        // the stock Aether's and Deep Aether's islands get them too. The mask rises across noise 0.26..0.38. The noises
-        // keep their old cloud_sea names, which seed them.
-        df("cloud_reaches_mask", flatCache(ramp(flatCache(shiftedNoise(NS + "cloud_sea", 0.18, 0.0)), -2.17, 8.3)));
-
-        // The landmasses: slabs whose ground rolls between y 8 and about 70, on bodies reaching down to y -32..-44,
-        // with roots hanging deeper, so every cliff runs down through the sheet. Their footprint leaves broad
-        // channels of open cloud between them, and it is cut back from every biome border, a channel FOOTPRINT_BORDER
-        // blocks or so either side (varying along it) opening between one biome's land and the next, so the land
-        // breaks into separate masses rather than running on as one continent. FOOTPRINT_BIAS below 0 thins it further.
-        JsonObject roll = column(shiftedNoise(NS + "cloud_sea_roll", 1.0, 0.0));
-        JsonObject summit = clamp(add(add(30.0, mul(22.0, flatCache(shiftedNoise(NS + "cloud_sea_level", 1.0, 0.0)))),
-                add(mul(6.0, roll), mul(3.0, column(shiftedNoise(NS + "grove_hummock", 1.0, 0.0))))), 8.0, 120.0);
-        JsonObject root = square(clamp(add(mul(2.0, column(shiftedNoise(NS + "cloud_sea_root", 1.0, 0.0))), -0.6), 0.0, 1.0));
-        JsonObject underside = add(add(-38.0, mul(6.0, roll)), mul(-24.0, root));
-        JsonObject border = Df.type(NS + "biome_edge");
-        border.addProperty("classifier", "biome");
-        border.addProperty("reach", 48);
-        df("cloud_reaches_border", Df.wrap("minecraft:cache_2d", border));
-        JsonObject borderWidth = add(FOOTPRINT_BORDER, mul(FOOTPRINT_BORDER * 0.4,
-                column(shiftedNoise(NS + "gap_width", 1.0, 0.0))));
-        JsonObject footprint = min(
-                mul(6.0, add(flatCache(shiftedNoise(NS + "cloud_sea_footprint", 1.0, 0.0)), FOOTPRINT_BIAS)),
-                mul(0.3, add(terrain("cloud_reaches_border"), mul(-1.0, borderWidth))));
-        JsonObject landmass = add(min(min(mul(0.125, add(summit, mul(-1.0, Df.y()))),
-                mul(1.0 / 6, add(Df.y(), mul(-1.0, underside)))), footprint), mul(0.3, terrain("jag")));
-        // The Aether's own islands, lifted to float above the sheet: fading in from y 8 to 40 rather than from
-        // ISLAND_FLOOR to -4.
-        df("island_high", reanchor(island, Map.of(ISLAND_FLOOR, 8, -4, 40, 20, 40, 128, 128)));
-        df("cloud_reaches_land", max(landmass, Df.choose(terrain("island_shed"), terrain("island_high"), -1.0)));
-
         JsonObject marker = Df.type(NS + "cloud_sea");
-        marker.add("argument", terrain("cloud_reaches_mask"));
-        marker.add("sheet", terrain("cloud_sheet"));
-        df("island_reaches", Df.choose(marker, terrain("island_clean"), terrain("cloud_reaches_land")));
+        marker.add("argument", terrain("cloud_sheet"));
+        router.add("barrier", marker);
     }
 
     /** The island expression's height anchors, remapped to the tall band, and its base noise stretched to match. */

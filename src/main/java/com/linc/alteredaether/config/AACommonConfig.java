@@ -218,7 +218,7 @@ public final class AACommonConfig {
                         "are wide, so all of them would bring swarms.")
                 .defineInRange("cloud_skirt_breeze_chance", 0.25, 0.0, 1.0);
         CLOUD_SEA = b.comment("The sheet of cold aercloud at about y -35..-8 under the tall Aether's plain islands. Off leaves",
-                        "open sky below the islands (the Cloud Reaches keep their shape).")
+                        "open sky below the islands.")
                 .define("cloud_sea", true);
         CLOUD_SEA_BREEZE_CHANCE = b.comment("Share of the breezes that would spawn on the cloud sheet that do.")
                 .defineInRange("cloud_sea_breeze_chance", 0.25, 0.0, 1.0);

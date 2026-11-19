@@ -26,7 +26,6 @@ import com.linc.alteredaether.worldgen.landmark.LandmarkField;
 import com.linc.alteredaether.worldgen.landmark.LandmarkType;
 import com.linc.alteredaether.worldgen.ruin.RuinPlan;
 import com.linc.alteredaether.worldgen.ruin.Ruins;
-import com.linc.alteredaether.worldgen.sea.CloudSea;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import net.minecraft.ChatFormatting;
@@ -43,7 +42,6 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.levelgen.Heightmap;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
@@ -55,7 +53,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.stream.Stream;
 
 /**
- * {@code /altered_aether}, for operators: find the nearest landmark, grove giant or cloud sea, roll a rumour map, or
+ * {@code /altered_aether}, for operators: find the nearest landmark or grove giant, roll a rumour map, or
  * build a grove ruin to look at. Dev runs add more under the same command (the dev source set's {@code DebugCommands}).
  */
 @EventBusSubscriber(modid = AlteredAether.MOD_ID)
@@ -76,7 +74,6 @@ public final class AACommands {
                                         Arrays.stream(LandmarkType.values()).map(LandmarkType::id), builder))
                                 .executes(AACommands::landmark)))
                 .then(Commands.literal("rumour").executes(AACommands::rumour))
-                .then(Commands.literal("sea").executes(AACommands::sea))
                 .then(Commands.literal("ruin")
                         .then(Commands.argument("kind", StringArgumentType.word())
                                 .suggests((ctx, builder) -> SharedSuggestionProvider.suggest(
@@ -254,97 +251,6 @@ public final class AACommands {
         source.sendSuccess(() -> Component.literal(String.format("A rumour of a %s at %d, %d (%.1f ms).",
                 site.get().type().id(), site.get().x(), site.get().z(), ms)), false);
         return 1;
-    }
-
-    /**
-     * {@code /altered_aether sea}: the nearest open cloud sea (tall Aether only), with a link that stands you on its
-     * sheet, or puts you in the air above it where no clear patch of sheet turns up close by.
-     */
-    private static int sea(CommandContext<CommandSourceStack> ctx) {
-        CommandSourceStack source = ctx.getSource();
-        ServerLevel aether = source.getServer().getLevel(THE_AETHER);
-        CloudSea sea = CloudSea.terrain(THE_AETHER);
-        if (aether == null || sea == null) {
-            source.sendFailure(Component.literal("The Aether has no cloud seas (they need the tall Aether)."));
-            return 0;
-        }
-        int x = (int) source.getPosition().x, z = (int) source.getPosition().z;
-        source.sendSuccess(() -> Component.literal("Searching for a cloud sea..."), false);
-        CompletableFuture.supplyAsync(() -> nearestSea(aether, sea, x, z), Util.backgroundExecutor())
-                .thenAcceptAsync(found -> {
-                    if (found == null) {
-                        source.sendFailure(Component.literal("No cloud sea within " + SEA_RADIUS + " blocks."));
-                        return;
-                    }
-                    String tp = "/execute in aether:the_aether run tp @s " + found.getX() + " " + found.getY() + " "
-                            + found.getZ();
-                    source.sendSuccess(() -> Component.literal("cloud sea at " + found.getX() + ", " + found.getZ()
-                            + " (" + (int) Math.hypot(found.getX() - x, found.getZ() - z) + " blocks) ")
-                            .append(go(tp)), false);
-                }, source.getServer());
-        return 1;
-    }
-
-    private static final int SEA_RADIUS = 20000;
-
-    /**
-     * The nearest open sea, ring by ring outward on a 64-block grid, at a column near it whose sheet is whole and has
-     * open air on top, to stand on. Where the first few points of sea found have no such column (a landmass fills
-     * them), the air above the first. Null if there's no sea within {@link #SEA_RADIUS}.
-     */
-    private static BlockPos nearestSea(ServerLevel aether, CloudSea sea, int x, int z) {
-        int step = 64, tries = 0;
-        BlockPos first = null;
-        for (int r = 0; r * step <= SEA_RADIUS; r++) {
-            for (int i = -r; i <= r; i++) {
-                for (int[] p : new int[][]{{i, -r}, {i, r}, {-r, i}, {r, i}}) {
-                    int px = x + p[0] * step, pz = z + p[1] * step;
-                    if (sea.weight(px, pz) <= 0.95) {
-                        continue;
-                    }
-                    BlockPos footing = seaFooting(aether, sea, px, pz);
-                    if (footing != null) {
-                        return footing;
-                    }
-                    if (first == null) {
-                        first = new BlockPos(px, aether.getChunkSource().getGenerator().getBaseHeight(px, pz,
-                                Heightmap.Types.WORLD_SURFACE_WG, aether, aether.getChunkSource().randomState()) + 2,
-                                pz);
-                    }
-                    if (++tries >= 24) {
-                        return first;
-                    }
-                }
-            }
-        }
-        return first;
-    }
-
-    @org.jetbrains.annotations.Nullable
-    private static BlockPos seaFooting(ServerLevel aether, CloudSea sea, int x, int z) {
-        var generator = aether.getChunkSource().getGenerator();
-        var random = aether.getChunkSource().randomState();
-        int[] span = new int[2];
-        for (int r = 0; r <= 4; r++) {
-            for (int i = -r; i <= r; i++) {
-                for (int[] p : new int[][]{{i, -r}, {i, r}, {-r, i}, {r, i}}) {
-                    int px = x + p[0] * 12, pz = z + p[1] * 12;
-                    double w = sea.weight(px, pz);
-                    if (w < 0.9 || !sea.span(px, pz, w, span) || span[1] - span[0] < 3) {
-                        continue;
-                    }
-                    var column = generator.getBaseColumn(px, pz, aether, random);
-                    boolean clear = true;
-                    for (int y = span[0]; y <= span[1] + 3 && clear; y++) {
-                        clear = column.getBlock(y).isAir();
-                    }
-                    if (clear) {
-                        return new BlockPos(px, span[1] + 1, pz);
-                    }
-                }
-            }
-        }
-        return null;
     }
 
     /** A green {@code [go]} that puts a teleport command in the chat box. */

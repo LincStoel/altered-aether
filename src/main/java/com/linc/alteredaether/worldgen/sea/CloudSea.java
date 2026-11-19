@@ -28,14 +28,13 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * One tall Aether's cloud sheet, which lies under the plain islands of every region: the sheet's weight from the
  * terrain ({@code cloud_sheet}, carried by the router's {@code CloudSeaMarker}, 1 except where a landform takes over)
- * and its own two noises ({@link CloudSeaMath}). The marker also carries the Cloud Reaches' mask.
+ * and its own two noises ({@link CloudSeaMath}).
  */
 public final class CloudSea {
     private static final Map<ResourceKey<Level>, CloudSea> SEAS = new ConcurrentHashMap<>();
     /** Blocks between the columns the weight is read at; a chunk's sheet interpolates between them. */
     public static final int STEP = 4;
 
-    private final DensityFunction mask;
     private final DensityFunction weight;
     private final PerlinNoise holes;
     private final PerlinNoise drift;
@@ -45,8 +44,7 @@ public final class CloudSea {
      * runs of the landform and region masks. */
     public static final double WARP = 32;
 
-    public CloudSea(long seed, DensityFunction mask, DensityFunction weight) {
-        this.mask = mask;
+    public CloudSea(long seed, DensityFunction weight) {
         this.weight = weight;
         this.holes = PerlinNoise.create(new XoroshiroRandomSource(seed ^ 0xC10D5EA1L), 0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0);
         this.drift = PerlinNoise.create(new XoroshiroRandomSource(seed ^ 0xD81F7EA1L), 0, 1.0, 1.0);
@@ -81,11 +79,6 @@ public final class CloudSea {
         int wx = x + (int) Math.round(WARP * warpX.getValue(x * 0.01, 0, z * 0.01));
         int wz = z + (int) Math.round(WARP * warpZ.getValue(x * 0.01, 0, z * 0.01));
         return weight.compute(new DensityFunction.SinglePointContext(wx, 0, wz));
-    }
-
-    /** Where the Cloud Reaches lie before the landforms take their share: the islands are shaped for the sheet here. */
-    public double mask(int x, int z) {
-        return mask.compute(new DensityFunction.SinglePointContext(x, 0, z));
     }
 
     public double holes(int x, int z) {

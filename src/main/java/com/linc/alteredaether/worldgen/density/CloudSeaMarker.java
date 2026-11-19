@@ -25,10 +25,9 @@ import net.minecraft.world.level.levelgen.DensityFunction;
  * once the landforms above it in the chain have taken their share. The terrain never reads it; it rides along so that
  * the router seeds its noises, and {@link RegionBinding} hands it to the sheet ({@code CloudSea}).
  */
-public record CloudSeaMarker(DensityFunction argument, DensityFunction sheet) implements DensityFunction {
+public record CloudSeaMarker(DensityFunction argument) implements DensityFunction {
     public static final MapCodec<CloudSeaMarker> MAP_CODEC = RecordCodecBuilder.mapCodec(i -> i.group(
-            DensityFunction.HOLDER_HELPER_CODEC.fieldOf("argument").forGetter(CloudSeaMarker::argument),
-            DensityFunction.HOLDER_HELPER_CODEC.fieldOf("sheet").forGetter(CloudSeaMarker::sheet)
+            DensityFunction.HOLDER_HELPER_CODEC.fieldOf("argument").forGetter(CloudSeaMarker::argument)
     ).apply(i, CloudSeaMarker::new));
     public static final KeyDispatchDataCodec<CloudSeaMarker> CODEC = KeyDispatchDataCodec.of(MAP_CODEC);
 
@@ -44,7 +43,7 @@ public record CloudSeaMarker(DensityFunction argument, DensityFunction sheet) im
 
     @Override
     public DensityFunction mapAll(Visitor visitor) {
-        return visitor.apply(new CloudSeaMarker(argument.mapAll(visitor), sheet.mapAll(visitor)));
+        return visitor.apply(new CloudSeaMarker(argument.mapAll(visitor)));
     }
 
     @Override

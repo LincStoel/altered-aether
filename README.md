@@ -207,11 +207,8 @@ With the tall pack, other mods' Aether structures and ores are moved to the matc
 
 The tall Aether also has a **cloud sea**: a rolling sheet of cold aercloud at about y -35..-8 under every region's
 plain islands, level with the dunes. The bigger islands plunge through it, sky lakes and holes break it up, and it
-gives way to our landforms. Falling water washes its own way down through the cloud. In the **Cloud Reaches**, broad
-stretches a thousand to three thousand blocks across, the islands are shaped round the sheet: landmasses stand in it
-with their cliffs plunging through and their roots hanging out beneath, and smaller islands float well above it.
-About one in five of the Highlands' islets wears a **cloud skirt**, a collar of the same cloud round its rim.
-`/altered_aether sea` finds the nearest open stretch of sheet (operators only).
+gives way to our landforms. Falling water washes its own way down through the cloud. About one in five of the
+Highlands' islets wears a **cloud skirt**, a collar of the same cloud round its rim.
 
 ## Optional mods
 
