@@ -30,11 +30,17 @@ import org.jetbrains.annotations.Nullable;
  * @param region  the region mask, 1 inside Altered Aether's own region, or null when unknown
  * @param minY    bottom of the noise band
  * @param maxY    top of the noise band, exclusive
+ * @param biomeIds the biome id at each quart column already looked up
  */
 public record TerrainProbe(BiomeSource biomes, Climate.Sampler sampler, @Nullable DensityFunction terrain,
-                           @Nullable DensityFunction region, int minY, int maxY) {
+                           @Nullable DensityFunction region, int minY, int maxY, CellCache<String> biomeIds) {
     /** Coarse step of the column surface search. */
     private static final int SCAN_STEP = 6;
+
+    public TerrainProbe(BiomeSource biomes, Climate.Sampler sampler, @Nullable DensityFunction terrain,
+                        @Nullable DensityFunction region, int minY, int maxY) {
+        this(biomes, sampler, terrain, region, minY, maxY, new CellCache<>(1 << 16));
+    }
 
     public TerrainProbe {
         terrain = columnMemo(terrain);
@@ -117,10 +123,17 @@ public record TerrainProbe(BiomeSource biomes, Climate.Sampler sampler, @Nullabl
         }
     }
 
+    /**
+     * The biome id at a column, read at the middle of the band. Biomes are kept per quart (4 blocks), so the answer is
+     * the same for every column in one, and each is looked up once: site searches and the skirts' rift fade ask for
+     * thousands of columns, and a lookup samples the climate afresh. The ids are interned, so the cache holds one
+     * string per biome.
+     */
     public String biomeAt(int x, int z) {
-        return biomes.getNoiseBiome(QuartPos.fromBlock(x), QuartPos.fromBlock((minY + maxY) / 2), QuartPos.fromBlock(z),
-                        sampler)
-                .unwrapKey().map(key -> key.location().toString()).orElse("");
+        int qx = QuartPos.fromBlock(x), qz = QuartPos.fromBlock(z);
+        return biomeIds.get(((long) qx << 32) ^ (qz & 0xFFFFFFFFL), key -> biomes.getNoiseBiome(qx,
+                        QuartPos.fromBlock((minY + maxY) / 2), qz, sampler)
+                .unwrapKey().map(id -> id.location().toString().intern()).orElse(""));
     }
 
     public boolean solid(int x, int y, int z) {
