@@ -26,8 +26,9 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * One tall Aether's cloud sea, as the sheet sees it: the sea's weight from the terrain ({@code cloud_sea_sheet}, carried
- * by the router's {@code CloudSeaMarker}) and the sheet's own two noises ({@link CloudSeaMath}).
+ * One tall Aether's cloud sheet, which lies under the plain islands of every region: the sheet's weight from the
+ * terrain ({@code cloud_sheet}, carried by the router's {@code CloudSeaMarker}, 1 except where a landform takes over)
+ * and its own two noises ({@link CloudSeaMath}). The marker also carries the Cloud Reaches' mask.
  */
 public final class CloudSea {
     private static final Map<ResourceKey<Level>, CloudSea> SEAS = new ConcurrentHashMap<>();
@@ -58,7 +59,7 @@ public final class CloudSea {
         return AACommonConfig.CLOUD_SEA.get() ? SEAS.get(dimension) : null;
     }
 
-    /** The sea whatever the config says, for the skirts and debugging: they meet the sea's terrain either way. */
+    /** The sheet whatever the config says, for the command and debugging. */
     @Nullable
     public static CloudSea terrain(ResourceKey<Level> dimension) {
         return SEAS.get(dimension);
@@ -82,7 +83,7 @@ public final class CloudSea {
         return weight.compute(new DensityFunction.SinglePointContext(wx, 0, wz));
     }
 
-    /** Where the sea lies before the landforms take their share: its islands are shaped for it here. */
+    /** Where the Cloud Reaches lie before the landforms take their share: the islands are shaped for the sheet here. */
     public double mask(int x, int z) {
         return mask.compute(new DensityFunction.SinglePointContext(x, 0, z));
     }

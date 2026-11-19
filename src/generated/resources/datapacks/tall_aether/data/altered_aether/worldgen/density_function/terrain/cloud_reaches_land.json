@@ -188,7 +188,7 @@
           "argument1": 0.3,
           "argument2": {
             "type": "minecraft:add",
-            "argument1": "altered_aether:terrain/cloud_sea_border",
+            "argument1": "altered_aether:terrain/cloud_reaches_border",
             "argument2": {
               "type": "minecraft:mul",
               "argument1": -1.0,

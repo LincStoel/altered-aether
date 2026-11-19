@@ -1,4 +1,4 @@
-// 1.21.1	2026-11-18T18:18:25.7274924	Altered Aether terrain (stock)
+// 1.21.1	2026-11-18T20:13:25.8352255	Altered Aether terrain (stock)
 e66450bcf22fc448fd06f06e887ffa9cd6359abc data/aether/worldgen/noise_settings/skylands.json
 053b85fe60962463bbdb50fc2392adf0817db93b data/altered_aether/neoforge/biome_modifier/decoration/shelf_cascading.json
 8b0be10aaf6a3dfa2a2601e3dc0ccd5d81205889 data/altered_aether/neoforge/biome_modifier/decoration/shelf_vexing.json
@@ -36,10 +36,10 @@ db9a3fef0938a5c68a2e0fcd1f15c8120ad66eed data/altered_aether/worldgen/density_fu
 bfeed5b7754442a7713417fadd9af16352cdf7b7 data/altered_aether/worldgen/density_function/terrain/island.json
 edd6f4b96e43a010d70557f1565ec335bb90d700 data/altered_aether/worldgen/density_function/terrain/island_bowls.json
 70ef4b81fbc5f5ea1ac32616f35ac558baf8e49b data/altered_aether/worldgen/density_function/terrain/island_clean.json
-6668fbdedff214eab6a3c285a066382f9563d19b data/altered_aether/worldgen/density_function/terrain/island_dunes.json
+b43c4765f21619800855bac5d8a60d56b7836697 data/altered_aether/worldgen/density_function/terrain/island_dunes.json
 4bc04abe097bfe936ac9e2bb9fab977f16bce850 data/altered_aether/worldgen/density_function/terrain/island_groves.json
 5a188560649067672fecd0d0426120aa5def4ab5 data/altered_aether/worldgen/density_function/terrain/island_mass.json
-27bd25bb4b9a085b25472d1424a99fe4a58a849d data/altered_aether/worldgen/density_function/terrain/island_sea.json
+27bd25bb4b9a085b25472d1424a99fe4a58a849d data/altered_aether/worldgen/density_function/terrain/island_reaches.json
 1048b01e28a84714979e2d25c69aed9ee9a2e432 data/altered_aether/worldgen/density_function/terrain/island_shed.json
 668e5db34cb6ec736e540935cd1b88e4e8fa37aa data/altered_aether/worldgen/density_function/terrain/island_tundra.json
 8a48113f3368139df37e8519c91f47bfe355ddbe data/altered_aether/worldgen/density_function/terrain/jag.json

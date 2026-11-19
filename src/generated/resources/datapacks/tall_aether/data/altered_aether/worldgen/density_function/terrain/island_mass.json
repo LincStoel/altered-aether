@@ -4,7 +4,7 @@
     "type": "altered_aether:island_mass",
     "argument": "altered_aether:terrain/island",
     "max_y": 128,
-    "min_y": -52,
+    "min_y": -38,
     "radius": 40
   }
 }
