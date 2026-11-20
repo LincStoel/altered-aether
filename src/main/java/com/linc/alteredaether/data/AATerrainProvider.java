@@ -191,7 +191,7 @@ public final class AATerrainProvider extends JsonDataProvider {
         noise("highlands_root", -5, 1.0, 0.5);
         // Where a cave breaks through to daylight: rare patches a few dozen blocks across.
         noise("cave_entrance", -5, 1.0, 0.5);
-        // The Snow Tundra's plates: broad and low, gently rolling, with lobes hanging beneath.
+        // The Sky Tundra's plates: broad and low, gently rolling, with lobes hanging beneath.
         noise("tundra_footprint", -8, 1.0, 0.5);
         noise("tundra_roll", -7, 1.0, 0.5);
         noise("tundra_root", -6, 1.0, 0.5);
@@ -239,7 +239,7 @@ public final class AATerrainProvider extends JsonDataProvider {
         df("plateau_terraced", terraced);
 
         // Crag tier, on erosion: the same field drives the biome (erosion > 0.6125) and this mask, which ramps
-        // 0 -> 1 across 0.5625..0.6625, so the biome edge sits mid-ramp; the band below belongs to the Snow Tundra
+        // 0 -> 1 across 0.5625..0.6625, so the biome edge sits mid-ramp; the band below belongs to the Sky Tundra
         // (erosion > 0.52), which rings the crags. Tempest Peaks is the top slice of the same tier (erosion > 0.8044),
         // where the crag mask is saturated and the tempest mask takes over.
         df("crag_noise", flatCache(shiftedNoise(NS + "crags", 0.25, 0.0)));
@@ -332,7 +332,7 @@ public final class AATerrainProvider extends JsonDataProvider {
                 add(mul(6.0, add(flatCache(shiftedNoise(NS + "grove_footprint", 1.0, 0.0)), 0.3)),
                         mul(-14.0, mul(groveSeam, groveGap)))));
 
-        // Snow Tundra, on the erosion band under the crags (0.52..0.6125): its mask ramps in across 0.49..0.55 and the
+        // Sky Tundra, on the erosion band under the crags (0.52..0.6125): its mask ramps in across 0.49..0.55 and the
         // crags take over above it. Broad, low snowfields on plates a few hundred blocks across with sky between,
         // their ground at y 30..42 (tall), hanging lobes beneath; the drifts are built on them by TundraDriftsFeature.
         df("tundra_mask", ramp(terrain("crag_noise"), -0.49 / 0.06, 1 / 0.06));

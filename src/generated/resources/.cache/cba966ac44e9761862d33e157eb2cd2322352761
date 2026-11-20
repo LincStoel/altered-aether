@@ -1,7 +1,7 @@
-// 1.21.1	2026-11-17T21:41:11.9454587	Altered Aether advancements
+// 1.21.1	2026-11-19T19:12:03.7659874	Altered Aether advancements
 6b0bbdb4842ffb603caf7f8239d078d0bbdfd92b data/altered_aether/advancement/aether_plateau.json
 f6a6daf0bf94dfcc310fd3a41f538ba65b795ad5 data/altered_aether/advancement/airborne_cargo.json
-66e6a5203cabeef5070eb8209e294ac3683326e9 data/altered_aether/advancement/altered_cartographer.json
+39a829edeb79b4e021bbfd58722f1e3aeecd5753 data/altered_aether/advancement/altered_cartographer.json
 3031d3f5bebe79b13260a71ef8dfa19a40a9205f data/altered_aether/advancement/archwood_grove.json
 c94aec8d4c8bace6e306b6000c3d145fd51898e8 data/altered_aether/advancement/atoll.json
 12fb5c8ba422267027154fb44ae3fb7e5085918a data/altered_aether/advancement/double_atoll.json
@@ -26,7 +26,7 @@ c85bb7040168616ee3d6a3207d3bd897ef4910f3 data/altered_aether/advancement/rumour.
 f4008a6daf853233a81c77841c1cd90bced480b3 data/altered_aether/advancement/shrouded_forest.json
 63d1df2c2106d7dbbcab18fa5b560ae80695ca28 data/altered_aether/advancement/skyroot_cathedral.json
 a1d603b5093817c922f3970882adbf6efae2da88 data/altered_aether/advancement/sky_rider.json
-425e24739770688cf147aa9bc4e0dea4ec731950 data/altered_aether/advancement/snow_tundra.json
+2c0b86e2ba6016bb9a1c802d7b6b2675bf7367c2 data/altered_aether/advancement/sky_tundra.json
 028a46088990101dad4cdb38c612e649134673cf data/altered_aether/advancement/stump_cache.json
 777595eaf2b38057210f6634963454ef6a1c7525 data/altered_aether/advancement/take_a_load_off.json
 15ac93f9a840eaa6f2672668fc1dd05ce7fca706 data/altered_aether/advancement/tempest_crown.json

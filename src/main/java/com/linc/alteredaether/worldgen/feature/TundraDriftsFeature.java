@@ -36,7 +36,7 @@ import net.minecraft.world.level.levelgen.feature.configurations.NoneFeatureConf
 import net.minecraft.world.level.levelgen.synth.SimplexNoise;
 
 /**
- * The Snow Tundra's drifts and the trees buried in them, one chunk at a time. The drifts ({@link DriftShape}) are ridges
+ * The Sky Tundra's drifts and the trees buried in them, one chunk at a time. The drifts ({@link DriftShape}) are ridges
  * of snow across the prevailing wind, up to 26 blocks tall, with curled lips leaning out over their lee faces; their
  * surface is finished with snow layers so it rises smoothly instead of in steps. Before the snow, skyroot trees (now and
  * then a golden oak) are grown from the ground under where it will lie, so the drifts bury them: mostly their crowns

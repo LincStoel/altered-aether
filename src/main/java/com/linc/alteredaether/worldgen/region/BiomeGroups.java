@@ -28,7 +28,7 @@ public enum BiomeGroups {
      * own, and Other (the Aether's own biomes, Deep Aether's, and any other mod's).
      */
     GROUP(BiomeGroups::group),
-    /** The snow tundra against everything else; its drifts fade out toward the tundra's edge. */
+    /** The sky tundra against everything else; its drifts fade out toward the tundra's edge. */
     TUNDRA(biome -> biome.equals(BiomeTable.TUNDRA) ? 1 : 0),
     /** The flower bowl against everything else; its rim follows the distance in from the bowl's edge. */
     BOWL(biome -> biome.equals(BiomeTable.BOWL) ? 1 : 0),

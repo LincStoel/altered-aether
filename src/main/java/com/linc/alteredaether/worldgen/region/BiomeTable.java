@@ -56,14 +56,14 @@ public final class BiomeTable {
     public static final String FLASHING = "altered_aether:flashing_archwood_grove";
     public static final String FLOURISHING = "altered_aether:flourishing_archwood_grove";
     public static final String VEXING = "altered_aether:vexing_archwood_grove";
-    public static final String TUNDRA = "altered_aether:snow_tundra";
+    public static final String TUNDRA = "altered_aether:sky_tundra";
     public static final String BOWL = "altered_aether:flower_bowl";
     public static final String SHROUDED = "altered_aether:shrouded_forest";
 
     /** Plateau tier, mid-ramp of plateau_mask. P(continents &gt; this) = 6.1%. */
     public static final float PLATEAU_C = 0.545f;
     /**
-     * Snow Tundra, the erosion band just under the crags: every crag range stands in a ring of it. Measured with
+     * Sky Tundra, the erosion band just under the crags: every crag range stands in a ring of it. Measured with
      * {@code -PaaReport}; about as much tundra as crags.
      */
     public static final float TUNDRA_E = 0.52f;

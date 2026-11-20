@@ -63,7 +63,7 @@ public final class AASurfaceRuleProvider extends JsonDataProvider {
     private static final String DUNES = biome("windswept_dunes");
     private static final String CATHEDRAL = biome("skyroot_cathedral");
     private static final String NURSELOG = biome("nurselog_hollow");
-    private static final String TUNDRA = biome("snow_tundra");
+    private static final String TUNDRA = biome("sky_tundra");
     private static final String SHROUDED = biome("shrouded_forest");
 
     public AASurfaceRuleProvider(PackOutput output) {

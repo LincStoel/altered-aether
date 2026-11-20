@@ -71,8 +71,8 @@ public final class AAAdvancementProvider extends JsonDataProvider {
         biome(all, "frozen_crags", AABiomes.FROZEN_CRAGS, "aether:icestone", "Thin Air", "Climb into the Frozen Crags");
         landmark(all, "frozen_spire", "frozen_crags", LandmarkType.FROZEN_SPIRE.id(), "minecraft:blue_ice",
                 "Spire of Ice", "Find a frozen spire twisting up out of the crags");
-        biome(all, "snow_tundra", AABiomes.SNOW_TUNDRA, "minecraft:snow_block", "Snowbound",
-                "Wade through the drifts of the Snow Tundra");
+        biome(all, "sky_tundra", AABiomes.SKY_TUNDRA, "minecraft:snow_block", "Snowbound",
+                "Wade through the drifts of the Sky Tundra");
         biome(all, "tempest_peaks", AABiomes.TEMPEST_PEAKS, "minecraft:oxidized_copper", "Lightning Country",
                 "Brave the Tempest Peaks");
         // Awarded in code by TempestStorms, checked once a second.

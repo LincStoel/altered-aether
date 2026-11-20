@@ -61,7 +61,7 @@ public final class AACompatProvider extends FeatureData {
      * the vanilla temperature, which puts the dunes and the rift at 130-175°F.
      */
     private static final Map<String, int[]> COLD_SWEAT_TEMPS = Map.ofEntries(
-            Map.entry("snow_tundra", new int[]{10, 48}),
+            Map.entry("sky_tundra", new int[]{10, 48}),
             Map.entry("frozen_crags", new int[]{10, 40}),
             Map.entry("cascading_archwood_grove", new int[]{45, 65}),
             Map.entry("nurselog_hollow", new int[]{55, 75}),

@@ -97,6 +97,22 @@
       },
       "trigger": "minecraft:location"
     },
+    "sky_tundra": {
+      "conditions": {
+        "player": [
+          {
+            "condition": "minecraft:entity_properties",
+            "entity": "this",
+            "predicate": {
+              "location": {
+                "biomes": "altered_aether:sky_tundra"
+              }
+            }
+          }
+        ]
+      },
+      "trigger": "minecraft:location"
+    },
     "skyroot_cathedral": {
       "conditions": {
         "player": [
@@ -106,22 +122,6 @@
             "predicate": {
               "location": {
                 "biomes": "altered_aether:skyroot_cathedral"
-              }
-            }
-          }
-        ]
-      },
-      "trigger": "minecraft:location"
-    },
-    "snow_tundra": {
-      "conditions": {
-        "player": [
-          {
-            "condition": "minecraft:entity_properties",
-            "entity": "this",
-            "predicate": {
-              "location": {
-                "biomes": "altered_aether:snow_tundra"
               }
             }
           }
@@ -197,7 +197,7 @@
       "nurselog_hollow"
     ],
     [
-      "snow_tundra"
+      "sky_tundra"
     ],
     [
       "flower_bowl"

@@ -61,7 +61,7 @@ public final class AABiomeProvider extends JsonDataProvider {
         biome("windswept_dunes", windsweptDunes());
         biome("skyroot_cathedral", skyrootCathedral());
         biome("nurselog_hollow", nurselogHollow());
-        biome("snow_tundra", snowTundra());
+        biome("sky_tundra", skyTundra());
         biome("flower_bowl", flowerBowl());
         biome("shrouded_forest", shroudedForest());
 
@@ -267,7 +267,7 @@ public final class AABiomeProvider extends JsonDataProvider {
     }
 
     /** Wind-packed snowfields round the crags: drifts, buried trees, and the crags' hardy wildlife. */
-    private BiomeJson snowTundra() {
+    private BiomeJson skyTundra() {
         return base()
                 .climate(-0.1f, 0.4f)
                 .drop(BARREN).drop(FOREST_TREES)

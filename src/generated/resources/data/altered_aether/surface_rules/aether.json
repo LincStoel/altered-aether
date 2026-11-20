@@ -181,7 +181,7 @@
                 "if_true": {
                   "type": "minecraft:biome",
                   "biome_is": [
-                    "altered_aether:snow_tundra",
+                    "altered_aether:sky_tundra",
                     "altered_aether:shattered_rift",
                     "altered_aether:skyroot_cathedral",
                     "altered_aether:nurselog_hollow",
@@ -208,7 +208,7 @@
                         "if_true": {
                           "type": "minecraft:biome",
                           "biome_is": [
-                            "altered_aether:snow_tundra"
+                            "altered_aether:sky_tundra"
                           ]
                         },
                         "then_run": {
@@ -730,7 +730,7 @@
             "if_true": {
               "type": "minecraft:biome",
               "biome_is": [
-                "altered_aether:snow_tundra"
+                "altered_aether:sky_tundra"
               ]
             },
             "then_run": {
@@ -964,7 +964,7 @@
               "biome_is": [
                 "altered_aether:frozen_crags",
                 "altered_aether:tempest_peaks",
-                "altered_aether:snow_tundra"
+                "altered_aether:sky_tundra"
               ]
             },
             "then_run": {
@@ -1077,7 +1077,7 @@
             "if_true": {
               "type": "minecraft:biome",
               "biome_is": [
-                "altered_aether:snow_tundra"
+                "altered_aether:sky_tundra"
               ]
             },
             "then_run": {
@@ -1160,7 +1160,7 @@
             "biome_is": [
               "altered_aether:frozen_crags",
               "altered_aether:tempest_peaks",
-              "altered_aether:snow_tundra"
+              "altered_aether:sky_tundra"
             ]
           },
           "then_run": {

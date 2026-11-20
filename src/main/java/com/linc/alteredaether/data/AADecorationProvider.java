@@ -196,7 +196,7 @@ public final class AADecorationProvider extends FeatureData {
         config.addProperty("wind_aligned", true);
         configured("drift/snow", "snow_drift", config);
         placed("drift/snow", "drift/snow", surface(0.5, "snow_drifts"));
-        // The Snow Tundra's great drifts and buried trees, built a chunk at a time (TundraDriftsFeature).
+        // The Sky Tundra's great drifts and buried trees, built a chunk at a time (TundraDriftsFeature).
         configured("drift/tundra", "tundra_drifts", new JsonObject());
         placed("drift/tundra", "drift/tundra", Placement.list());
         // Moss over the shrouded forest's canopy, in broad patches (Deep Aether's moss; vanilla's without it).

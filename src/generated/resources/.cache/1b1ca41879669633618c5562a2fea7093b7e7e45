@@ -1,7 +1,7 @@
-// 1.21.1	2026-11-18T13:00:39.8802219	Altered Aether tags
+// 1.21.1	2026-11-19T19:12:03.7624885	Altered Aether tags
 7d2776eb2dd31e5afa703d02d730e95dcd56b568 data/aether/tags/block/holystone_ore_replaceables.json
 b88b91fbc5e737dba7553b2c25a99cf7edcce9cb data/aether/tags/block/treated_as_aether_block.json
-12f6e9bc14430120790fd0c3c1b67eea8f5644a2 data/aether/tags/worldgen/biome/is_aether.json
+d6fbd15e38cbc5bfe964ebfae9264827d640bc7c data/aether/tags/worldgen/biome/is_aether.json
 8a23702b05296c8af5014d6aa6e9265ded85c7d9 data/altered_aether/tags/block/boulder_ore_blacklist.json
 7ec09b2e18ab43d296e2d76cad7fe25c11cda07f data/altered_aether/tags/block/breeze_spawnable_on.json
 ced54e3c0345a29f08205713ce269209a192e5b8 data/altered_aether/tags/block/charged_copper.json

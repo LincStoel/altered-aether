@@ -30,7 +30,7 @@ public final class AABiomes {
     public static final ResourceKey<Biome> WINDSWEPT_DUNES = key("windswept_dunes");
     public static final ResourceKey<Biome> SKYROOT_CATHEDRAL = key("skyroot_cathedral");
     public static final ResourceKey<Biome> NURSELOG_HOLLOW = key("nurselog_hollow");
-    public static final ResourceKey<Biome> SNOW_TUNDRA = key("snow_tundra");
+    public static final ResourceKey<Biome> SKY_TUNDRA = key("sky_tundra");
     public static final ResourceKey<Biome> FLOWER_BOWL = key("flower_bowl");
     public static final ResourceKey<Biome> SHROUDED_FOREST = key("shrouded_forest");
     public static final ResourceKey<Biome> BLAZING_ARCHWOOD_GROVE = key("blazing_archwood_grove");
@@ -57,7 +57,7 @@ public final class AABiomes {
             new Entry(WINDSWEPT_DUNES, List.of()),
             new Entry(SKYROOT_CATHEDRAL, List.of()),
             new Entry(NURSELOG_HOLLOW, List.of()),
-            new Entry(SNOW_TUNDRA, List.of()),
+            new Entry(SKY_TUNDRA, List.of()),
             new Entry(FLOWER_BOWL, List.of()),
             new Entry(SHROUDED_FOREST, List.of()),
             new Entry(BLAZING_ARCHWOOD_GROVE, List.of("ars_nouveau")),

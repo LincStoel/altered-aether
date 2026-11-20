@@ -9,7 +9,7 @@
             "entity": "this",
             "predicate": {
               "location": {
-                "biomes": "altered_aether:snow_tundra"
+                "biomes": "altered_aether:sky_tundra"
               }
             }
           }
@@ -20,14 +20,14 @@
   },
   "display": {
     "description": {
-      "translate": "advancements.altered_aether.snow_tundra.description"
+      "translate": "advancements.altered_aether.sky_tundra.description"
     },
     "frame": "task",
     "icon": {
       "id": "minecraft:snow_block"
     },
     "title": {
-      "translate": "advancements.altered_aether.snow_tundra.title"
+      "translate": "advancements.altered_aether.sky_tundra.title"
     }
   },
   "requirements": [
