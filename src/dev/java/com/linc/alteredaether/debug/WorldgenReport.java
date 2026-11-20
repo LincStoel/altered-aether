@@ -70,7 +70,10 @@ public final class WorldgenReport {
         Map<String, Stats> byBiome = new TreeMap<>();
         Stats all = new Stats();
         int minY = level.getMinBuildHeight();
-        DensityFunction probe = probe(level, random, "terrain/crag_tier");
+        DensityFunction probe = probe(level, random, "terrain/crags");
+        // The Highlands: columns with an islet over the floor, by what lies beneath (sky, the plateau, other land).
+        int floor = minY < 0 ? 140 : 136;
+        long[] islets = new long[3], columns = new long[3];
 
         for (int x = originX - radius; x <= originX + radius; x += step) {
             for (int z = originZ - radius; z <= originZ + radius; z += step) {
@@ -96,6 +99,21 @@ public final class WorldgenReport {
                             probeTop = y;
                         }
                     }
+                }
+                boolean high = false, low = false;
+                for (int y = minY; y < minY + level.getHeight(); y++) {
+                    if (!column.getBlock(y).isAir()) {
+                        if (y >= floor) {
+                            high = true;
+                        } else {
+                            low = true;
+                        }
+                    }
+                }
+                int under = !low ? 0 : id.equals("altered_aether:aether_plateau") ? 1 : 2;
+                columns[under]++;
+                if (high) {
+                    islets[under]++;
                 }
                 for (Stats s : new Stats[]{stats, all}) {
                     if (probeSolid > 0) {
@@ -133,6 +151,9 @@ public final class WorldgenReport {
                 s.columnsWithLand == 0 ? 0 : s.topMin, s.columnsWithLand == 0 ? 0 : s.topMax,
                 100.0 * s.probeLand / s.samples, s.probeLand == 0 ? 0 : (double) s.probeSolid / s.probeLand,
                 s.probeLand == 0 ? 0 : (double) s.probeTopSum / s.probeLand)));
+        lines.add(String.format("Highlands: islets over %.2f%% of open sky, %.2f%% of the plateau, %.2f%% of other land",
+                100.0 * islets[0] / Math.max(1, columns[0]), 100.0 * islets[1] / Math.max(1, columns[1]),
+                100.0 * islets[2] / Math.max(1, columns[2])));
         String climate = System.getProperty("altered_aether.report.climate", "");
         if (!climate.isEmpty()) {
             climateDump(level, originX, originZ, radius, Math.max(1, step / 4), java.nio.file.Path.of(climate), lines);
@@ -148,13 +169,15 @@ public final class WorldgenReport {
     }
 
     /**
-     * Writes the climate (t, h, c, e, w) at every in-region sample to a CSV, at a finer step than the column survey
-     * since it generates nothing. For sizing BiomeTable's windows against the real distribution.
+     * Writes the position, climate (t, h, c, e, w) and biome at every in-region sample to a CSV, at a finer step than
+     * the column survey since it generates nothing. For sizing BiomeTable's windows against the real distribution, and
+     * measuring patch sizes from the positions.
      */
     private static void climateDump(ServerLevel level, int originX, int originZ, int radius, int step,
                                     java.nio.file.Path out, List<String> lines) {
         var sampler = level.getChunkSource().randomState().sampler();
-        StringBuilder csv = new StringBuilder("t,h,c,e,w\n");
+        var biomes = level.getChunkSource().getGenerator().getBiomeSource();
+        StringBuilder csv = new StringBuilder("x,z,t,h,c,e,w,biome\n");
         int rows = 0;
         for (int x = originX - radius; x <= originX + radius; x += step) {
             for (int z = originZ - radius; z <= originZ + radius; z += step) {
@@ -162,10 +185,12 @@ public final class WorldgenReport {
                     continue;
                 }
                 var p = sampler.sample(QuartPos.fromBlock(x), QuartPos.fromBlock(64), QuartPos.fromBlock(z));
-                csv.append(String.format(java.util.Locale.ROOT, "%.4f,%.4f,%.4f,%.4f,%.4f%n",
+                String biome = biomes.getNoiseBiome(QuartPos.fromBlock(x), QuartPos.fromBlock(64),
+                        QuartPos.fromBlock(z), sampler).unwrapKey().map(k -> k.location().getPath()).orElse("?");
+                csv.append(String.format(java.util.Locale.ROOT, "%d,%d,%.4f,%.4f,%.4f,%.4f,%.4f,%s%n", x, z,
                         Climate.unquantizeCoord(p.temperature()), Climate.unquantizeCoord(p.humidity()),
                         Climate.unquantizeCoord(p.continentalness()), Climate.unquantizeCoord(p.erosion()),
-                        Climate.unquantizeCoord(p.weirdness())));
+                        Climate.unquantizeCoord(p.weirdness()), biome));
                 rows++;
             }
         }

@@ -24,10 +24,16 @@ import java.util.function.ToIntFunction;
  */
 public enum BiomeGroups {
     /**
-     * The landmasses: Peaks (the crags, tempest, rift and the tundra round them), Woodland (the plateau, the giant-tree biomes, the groves and the flower bowl), the Dunes on their
-     * own, and Other (the Aether's own biomes, Deep Aether's, and any other mod's).
+     * The landmasses: Peaks (the crags, rift and the tundra round them), Woodland (the plateau, the giant-tree
+     * biomes, the groves and the flower bowl), the Dunes and the Tempest each on their own, and Other (the Aether's
+     * own biomes, Deep Aether's, and any other mod's).
      */
     GROUP(BiomeGroups::group),
+    /**
+     * The landforms that stand alone in the open sky, the dunes and the tempest (1), against everything else (0): the
+     * land round them thins away toward them.
+     */
+    ISOLATED(biome -> biome.equals(BiomeTable.DUNES) || biome.equals(BiomeTable.TEMPEST) ? 1 : 0),
     /** The sky tundra against everything else; its drifts fade out toward the tundra's edge. */
     TUNDRA(biome -> biome.equals(BiomeTable.TUNDRA) ? 1 : 0),
     /** The flower bowl against everything else; its rim follows the distance in from the bowl's edge. */
@@ -44,10 +50,9 @@ public enum BiomeGroups {
      */
     BIOME(String::hashCode);
 
-    public static final int OTHER = 0, PEAKS = 1, WOODLAND = 2, DUNES = 3;
+    public static final int OTHER = 0, PEAKS = 1, WOODLAND = 2, DUNES = 3, TEMPEST = 4;
 
-    private static final Set<String> PEAK_BIOMES = Set.of(BiomeTable.CRAGS, BiomeTable.TEMPEST, BiomeTable.RIFT,
-            BiomeTable.TUNDRA);
+    private static final Set<String> PEAK_BIOMES = Set.of(BiomeTable.CRAGS, BiomeTable.RIFT, BiomeTable.TUNDRA);
     private static final Set<String> WOODLAND_BIOMES = Set.of(BiomeTable.PLATEAU, BiomeTable.CATHEDRAL,
             BiomeTable.NURSELOG, BiomeTable.SHROUDED, BiomeTable.BOWL, BiomeTable.BLAZING, BiomeTable.CASCADING,
             BiomeTable.FLASHING, BiomeTable.FLOURISHING, BiomeTable.VEXING);
@@ -73,6 +78,9 @@ public enum BiomeGroups {
         }
         if (WOODLAND_BIOMES.contains(biome)) {
             return WOODLAND;
+        }
+        if (biome.equals(BiomeTable.TEMPEST)) {
+            return TEMPEST;
         }
         return biome.equals(BiomeTable.DUNES) ? DUNES : OTHER;
     }

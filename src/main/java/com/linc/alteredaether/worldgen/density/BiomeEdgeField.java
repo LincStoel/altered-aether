@@ -121,7 +121,7 @@ public final class BiomeEdgeField {
         }
 
         private static final ThreadLocal<Corners[]> CORNERS = ThreadLocal.withInitial(() -> new Corners[]{
-                new Corners(), new Corners(), new Corners()});
+                new Corners(), new Corners(), new Corners(), new Corners(), new Corners()});
 
         private long[][] corners(int cx, int cz) {
             Corners[] all = CORNERS.get();
@@ -130,7 +130,8 @@ public final class BiomeEdgeField {
                     return c.cells;
                 }
             }
-            // A few solvers are read in turn (biome groups, the bowl, the Highlands): replace the oldest.
+            // A few solvers are read in turn (the bowl, the Highlands, the isolated landforms, the tundra's drifts,
+            // biome groups): replace the oldest.
             Corners c = all[all.length - 1];
             System.arraycopy(all, 0, all, 1, all.length - 1);
             all[0] = c;

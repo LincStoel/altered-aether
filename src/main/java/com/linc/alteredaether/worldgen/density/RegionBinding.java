@@ -204,12 +204,15 @@ public final class RegionBinding {
 
     /**
      * The top of the main island band, where every probe stops: the noise band itself reaches higher, for the
-     * Highlands floating above, and a probe looking for the ground must never land on one of those.
+     * Highlands floating above, and a probe looking for the ground must never land on one of those. It is the
+     * Highlands' floor (y 140 in the tall Aether, 136 in the stock one), under which the plateau's mesas and the
+     * crags' summits now reach.
      */
-    public static final int MAIN_TOP = 128;
+    public static final int MAIN_TOP = 140;
+    private static final int STOCK_MAIN_TOP = 136;
 
     private static int mainTop(NoiseSettings noise) {
-        return Math.min(noise.minY() + noise.height(), MAIN_TOP);
+        return Math.min(noise.minY() + noise.height(), noise.minY() < 0 ? MAIN_TOP : STOCK_MAIN_TOP);
     }
 
     /** The biome edge distances, read off the same biome map the world generates with. */

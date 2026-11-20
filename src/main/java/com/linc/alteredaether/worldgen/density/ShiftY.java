@@ -41,9 +41,30 @@ public record ShiftY(DensityFunction argument, DensityFunction offset) implement
                 context.blockY() - (int) Math.round(shift), context.blockZ()));
     }
 
+    /**
+     * Where nothing is shifted (most of the world, when the offset is a lift confined to one landform), the argument
+     * fills the array itself, at full speed; only a column that is shifted anywhere is computed point by point.
+     */
     @Override
     public void fillArray(double[] array, ContextProvider provider) {
-        provider.fillAllDirectly(array, this);
+        offset.fillArray(array, provider);
+        boolean shifted = false;
+        for (double shift : array) {
+            if (shift != 0) {
+                shifted = true;
+                break;
+            }
+        }
+        if (!shifted) {
+            argument.fillArray(array, provider);
+            return;
+        }
+        for (int i = 0; i < array.length; i++) {
+            FunctionContext context = provider.forIndex(i);
+            double shift = array[i];
+            array[i] = shift == 0 ? argument.compute(context) : argument.compute(new SinglePointContext(
+                    context.blockX(), context.blockY() - (int) Math.round(shift), context.blockZ()));
+        }
     }
 
     @Override

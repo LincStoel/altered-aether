@@ -1,6 +1,0 @@
-{
-  "type": "altered_aether:choose",
-  "high": "altered_aether:terrain/tempest",
-  "low": "altered_aether:terrain/crags",
-  "mask": "altered_aether:terrain/tempest_mask"
-}

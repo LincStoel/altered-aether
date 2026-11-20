@@ -75,8 +75,14 @@ class BiomeTablePartitionTest {
         }
     }
 
-    /** Mostly inside [-1, 1] like the real noises, with some tail past it. */
+    /**
+     * Mostly inside [-1, 1] like the real noises, with some tail past it, and now and then anywhere in the table's
+     * bounds, so the tempest's far erosion tier is tried too.
+     */
     private static double axis(Random random) {
+        if (random.nextInt(8) == 0) {
+            return BiomeTable.LOW + random.nextDouble() * (BiomeTable.HIGH - BiomeTable.LOW) * 0.9999;
+        }
         return Math.max(-1.99, Math.min(1.99, random.nextGaussian() * 0.6));
     }
 }

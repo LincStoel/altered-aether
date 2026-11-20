@@ -64,17 +64,27 @@ public final class BiomeTable {
     public static final float PLATEAU_C = 0.545f;
     /**
      * Sky Tundra, the erosion band just under the crags: every crag range stands in a ring of it. Measured with
-     * {@code -PaaReport}; about as much tundra as crags.
+     * {@code -PaaReport} and {@code -PaaClimate}: P(erosion &gt; this) = 7.3%, so with the crags above it the tundra
+     * holds about a third of the cold lands.
      */
     public static final float TUNDRA_E = 0.52f;
-    /** Frozen Crags tier, mid-ramp of crag_mask. P(erosion &gt; this) = 4.0%. */
-    public static final float CRAG_E = 0.6125f;
-    /** Tempest Peaks, past the top of the crag_mask ramp. P(erosion &gt; this) = 1.0%. */
-    public static final float TEMPEST_E = 0.8044f;
+    /** Frozen Crags tier, mid-ramp of crag_mask. P(erosion &gt; this) = 4.9%. */
+    public static final float CRAG_E = 0.58f;
+    /**
+     * Tempest Peaks, a tier of their own far from the cold lands: the router's erosion is the crag noise less four
+     * times a ramp on the tempest's own coarse noise (AATerrainProvider), so it falls far below anything the crag
+     * noise reaches (about -1.5) only where the tempest stands, passing through the plain islands' band on the way.
+     */
+    public static final float TEMPEST_E = -2.2f;
     /** Shattered Rift overlay on weirdness, same noise recipe as the crags. 4.0% of the island tier. */
     public static final float RIFT_W = 0.6125f;
-    /** Bounds wide enough to contain every value the router can produce. */
-    public static final float LOW = -2.0f;
+    /**
+     * Windswept Dunes, the far tail of the same weirdness noise, so they never touch the rift: 1.4% of the region,
+     * patches set apart from any landform by the sky the terrain opens round them.
+     */
+    public static final float DUNE_W = -0.78f;
+    /** Bounds wide enough to contain every value the router can produce (erosion reaches about -5.5). */
+    public static final float LOW = -6.0f;
     public static final float HIGH = 2.0f;
 
     /** An inclusive-exclusive span on one climate axis. */
@@ -124,9 +134,6 @@ public final class BiomeTable {
      * collide. Shares are measured with {@code -PaaReport} and {@code -PaaClimate}.
      */
     private static final List<Rect> INSERTS = List.of(
-            // Narrow on the slow temperature axis, wide on the fast humidity axis: bigger, more contiguous patches
-            // than a balanced box of the same area. 4.8% of the region, all on the dry side.
-            rect(0.21f, 0.41f, -0.68f, -0.08f, DUNES),
             // Temperate and humid, in the open middle below the vexing grove.
             rect(-0.44f, -0.04f, 0.24f, 0.56f, CATHEDRAL),
             // The same box grown by 0.07 on every side. The cathedral above keeps its window, so what is left is a
@@ -137,9 +144,9 @@ public final class BiomeTable {
             // The shrouded forest hangs off the humid side of the nurselog frame, so the three giant-tree biomes read
             // as one woodland: living cathedral, its fallen elders, and a dark, mossy edge.
             rect(-0.50f, 0.03f, 0.63f, 0.80f, SHROUDED),
-            // Flower bowls between the cathedral and the dunes: narrow on the slow temperature axis and wide on the
-            // fast humidity one, like the dunes, so they come in broad patches rather than slivers.
-            rect(0.04f, 0.20f, -0.60f, 0.28f, BOWL),
+            // Flower bowls on the warm side of the cathedral: a small box, 4.3% of the region (it was 11.6%, and the
+            // bowls' floors went on and on), so each bowl is a basin a few hundred blocks across inside its rim.
+            rect(0.06f, 0.18f, -0.25f, 0.05f, BOWL),
             // The archwood groves hold the four corners and the humid middle. Humidity rarely passes +/-0.4 here (its
             // 5% tails), so each window reaches well inside that: about 2% of the island tier apiece. The flashing
             // grove gives up a corner to the solo nurselog, so it reaches a little further toward the middle.
@@ -173,9 +180,16 @@ public final class BiomeTable {
 
         Span islandC = new Span(LOW, PLATEAU_C);
         boolean tundra = present.contains(TUNDRA);
-        Span islandE = new Span(LOW, tundra ? TUNDRA_E : CRAG_E);
+        boolean tempest = present.contains(TEMPEST);
+        // Below TEMPEST_E belongs to the tempest, whatever the other axes say; without it, to whatever is above.
+        float floorE = tempest ? TEMPEST_E : LOW;
+        Span islandE = new Span(floorE, tundra ? TUNDRA_E : CRAG_E);
         boolean rift = present.contains(RIFT);
-        Span islandW = rift ? new Span(LOW, RIFT_W) : Span.ALL;
+        boolean dunes = present.contains(DUNES);
+        // Below DUNE_W belongs to the dunes at every height of the land, the plateau and the cold lands included,
+        // so they always stand alone; only the tempest outranks them.
+        Span notDunes = new Span(dunes ? DUNE_W : LOW, HIGH);
+        Span islandW = new Span(notDunes.min(), rift ? RIFT_W : HIGH);
 
         List<Entry> entries = new ArrayList<>();
         for (Rect r : rows) {
@@ -184,31 +198,33 @@ public final class BiomeTable {
         if (rift) {
             entries.add(new Entry(RIFT, Span.ALL, Span.ALL, islandC, islandE, new Span(RIFT_W, HIGH)));
         }
+        if (dunes) {
+            entries.add(new Entry(DUNES, Span.ALL, Span.ALL, Span.ALL, new Span(floorE, HIGH), new Span(LOW, DUNE_W)));
+        }
         if (tundra) {
             // A ring round the crags at every temperature; the rift never cuts into it.
-            entries.add(new Entry(TUNDRA, Span.ALL, Span.ALL, islandC, new Span(TUNDRA_E, CRAG_E), Span.ALL));
+            entries.add(new Entry(TUNDRA, Span.ALL, Span.ALL, islandC, new Span(TUNDRA_E, CRAG_E), notDunes));
         }
         // A disabled landform hands its tier back to the tier beneath it: the crags to the island table (one
-        // erosion band wider), tempest to the crags, the plateau to everything below it.
+        // erosion band wider), the tempest to the island table and the plateau, the plateau to everything below it.
         boolean crags = present.contains(CRAGS);
-        boolean tempest = present.contains(TEMPEST);
-        Span cragE = new Span(CRAG_E, tempest ? TEMPEST_E : HIGH);
-        Span tempestE = new Span(TEMPEST_E, HIGH);
+        Span cragE = new Span(CRAG_E, HIGH);
         if (crags) {
-            entries.add(new Entry(CRAGS, Span.ALL, Span.ALL, islandC, cragE, Span.ALL));
+            entries.add(new Entry(CRAGS, Span.ALL, Span.ALL, islandC, cragE, notDunes));
         }
         if (tempest) {
-            entries.add(new Entry(TEMPEST, Span.ALL, Span.ALL, islandC, tempestE, Span.ALL));
+            // Every continentalness too, so the tempest stands even where the plateau's noise is high.
+            entries.add(new Entry(TEMPEST, Span.ALL, Span.ALL, Span.ALL, new Span(LOW, TEMPEST_E), Span.ALL));
         }
         if (!crags) {
             // Re-cover the erosion band the crags would have owned with the island table.
-            Span band = tempest ? new Span(CRAG_E, TEMPEST_E) : new Span(CRAG_E, HIGH);
             for (Rect r : rows) {
-                entries.add(new Entry(r.biome, stretch(r.t), stretch(r.h), islandC, band, Span.ALL));
+                entries.add(new Entry(r.biome, stretch(r.t), stretch(r.h), islandC, cragE, notDunes));
             }
         }
         if (present.contains(PLATEAU)) {
-            entries.add(new Entry(PLATEAU, Span.ALL, Span.ALL, new Span(PLATEAU_C, HIGH), Span.ALL, Span.ALL));
+            entries.add(new Entry(PLATEAU, Span.ALL, Span.ALL, new Span(PLATEAU_C, HIGH), new Span(floorE, HIGH),
+                    notDunes));
         } else {
             for (Entry e : List.copyOf(entries)) {
                 if (e.continentalness.equals(islandC)) {

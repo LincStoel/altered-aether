@@ -2,11 +2,11 @@
   "type": "minecraft:clamp",
   "input": {
     "type": "minecraft:add",
-    "argument1": -8.444444444444445,
+    "argument1": -8.875,
     "argument2": {
       "type": "minecraft:mul",
-      "argument1": 11.11111111111111,
-      "argument2": "altered_aether:terrain/crag_noise"
+      "argument1": 12.5,
+      "argument2": "altered_aether:terrain/tempest_noise"
     }
   },
   "max": 1.0,
