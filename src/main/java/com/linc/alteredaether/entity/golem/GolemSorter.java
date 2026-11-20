@@ -94,6 +94,13 @@ public final class GolemSorter {
     private static final int SCAN_SPAN = 40;
     /** Ticks a route is trusted before it is worked out again. */
     private static final int ROUTE_TTL = 100;
+    /**
+     * Cells flooded from storage to tell whether it is shut off from every golem; a pocket bigger than this is taken as
+     * open to them.
+     */
+    private static final int CUT_OFF_CAP = 4096;
+    /** Ticks between looks at whether storage found shut off has a way through again. */
+    private static final int CUT_OFF_RECHECK = 40;
     /** How near a player closing storage must be to a linked inventory for it to be looked at at once. */
     private static final int CLOSE_RANGE = 12;
 
@@ -167,8 +174,19 @@ public final class GolemSorter {
             runtime.cache.forget(key);
             runtime.triggers.forget(key);
             runtime.claims.remove(key);
+            runtime.cutOff.remove(key);
         }
         runtime.contentsChanged = true;
+    }
+
+    /**
+     * Whether the linked storage at {@code pos} was found shut off from {@code net}'s golems: open only into a pocket
+     * no golem can get into, so it is left alone like walled-in storage.
+     */
+    public static boolean cutOff(ServerLevel level, GolemNetworks.Net net, BlockPos pos) {
+        Runtime runtime = existing(level, net.id);
+        return runtime != null && !runtime.cutOff.isEmpty() && level.isLoaded(pos)
+                && runtime.cutOff.containsKey(GolemStorage.inventoryKey(level, pos));
     }
 
     public static Report report(ServerLevel level, GolemNetworks.Net net) {
@@ -219,8 +237,13 @@ public final class GolemSorter {
     public static IItemHandler networkView(ServerLevel level, GolemNetworks.Net net) {
         List<IItemHandler> handlers = new ArrayList<>();
         Set<Long> seen = new HashSet<>();
+        Runtime runtime = existing(level, net.id);
         for (BlockPos pos : net.links()) {
-            if (!level.isLoaded(pos) || !seen.add(GolemStorage.inventoryKey(level, pos)) || GolemAccess.encased(level, pos)) {
+            if (!level.isLoaded(pos)) {
+                continue;
+            }
+            long key = GolemStorage.inventoryKey(level, pos);
+            if (!seen.add(key) || runtime != null && runtime.cutOff.containsKey(key) || GolemAccess.encased(level, pos)) {
                 continue;
             }
             IItemHandler handler = GolemStorage.handler(level, pos);
@@ -377,6 +400,10 @@ public final class GolemSorter {
         }
     }
 
+    /** Which route: from one inventory to another, past the heads of these golems (by entity id). */
+    private record RouteKey(long src, long dst, List<Integer> golems) {
+    }
+
     /** A route worked out for a pair of chests and golems: its points, or null if there is none, and its cells. */
     private record CachedRoute(@Nullable List<Vec3> points, List<BlockPos> cells, long expiry) {
     }
@@ -395,7 +422,17 @@ public final class GolemSorter {
         final Deque<Planned> queue = new ArrayDeque<>();
         final List<Flight> flights = new ArrayList<>();
         final Map<Long, Integer> lifted = new HashMap<>();
-        final Map<String, CachedRoute> routes = new HashMap<>();
+        final Map<RouteKey, CachedRoute> routes = new HashMap<>();
+        /** Routes that need a search, by the tick they last waited for one: they don't look again until it's free. */
+        final Map<RouteKey, Long> waitingSearch = new HashMap<>();
+        /**
+         * Linked storage shut off from every golem (its open faces lead only into a closed pocket), by key: frozen and
+         * counted blocked, like encased storage, until a way opens.
+         */
+        final Map<Long, BlockPos> cutOff = new HashMap<>();
+        long cutOffChecked;
+        /** Whether a flight started since the last round was planned; if none did, the next round would plan the same. */
+        boolean launched = true;
         /** The family each inventory was judged to be for, by key; saved with the network. */
         final Map<Long, String> claims = new HashMap<>();
         /** Every inventory this sort has looked at or moved items into, to tidy within once it is done. */
@@ -478,11 +515,16 @@ public final class GolemSorter {
                 return;
             }
 
+            if (scanTick && !cutOff.isEmpty() && now - cutOffChecked >= CUT_OFF_RECHECK && System.nanoTime() < deadline) {
+                recheckCutOff(level, net, team, now);
+            }
             if (scanTick && System.nanoTime() < deadline) {
                 scan(level, networks, net, team, interval, now);
             }
             if (queue.isEmpty() && flights.isEmpty() && System.nanoTime() < deadline) {
-                if (finishPending) {
+                if (finishPending || !launched && triggers.cascading()) {
+                    // when no move of the last round could fly, another round would only plan the same ones again
+                    triggers.stopCascade();
                     finishPending = false;
                     finish(level, net, team);
                 } else {
@@ -490,7 +532,7 @@ public final class GolemSorter {
                 }
             }
             if (!queue.isEmpty()) {
-                startFlights(level, team, now);
+                startFlights(level, net, team, now);
             }
             if (!queue.isEmpty() || !flights.isEmpty()) {
                 status = Status.SORTING;
@@ -689,6 +731,7 @@ public final class GolemSorter {
                 }
             }
             touched.addAll(destinations);
+            launched = false;
             finishPending = !triggers.planned(round, destinations, true);
             working = true;
             status = Status.SORTING;
@@ -772,7 +815,8 @@ public final class GolemSorter {
                 } else if (open) {
                     inUse++;
                     frozen = true;
-                } else if (GolemAccess.encased(level, pos)) {
+                } else if (cutOff.containsKey(key) || GolemAccess.encased(level, pos)) {
+                    // walled in, or open only into a pocket no golem can get into
                     blocked++;
                     frozen = true;
                 } else if (role == GolemStorage.Role.SINK && GolemStorage.sinkShut(level, pos)) {
@@ -861,9 +905,11 @@ public final class GolemSorter {
         // -----------------------------------------------------------------------------------------------------------
         // Flights
 
-        private void startFlights(ServerLevel level, List<GravititeGolem> team, long now) {
+        private void startFlights(ServerLevel level, GolemNetworks.Net net, List<GravititeGolem> team, long now) {
             int range = AACommonConfig.GOLEM_RANGE.get();
             int perGolem = AACommonConfig.GOLEM_MAX_IN_FLIGHT.get();
+            // nothing here changes a block, so what each cell holds is looked at once for all of this tick's routes
+            Router.CellGrid grid = GolemAccess.grid(level);
             Iterator<Planned> it = queue.iterator();
             int looked = 0;
             while (it.hasNext() && looked++ <= LOOKAHEAD) {
@@ -877,6 +923,11 @@ public final class GolemSorter {
                 if (setter == null || nearest(team, move.src, range, perGolem, false) == null) {
                     it.remove();
                     continue;
+                }
+                // but a golem that reaches both ends does the whole move: an item is handed on only when none does
+                if (reachesBoth(team, move, range)) {
+                    lifter = nearestToBoth(team, move, range, perGolem);
+                    setter = lifter;
                 }
                 if (lifter == null) {
                     continue;
@@ -910,19 +961,14 @@ public final class GolemSorter {
                     }
                 }
                 List<GravititeGolem> path = path(team, lifter, setter);
-                long routeStart = System.nanoTime();
-                Routed routed = route(level, move, path, now);
-                double routeMs = (System.nanoTime() - routeStart) / 1.0E6;
-                if (routeMs > 2.0) {
-                    LOGGER.info("[golem timing] route {} -> {}: {} ms, {}", move.src, move.dst, routeMs,
-                            routed.waiting() ? "waiting" : routed.points() == null ? "no route" : routed.points().size() + " points");
-                }
+                Routed routed = route(level, grid, move, path, now);
                 if (routed.waiting()) {
                     continue;
                 }
                 it.remove();
                 if (routed.points() == null) {
-                    // no way through: the items stay, and the chest is looked at again when something changes
+                    // no way through: storage shut off from the golems is frozen until a way opens
+                    noRoute(level, net, grid, move, team, now);
                     continue;
                 }
                 List<double[]> points = new ArrayList<>();
@@ -933,11 +979,8 @@ public final class GolemSorter {
                 List<UUID> ids = new ArrayList<>();
                 path.forEach(golem -> ids.add(golem.getUUID()));
                 Flight flight = new Flight(nextFlightId++, move, dstSlot, accepted, now, now + ticks, ids);
-                if (routed.points().size() > 3) {
-                    LOGGER.info("[golem timing] flight {} starts at tick {}: {} points, {} ticks", flight.id, now,
-                            routed.points().size(), ticks);
-                }
                 flights.add(flight);
+                launched = true;
                 lifter.face(move.src);
                 // it concentrates from the moment it looks at the chest, not a tick later
                 for (GravititeGolem golem : path) {
@@ -953,6 +996,37 @@ public final class GolemSorter {
                     break;
                 }
             }
+        }
+
+        /** Whether one team golem reaches both ends of {@code move}. */
+        private static boolean reachesBoth(List<GravititeGolem> team, Planned move, int range) {
+            for (GravititeGolem golem : team) {
+                BlockPos home = Objects.requireNonNull(golem.home());
+                if (GolemStorage.inReach(home, move.src, range) && GolemStorage.inReach(home, move.dst, range)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        /** The golem sitting nearest the source of {@code move} that reaches both its ends and has room for a lift. */
+        @Nullable
+        private GravititeGolem nearestToBoth(List<GravititeGolem> team, Planned move, int range, int perGolem) {
+            GravititeGolem best = null;
+            double bestDist = Double.MAX_VALUE;
+            for (GravititeGolem golem : team) {
+                BlockPos home = Objects.requireNonNull(golem.home());
+                if (!GolemStorage.inReach(home, move.src, range) || !GolemStorage.inReach(home, move.dst, range)
+                        || inFlight(golem) >= perGolem) {
+                    continue;
+                }
+                double d = home.distSqr(move.src);
+                if (d < bestDist) {
+                    bestDist = d;
+                    best = golem;
+                }
+            }
+            return best;
         }
 
         /** The team golem sitting nearest {@code pos} that reaches it (with room for another lift, if lifting). */
@@ -1034,58 +1108,76 @@ public final class GolemSorter {
         /**
          * The way an item flies for {@code move}: out of an open face of its chest, past the head of each golem that
          * relays it (when more than one does), in through an open face of the target. Kept a while, and checked
-         * still clear before it is used again.
+         * still clear before it is used again. A route needing a search waits for the tick's search to be free, and
+         * then does all the searching it needs at once.
          */
-        private Routed route(ServerLevel level, Planned move, List<GravititeGolem> path, long now) {
-            StringBuilder name = new StringBuilder().append(move.srcKey).append(':').append(move.dstKey);
-            path.forEach(golem -> name.append(':').append(golem.getId()));
-            String key = name.toString();
+        private Routed route(ServerLevel level, Router.CellGrid grid, Planned move, List<GravititeGolem> path, long now) {
+            List<Integer> ids = new ArrayList<>(path.size());
+            path.forEach(golem -> ids.add(golem.getId()));
+            RouteKey key = new RouteKey(move.srcKey, move.dstKey, List.copyOf(ids));
             CachedRoute cached = routes.get(key);
             if (cached != null && now < cached.expiry()) {
                 if (cached.points() == null) {
                     return Routed.NONE;
                 }
-                if (cached.cells().stream().allMatch(cell -> GolemAccess.open(level, cell))) {
+                if (cached.cells().stream().allMatch(cell -> GolemAccess.open(grid, cell))) {
                     return new Routed(cached.points(), false);
                 }
+            }
+            if (waitingSearch.containsKey(key) && searchTaken(level, now)) {
+                // it needs a search, and this tick's is spoken for
+                return Routed.WAIT;
             }
             if (routes.size() > 512) {
                 routes.values().removeIf(r -> now >= r.expiry());
             }
+            if (waitingSearch.size() > 64) {
+                waitingSearch.values().removeIf(tick -> now - tick > ROUTE_TTL);
+            }
             List<GolemAccess.Face> from = GolemAccess.openFaces(level, move.src), to = GolemAccess.openFaces(level, move.dst);
             if (from.isEmpty() || to.isEmpty()) {
-                routes.put(key, new CachedRoute(null, List.of(), now + ROUTE_TTL));
-                return Routed.NONE;
+                return none(key, now);
             }
             List<BlockPos> homes = new ArrayList<>();
             path.forEach(golem -> homes.add(Objects.requireNonNull(golem.home())));
             Router.Bounds bounds = GolemAccess.bounds(homes);
-            Router.CellGrid grid = GolemAccess.grid(level);
             List<List<Router.Cell>> stops = new ArrayList<>();
             stops.add(from.stream().map(face -> GolemAccess.cell(face.cell())).toList());
             if (path.size() > 1) {
-                for (BlockPos home : homes) {
-                    stops.add(List.of(GolemAccess.cell(home.above())));
+                for (GravititeGolem golem : path) {
+                    // past its head, where it really sits; a head with a block on it is gone round instead
+                    BlockPos head = golem.blockPosition().above();
+                    if (GolemAccess.open(grid, head)) {
+                        stops.add(List.of(GolemAccess.cell(head)));
+                    }
                 }
             }
             stops.add(to.stream().map(face -> GolemAccess.cell(face.cell())).toList());
             List<Vec3> points = new ArrayList<>();
             List<BlockPos> cells = new ArrayList<>();
             Router.Cell at = null;
+            boolean searching = false;
             for (int i = 0; i + 1 < stops.size(); i++) {
                 List<Router.Cell> starts = at == null ? stops.get(i) : List.of(at);
                 List<Router.Cell> corners = Router.straight(grid, starts, stops.get(i + 1), bounds);
                 if (corners == null) {
-                    Long last = SEARCHED.get(level);
-                    if (last != null && last == now) {
-                        return Routed.WAIT;
+                    if (!searching) {
+                        // one route a tick may search, across all networks in the level: this one, if it's free
+                        if (searchTaken(level, now)) {
+                            waitingSearch.put(key, now);
+                            return Routed.WAIT;
+                        }
+                        SEARCHED.put(level, now);
+                        searching = true;
                     }
-                    SEARCHED.put(level, now);
-                    corners = Router.search(grid, starts, stops.get(i + 1), bounds);
+                    Router.Search search = Router.search(grid, starts, stops.get(i + 1), bounds);
+                    if (search.exhausted()) {
+                        LOGGER.debug("A gravitite golem gave up looking for a way from {} to {}", move.src, move.dst);
+                    }
+                    corners = search.corners();
                 }
                 if (corners == null) {
-                    routes.put(key, new CachedRoute(null, List.of(), now + ROUTE_TTL));
-                    return Routed.NONE;
+                    return none(key, now);
                 }
                 if (at == null) {
                     BlockPos first = GolemAccess.pos(corners.get(0));
@@ -1106,11 +1198,135 @@ public final class GolemSorter {
                 }
                 at = corners.get(corners.size() - 1);
             }
+            waitingSearch.remove(key);
             BlockPos last = GolemAccess.pos(at);
             to.stream().filter(face -> face.cell().equals(last)).findFirst().ifPresent(face -> points.add(face.centre()));
             List<Vec3> simple = simplify(points);
             routes.put(key, new CachedRoute(simple, cells, now + ROUTE_TTL));
             return new Routed(simple, false);
+        }
+
+        private Routed none(RouteKey key, long now) {
+            waitingSearch.remove(key);
+            routes.put(key, new CachedRoute(null, List.of(), now + ROUTE_TTL));
+            return Routed.NONE;
+        }
+
+        private static boolean searchTaken(ServerLevel level, long now) {
+            Long last = SEARCHED.get(level);
+            return last != null && last == now;
+        }
+
+        // -----------------------------------------------------------------------------------------------------------
+        // Storage shut off from the golems
+
+        /**
+         * {@code move} found no way through. Each end whose open faces lead only into a pocket that holds no golem is
+         * shut off, as is all other linked storage opening only into that pocket: it is frozen and shown blocked
+         * until a way opens. If the target was, the items the move was for are planned again, for somewhere else.
+         */
+        private void noRoute(ServerLevel level, GolemNetworks.Net net, Router.CellGrid grid, Planned move,
+                             List<GravititeGolem> team, long now) {
+            List<Router.Cell> heads = heads(team, grid);
+            if (heads.isEmpty()) {
+                return;
+            }
+            Router.Bounds bounds = GolemAccess.bounds(homes(team));
+            boolean targetShut = cutOff.containsKey(move.dstKey);
+            for (int end = 0; end < 2; end++) {
+                BlockPos pos = end == 0 ? move.src : move.dst;
+                if (cutOff.containsKey(end == 0 ? move.srcKey : move.dstKey)) {
+                    continue;
+                }
+                Router.Pocket pocket = Router.flood(grid, GolemAccess.faceCells(level, pos), heads, bounds, CUT_OFF_CAP);
+                if (pocket.reach() == Router.Reach.SEALED) {
+                    shutOff(level, net, pocket);
+                    targetShut |= end == 1;
+                }
+            }
+            if (targetShut && !cutOff.containsKey(move.srcKey)) {
+                triggers.changed(move.srcKey, now, delay(), false, false);
+            }
+        }
+
+        /** Marks every linked inventory whose open faces all lie in {@code pocket} as shut off. */
+        private void shutOff(ServerLevel level, GolemNetworks.Net net, Router.Pocket pocket) {
+            for (BlockPos link : net.links()) {
+                if (!level.isLoaded(link)) {
+                    continue;
+                }
+                long key = GolemStorage.inventoryKey(level, link);
+                if (cutOff.containsKey(key)) {
+                    continue;
+                }
+                List<Router.Cell> faces = GolemAccess.faceCells(level, link);
+                if (!faces.isEmpty() && faces.stream().allMatch(pocket::contains)) {
+                    cutOff.put(key, link.immutable());
+                    // shown at once; the next look over the network counts it among the blocked again
+                    blocked++;
+                }
+            }
+        }
+
+        /**
+         * Looks again at storage found shut off: what is gone, unlinked or walled in is dropped (walled-in storage is
+         * counted as encased instead), and if any has a way to a golem again the whole network is sorted.
+         */
+        private void recheckCutOff(ServerLevel level, GolemNetworks.Net net, List<GravititeGolem> team, long now) {
+            cutOffChecked = now;
+            Router.CellGrid grid = GolemAccess.grid(level);
+            List<Router.Cell> heads = heads(team, grid);
+            Router.Bounds bounds = GolemAccess.bounds(homes(team));
+            List<Router.Pocket> sealed = new ArrayList<>();
+            boolean opened = false;
+            for (Iterator<Map.Entry<Long, BlockPos>> it = cutOff.entrySet().iterator(); it.hasNext(); ) {
+                BlockPos pos = it.next().getValue();
+                if (!level.isLoaded(pos) || !net.links().contains(pos)) {
+                    it.remove();
+                    continue;
+                }
+                List<Router.Cell> faces = GolemAccess.faceCells(level, pos);
+                if (faces.isEmpty()) {
+                    it.remove();
+                    continue;
+                }
+                // storage sharing a pocket found sealed a moment ago is shut off too
+                if (sealed.stream().anyMatch(pocket -> faces.stream().allMatch(pocket::contains))) {
+                    continue;
+                }
+                Router.Pocket pocket = heads.isEmpty() ? null : Router.flood(grid, faces, heads, bounds, CUT_OFF_CAP);
+                if (pocket != null && pocket.reach() == Router.Reach.SEALED) {
+                    sealed.add(pocket);
+                } else {
+                    it.remove();
+                    opened = true;
+                }
+            }
+            if (opened) {
+                // a route found missing before the way opened would turn the sort's moves away again
+                routes.values().removeIf(route -> route.points() == null);
+                triggers.requestFullSort(now, delay());
+            }
+        }
+
+        /** The open cells the team golems take up: storage an item can fly from to one of them is not shut off. */
+        private static List<Router.Cell> heads(List<GravititeGolem> team, Router.CellGrid grid) {
+            List<Router.Cell> cells = new ArrayList<>();
+            for (GravititeGolem golem : team) {
+                BlockPos feet = golem.blockPosition();
+                for (BlockPos pos : List.of(feet, feet.above())) {
+                    if (GolemAccess.open(grid, pos)) {
+                        cells.add(GolemAccess.cell(pos));
+                    }
+                }
+            }
+            return cells;
+        }
+
+        private static List<BlockPos> homes(List<GravititeGolem> team) {
+            List<BlockPos> homes = new ArrayList<>();
+            team.forEach(golem -> homes.add(Objects.requireNonNull(golem.home())));
+            return homes;
         }
 
         /** The points without repeats or points in the middle of a straight run. */

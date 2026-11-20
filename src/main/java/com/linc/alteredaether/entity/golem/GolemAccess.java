@@ -16,9 +16,14 @@ package com.linc.alteredaether.entity.golem;
 
 import com.linc.alteredaether.config.AACommonConfig;
 import com.linc.alteredaether.entity.golem.route.Router;
+import it.unimi.dsi.fastutil.longs.Long2ByteOpenHashMap;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.DoorBlock;
+import net.minecraft.world.level.block.TrapDoorBlock;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.phys.Vec3;
 
 import javax.annotation.Nullable;
@@ -28,7 +33,7 @@ import java.util.List;
 /**
  * How golems get at storage: an item can only leave or enter through a face with open space beside it, so a chest
  * walled in on every side can't be used (it is <b>encased</b>). There is no line-of-sight rule: a golem reaches
- * storage behind a wall as long as the item has a way round.
+ * storage behind a wall as long as the item has a way round. An open door or trapdoor is a way through.
  */
 public final class GolemAccess {
     public enum Access {
@@ -49,9 +54,18 @@ public final class GolemAccess {
     private GolemAccess() {
     }
 
-    /** Whether an item can pass through the block at {@code pos}: nothing there to collide with. */
+    /** Whether an item can pass through the block at {@code pos}: nothing there to collide with, or an open door. */
     public static boolean open(Level level, BlockPos pos) {
-        return level.isLoaded(pos) && level.getBlockState(pos).getCollisionShape(level, pos).isEmpty();
+        if (!level.isLoaded(pos)) {
+            return false;
+        }
+        BlockState state = level.getBlockState(pos);
+        if ((state.getBlock() instanceof DoorBlock || state.getBlock() instanceof TrapDoorBlock)
+                && state.hasProperty(BlockStateProperties.OPEN)) {
+            // a door keeps a thin collision box when open, but an item slips past it as a player does
+            return state.getValue(BlockStateProperties.OPEN) || state.getCollisionShape(level, pos).isEmpty();
+        }
+        return state.getCollisionShape(level, pos).isEmpty();
     }
 
     /** The open faces of the storage at {@code pos}, both halves of a double chest; none means it is encased. */
@@ -75,7 +89,28 @@ public final class GolemAccess {
     }
 
     public static boolean encased(Level level, BlockPos pos) {
-        return openFaces(level, pos).isEmpty();
+        BlockPos partner = GolemStorage.partner(level, pos);
+        return !anyOpenFace(level, pos, partner) && (partner == null || !anyOpenFace(level, partner, pos));
+    }
+
+    private static boolean anyOpenFace(Level level, BlockPos pos, @Nullable BlockPos partner) {
+        BlockPos.MutableBlockPos beside = new BlockPos.MutableBlockPos();
+        for (Direction side : Direction.values()) {
+            beside.setWithOffset(pos, side);
+            if (!beside.equals(partner) && open(level, beside)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /** The cells beside the open faces of the storage at {@code pos}, where an item leaves or enters it. */
+    public static List<Router.Cell> faceCells(Level level, BlockPos pos) {
+        List<Router.Cell> cells = new ArrayList<>();
+        for (Face face : openFaces(level, pos)) {
+            cells.add(cell(face.cell()));
+        }
+        return cells;
     }
 
     /** Whether a golem sitting at {@code home} can use the storage at {@code pos}. */
@@ -86,10 +121,27 @@ public final class GolemAccess {
         return encased(level, pos) ? Access.ENCASED : Access.OK;
     }
 
-    /** The world as the router sees it: open cells and closed ones. */
+    /**
+     * The world as the router sees it: open cells and closed ones. Each cell is looked at once and remembered, so a grid
+     * is for one tick's routing only.
+     */
     public static Router.CellGrid grid(Level level) {
         BlockPos.MutableBlockPos at = new BlockPos.MutableBlockPos();
-        return (x, y, z) -> open(level, at.set(x, y, z));
+        Long2ByteOpenHashMap seen = new Long2ByteOpenHashMap();
+        seen.defaultReturnValue((byte) -1);
+        return (x, y, z) -> {
+            long key = BlockPos.asLong(x, y, z);
+            byte known = seen.get(key);
+            if (known < 0) {
+                known = open(level, at.set(x, y, z)) ? (byte) 1 : (byte) 0;
+                seen.put(key, known);
+            }
+            return known == 1;
+        };
+    }
+
+    public static boolean open(Router.CellGrid grid, BlockPos pos) {
+        return grid.isOpen(pos.getX(), pos.getY(), pos.getZ());
     }
 
     public static Router.Cell cell(BlockPos pos) {

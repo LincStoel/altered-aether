@@ -107,7 +107,8 @@ public final class PebbleTracker {
         }
         List<BlockPos> blocked = new ArrayList<>(), strict = new ArrayList<>();
         for (BlockPos link : net.links()) {
-            if (!net.reaches(link) || level.isLoaded(link) && GolemAccess.encased(level, link)) {
+            if (!net.reaches(link) || level.isLoaded(link)
+                    && (GolemAccess.encased(level, link) || GolemSorter.cutOff(level, net, link))) {
                 blocked.add(link);
             }
             if (level.isLoaded(link) && GolemStorage.pins(level, link).strict()) {
