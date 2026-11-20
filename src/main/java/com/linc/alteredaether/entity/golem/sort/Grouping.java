@@ -28,10 +28,13 @@ import java.util.Set;
  * sub-families get the same chance, and so on down. A family holding less than {@code minFill} stacks' worth of items
  * never gets its own group: it stays with its parent, and a group left with less than that once its sub-families are
  * split off folds back into its parent. What ends up with the root is the miscellaneous items. Then, if chests are left
- * over, the same again with {@code spareFill}, so spare chests take small families rather than stand empty.
+ * over, the same again with {@code spareFill}, so spare chests take small families rather than stand empty; all but
+ * {@link #SLACK} of them (in storage big enough), kept free so that something new has room without a family losing
+ * its chest.
  *
- * <p>A family a chest was already kept for needs only half as much to stay a group, so one item more or less doesn't
- * reshuffle the storage. A pinned family is always a group, kept in its pinned chest, needing no chest of its own.
+ * <p>A family a chest was already kept for needs only half as much to stay a group, and is split off before any other,
+ * so one item more or less doesn't reshuffle the storage. A pinned family is always a group, kept in its pinned chest,
+ * needing no chest of its own.
  *
  * <p>Some items are too many to be miscellaneous ({@code many}). A family holding one is given a chest that would
  * otherwise stand empty, however little it fills. If it gets none, those items go with the group nearest their family
@@ -46,6 +49,11 @@ import java.util.Set;
 public final class Grouping {
     /** Fill is counted in hundredths of a stack. */
     public static final int STACK = 100;
+    /**
+     * Chests splitting for spare chests leaves free: room for something new without a family losing its chest. Only
+     * in storage of at least {@link #SLACK_FROM} chests; in less, one free chest would be too big a share of it.
+     */
+    public static final int SLACK = 1, SLACK_FROM = 4;
 
     /**
      * @param group   the group each node's items belong to (a node index; the root for the miscellaneous items)
@@ -134,6 +142,13 @@ public final class Grouping {
         // finer before lighter ones were kept apart at all.
         if (spareFill < ctx.minFill || anyMany) {
             int before = ctx.minFill;
+            // it adds to the groups that stand once small ones have folded back, one split at a time
+            int[] standing = ctx.assign(in, new int[n], new int[n]);
+            for (int i = 1; i < n; i++) {
+                if (in[i] && standing[i] != i && !forced.contains(i)) {
+                    in[i] = false;
+                }
+            }
             ctx.minFill = Math.max(1, Math.min(spareFill, ctx.minFill));
             ctx.spare = true;
             if (ctx.need(in) <= chests) {
@@ -160,10 +175,10 @@ public final class Grouping {
             for (int c : candidates) {
                 boolean was = in[c];
                 in[c] = true;
-                ctx.kept.add(c);
+                ctx.kept[c] = true;
                 if (ctx.need(in) > chests) {
                     in[c] = was;
-                    ctx.kept.remove(c);
+                    ctx.kept[c] = false;
                 }
             }
             ctx.spare = spare;
@@ -175,21 +190,32 @@ public final class Grouping {
         return new Result(group, own, ctx.nearest(group, own), use.crated(), use.equipment());
     }
 
-    /** Splits off the heaviest families first while the groups fit {@code chests}, each holding the context's fill. */
+    /**
+     * Splits off the heaviest families first while the groups fit {@code chests}, each holding the context's fill.
+     * Families a chest was kept for (and the families above them) come first, so a newcomer never takes a kept
+     * family's chest; and splitting for spare chests leaves {@link #SLACK} of them free, so one new item doesn't
+     * need a chest some family must give up.
+     */
     private static void split(Context ctx, boolean[] in, int[] weight, List<List<Integer>> children, int chests) {
-        // heaviest first, then the earlier node
-        PriorityQueue<Integer> queue = new PriorityQueue<>((a, b) -> weight[a] != weight[b]
-                ? Integer.compare(weight[b], weight[a]) : Integer.compare(a, b));
+        boolean[] kept = new boolean[weight.length];
+        for (int c : ctx.claimed) {
+            for (int x = c; x > 0 && x < kept.length; x = ctx.nodes.get(x).parent()) {
+                kept[x] = true;
+            }
+        }
+        // kept first, then heaviest first, then the earlier node
+        PriorityQueue<Integer> queue = new PriorityQueue<>((a, b) -> kept[a] != kept[b] ? (kept[a] ? -1 : 1)
+                : weight[a] != weight[b] ? Integer.compare(weight[b], weight[a]) : Integer.compare(a, b));
         queue.addAll(children.get(SortSnapshot.ROOT));
         while (!queue.isEmpty()) {
             int c = queue.poll();
-            if (ctx.forced.contains(c)) {
+            if (ctx.pinned[c]) {
                 // pinned: its items live in its pinned chest, so it isn't split further
                 continue;
             }
             if (!in[c] && weight[c] >= ctx.threshold(c)) {
                 in[c] = true;
-                if (ctx.need(in) > chests) {
+                if (ctx.need(in) > (ctx.spare && !kept[c] && chests >= SLACK_FROM ? chests - SLACK : chests)) {
                     in[c] = false;
                 }
             }
@@ -210,9 +236,13 @@ public final class Grouping {
         /** Splitting for spare chests: what is too many to be miscellaneous counts with the group nearest it. */
         boolean spare;
         /** Families given a spare chest for what they hold too many of to be miscellaneous: kept whatever they fill. */
-        final Set<Integer> kept = new java.util.HashSet<>();
+        final boolean[] kept;
         final Set<Integer> forced, claimed;
-        final Integer[] deepestFirst;
+        /** {@link #forced} and {@link #claimed} by node: looked up for every node each time the chests are counted. */
+        final boolean[] pinned, wasKept;
+        final int[] deepestFirst;
+        /** Each node's parent (the root's is the root): read for every node each time the chests are counted. */
+        final int[] parent;
 
         Context(List<SortSnapshot.Node> nodes, int[] slots, int[] many, int[] fill, int[] items, boolean[] crateable,
                 int[] depth, int chestSize, Crates crates, int minFill, Set<Integer> forced, Set<Integer> claimed) {
@@ -228,16 +258,35 @@ public final class Grouping {
             this.minFill = Math.max(1, minFill);
             this.forced = forced;
             this.claimed = claimed;
-            deepestFirst = new Integer[nodes.size()];
-            for (int i = 0; i < deepestFirst.length; i++) {
-                deepestFirst[i] = i;
+            kept = new boolean[nodes.size()];
+            pinned = new boolean[nodes.size()];
+            wasKept = new boolean[nodes.size()];
+            for (int f : forced) {
+                if (f >= 0 && f < pinned.length) {
+                    pinned[f] = true;
+                }
             }
-            Arrays.sort(deepestFirst, (a, b) -> depth[a] != depth[b] ? Integer.compare(depth[b], depth[a])
+            for (int c : claimed) {
+                if (c >= 0 && c < wasKept.length) {
+                    wasKept[c] = true;
+                }
+            }
+            Integer[] order = new Integer[nodes.size()];
+            for (int i = 0; i < order.length; i++) {
+                order[i] = i;
+            }
+            Arrays.sort(order, (a, b) -> depth[a] != depth[b] ? Integer.compare(depth[b], depth[a])
                     : Integer.compare(b, a));
+            deepestFirst = new int[order.length];
+            parent = new int[order.length];
+            for (int i = 0; i < order.length; i++) {
+                deepestFirst[i] = order[i];
+                parent[i] = Math.max(0, nodes.get(i).parent());
+            }
         }
 
         int threshold(int node) {
-            return claimed.contains(node) ? Math.max(1, minFill / 2) : minFill;
+            return wasKept[node] ? Math.max(1, minFill / 2) : minFill;
         }
 
         /** The chests the groups {@code in} need. */
@@ -261,7 +310,7 @@ public final class Grouping {
             CrateUse use = crates(own, ownItems);
             int need = 0;
             for (int g = 1; g < own.length; g++) {
-                if (own[g] > 0 && !forced.contains(g) && !use.crated()[g]) {
+                if (own[g] > 0 && !pinned[g] && !use.crated()[g]) {
                     need += (own[g] + chestSize - 1) / chestSize;
                 }
             }
@@ -290,7 +339,7 @@ public final class Grouping {
             List<Integer> candidates = new ArrayList<>();
             long wanted = 0;
             for (int g = 1; g < n; g++) {
-                if (own[g] > 0 && crateable[g] && !forced.contains(g)) {
+                if (own[g] > 0 && crateable[g] && !pinned[g]) {
                     candidates.add(g);
                     wanted += ownItems[g];
                 }
@@ -349,7 +398,7 @@ public final class Grouping {
             int n = nodes.size();
             int[] group = new int[n];
             for (int i = 0; i < n; i++) {
-                group[i] = in[i] ? i : group[nodes.get(i).parent() < 0 ? 0 : nodes.get(i).parent()];
+                group[i] = in[i] ? i : group[parent[i]];
                 own[group[i]] += slots[i];
                 ownFill[group[i]] += fill[i];
                 ownItems[group[i]] += items[i];
@@ -357,11 +406,11 @@ public final class Grouping {
             int[] folded = new int[n];
             Arrays.fill(folded, -1);
             for (int g : deepestFirst) {
-                if (g == SortSnapshot.ROOT || !in[g] || forced.contains(g) || kept.contains(g)
+                if (g == SortSnapshot.ROOT || !in[g] || pinned[g] || kept[g]
                         || ownFill[g] >= threshold(g)) {
                     continue;
                 }
-                int up = group[nodes.get(g).parent()];
+                int up = group[parent[g]];
                 own[up] += own[g];
                 ownFill[up] += ownFill[g];
                 ownItems[up] += ownItems[g];

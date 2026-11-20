@@ -435,7 +435,7 @@ public final class GolemSorter {
         boolean launched = true;
         /** The family each inventory was judged to be for, by key; saved with the network. */
         final Map<Long, String> claims = new HashMap<>();
-        /** Every inventory this sort has looked at or moved items into, to tidy within once it is done. */
+        /** Every inventory this sort moved items into (every one, for a sort asked for), to tidy within once done. */
         final Set<Long> touched = new HashSet<>();
         boolean working, claimsLoaded, finishPending, contentsChanged;
         int cursor;
@@ -686,13 +686,14 @@ public final class GolemSorter {
             }
             Planner.Settings settings = new Planner.Settings(AACommonConfig.GOLEM_MAJORITY_TOLERANCE.get(),
                     AACommonConfig.GOLEM_MIN_GROUP_FILL.get(), AACommonConfig.GOLEM_BULK_MIN_STACKS.get());
-            Planner.Plan plan = Planner.plan(snap.snapshot, net.mode().sort(), new Planner.Focus(sources, gather),
-                    settings);
-            if (sources != null && Planner.layoutChanged(snap.snapshot, plan)) {
-                // a chest is now for something else: the layout has shifted, so the whole network is sorted to it
+            boolean wholeAsked = sources == null;
+            // a chest now for something else means the layout has shifted: the whole network is sorted to it
+            Planner.Round planned = Planner.planRound(snap.snapshot, net.mode().sort(),
+                    new Planner.Focus(sources, gather), settings, true);
+            Planner.Plan plan = planned.plan();
+            if (sources != null && planned.escalated()) {
                 sources = null;
                 round = new SortTriggers.Round(true, Set.of(), round.gather());
-                plan = Planner.plan(snap.snapshot, net.mode().sort(), new Planner.Focus(null, gather), settings);
             }
             saveClaims(networks, net, snap, plan);
             Set<Long> stuck = new HashSet<>();
@@ -700,9 +701,12 @@ public final class GolemSorter {
                 stuck.add(snap.keys.get(i));
             }
             triggers.stuck(stuck);
-            for (int i = 0; i < snap.keys.size(); i++) {
-                if (sources == null || sources.contains(i)) {
-                    touched.add(snap.keys.get(i));
+            if (wholeAsked) {
+                // a sort asked for (mode switch, redstone, a new link): every chest is tidied within. Otherwise only
+                // those the golems put something into are, so a chest a player only took from keeps its gaps and
+                // every stack stays where they last saw it
+                for (long key : snap.keys) {
+                    touched.add(key);
                 }
             }
             unplaced = plan.unplaced();
@@ -831,8 +835,12 @@ public final class GolemSorter {
             for (BlockPos pos : gone) {
                 networks.prune(net, pos);
             }
-            return new Snap(new SortSnapshot(List.copyOf(cache.keys), invs, List.copyOf(cache.nodes)), cache.items,
-                    positions, invKeys);
+            List<SortSnapshot.Pos> where = new ArrayList<>(positions.size());
+            for (BlockPos pos : positions) {
+                where.add(new SortSnapshot.Pos(pos.getX(), pos.getY(), pos.getZ()));
+            }
+            return new Snap(new SortSnapshot(List.copyOf(cache.keys), invs, List.copyOf(cache.nodes), where),
+                    cache.items, positions, invKeys);
         }
 
         /**
