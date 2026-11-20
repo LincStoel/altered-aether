@@ -48,6 +48,10 @@ public final class AAMixinPlugin implements IMixinConfigPlugin {
             // the golem network as a threshold switch's inventory, only with Create there to have one
             return LoadingModList.get().getModFileById("create") != null;
         }
+        if (mixinClassName.endsWith(".SableAercloudPassMixin")) {
+            // falling boulders punch through aerclouds, only with Sable there to drop them
+            return LoadingModList.get().getModFileById("sable") != null;
+        }
         if (mixinClassName.endsWith(".SableGravititeLiftMixin") || mixinClassName.endsWith(".SableFloatingBlockMixin")) {
             // enchanted gravitite's powered lift, only with Sable there to lift it
             return LoadingModList.get().getModFileById("sable") != null;

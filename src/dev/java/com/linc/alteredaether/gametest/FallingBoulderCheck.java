@@ -118,6 +118,101 @@ final class FallingBoulderCheck {
         });
     }
 
+    /**
+     * A boulder dropped onto a layer of cold aercloud punches straight through it: it is going at least as fast below
+     * the layer as it was just above it, the clouds in its path are gone, and it comes to rest on the floor beneath.
+     */
+    static void throughAerclouds(GameTestHelper helper, boolean slow) {
+        ServerLevel level = helper.getLevel();
+        FallingBoulders.forgetAll(level);
+        for (int cx = (X - 24) >> 4; cx <= (X + 24) >> 4; cx++) {
+            for (int cz = -2; cz <= 1; cz++) {
+                level.setChunkForced(cx, cz, true);
+            }
+        }
+        clear(level, X - 24, X + 24, FLOOR - SUNK, FLOOR + 115, -24, 24);
+        for (int x = X - 24; x <= X + 24; x++) {
+            for (int z = -24; z <= 24; z++) {
+                level.setBlock(new BlockPos(x, FLOOR, z), Blocks.STONE.defaultBlockState(), Block.UPDATE_ALL);
+            }
+        }
+        FallingBoulders.takeAercloudPasses();
+        ServerSubLevel sub = FallingBoulders.spawn(level, new BlockPos(X, slow ? FLOOR + 32 : FLOOR + 105, 0),
+                AetherBlocks.HOLYSTONE.get().defaultBlockState(), AetherBlocks.ZANITE_ORE.get().defaultBlockState(),
+                0.0f, level.getRandom());
+        if (sub == null) {
+            helper.fail("no boulder");
+            return;
+        }
+        // Fast: a 3-thick layer far below the drop, met at speed. Slow: a 6-thick layer a block under the boulder,
+        // met at a crawl, under the speed at which a boulder ploughs through what's in its way.
+        double radius = Math.cbrt(3.0 * FallingBoulders.blocks(level, sub) / (4 * Math.PI));
+        int cloudTop = slow ? (int) Math.floor(sub.logicalPose().position().y() - radius) - 1 : FLOOR + 14;
+        int cloudBottom = slow ? cloudTop - 5 : FLOOR + 12;
+        int clouds = 0;
+        for (int x = X - 24; x <= X + 24; x++) {
+            for (int z = -24; z <= 24; z++) {
+                for (int y = cloudBottom; y <= cloudTop; y++) {
+                    level.setBlock(new BlockPos(x, y, z), AetherBlocks.COLD_AERCLOUD.get().defaultBlockState(),
+                            Block.UPDATE_ALL);
+                    clouds++;
+                }
+            }
+        }
+        int laid = clouds;
+        int[] ticks = {0};
+        double[] above = {0};
+        double[] below = {-1};
+        helper.onEachTick(() -> {
+            ticks[0]++;
+            if (!sub.isRemoved()) {
+                double y = sub.logicalPose().position().y();
+                double speed = sub.latestLinearVelocity.length();
+                if (y > cloudTop + (slow ? 0 : 5)) {
+                    above[0] = speed;
+                } else if (y < cloudBottom - 4 && below[0] < 0) {
+                    below[0] = speed;
+                }
+                if (ticks[0] > 1400) {
+                    clear(level, X - 24, X + 24, FLOOR - SUNK, FLOOR + 45, -24, 24);
+                    release(level);
+                    helper.fail("the boulder never settled");
+                }
+                return;
+            }
+            int left = 0;
+            for (BlockPos pos : BlockPos.betweenClosed(X - 24, cloudBottom, -24, X + 24, cloudTop, 24)) {
+                if (level.getBlockState(pos).is(AetherBlocks.COLD_AERCLOUD.get())) {
+                    left++;
+                }
+            }
+            int resting = 0;
+            for (BlockPos pos : BlockPos.betweenClosed(X - 24, cloudTop + 1, -24, X + 24, FLOOR + 40, 24)) {
+                if (!level.getBlockState(pos).isAir()) {
+                    resting++;
+                }
+            }
+            int passed = FallingBoulders.takeAercloudPasses();
+            log("aerclouds (" + (slow ? "slow" : "fast") + "): " + String.format("%.1f", above[0]) + " blocks/s above the layer, "
+                    + String.format("%.1f", below[0]) + " below; " + (laid - left) + " of " + laid
+                    + " clouds broken; " + resting + " blocks left above the layer; "
+                    + passed + " contacts passed");
+            clear(level, X - 24, X + 24, FLOOR - SUNK, FLOOR + 45, -24, 24);
+            release(level);
+            if (below[0] < 0 || resting > 0) {
+                helper.fail("the boulder stopped on the clouds");
+            } else if (!slow && below[0] < above[0] * 0.9 || slow && below[0] < 8) {
+                helper.fail("the clouds slowed the boulder from " + above[0] + " to " + below[0]);
+            } else if (left == laid) {
+                helper.fail("the boulder broke no clouds");
+            } else if (passed == 0) {
+                helper.fail("Sable never let the boulder through a cloud (is SableAercloudPassMixin applied?)");
+            } else {
+                helper.succeed();
+            }
+        });
+    }
+
     /** Empties a box, so a check starts from nothing and a world kept between runs carries none of an earlier one. */
     private static void clear(ServerLevel level, int minX, int maxX, int minY, int maxY, int minZ, int maxZ) {
         for (BlockPos pos : BlockPos.betweenClosed(minX, minY, minZ, maxX, maxY, maxZ)) {

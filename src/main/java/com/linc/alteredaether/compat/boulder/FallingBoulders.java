@@ -19,6 +19,7 @@ import com.linc.alteredaether.advancement.AAAdvancements;
 import com.linc.alteredaether.config.AACommonConfig;
 import com.linc.alteredaether.worldgen.boulder.BoulderShape;
 import dev.ryanhcode.sable.api.SubLevelAssemblyHelper;
+import dev.ryanhcode.sable.api.physics.callback.BlockSubLevelCollisionCallback;
 import dev.ryanhcode.sable.api.physics.handle.RigidBodyHandle;
 import dev.ryanhcode.sable.api.sublevel.ServerSubLevelContainer;
 import dev.ryanhcode.sable.api.sublevel.SubLevelContainer;
@@ -149,6 +150,13 @@ public final class FallingBoulders {
         double peak = peakSpeed;
         peakSpeed = 0;
         return peak;
+    }
+
+    /** How many aercloud contacts boulders have passed through since the last call; and clears it. */
+    public static int takeAercloudPasses() {
+        int passes = AercloudPassCallback.passes;
+        AercloudPassCallback.passes = 0;
+        return passes;
     }
 
     /** For the checks: announces a boulder near the player as their timer would, if a spot will do. */
@@ -342,12 +350,26 @@ public final class FallingBoulders {
                 || state.is(BlockTags.DIRT) || state.is(BlockTags.BASE_STONE_OVERWORLD);
     }
 
+    /** The Aether's and Deep Aether's clouds, which a boulder falls through without slowing. */
+    public static boolean isAercloud(BlockState state) {
+        return state.is(AERCLOUDS) || BuiltInRegistries.BLOCK.getKey(state.getBlock()).getPath().contains("aercloud");
+    }
+
+    /**
+     * The collision callback Sable bakes into every aercloud (SableAercloudPassMixin), only where the cloud has none of
+     * its own: a boulder passes through it, anything else collides as before.
+     */
+    public static BlockSubLevelCollisionCallback aercloudCallback(
+            BlockState state, BlockSubLevelCollisionCallback callback) {
+        return callback == null && isAercloud(state) ? AercloudPassCallback.INSTANCE : callback;
+    }
+
     /** What a falling boulder goes straight through: trees, plants, torches and anything else a block can replace. */
     private static boolean breakable(ServerLevel level, BlockPos pos, BlockState state) {
         if (state.isAir() || !state.getFluidState().isEmpty() || embeddable(state)) {
             return false;
         }
-        if (state.is(AERCLOUDS) || BuiltInRegistries.BLOCK.getKey(state.getBlock()).getPath().contains("aercloud")) {
+        if (isAercloud(state)) {
             return true;
         }
         if (state.is(BlockTags.LEAVES) || state.is(BlockTags.LOGS) || state.is(BlockTags.REPLACEABLE)
