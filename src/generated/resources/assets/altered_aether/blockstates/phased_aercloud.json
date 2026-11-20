@@ -1,0 +1,148 @@
+{
+  "variants": {
+    "fade=0,variant=blue": {
+      "model": "altered_aether:block/phased_aercloud/blue_0"
+    },
+    "fade=0,variant=chromatic": {
+      "model": "altered_aether:block/phased_aercloud/chromatic_0"
+    },
+    "fade=0,variant=cold": {
+      "model": "altered_aether:block/phased_aercloud/cold_0"
+    },
+    "fade=0,variant=golden": {
+      "model": "altered_aether:block/phased_aercloud/golden_0"
+    },
+    "fade=0,variant=rain": {
+      "model": "altered_aether:block/phased_aercloud/rain_0"
+    },
+    "fade=0,variant=sterling": {
+      "model": "altered_aether:block/phased_aercloud/sterling_0"
+    },
+    "fade=1,variant=blue": {
+      "model": "altered_aether:block/phased_aercloud/blue_1"
+    },
+    "fade=1,variant=chromatic": {
+      "model": "altered_aether:block/phased_aercloud/chromatic_1"
+    },
+    "fade=1,variant=cold": {
+      "model": "altered_aether:block/phased_aercloud/cold_1"
+    },
+    "fade=1,variant=golden": {
+      "model": "altered_aether:block/phased_aercloud/golden_1"
+    },
+    "fade=1,variant=rain": {
+      "model": "altered_aether:block/phased_aercloud/rain_1"
+    },
+    "fade=1,variant=sterling": {
+      "model": "altered_aether:block/phased_aercloud/sterling_1"
+    },
+    "fade=2,variant=blue": {
+      "model": "altered_aether:block/phased_aercloud/blue_2"
+    },
+    "fade=2,variant=chromatic": {
+      "model": "altered_aether:block/phased_aercloud/chromatic_2"
+    },
+    "fade=2,variant=cold": {
+      "model": "altered_aether:block/phased_aercloud/cold_2"
+    },
+    "fade=2,variant=golden": {
+      "model": "altered_aether:block/phased_aercloud/golden_2"
+    },
+    "fade=2,variant=rain": {
+      "model": "altered_aether:block/phased_aercloud/rain_2"
+    },
+    "fade=2,variant=sterling": {
+      "model": "altered_aether:block/phased_aercloud/sterling_2"
+    },
+    "fade=3,variant=blue": {
+      "model": "altered_aether:block/phased_aercloud/blue_3"
+    },
+    "fade=3,variant=chromatic": {
+      "model": "altered_aether:block/phased_aercloud/chromatic_3"
+    },
+    "fade=3,variant=cold": {
+      "model": "altered_aether:block/phased_aercloud/cold_3"
+    },
+    "fade=3,variant=golden": {
+      "model": "altered_aether:block/phased_aercloud/golden_3"
+    },
+    "fade=3,variant=rain": {
+      "model": "altered_aether:block/phased_aercloud/rain_3"
+    },
+    "fade=3,variant=sterling": {
+      "model": "altered_aether:block/phased_aercloud/sterling_3"
+    },
+    "fade=4,variant=blue": {
+      "model": "altered_aether:block/phased_aercloud/blue_4"
+    },
+    "fade=4,variant=chromatic": {
+      "model": "altered_aether:block/phased_aercloud/chromatic_4"
+    },
+    "fade=4,variant=cold": {
+      "model": "altered_aether:block/phased_aercloud/cold_4"
+    },
+    "fade=4,variant=golden": {
+      "model": "altered_aether:block/phased_aercloud/golden_4"
+    },
+    "fade=4,variant=rain": {
+      "model": "altered_aether:block/phased_aercloud/rain_4"
+    },
+    "fade=4,variant=sterling": {
+      "model": "altered_aether:block/phased_aercloud/sterling_4"
+    },
+    "fade=5,variant=blue": {
+      "model": "altered_aether:block/phased_aercloud/blue_5"
+    },
+    "fade=5,variant=chromatic": {
+      "model": "altered_aether:block/phased_aercloud/chromatic_5"
+    },
+    "fade=5,variant=cold": {
+      "model": "altered_aether:block/phased_aercloud/cold_5"
+    },
+    "fade=5,variant=golden": {
+      "model": "altered_aether:block/phased_aercloud/golden_5"
+    },
+    "fade=5,variant=rain": {
+      "model": "altered_aether:block/phased_aercloud/rain_5"
+    },
+    "fade=5,variant=sterling": {
+      "model": "altered_aether:block/phased_aercloud/sterling_5"
+    },
+    "fade=6,variant=blue": {
+      "model": "altered_aether:block/phased_aercloud/blue_6"
+    },
+    "fade=6,variant=chromatic": {
+      "model": "altered_aether:block/phased_aercloud/chromatic_6"
+    },
+    "fade=6,variant=cold": {
+      "model": "altered_aether:block/phased_aercloud/cold_6"
+    },
+    "fade=6,variant=golden": {
+      "model": "altered_aether:block/phased_aercloud/golden_6"
+    },
+    "fade=6,variant=rain": {
+      "model": "altered_aether:block/phased_aercloud/rain_6"
+    },
+    "fade=6,variant=sterling": {
+      "model": "altered_aether:block/phased_aercloud/sterling_6"
+    },
+    "fade=7,variant=blue": {
+      "model": "altered_aether:block/phased_aercloud/blue_7"
+    },
+    "fade=7,variant=chromatic": {
+      "model": "altered_aether:block/phased_aercloud/chromatic_7"
+    },
+    "fade=7,variant=cold": {
+      "model": "altered_aether:block/phased_aercloud/cold_7"
+    },
+    "fade=7,variant=golden": {
+      "model": "altered_aether:block/phased_aercloud/golden_7"
+    },
+    "fade=7,variant=rain": {
+      "model": "altered_aether:block/phased_aercloud/rain_7"
+    },
+    "fade=7,variant=sterling": {
+      "model": "altered_aether:block/phased_aercloud/sterling_7"
+    }
+  }
+}

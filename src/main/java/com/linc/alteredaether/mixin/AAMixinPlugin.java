@@ -49,8 +49,13 @@ public final class AAMixinPlugin implements IMixinConfigPlugin {
             return LoadingModList.get().getModFileById("create") != null;
         }
         if (mixinClassName.endsWith(".SableAercloudPassMixin")) {
-            // falling boulders punch through aerclouds, only with Sable there to drop them
+            // Sable bodies pass through aerclouds, only with Sable there to have them
             return LoadingModList.get().getModFileById("sable") != null;
+        }
+        if (mixinClassName.contains(".DeepAetherCloudRiderMixins")) {
+            // Sable riders pass through Deep Aether's own clouds, only with both there
+            return LoadingModList.get().getModFileById("deep_aether") != null
+                    && LoadingModList.get().getModFileById("sable") != null;
         }
         if (mixinClassName.endsWith(".SableGravititeLiftMixin") || mixinClassName.endsWith(".SableFloatingBlockMixin")) {
             // enchanted gravitite's powered lift, only with Sable there to lift it

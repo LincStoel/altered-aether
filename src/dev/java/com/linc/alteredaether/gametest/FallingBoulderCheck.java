@@ -18,6 +18,7 @@ import com.aetherteam.aether.block.AetherBlocks;
 import com.linc.alteredaether.AlteredAether;
 import com.linc.alteredaether.compat.boulder.BoulderProtection;
 import com.linc.alteredaether.config.AACommonConfig;
+import com.linc.alteredaether.registry.AARegistries;
 import com.mojang.authlib.GameProfile;
 import net.neoforged.neoforge.common.util.FakePlayer;
 import net.neoforged.neoforge.common.util.FakePlayerFactory;
@@ -120,7 +121,8 @@ final class FallingBoulderCheck {
 
     /**
      * A boulder dropped onto a layer of cold aercloud punches straight through it: it is going at least as fast below
-     * the layer as it was just above it, the clouds in its path are gone, and it comes to rest on the floor beneath.
+     * the layer as it was just above it, the clouds in its path have phased and none are gone, and it comes to rest on
+     * the floor beneath.
      */
     static void throughAerclouds(GameTestHelper helper, boolean slow) {
         ServerLevel level = helper.getLevel();
@@ -181,9 +183,12 @@ final class FallingBoulderCheck {
                 return;
             }
             int left = 0;
+            int phased = 0;
             for (BlockPos pos : BlockPos.betweenClosed(X - 24, cloudBottom, -24, X + 24, cloudTop, 24)) {
                 if (level.getBlockState(pos).is(AetherBlocks.COLD_AERCLOUD.get())) {
                     left++;
+                } else if (level.getBlockState(pos).is(AARegistries.PHASED_AERCLOUD.get())) {
+                    phased++;
                 }
             }
             int resting = 0;
@@ -194,8 +199,8 @@ final class FallingBoulderCheck {
             }
             int passed = FallingBoulders.takeAercloudPasses();
             log("aerclouds (" + (slow ? "slow" : "fast") + "): " + String.format("%.1f", above[0]) + " blocks/s above the layer, "
-                    + String.format("%.1f", below[0]) + " below; " + (laid - left) + " of " + laid
-                    + " clouds broken; " + resting + " blocks left above the layer; "
+                    + String.format("%.1f", below[0]) + " below; " + phased + " of " + laid
+                    + " clouds phased, " + (laid - left - phased) + " lost; " + resting + " blocks left above the layer; "
                     + passed + " contacts passed");
             clear(level, X - 24, X + 24, FLOOR - SUNK, FLOOR + 45, -24, 24);
             release(level);
@@ -203,8 +208,10 @@ final class FallingBoulderCheck {
                 helper.fail("the boulder stopped on the clouds");
             } else if (!slow && below[0] < above[0] * 0.9 || slow && below[0] < 8) {
                 helper.fail("the clouds slowed the boulder from " + above[0] + " to " + below[0]);
-            } else if (left == laid) {
-                helper.fail("the boulder broke no clouds");
+            } else if (phased == 0) {
+                helper.fail("the boulder phased no clouds");
+            } else if (left + phased != laid) {
+                helper.fail((laid - left - phased) + " clouds were lost; they should only phase");
             } else if (passed == 0) {
                 helper.fail("Sable never let the boulder through a cloud (is SableAercloudPassMixin applied?)");
             } else {
@@ -480,6 +487,120 @@ final class FallingBoulderCheck {
             } else if (phase[0] == 2 && ticks[0] > 1000) {
                 finish.run();
                 helper.fail("the boulder never landed or left the world");
+            }
+        });
+    }
+
+    /**
+     * A plain stone ship dropped onto a layer of cold aercloud falls through it as a boulder does: no slower below the
+     * layer than above it, the clouds it touched phased and none lost, and every one of them a cold aercloud again
+     * (with its double drops kept) once they have faded back in. The clouds that phase are the world's, which also
+     * shows Sable hands the callback the cloud's own position.
+     */
+    static void shipThroughAerclouds(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        FallingBoulders.forgetAll(level);
+        release(level, true);
+        clear(level, X - 24, X + 24, FLOOR - SUNK, FLOOR + 45, -24, 24);
+        for (int x = X - 24; x <= X + 24; x++) {
+            for (int z = -24; z <= 24; z++) {
+                level.setBlock(new BlockPos(x, FLOOR, z), Blocks.STONE.defaultBlockState(), Block.UPDATE_ALL);
+            }
+        }
+        int cloudBottom = FLOOR + 12;
+        int cloudTop = FLOOR + 14;
+        int laid = 0;
+        net.minecraft.world.level.block.state.BlockState cloud = AetherBlocks.COLD_AERCLOUD.get().defaultBlockState()
+                .setValue(com.aetherteam.aether.block.AetherBlockStateProperties.DOUBLE_DROPS, true);
+        for (int x = X - 8; x <= X + 8; x++) {
+            for (int z = -8; z <= 8; z++) {
+                for (int y = cloudBottom; y <= cloudTop; y++) {
+                    level.setBlock(new BlockPos(x, y, z), cloud, Block.UPDATE_ALL);
+                    laid++;
+                }
+            }
+        }
+        FallingBoulders.takeAercloudPasses();
+        BlockPos shipBase = new BlockPos(X - 1, FLOOR + 30, -1);
+        List<BlockPos> blocks = new ArrayList<>();
+        for (int dx = 0; dx < 3; dx++) {
+            for (int dz = 0; dz < 3; dz++) {
+                BlockPos pos = shipBase.offset(dx, 0, dz);
+                level.setBlock(pos, Blocks.STONE.defaultBlockState(), Block.UPDATE_ALL);
+                blocks.add(pos);
+            }
+        }
+        ServerSubLevel ship = SubLevelAssemblyHelper.assembleBlocks(level, shipBase, blocks,
+                new BoundingBox3i(shipBase.offset(-1, -1, -1), shipBase.offset(3, 1, 3)));
+        if (ship == null) {
+            release(level, false);
+            helper.fail("could not build the ship");
+            return;
+        }
+        int total = laid;
+        int[] ticks = {0};
+        int[] mostPhased = {0};
+        int[] passed = {0};
+        double[] above = {0};
+        double[] below = {-1};
+        helper.onEachTick(() -> {
+            ticks[0]++;
+            double y = ship.logicalPose().position().y();
+            double speed = ship.latestLinearVelocity.length();
+            if (y > cloudTop + 3) {
+                above[0] = speed;
+            } else if (y < cloudBottom - 2 && below[0] < 0) {
+                below[0] = speed;
+            }
+            if (ticks[0] % 20 != 0) {
+                return;
+            }
+            passed[0] += FallingBoulders.takeAercloudPasses();
+            int cold = 0;
+            int phased = 0;
+            boolean doubled = true;
+            for (BlockPos pos : BlockPos.betweenClosed(X - 8, cloudBottom, -8, X + 8, cloudTop, 8)) {
+                net.minecraft.world.level.block.state.BlockState there = level.getBlockState(pos);
+                if (there.is(AetherBlocks.COLD_AERCLOUD.get())) {
+                    cold++;
+                    doubled &= there.getValue(com.aetherteam.aether.block.AetherBlockStateProperties.DOUBLE_DROPS);
+                } else if (there.is(AARegistries.PHASED_AERCLOUD.get())) {
+                    phased++;
+                }
+            }
+            mostPhased[0] = Math.max(mostPhased[0], phased);
+            if (ticks[0] % 100 == 0) {
+                log("ship through aerclouds, tick " + ticks[0] + ": y " + String.format("%.1f", y) + ", " + phased
+                        + " phased, " + cold + " cold of " + total);
+            }
+            String failure = null;
+            if (cold + phased != total) {
+                failure = (total - cold - phased) + " clouds were lost; they should only phase";
+            } else if (ticks[0] >= 300 && y > cloudBottom) {
+                failure = "the ship stopped on the clouds (at y " + y + ")";
+            } else if (ticks[0] < 300 || phased > 0) {
+                if (ticks[0] <= 1400) {
+                    return;
+                }
+                failure = "the clouds never firmed up again (" + phased + " still phased)";
+            } else if (mostPhased[0] == 0 || passed[0] == 0) {
+                failure = "the ship phased no clouds (" + passed[0] + " contacts passed)";
+            } else if (below[0] < above[0] * 0.9) {
+                failure = "the clouds slowed the ship from " + above[0] + " to " + below[0];
+            } else if (!doubled) {
+                failure = "a cloud lost its double drops";
+            }
+            log("ship through aerclouds: " + String.format("%.1f", above[0]) + " blocks/s above the layer, "
+                    + String.format("%.1f", below[0]) + " below; at most " + mostPhased[0] + " phased, "
+                    + passed[0] + " contacts passed, all firm again after " + ticks[0] + " ticks");
+            dev.ryanhcode.sable.api.sublevel.SubLevelContainer.getContainer(level).removeSubLevel(ship,
+                    dev.ryanhcode.sable.sublevel.storage.SubLevelRemovalReason.REMOVED);
+            clear(level, X - 24, X + 24, FLOOR - SUNK, FLOOR + 45, -24, 24);
+            release(level, false);
+            if (failure != null) {
+                helper.fail(failure);
+            } else {
+                helper.succeed();
             }
         });
     }

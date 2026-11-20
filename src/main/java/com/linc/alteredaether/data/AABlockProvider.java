@@ -17,6 +17,7 @@ package com.linc.alteredaether.data;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.linc.alteredaether.AlteredAether;
+import com.linc.alteredaether.block.PhasedAercloudBlock;
 import com.linc.alteredaether.worldgen.AABiomes;
 import net.minecraft.data.PackOutput;
 import net.minecraft.resources.ResourceLocation;
@@ -62,7 +63,87 @@ public final class AABlockProvider extends JsonDataProvider {
         asset("models/item", AlteredAether.id("squall_spawn_egg"), model("minecraft:item/template_spawn_egg", Map.of()));
         whaleWhistle();
         gravitite();
+        phasedAercloud();
         language();
+    }
+
+    private static final String PHASED_AERCLOUD = "phased_aercloud";
+    /** How opaque each of the phased aercloud's steps is, as a share of the cloud's own texture; the faintest first. */
+    private static final float[] PHASED_ALPHAS = {0.15F, 0.25F, 0.35F, 0.45F, 0.55F, 0.65F, 0.75F, 0.85F};
+
+    /**
+     * The phased aercloud's look (see block/PhasedAercloudBlock): the Aether cloud model's six thin planes, seen from
+     * outside and in, with one texture throughout, per cloud and step. The textures are faded copies of the clouds' own,
+     * made as the game loads (see client/FadedSpriteSource), so the atlas lists a source per cloud rather than files.
+     */
+    private void phasedAercloud() {
+        String template = AlteredAether.MOD_ID + ":block/" + PHASED_AERCLOUD;
+        asset("models/block", AlteredAether.id(PHASED_AERCLOUD), cloudModel());
+        JsonObject variants = new JsonObject();
+        JsonArray sources = new JsonArray();
+        for (PhasedAercloudBlock.Variant variant : PhasedAercloudBlock.Variant.values()) {
+            String name = variant.getSerializedName();
+            for (int fade = 0; fade <= PhasedAercloudBlock.MAX_FADE; fade++) {
+                String model = PHASED_AERCLOUD + "/" + name + "_" + fade;
+                asset("models/block", AlteredAether.id(model), model(template,
+                        Map.of("cloud", AlteredAether.MOD_ID + ":block/phased/" + name + "_" + fade)));
+                JsonObject entry = new JsonObject();
+                entry.addProperty("model", AlteredAether.MOD_ID + ":block/" + model);
+                variants.add("fade=" + fade + ",variant=" + name, entry);
+            }
+            JsonObject source = new JsonObject();
+            source.addProperty("type", AlteredAether.MOD_ID + ":faded");
+            source.addProperty("source", variant.texture().toString());
+            source.addProperty("prefix", AlteredAether.MOD_ID + ":block/phased/" + name + "_");
+            source.add("alphas", floats(PHASED_ALPHAS));
+            sources.add(source);
+        }
+        JsonObject blockstate = new JsonObject();
+        blockstate.add("variants", variants);
+        asset("blockstates", AlteredAether.id(PHASED_AERCLOUD), blockstate);
+        JsonObject atlas = new JsonObject();
+        atlas.add("sources", sources);
+        asset("atlases", ResourceLocation.withDefaultNamespace("blocks"), atlas);
+    }
+
+    /** The Aether's aercloud model with a single #cloud texture: a thin plane inside each face, drawn on both sides. */
+    private static JsonObject cloudModel() {
+        JsonArray elements = new JsonArray();
+        // each face: its plane's corners, the face seen from inside it, and the uv that face is drawn with
+        Object[][] planes = {
+                {"up", new double[]{0, 15.998, 0}, new double[]{16, 16, 16}, "down", new double[]{0, 16, 16, 0}},
+                {"down", new double[]{0, 0, 0}, new double[]{16, 0.002, 16}, "up", new double[]{0, 16, 16, 0}},
+                {"north", new double[]{0, 0, 0}, new double[]{16, 16, 0.002}, "south", new double[]{16, 0, 0, 16}},
+                {"south", new double[]{0, 0, 15.998}, new double[]{16, 16, 16}, "north", new double[]{16, 0, 0, 16}},
+                {"west", new double[]{0, 0, 0}, new double[]{0.002, 16, 16}, "east", new double[]{16, 0, 0, 16}},
+                {"east", new double[]{15.998, 0, 0}, new double[]{16, 16, 16}, "west", new double[]{16, 0, 0, 16}},
+        };
+        for (Object[] plane : planes) {
+            String side = (String) plane[0];
+            JsonObject outside = new JsonObject();
+            outside.addProperty("cullface", side);
+            outside.addProperty("texture", "#cloud");
+            JsonObject inside = new JsonObject();
+            inside.addProperty("cullface", side);
+            inside.addProperty("texture", "#cloud");
+            inside.add("uv", numbers((double[]) plane[4]));
+            JsonObject faces = new JsonObject();
+            faces.add(side, outside);
+            faces.add((String) plane[3], inside);
+            JsonObject element = new JsonObject();
+            element.add("from", numbers((double[]) plane[1]));
+            element.add("to", numbers((double[]) plane[2]));
+            element.add("faces", faces);
+            elements.add(element);
+        }
+        JsonObject textures = new JsonObject();
+        textures.addProperty("particle", "#cloud");
+        JsonObject json = new JsonObject();
+        json.addProperty("parent", "minecraft:block/block");
+        json.add("elements", elements);
+        json.addProperty("render_type", "minecraft:translucent");
+        json.add("textures", textures);
+        return json;
     }
 
     /** The gravitite rework's items and raw block (see data/AAGravititeProvider); their art is placeholder. */
@@ -375,6 +456,7 @@ public final class AABlockProvider extends JsonDataProvider {
         lang.put("block." + AlteredAether.MOD_ID + "." + GLEAM_VINES, "Gleam Vines");
         lang.put("block." + AlteredAether.MOD_ID + "." + GLEAM_VINES_PLANT, "Gleam Vines Plant");
         lang.put("item." + AlteredAether.MOD_ID + "." + GLEAMBERRIES, "Gleamberries");
+        lang.put("block." + AlteredAether.MOD_ID + "." + PHASED_AERCLOUD, "Phased Aercloud");
         for (AABiomes.Entry biome : AABiomes.ALL) {
             lang.put("biome." + AlteredAether.MOD_ID + "." + biome.name(), title(biome.name()));
         }

@@ -20,6 +20,7 @@ import com.linc.alteredaether.advancement.VisitLandmarkTrigger;
 import com.linc.alteredaether.block.AmbrosiumCampfireBlock;
 import com.linc.alteredaether.block.GleamVinesBlock;
 import com.linc.alteredaether.block.GleamVinesPlantBlock;
+import com.linc.alteredaether.block.PhasedAercloudBlock;
 import com.linc.alteredaether.block.StoneSet;
 import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.state.properties.NoteBlockInstrument;
@@ -147,6 +148,16 @@ public final class AARegistries {
     /** Like the glow berry, the berry is the vine's item: it is eaten, and planted under a ceiling. */
     public static final DeferredItem<ItemNameBlockItem> GLEAMBERRIES = ITEMS.register("gleamberries",
             () -> new ItemNameBlockItem(GLEAM_VINES.get(), new Item.Properties().food(Foods.GLOW_BERRIES)));
+
+    /**
+     * An aercloud a Sable body has just passed through, fading back in (see block/PhasedAercloudBlock). Made like the
+     * Aether's clouds; no item, as it only ever stands in for one.
+     */
+    public static final DeferredBlock<PhasedAercloudBlock> PHASED_AERCLOUD = BLOCKS.registerBlock("phased_aercloud",
+            PhasedAercloudBlock::new, BlockBehaviour.Properties.of().mapColor(MapColor.SNOW)
+                    .instrument(NoteBlockInstrument.FLUTE).strength(0.3F).sound(SoundType.WOOL).noOcclusion()
+                    .isValidSpawn((state, level, pos, type) -> false).isRedstoneConductor((state, level, pos) -> false)
+                    .isSuffocating((state, level, pos) -> false).isViewBlocking((state, level, pos) -> false));
 
     /*
      * Three Aether stones beside holystone (strength 0.5; its bricks 2.0, resisting 6.0). Nadirite, the heavy igneous

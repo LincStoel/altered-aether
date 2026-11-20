@@ -14,7 +14,7 @@
  */
 package com.linc.alteredaether.mixin;
 
-import com.linc.alteredaether.compat.boulder.FallingBoulders;
+import com.linc.alteredaether.compat.cloud.AercloudPassCallback;
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import com.llamalad7.mixinextras.sugar.Local;
 import dev.ryanhcode.sable.api.physics.callback.BlockSubLevelCollisionCallback;
@@ -24,9 +24,9 @@ import org.spongepowered.asm.mixin.Pseudo;
 import org.spongepowered.asm.mixin.injection.At;
 
 /**
- * Sable's Rapier backend bakes each block state's collision callback into its native voxel collider once. Aerclouds
- * get one here (where they have none of their own) that lets a falling boulder punch straight through them without
- * losing speed, while every other body collides with them as before; see AercloudPassCallback.
+ * Sable's Rapier backend bakes each block state's collision callback into its native voxel collider once. Aerclouds,
+ * phased or not, get one here (where they have none of their own) that lets every Sable body through them without
+ * losing speed and phases them; see AercloudPassCallback.
  *
  * <p>Applies only with Sable loaded (see AAMixinPlugin); {@code require = 0} so a Sable update can't stop the game
  * from starting.
@@ -39,8 +39,8 @@ public abstract class SableAercloudPassMixin {
                     + "sable$getCallback(Lnet/minecraft/world/level/block/state/BlockState;)"
                     + "Ldev/ryanhcode/sable/api/physics/callback/BlockSubLevelCollisionCallback;"),
             require = 0)
-    private BlockSubLevelCollisionCallback altered_aether$aercloudsLetBouldersThrough(
+    private BlockSubLevelCollisionCallback altered_aether$aercloudsLetBodiesThrough(
             BlockSubLevelCollisionCallback callback, @Local(argsOnly = true) BlockState state) {
-        return FallingBoulders.aercloudCallback(state, callback);
+        return AercloudPassCallback.callbackFor(state, callback);
     }
 }

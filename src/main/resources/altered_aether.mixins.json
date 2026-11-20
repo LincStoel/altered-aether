@@ -14,6 +14,8 @@
     "AirshipVillageSpawnExclusionMixin",
     "ComparatorInputMixin",
     "CreateThresholdSwitchMixin",
+    "DeepAetherCloudRiderMixins$Chromatic",
+    "DeepAetherCloudRiderMixins$Sterling",
     "DeepAetherHeightChecksMixin",
     "DeepAetherWhaleCargoMixin",
     "GleamVinesMixins$BeeGrow",
