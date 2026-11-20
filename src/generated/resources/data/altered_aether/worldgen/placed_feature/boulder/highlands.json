@@ -1,0 +1,26 @@
+{
+  "feature": "altered_aether:boulder/ancient",
+  "placement": [
+    {
+      "type": "altered_aether:config_count",
+      "count": 0.5,
+      "key": "ancient_boulders"
+    },
+    {
+      "type": "minecraft:in_square"
+    },
+    {
+      "type": "minecraft:heightmap",
+      "heightmap": "WORLD_SURFACE_WG"
+    },
+    {
+      "type": "altered_aether:min_height",
+      "min_inclusive": {
+        "absolute": 136
+      }
+    },
+    {
+      "type": "minecraft:biome"
+    }
+  ]
+}

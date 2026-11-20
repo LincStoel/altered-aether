@@ -185,6 +185,13 @@ final class Placement {
         return json;
     }
 
+    /** Drops a position below an anchor: after a heightmap, ground that doesn't stand that high (see MinHeight). */
+    static JsonObject minHeight(JsonObject anchor) {
+        JsonObject json = type("altered_aether:min_height");
+        json.add("min_inclusive", anchor);
+        return json;
+    }
+
     static JsonObject inSquare() {
         return type("minecraft:in_square");
     }

@@ -70,6 +70,7 @@ import com.linc.alteredaether.worldgen.placement.ArchwoodRegion;
 import com.linc.alteredaether.worldgen.placement.BiomeEdgeFalloff;
 import com.linc.alteredaether.worldgen.placement.IslandEdge;
 import com.linc.alteredaether.worldgen.placement.JitteredGrid;
+import com.linc.alteredaether.worldgen.placement.MinHeight;
 import com.linc.alteredaether.worldgen.placement.Overhang;
 import com.linc.alteredaether.worldgen.placement.LandmarkPoints;
 import com.linc.alteredaether.worldgen.placement.RiftGap;
@@ -432,6 +433,8 @@ public final class AARegistries {
             PLACEMENT_MODIFIERS.register("island_edge", () -> () -> IslandEdge.CODEC);
     public static final DeferredHolder<PlacementModifierType<?>, PlacementModifierType<JitteredGrid>> JITTERED_GRID =
             PLACEMENT_MODIFIERS.register("jittered_grid", () -> () -> JitteredGrid.CODEC);
+    public static final DeferredHolder<PlacementModifierType<?>, PlacementModifierType<MinHeight>> MIN_HEIGHT =
+            PLACEMENT_MODIFIERS.register("min_height", () -> () -> MinHeight.CODEC);
     public static final DeferredHolder<PlacementModifierType<?>, PlacementModifierType<BiomeEdgeFalloff>> BIOME_EDGE_FALLOFF =
             PLACEMENT_MODIFIERS.register("biome_edge_falloff", () -> () -> BiomeEdgeFalloff.CODEC);
     public static final DeferredHolder<PlacementModifierType<?>, PlacementModifierType<Overhang>> OVERHANG =

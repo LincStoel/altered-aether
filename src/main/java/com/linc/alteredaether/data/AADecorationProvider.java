@@ -73,6 +73,8 @@ public final class AADecorationProvider extends FeatureData {
     private static final String SURFACE = "WORLD_SURFACE_WG";
     private static final String CRAG_ROCK = NS + "frozen_crag_ore_replaceables";
     private static final String TEMPEST_ROCK = NS + "tempest_peak_ore_replaceables";
+    /** The Highlands' floor, y 140 in the tall Aether, in the stock-Aether terms anchors are written in (TallRemap). */
+    private static final int HIGHLANDS = 136;
 
     public AADecorationProvider(PackOutput output) {
         super(output, "decoration");
@@ -122,6 +124,18 @@ public final class AADecorationProvider extends FeatureData {
         placed("boulder/ancient", "boulder/ancient", Placement.list(Placement.configCount(1 / 300.0, "ancient_boulders"),
                 Placement.inSquare(), Placement.heightmap(SURFACE), Placement.biome()));
         addFeature("boulder/ancient", List.of(IS_AETHER), "local_modifications");
+        // The Highlands' own: the same long-fallen boulders now and then on an islet's top (only ground above y 140
+        // in the tall Aether is an islet's), and blobs of celezite through the islets' holystone.
+        placed("boulder/highlands", "boulder/ancient", Placement.list(Placement.configCount(1 / 2.0, "ancient_boulders"),
+                Placement.inSquare(), Placement.heightmap(SURFACE), Placement.minHeight(Placement.absolute(HIGHLANDS)),
+                Placement.biome()));
+        addFeature("boulder/highlands", List.of(IS_AETHER), "local_modifications");
+        configured("ore/highlands_celezite", "minecraft:ore",
+                ore("altered_aether:celezite[double_drops=true]", 40, 0.0, "aether:holystone"));
+        placed("ore/highlands_celezite", "ore/highlands_celezite", Placement.list(Placement.count(4),
+                Placement.inSquare(), Placement.heightRange("uniform", Placement.absolute(HIGHLANDS),
+                        Placement.absolute(213)), Placement.biome()));
+        addFeature("ore/highlands_celezite", List.of(IS_AETHER), "underground_ores");
         placed("boulder/clorite", "boulder/clorite", surface(1 / 26.0, "boulders"));
     }
 
