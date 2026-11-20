@@ -1,4 +1,4 @@
-// 1.21.1	2026-11-19T21:52:51.9644191	Altered Aether decoration
+// 1.21.1	2026-11-20T08:50:42.9959741	Altered Aether decoration
 8b0d7c112eba9f3e263cbe4a463e3670ab8fab5f data/altered_aether/neoforge/biome_modifier/decoration/boulder_ancient.json
 89ee8ab18b2c395210aa3c1fd602a547cc1fa796 data/altered_aether/neoforge/biome_modifier/decoration/boulder_highlands.json
 8db03b47f6482ad3981b204a8bedd42177a9f278 data/altered_aether/neoforge/biome_modifier/decoration/cloud_layer_blue.json
@@ -102,7 +102,7 @@ ff17f23078bc19faed1a49430e6eae9ae2358837 data/altered_aether/worldgen/placed_fea
 69cd407840f7065c9cd10095972543821bb63f0c data/altered_aether/worldgen/placed_feature/ore/crag_gravitite_buried.json
 c574538278c14df83ee40ccc1d897e5ca8087130 data/altered_aether/worldgen/placed_feature/ore/crag_zanite.json
 18f5f1c75e320322b8c52964094a98b7beb1fa29 data/altered_aether/worldgen/placed_feature/ore/highlands_celezite.json
-9baf0264a9d7ca9d0495ad3d758f4af2216a3e30 data/altered_aether/worldgen/placed_feature/ore/highlands_veins.json
+d375bff3525aa1c1156db4fc27ec9b0029a9f4fa data/altered_aether/worldgen/placed_feature/ore/highlands_veins.json
 3f209b6cec7994a8e9cc6e7ebca1bf313839d403 data/altered_aether/worldgen/placed_feature/ore/tempest_copper.json
 8cfbd7830a7bdeffd32e776b8d0c01e40ab12f03 data/altered_aether/worldgen/placed_feature/ore/tempest_copper_upper.json
 2d7ba6193727107531bd77eade0b237687adcfd3 data/altered_aether/worldgen/placed_feature/ruin/dune.json
