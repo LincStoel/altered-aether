@@ -136,6 +136,13 @@ public final class AADecorationProvider extends FeatureData {
                 Placement.inSquare(), Placement.heightRange("uniform", Placement.absolute(HIGHLANDS),
                         Placement.absolute(213)), Placement.biome()));
         addFeature("ore/highlands_celezite", List.of(IS_AETHER), "underground_ores");
+        // Veins of any ore the Aether has through the islets' holystone, each twice its usual size (see
+        // HighlandsOresFeature, which picks the ore and does nothing outside the tall Aether).
+        configured("ore/highlands_veins", "highlands_ores", new JsonObject());
+        placed("ore/highlands_veins", "ore/highlands_veins", Placement.list(Placement.count(12),
+                Placement.inSquare(), Placement.heightRange("uniform", Placement.absolute(HIGHLANDS),
+                        Placement.absolute(213)), Placement.biome()));
+        addFeature("ore/highlands_veins", List.of(IS_AETHER), "underground_ores");
         placed("boulder/clorite", "boulder/clorite", surface(1 / 26.0, "boulders"));
     }
 

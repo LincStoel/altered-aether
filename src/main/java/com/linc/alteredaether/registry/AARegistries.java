@@ -391,6 +391,9 @@ public final class AARegistries {
             FEATURES.register("boulder", BoulderFeature::new);
     public static final DeferredHolder<Feature<?>, AncientBoulderFeature> ANCIENT_BOULDER =
             FEATURES.register("ancient_boulder", AncientBoulderFeature::new);
+    public static final DeferredHolder<Feature<?>, com.linc.alteredaether.worldgen.feature.HighlandsOresFeature>
+            HIGHLANDS_ORES = FEATURES.register("highlands_ores",
+            com.linc.alteredaether.worldgen.feature.HighlandsOresFeature::new);
     public static final DeferredHolder<Feature<?>, CopperSpikeFeature> COPPER_SPIKE =
             FEATURES.register("copper_spike", CopperSpikeFeature::new);
     public static final DeferredHolder<Feature<?>, CopperVeinFeature> COPPER_VEIN =
