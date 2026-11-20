@@ -31,10 +31,8 @@ final class AACreativeTab {
         output.accept(AARegistries.STORAGE_PEBBLE.get());
 
         for (StoneSet stone : StoneSet.ALL) {
-            for (StoneSet.Form form : stone.forms()) {
-                for (DeferredBlock<? extends Block> block : form.blocks()) {
-                    output.accept(block.get());
-                }
+            for (DeferredBlock<? extends Block> block : stone.blocks()) {
+                output.accept(block.get());
             }
         }
 

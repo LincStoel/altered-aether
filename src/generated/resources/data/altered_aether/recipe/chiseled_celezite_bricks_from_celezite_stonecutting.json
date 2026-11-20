@@ -1,0 +1,10 @@
+{
+  "type": "minecraft:stonecutting",
+  "ingredient": {
+    "item": "altered_aether:celezite"
+  },
+  "result": {
+    "count": 1,
+    "id": "altered_aether:chiseled_celezite_bricks"
+  }
+}

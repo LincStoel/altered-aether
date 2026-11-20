@@ -61,6 +61,9 @@ public final class AAStoneProvider extends JsonDataProvider {
                     cut(source.base(), target.shape() + "_wall", 1);
                 }
             }
+            for (StoneSet.Chiseled chiseled : stone.chiseled) {
+                chiseled(forms, chiseled);
+            }
         }
         celeziteCrushing();
         sable();
@@ -76,6 +79,23 @@ public final class AAStoneProvider extends JsonDataProvider {
      */
     private static final Map<String, Double> SABLE_MASS = Map.of("nadirite", 4.0, "celezite", 2.0, "sylicite", 2.0);
 
+    /**
+     * A chiseled block: a cube like the rest, self-dropping, crafted from two of its form's slabs stacked (as chiseled
+     * stone bricks are) and stonecut one for one from that form or anything before it.
+     */
+    private void chiseled(List<StoneSet.Form> forms, StoneSet.Chiseled chiseled) {
+        String name = chiseled.base();
+        String model = NS + "block/" + name;
+        asset("models/block", AlteredAether.id(name), model("minecraft:block/cube_all", Map.of("all", model)));
+        asset("blockstates", AlteredAether.id(name), variants(Map.of("", model)));
+        item(name, model);
+        data("loot_table/blocks", AlteredAether.id(name), selfDrop(name));
+        grid(chiseled.from().shape() + "_slab", name, 1, "#", "#");
+        for (StoneSet.Form source : forms.subList(0, forms.indexOf(chiseled.from()) + 1)) {
+            cut(source.base(), name, 1);
+        }
+    }
+
     private void sable() {
         for (StoneSet stone : StoneSet.ALL) {
             double mass = SABLE_MASS.get(stone.name);
@@ -87,6 +107,7 @@ public final class AAStoneProvider extends JsonDataProvider {
                     shapes.add(NS + form.shape() + shape);
                 }
             }
+            stone.chiseled.forEach(chiseled -> full.add(NS + chiseled.base()));
             String name = "sable/" + stone.name;
             blockTag(name, full);
             blockTag(name + "_shapes", shapes);
@@ -131,10 +152,13 @@ public final class AAStoneProvider extends JsonDataProvider {
                     lang.put("block." + AlteredAether.MOD_ID + "." + form.shape() + shape, title(form.shape() + shape));
                 }
             }
+            for (StoneSet.Chiseled chiseled : stone.chiseled) {
+                lang.put("block." + AlteredAether.MOD_ID + "." + chiseled.base(), title(chiseled.base()));
+            }
         }
     }
 
-    /** Every block's id, for tags. {@code shapes} picks out the stairs, slabs or walls alone. */
+    /** Every block's id (chiseled ones too), for tags. {@code shapes} picks out the stairs, slabs or walls alone. */
     public static String[] ids(String shapes) {
         List<String> ids = new ArrayList<>();
         for (StoneSet stone : StoneSet.ALL) {
@@ -147,6 +171,9 @@ public final class AAStoneProvider extends JsonDataProvider {
                 } else {
                     ids.add(NS + form.shape() + "_" + shapes);
                 }
+            }
+            if (shapes == null) {
+                stone.chiseled.forEach(chiseled -> ids.add(NS + chiseled.base()));
             }
         }
         return ids.toArray(String[]::new);

@@ -77,10 +77,8 @@ public final class AABlockEvents {
         if (event.getTabKey().equals(AetherCreativeTabs.AETHER_BUILDING_BLOCKS.getKey())) {
             ItemLike after = AetherBlocks.HOLYSTONE_BRICK_WALL.get();
             for (StoneSet stone : StoneSet.ALL) {
-                for (StoneSet.Form form : stone.forms()) {
-                    for (DeferredBlock<? extends Block> block : form.blocks()) {
-                        after = insertAfter(event, after, block.get());
-                    }
+                for (DeferredBlock<? extends Block> block : stone.blocks()) {
+                    after = insertAfter(event, after, block.get());
                 }
             }
         }

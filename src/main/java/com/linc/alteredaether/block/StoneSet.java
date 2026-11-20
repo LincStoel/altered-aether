@@ -31,7 +31,8 @@ import java.util.function.Supplier;
 /**
  * A stone with holystone's set of blocks, plus a polished form: the natural stone, which double drops like holystone,
  * then polished stone and bricks, each with stairs, a slab and a wall. Polished is crafted from the stone and bricks
- * from polished, as deepslate's are. Models, loot, recipes and tags are in data/AAStoneProvider.
+ * from polished, as deepslate's are. A set may also have chiseled forms of its polished stone and bricks (see
+ * {@link #withChiseled}). Models, loot, recipes and tags are in data/AAStoneProvider.
  */
 public final class StoneSet {
     /** Every stone set, in creative-tab order. */
@@ -49,6 +50,13 @@ public final class StoneSet {
     public final Form natural;
     public final Form polished;
     public final Form bricks;
+    /** Chiseled blocks, each made from {@code from}'s slabs as vanilla's chiseled stone bricks are; empty for most sets. */
+    public final List<Chiseled> chiseled = new ArrayList<>();
+    private final Supplier<BlockBehaviour.Properties> polishedProperties;
+    private final Supplier<BlockBehaviour.Properties> bricksProperties;
+
+    public record Chiseled(String base, Form from, DeferredBlock<Block> block) {
+    }
 
     /**
      * Registers the set. {@code natural} is the stone as it generates; {@code cut} is for polished stone and bricks,
@@ -61,11 +69,41 @@ public final class StoneSet {
         this.natural = form(blocks, items, name, name, AetherDoubleDropBlock::new, natural);
         this.polished = form(blocks, items, "polished_" + name, "polished_" + name, Block::new, polished);
         this.bricks = form(blocks, items, name + "_bricks", name + "_brick", Block::new, bricks);
+        this.polishedProperties = polished;
+        this.bricksProperties = bricks;
         ALL.add(this);
+    }
+
+    /** Adds chiseled stone (from polished slabs) and chiseled bricks (from brick slabs), as hard as what they're cut from. */
+    public StoneSet withChiseled(DeferredRegister.Blocks blocks, DeferredRegister.Items items) {
+        chiseled(blocks, items, "chiseled_" + name, polished, polishedProperties);
+        chiseled(blocks, items, "chiseled_" + name + "_bricks", bricks, bricksProperties);
+        return this;
+    }
+
+    private void chiseled(DeferredRegister.Blocks blocks, DeferredRegister.Items items, String base, Form from,
+                          Supplier<BlockBehaviour.Properties> properties) {
+        DeferredBlock<Block> block = blocks.register(base, () -> new Block(properties.get()));
+        items.registerSimpleBlockItem(block);
+        chiseled.add(new Chiseled(base, from, block));
     }
 
     public List<Form> forms() {
         return List.of(natural, polished, bricks);
+    }
+
+    /** Every block in creative-tab order: each form's block and shapes, then any chiseled block made from it. */
+    public List<DeferredBlock<? extends Block>> blocks() {
+        List<DeferredBlock<? extends Block>> all = new ArrayList<>();
+        for (Form form : forms()) {
+            all.addAll(form.blocks());
+            for (Chiseled each : chiseled) {
+                if (each.from() == form) {
+                    all.add(each.block());
+                }
+            }
+        }
+        return all;
     }
 
     private static Form form(DeferredRegister.Blocks blocks, DeferredRegister.Items items, String base, String shape,

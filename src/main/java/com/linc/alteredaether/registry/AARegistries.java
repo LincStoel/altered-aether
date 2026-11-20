@@ -161,7 +161,7 @@ public final class AARegistries {
     public static final StoneSet CELEZITE = new StoneSet(BLOCKS, ITEMS, "celezite",
             () -> stone(MapColor.TERRACOTTA_WHITE, SoundType.CALCITE, 1.0F, 0.5F),
             () -> stone(MapColor.TERRACOTTA_WHITE, SoundType.CALCITE, 2.5F, 6.0F),
-            () -> stone(MapColor.TERRACOTTA_WHITE, SoundType.CALCITE, 2.5F, 6.0F));
+            () -> stone(MapColor.TERRACOTTA_WHITE, SoundType.CALCITE, 2.5F, 6.0F)).withChiseled(BLOCKS, ITEMS);
     public static final StoneSet SYLICITE = new StoneSet(BLOCKS, ITEMS, "sylicite",
             () -> stone(MapColor.RAW_IRON, SoundType.AMETHYST, 1.2F, 6.0F),
             () -> stone(MapColor.RAW_IRON, SoundType.AMETHYST, 2.0F, 6.0F),
