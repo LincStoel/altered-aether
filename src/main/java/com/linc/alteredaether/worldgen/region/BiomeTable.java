@@ -64,12 +64,12 @@ public final class BiomeTable {
     public static final float PLATEAU_C = 0.545f;
     /**
      * Sky Tundra, the erosion band just under the crags: every crag range stands in a ring of it. Measured with
-     * {@code -PaaReport} and {@code -PaaClimate}: P(erosion &gt; this) = 7.3%, so with the crags above it the tundra
-     * holds about a third of the cold lands.
+     * {@code -PaaReport} and {@code -PaaClimate}: P(erosion &gt; this) = 3.3%, so the cold lands are somewhat rare, and
+     * with the crags above it the tundra holds about a third of them.
      */
-    public static final float TUNDRA_E = 0.52f;
-    /** Frozen Crags tier, mid-ramp of crag_mask. P(erosion &gt; this) = 4.9%. */
-    public static final float CRAG_E = 0.58f;
+    public static final float TUNDRA_E = 0.67f;
+    /** Frozen Crags tier, mid-ramp of crag_mask. P(erosion &gt; this) = 2.3%. */
+    public static final float CRAG_E = 0.75f;
     /**
      * Tempest Peaks, a tier of their own far from the cold lands: the router's erosion is the crag noise less four
      * times a ramp on the tempest's own coarse noise (AATerrainProvider), so it falls far below anything the crag
@@ -134,16 +134,18 @@ public final class BiomeTable {
      * collide. Shares are measured with {@code -PaaReport} and {@code -PaaClimate}.
      */
     private static final List<Rect> INSERTS = List.of(
-            // Temperate and humid, in the open middle below the vexing grove.
-            rect(-0.44f, -0.04f, 0.24f, 0.56f, CATHEDRAL),
+            // Temperate and humid, a broad window in the open middle below the vexing grove: the largest of the
+            // region's own biomes, so a cathedral is a forest to get lost in.
+            rect(-0.44f, 0.06f, 0.08f, 0.40f, CATHEDRAL),
             // The same box grown by 0.07 on every side. The cathedral above keeps its window, so what is left is a
             // frame: walking out of the cathedral, the climate passes through its fallen elders first.
-            rect(-0.51f, 0.03f, 0.17f, 0.63f, NURSELOG),
+            rect(-0.51f, 0.13f, 0.01f, 0.47f, NURSELOG),
             // A cooler, drier solo window, for the occasional dead colony with no living one beside it.
             rect(-0.60f, -0.44f, -0.44f, -0.20f, NURSELOG),
             // The shrouded forest hangs off the humid side of the nurselog frame, so the three giant-tree biomes read
-            // as one woodland: living cathedral, its fallen elders, and a dark, mossy edge.
-            rect(-0.50f, 0.03f, 0.63f, 0.80f, SHROUDED),
+            // as one woodland: living cathedral, its fallen elders, and a dark, mossy edge. It runs to the end of the
+            // humidity axis, since humidity seldom passes 0.5 here.
+            rect(-0.50f, 0.13f, 0.47f, 1.00f, SHROUDED),
             // Flower bowls on the warm side of the cathedral: a small box, 4.3% of the region (it was 11.6%, and the
             // bowls' floors went on and on), so each bowl is a basin a few hundred blocks across inside its rim.
             rect(0.06f, 0.18f, -0.25f, 0.05f, BOWL),

@@ -241,9 +241,9 @@ public final class AATerrainProvider extends JsonDataProvider {
         terraced.addProperty("step_scale", mode == HeightMode.TALL ? 1.0 : 1 / 1.5);
         df("plateau_terraced", terraced);
 
-        // Crag tier, on erosion: the same field drives the biome (erosion > 0.58) and this mask, which ramps
-        // 0 -> 1 across 0.53..0.63, so the biome edge sits mid-ramp; the band below belongs to the Sky Tundra
-        // (erosion > 0.52), which rings the crags.
+        // Crag tier, on erosion: the same field drives the biome (erosion > 0.75) and this mask, which ramps
+        // 0 -> 1 across 0.70..0.80, so the biome edge sits mid-ramp; the band below belongs to the Sky Tundra
+        // (erosion > 0.67), which rings the crags.
         df("crag_noise", flatCache(shiftedNoise(NS + "crags", 0.25, 0.0)));
         // Tempest Peaks, apart from the cold lands, on a coarse field of their own, where it passes 0.75: a few broad
         // ranges, each nearly a thousand blocks across, about 1% of the region (0.85 left one range in 16,000 blocks). The router's erosion is the crag noise less four times a sharp ramp on it, so inside the
@@ -252,7 +252,7 @@ public final class AATerrainProvider extends JsonDataProvider {
         df("tempest_noise", flatCache(shiftedNoise(NS + "tempest", 0.25, 0.0)));
         df("erosion", flatCache(add(terrain("crag_noise"), mul(-4.0,
                 ramp(terrain("tempest_noise"), -0.72 / 0.06, 1 / 0.06)))));
-        df("crag_mask", ramp(terrain("erosion"), -5.3, 10.0));
+        df("crag_mask", ramp(terrain("erosion"), -7.0, 10.0));
         // The tempest's land eases in over a broad band either side of its biome's edge, so its massifs thin away
         // into the open sky round them rather than stopping at a wall.
         df("tempest_mask", ramp(terrain("tempest_noise"), -0.71 / 0.08, 1 / 0.08));
@@ -316,8 +316,8 @@ public final class AATerrainProvider extends JsonDataProvider {
         // Skyroot Cathedral and Nurselog Hollow: broad, gentle forest islands for the giants to stand on, in place of
         // the Aether's scattered ones. The mask covers the nurselog frame (and so the cathedral inside it) and the
         // nurselog's own solo window.
-        df("grove_mask", max(max(climateBox(-0.51, 0.03, 0.17, 0.63), climateBox(-0.60, -0.44, -0.44, -0.20)),
-                climateBox(-0.50, 0.03, 0.63, 0.80)));
+        df("grove_mask", max(max(climateBox(-0.51, 0.13, 0.01, 0.47), climateBox(-0.60, -0.44, -0.44, -0.20)),
+                climateBox(-0.50, 0.13, 0.47, 1.0)));
         // Broad swells, and over them low mounds and hollows a few dozen blocks across, so the forest floor is never
         // a lawn.
         // The whole island is lifted or dropped by a level that sits flat over large tracts: a 256-block noise, held at
@@ -344,10 +344,10 @@ public final class AATerrainProvider extends JsonDataProvider {
                 add(mul(6.0, add(flatCache(shiftedNoise(NS + "grove_footprint", 1.0, 0.0)), 0.3)),
                         mul(-14.0, mul(groveSeam, groveGap)))));
 
-        // Sky Tundra, on the erosion band under the crags (0.52..0.6125): its mask ramps in across 0.49..0.55 and the
+        // Sky Tundra, on the erosion band under the crags (0.67..0.75): its mask ramps in across 0.64..0.70 and the
         // crags take over above it. Broad, low snowfields on plates a few hundred blocks across with sky between,
         // their ground at y 30..42 (tall), hanging lobes beneath; the drifts are built on them by TundraDriftsFeature.
-        df("tundra_mask", ramp(terrain("erosion"), -0.49 / 0.06, 1 / 0.06));
+        df("tundra_mask", ramp(terrain("erosion"), -0.64 / 0.06, 1 / 0.06));
         JsonObject tundraSummit = add(add(mode.y(36), mul(mode.height(5), column(shiftedNoise(NS + "tundra_roll", 1.0, 0.0)))),
                 mul(mode.height(2), column(shiftedNoise(NS + "grove_hummock", 1.0, 0.0))));
         JsonObject tundraUnderside = add(mode.y(14), mul(-mode.height(20),
@@ -395,9 +395,9 @@ public final class AATerrainProvider extends JsonDataProvider {
         df("tempest_weight", mul(terrain("region_mask"), terrain("tempest_mask")));
 
         // The cold lands stand 30 blocks higher than the islands round them: everything up to the crags is raised
-        // by this much, climbing smoothly from nothing at erosion 0.40 to the full lift at the tundra's edge (0.52),
+        // by this much, climbing smoothly from nothing at erosion 0.55 to the full lift at the tundra's edge (0.67),
         // so the islands beside the tundra slope up to meet it.
-        JsonObject climb = ramp(terrain("erosion"), -0.40 / 0.12, 1 / 0.12);
+        JsonObject climb = ramp(terrain("erosion"), -0.55 / 0.12, 1 / 0.12);
         df("cold_lift", flatCache(mul(mul(terrain("region_mask"), mode.height(30)),
                 mul(mul(climb, climb), add(3.0, mul(-2.0, climb))))));
 

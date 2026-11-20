@@ -15,7 +15,7 @@
           "type": "minecraft:clamp",
           "input": {
             "type": "minecraft:add",
-            "argument1": -3.3333333333333335,
+            "argument1": -4.583333333333334,
             "argument2": {
               "type": "minecraft:mul",
               "argument1": 8.333333333333334,
@@ -29,7 +29,7 @@
           "type": "minecraft:clamp",
           "input": {
             "type": "minecraft:add",
-            "argument1": -3.3333333333333335,
+            "argument1": -4.583333333333334,
             "argument2": {
               "type": "minecraft:mul",
               "argument1": 8.333333333333334,
@@ -50,7 +50,7 @@
             "type": "minecraft:clamp",
             "input": {
               "type": "minecraft:add",
-              "argument1": -3.3333333333333335,
+              "argument1": -4.583333333333334,
               "argument2": {
                 "type": "minecraft:mul",
                 "argument1": 8.333333333333334,

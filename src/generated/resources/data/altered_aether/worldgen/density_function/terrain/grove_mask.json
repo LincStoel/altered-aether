@@ -24,7 +24,7 @@
           "type": "minecraft:clamp",
           "input": {
             "type": "minecraft:add",
-            "argument1": 0.8,
+            "argument1": 1.7999999999999998,
             "argument2": {
               "type": "minecraft:mul",
               "argument1": -10.0,
@@ -41,7 +41,7 @@
           "type": "minecraft:clamp",
           "input": {
             "type": "minecraft:add",
-            "argument1": -1.2000000000000002,
+            "argument1": 0.4,
             "argument2": {
               "type": "minecraft:mul",
               "argument1": 10.0,
@@ -55,7 +55,7 @@
           "type": "minecraft:clamp",
           "input": {
             "type": "minecraft:add",
-            "argument1": 6.800000000000001,
+            "argument1": 5.2,
             "argument2": {
               "type": "minecraft:mul",
               "argument1": -10.0,
@@ -155,7 +155,7 @@
         "type": "minecraft:clamp",
         "input": {
           "type": "minecraft:add",
-          "argument1": 0.8,
+          "argument1": 1.7999999999999998,
           "argument2": {
             "type": "minecraft:mul",
             "argument1": -10.0,
@@ -172,7 +172,7 @@
         "type": "minecraft:clamp",
         "input": {
           "type": "minecraft:add",
-          "argument1": -5.8,
+          "argument1": -4.2,
           "argument2": {
             "type": "minecraft:mul",
             "argument1": 10.0,
@@ -186,7 +186,7 @@
         "type": "minecraft:clamp",
         "input": {
           "type": "minecraft:add",
-          "argument1": 8.5,
+          "argument1": 10.5,
           "argument2": {
             "type": "minecraft:mul",
             "argument1": -10.0,

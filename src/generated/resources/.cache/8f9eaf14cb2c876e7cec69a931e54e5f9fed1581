@@ -1,4 +1,4 @@
-// 1.21.1	2026-11-19T19:50:19.7902222	Altered Aether terrain (tall)
+// 1.21.1	2026-11-19T21:04:30.7399025	Altered Aether terrain (tall)
 f42ea67ddb2a016ae6e8bcabfc213cce31a103fe datapacks/tall_aether/data/aether/dimension_type/the_aether.json
 e7d8bc7b25714231079ba52b6565836a7cc0e594 datapacks/tall_aether/data/aether/worldgen/configured_feature/quicksoil_shelf.json
 6a75657b8358c3b0d7d61e87932a5aff9d6a2754 datapacks/tall_aether/data/aether/worldgen/noise_settings/skylands.json
@@ -11,7 +11,7 @@ c1fba662a7a02f13f38d638d130c6529a0cca842 datapacks/tall_aether/data/altered_aeth
 ffd8233244d60e603ef24bb721dd4fea2aa6b1db datapacks/tall_aether/data/altered_aether/worldgen/density_function/terrain/bowl_land.json
 b56aabc9c181c13887105a0195b08ebb42994b36 datapacks/tall_aether/data/altered_aether/worldgen/density_function/terrain/caves.json
 440a61e622bf0290e7619c8a825c415ed2742d07 datapacks/tall_aether/data/altered_aether/worldgen/density_function/terrain/cloud_sheet.json
-c1079d4c5dbc22abea3df5a229b8fbbee2162bba datapacks/tall_aether/data/altered_aether/worldgen/density_function/terrain/cold_lift.json
+07ec1348eeeadd0977590a541ec274ffc811ffe2 datapacks/tall_aether/data/altered_aether/worldgen/density_function/terrain/cold_lift.json
 26f72bccf48e204a405ccc5c619292817b6c8f84 datapacks/tall_aether/data/altered_aether/worldgen/density_function/terrain/crags.json
 d2262352d83ef6506d497e07a009119e645580a6 datapacks/tall_aether/data/altered_aether/worldgen/density_function/terrain/crag_3d_noise.json
 f6f14e6dd90d604a9e68ee0f3104ef1a6e6b062f datapacks/tall_aether/data/altered_aether/worldgen/density_function/terrain/dune_centre.json
