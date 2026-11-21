@@ -114,7 +114,8 @@ builds a ruin (`cottage`, `keep`, `circle` or `head`) where you stand. All three
 
 **Tempest storms**: storm cells drift over Tempest Peaks and strike the high ground near players, with a warning
 of sparks and thunder first. Lightning rods take strikes as in vanilla. Explosions and scorch marks respect
-`mobGriefing`. Clients see flashes in the distance, rain, sparks and storm fog.
+`mobGriefing`. Clients see flashes in the distance, rain, sparks and storm fog. With Sable, the storms never single
+out anyone riding a ship: no strike is drawn by their copper or metal or aimed at the ground under them.
 
 **Ambrosium campfire**: a campfire of skyroot and ambrosium that burns in the Aether. Aether: Beyond Parity's
 campfire is replaced by it when that mod is installed.
