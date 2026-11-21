@@ -20,6 +20,10 @@ import com.linc.alteredaether.advancement.VisitLandmarkTrigger;
 import com.linc.alteredaether.block.AmbrosiumCampfireBlock;
 import com.linc.alteredaether.block.GleamVinesBlock;
 import com.linc.alteredaether.block.GleamVinesPlantBlock;
+import com.linc.alteredaether.block.PhasedAercloudBlock;
+import com.linc.alteredaether.block.StoneSet;
+import net.minecraft.world.level.block.SoundType;
+import net.minecraft.world.level.block.state.properties.NoteBlockInstrument;
 import com.linc.alteredaether.compat.ModEnabled;
 import com.linc.alteredaether.entity.Squall;
 import com.linc.alteredaether.entity.TamedAerwhale;
@@ -67,6 +71,7 @@ import com.linc.alteredaether.worldgen.placement.ArchwoodRegion;
 import com.linc.alteredaether.worldgen.placement.BiomeEdgeFalloff;
 import com.linc.alteredaether.worldgen.placement.IslandEdge;
 import com.linc.alteredaether.worldgen.placement.JitteredGrid;
+import com.linc.alteredaether.worldgen.placement.MinHeight;
 import com.linc.alteredaether.worldgen.placement.Overhang;
 import com.linc.alteredaether.worldgen.placement.LandmarkPoints;
 import com.linc.alteredaether.worldgen.placement.RiftGap;
@@ -77,10 +82,12 @@ import com.linc.alteredaether.worldgen.density.VoronoiFracture;
 import com.linc.alteredaether.worldgen.density.WindRidges;
 import com.linc.alteredaether.worldgen.modifier.AetherExclusiveModifier;
 import com.linc.alteredaether.worldgen.modifier.ClimateModifier;
+import com.linc.alteredaether.worldgen.modifier.WaterColorModifier;
 import com.linc.alteredaether.worldgen.modifier.ConfiguredSpawnsModifier;
 import com.linc.alteredaether.worldgen.modifier.OverworldArchwoodModifier;
 import com.linc.alteredaether.worldgen.modifier.ScaleSpawnCostModifier;
 import com.linc.alteredaether.worldgen.provider.SubstituteStateProvider;
+import com.linc.alteredaether.worldgen.surface.IslandBase;
 import com.linc.alteredaether.worldgen.surface.IslandPosition;
 import com.linc.alteredaether.worldgen.surface.Steep;
 import com.linc.alteredaether.worldgen.surface.Strata;
@@ -98,7 +105,11 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.MobCategory;
 import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.food.Foods;
+import com.aetherteam.aether.item.AetherCreativeTabs;
+import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.BlockItem;
+import net.minecraft.world.item.CreativeModeTab;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemNameBlockItem;
 import net.minecraft.world.level.block.Blocks;
@@ -137,6 +148,40 @@ public final class AARegistries {
     /** Like the glow berry, the berry is the vine's item: it is eaten, and planted under a ceiling. */
     public static final DeferredItem<ItemNameBlockItem> GLEAMBERRIES = ITEMS.register("gleamberries",
             () -> new ItemNameBlockItem(GLEAM_VINES.get(), new Item.Properties().food(Foods.GLOW_BERRIES)));
+
+    /**
+     * An aercloud a Sable body has just passed through, fading back in (see block/PhasedAercloudBlock). Made like the
+     * Aether's clouds; no item, as it only ever stands in for one.
+     */
+    public static final DeferredBlock<PhasedAercloudBlock> PHASED_AERCLOUD = BLOCKS.registerBlock("phased_aercloud",
+            PhasedAercloudBlock::new, BlockBehaviour.Properties.of().mapColor(MapColor.SNOW)
+                    .instrument(NoteBlockInstrument.FLUTE).strength(0.3F).sound(SoundType.WOOL).noOcclusion()
+                    .isValidSpawn((state, level, pos, type) -> false).isRedstoneConductor((state, level, pos) -> false)
+                    .isSuffocating((state, level, pos) -> false).isViewBlocking((state, level, pos) -> false));
+
+    /*
+     * Three Aether stones beside holystone (strength 0.5; its bricks 2.0, resisting 6.0). Nadirite, the heavy igneous
+     * rock of island undersides, is the slowest to mine and shrugs off blasts. Celezite, a pink quartzite, is harder
+     * than holystone but resists blasts no better. Sylicite, an opal found as boulders in the lakes, rings like
+     * amethyst and mines a little faster than vanilla stone.
+     */
+    public static final StoneSet NADIRITE = new StoneSet(BLOCKS, ITEMS, "nadirite",
+            () -> stone(MapColor.STONE, SoundType.DEEPSLATE, 1.5F, 12.0F),
+            () -> stone(MapColor.STONE, SoundType.POLISHED_DEEPSLATE, 3.0F, 12.0F),
+            () -> stone(MapColor.STONE, SoundType.DEEPSLATE_BRICKS, 3.0F, 12.0F));
+    public static final StoneSet CELEZITE = new StoneSet(BLOCKS, ITEMS, "celezite",
+            () -> stone(MapColor.TERRACOTTA_WHITE, SoundType.CALCITE, 1.0F, 0.5F),
+            () -> stone(MapColor.TERRACOTTA_WHITE, SoundType.CALCITE, 2.5F, 6.0F),
+            () -> stone(MapColor.TERRACOTTA_WHITE, SoundType.CALCITE, 2.5F, 6.0F)).withChiseled(BLOCKS, ITEMS);
+    public static final StoneSet SYLICITE = new StoneSet(BLOCKS, ITEMS, "sylicite",
+            () -> stone(MapColor.RAW_IRON, SoundType.AMETHYST, 1.2F, 6.0F),
+            () -> stone(MapColor.RAW_IRON, SoundType.AMETHYST, 2.0F, 6.0F),
+            () -> stone(MapColor.RAW_IRON, SoundType.AMETHYST, 2.0F, 6.0F));
+
+    private static BlockBehaviour.Properties stone(MapColor color, SoundType sound, float hardness, float resistance) {
+        return BlockBehaviour.Properties.of().mapColor(color).instrument(NoteBlockInstrument.BASEDRUM)
+                .requiresCorrectToolForDrops().strength(hardness, resistance).sound(sound);
+    }
 
     /**
      * Gravitite as a modern ore (see data/AAGravititeProvider): the ore drops raw gravitite, which only enchanting
@@ -204,6 +249,17 @@ public final class AARegistries {
     public static final DeferredItem<StoragePebbleItem> STORAGE_PEBBLE = ITEMS.register("storage_pebble",
             () -> new StoragePebbleItem(new Item.Properties().stacksTo(1)));
 
+    public static final DeferredRegister<CreativeModeTab> CREATIVE_MODE_TABS =
+            DeferredRegister.create(Registries.CREATIVE_MODE_TAB, AlteredAether.MOD_ID);
+    /** Everything the mod adds, after the Aether's own tabs; see registry/AACreativeTab. */
+    public static final DeferredHolder<CreativeModeTab, CreativeModeTab> CREATIVE_TAB = CREATIVE_MODE_TABS.register(
+            AlteredAether.MOD_ID, () -> CreativeModeTab.builder()
+                    .title(Component.translatable("itemGroup." + AlteredAether.MOD_ID))
+                    .icon(() -> new ItemStack(WHALE_WHISTLE.get()))
+                    .withTabsBefore(AetherCreativeTabs.AETHER_SPAWN_EGGS.getKey())
+                    .displayItems(AACreativeTab::displayItems)
+                    .build());
+
     public static final DeferredRegister<AttachmentType<?>> ATTACHMENT_TYPES =
             DeferredRegister.create(NeoForgeRegistries.Keys.ATTACHMENT_TYPES, AlteredAether.MOD_ID);
 
@@ -267,6 +323,8 @@ public final class AARegistries {
             BIOME_MODIFIER_SERIALIZERS.register("climate", () -> ClimateModifier.CODEC);
     public static final DeferredHolder<MapCodec<? extends BiomeModifier>, MapCodec<OverworldArchwoodModifier>> OVERWORLD_ARCHWOOD =
             BIOME_MODIFIER_SERIALIZERS.register("overworld_archwood", () -> OverworldArchwoodModifier.CODEC);
+    public static final DeferredHolder<MapCodec<? extends BiomeModifier>, MapCodec<WaterColorModifier>> WATER_COLOR =
+            BIOME_MODIFIER_SERIALIZERS.register("water_color", () -> WaterColorModifier.CODEC);
 
     public static final DeferredRegister<BlockStateProviderType<?>> BLOCK_STATE_PROVIDERS =
             DeferredRegister.create(Registries.BLOCK_STATE_PROVIDER_TYPE, AlteredAether.MOD_ID);
@@ -290,6 +348,12 @@ public final class AARegistries {
         DENSITY_FUNCTIONS.register("basin_carve", () -> BasinCarve.MAP_CODEC);
         DENSITY_FUNCTIONS.register("grove_break", () -> com.linc.alteredaether.worldgen.density.GroveBreak.MAP_CODEC);
         DENSITY_FUNCTIONS.register("atoll", () -> Atoll.MAP_CODEC);
+        DENSITY_FUNCTIONS.register("cloud_sea", () -> com.linc.alteredaether.worldgen.density.CloudSeaMarker.MAP_CODEC);
+        DENSITY_FUNCTIONS.register("biome_edge", () -> com.linc.alteredaether.worldgen.density.BiomeEdge.MAP_CODEC);
+        DENSITY_FUNCTIONS.register("island_mass", () -> com.linc.alteredaether.worldgen.density.IslandMass.MAP_CODEC);
+        DENSITY_FUNCTIONS.register("cave_carve", () -> com.linc.alteredaether.worldgen.density.CaveCarve.MAP_CODEC);
+        DENSITY_FUNCTIONS.register("plateau_stacks",
+                () -> com.linc.alteredaether.worldgen.density.PlateauStacks.MAP_CODEC);
     }
 
     public static final DeferredRegister<SoundEvent> SOUND_EVENTS =
@@ -330,12 +394,17 @@ public final class AARegistries {
             FEATURES.register("understory", UnderstoryFeature::new);
     public static final DeferredHolder<Feature<?>, CloudSkirtFeature> CLOUD_SKIRT =
             FEATURES.register("cloud_skirt", CloudSkirtFeature::new);
+    public static final DeferredHolder<Feature<?>, com.linc.alteredaether.worldgen.feature.CloudSeaFeature> CLOUD_SEA =
+            FEATURES.register("cloud_sea", com.linc.alteredaether.worldgen.feature.CloudSeaFeature::new);
     public static final DeferredHolder<Feature<?>, EdgeSpringFeature> EDGE_SPRING =
             FEATURES.register("edge_spring", EdgeSpringFeature::new);
     public static final DeferredHolder<Feature<?>, BoulderFeature> BOULDER =
             FEATURES.register("boulder", BoulderFeature::new);
     public static final DeferredHolder<Feature<?>, AncientBoulderFeature> ANCIENT_BOULDER =
             FEATURES.register("ancient_boulder", AncientBoulderFeature::new);
+    public static final DeferredHolder<Feature<?>, com.linc.alteredaether.worldgen.feature.HighlandsOresFeature>
+            HIGHLANDS_ORES = FEATURES.register("highlands_ores",
+            com.linc.alteredaether.worldgen.feature.HighlandsOresFeature::new);
     public static final DeferredHolder<Feature<?>, CopperSpikeFeature> COPPER_SPIKE =
             FEATURES.register("copper_spike", CopperSpikeFeature::new);
     public static final DeferredHolder<Feature<?>, CopperVeinFeature> COPPER_VEIN =
@@ -348,6 +417,18 @@ public final class AARegistries {
             FEATURES.register("ruined_pillar", RuinedPillarFeature::new);
     public static final DeferredHolder<Feature<?>, SnowDriftFeature> SNOW_DRIFT =
             FEATURES.register("snow_drift", SnowDriftFeature::new);
+    public static final DeferredHolder<Feature<?>, com.linc.alteredaether.worldgen.feature.TundraDriftsFeature>
+            TUNDRA_DRIFTS = FEATURES.register("tundra_drifts",
+            com.linc.alteredaether.worldgen.feature.TundraDriftsFeature::new);
+    public static final DeferredHolder<Feature<?>, com.linc.alteredaether.worldgen.feature.CanopyMossFeature>
+            CANOPY_MOSS = FEATURES.register("canopy_moss",
+            com.linc.alteredaether.worldgen.feature.CanopyMossFeature::new);
+    public static final DeferredHolder<Feature<?>, com.linc.alteredaether.worldgen.feature.SnowlineFeature>
+            SNOWLINE = FEATURES.register("snowline", com.linc.alteredaether.worldgen.feature.SnowlineFeature::new);
+    public static final DeferredHolder<Feature<?>, com.linc.alteredaether.worldgen.feature.FallenLogFeature>
+            FALLEN_LOG = FEATURES.register("fallen_log", com.linc.alteredaether.worldgen.feature.FallenLogFeature::new);
+    public static final DeferredHolder<Feature<?>, com.linc.alteredaether.worldgen.feature.StackPoolFeature>
+            STACK_POOL = FEATURES.register("stack_pool", com.linc.alteredaether.worldgen.feature.StackPoolFeature::new);
     public static final DeferredHolder<Feature<?>, StrikeCraterFeature> STRIKE_CRATER =
             FEATURES.register("strike_crater", StrikeCraterFeature::new);
     public static final DeferredHolder<Feature<?>, TotemFeature> TOTEM =
@@ -366,10 +447,16 @@ public final class AARegistries {
             PLACEMENT_MODIFIERS.register("island_edge", () -> () -> IslandEdge.CODEC);
     public static final DeferredHolder<PlacementModifierType<?>, PlacementModifierType<JitteredGrid>> JITTERED_GRID =
             PLACEMENT_MODIFIERS.register("jittered_grid", () -> () -> JitteredGrid.CODEC);
+    public static final DeferredHolder<PlacementModifierType<?>, PlacementModifierType<MinHeight>> MIN_HEIGHT =
+            PLACEMENT_MODIFIERS.register("min_height", () -> () -> MinHeight.CODEC);
     public static final DeferredHolder<PlacementModifierType<?>, PlacementModifierType<BiomeEdgeFalloff>> BIOME_EDGE_FALLOFF =
             PLACEMENT_MODIFIERS.register("biome_edge_falloff", () -> () -> BiomeEdgeFalloff.CODEC);
     public static final DeferredHolder<PlacementModifierType<?>, PlacementModifierType<Overhang>> OVERHANG =
             PLACEMENT_MODIFIERS.register("overhang", () -> () -> Overhang.CODEC);
+    public static final DeferredHolder<PlacementModifierType<?>,
+            PlacementModifierType<com.linc.alteredaether.worldgen.placement.NoiseClump>> NOISE_CLUMP =
+            PLACEMENT_MODIFIERS.register("noise_clump",
+                    () -> () -> com.linc.alteredaether.worldgen.placement.NoiseClump.CODEC);
     public static final DeferredHolder<PlacementModifierType<?>, PlacementModifierType<LandmarkPoints>> LANDMARK_POINTS =
             PLACEMENT_MODIFIERS.register("landmark_points", () -> () -> LandmarkPoints.CODEC);
     public static final DeferredHolder<PlacementModifierType<?>, PlacementModifierType<ArchwoodRegion>> ARCHWOOD_REGION =
@@ -385,7 +472,9 @@ public final class AARegistries {
     static {
         SURFACE_CONDITIONS.register("steep", () -> Steep.MAP_CODEC);
         SURFACE_CONDITIONS.register("island_position", () -> IslandPosition.MAP_CODEC);
+        SURFACE_CONDITIONS.register("island_base", () -> IslandBase.MAP_CODEC);
         SURFACE_RULES.register("strata", () -> Strata.MAP_CODEC);
+        SURFACE_RULES.register("stone_patches", () -> com.linc.alteredaether.worldgen.surface.StonePatches.MAP_CODEC);
         SURFACE_RULES.register("substitute_block", () -> SubstituteBlock.MAP_CODEC);
     }
 
@@ -399,6 +488,7 @@ public final class AARegistries {
         BLOCKS.register(modBus);
         DATA_COMPONENTS.register(modBus);
         ITEMS.register(modBus);
+        CREATIVE_MODE_TABS.register(modBus);
         ENTITY_TYPES.register(modBus);
         MENUS.register(modBus);
         ATTACHMENT_TYPES.register(modBus);

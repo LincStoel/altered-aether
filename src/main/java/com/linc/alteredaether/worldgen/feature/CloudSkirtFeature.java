@@ -22,8 +22,8 @@ import net.minecraft.world.level.levelgen.feature.FeaturePlaceContext;
 import net.minecraft.world.level.levelgen.feature.configurations.NoneFeatureConfiguration;
 
 /**
- * The cloud skirts round the low islands of the tall Aether, laid in this chunk's own columns ({@link CloudSkirts}).
- * Runs in every Aether chunk, last of all, so it sees the water that will pour over the edges. Worlds without a
+ * The cloud skirts round some Highlands islets of the tall Aether, laid in this chunk's own columns ({@link CloudSkirts}).
+ * Runs in every Aether chunk, last of all, after the cloud sea. Worlds without a
  * {@link SkirtField} (the stock-height Aether) get none.
  */
 public final class CloudSkirtFeature extends Feature<NoneFeatureConfiguration> {

@@ -1,0 +1,8 @@
+{
+  "biomes": [
+    "altered_aether:shrouded_forest"
+  ],
+  "max_temp": 18,
+  "min_temp": 38,
+  "units": "F"
+}

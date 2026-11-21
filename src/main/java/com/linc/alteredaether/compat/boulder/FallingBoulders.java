@@ -19,6 +19,8 @@ import com.linc.alteredaether.advancement.AAAdvancements;
 import com.linc.alteredaether.config.AACommonConfig;
 import com.linc.alteredaether.worldgen.boulder.BoulderShape;
 import dev.ryanhcode.sable.api.SubLevelAssemblyHelper;
+import com.linc.alteredaether.compat.cloud.AercloudPassCallback;
+import com.linc.alteredaether.compat.cloud.AercloudPhasing;
 import dev.ryanhcode.sable.api.physics.handle.RigidBodyHandle;
 import dev.ryanhcode.sable.api.sublevel.ServerSubLevelContainer;
 import dev.ryanhcode.sable.api.sublevel.SubLevelContainer;
@@ -34,7 +36,6 @@ import dev.ryanhcode.sable.sublevel.system.SubLevelPhysicsSystem;
 import net.minecraft.core.BlockPos;
 import com.linc.alteredaether.data.AABoulderProvider;
 import net.minecraft.core.particles.BlockParticleOption;
-import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
@@ -149,6 +150,11 @@ public final class FallingBoulders {
         double peak = peakSpeed;
         peakSpeed = 0;
         return peak;
+    }
+
+    /** How many aercloud contacts Sable bodies have passed through since the last call; and clears it. */
+    public static int takeAercloudPasses() {
+        return AercloudPassCallback.takePasses();
     }
 
     /** For the checks: announces a boulder near the player as their timer would, if a spot will do. */
@@ -330,8 +336,6 @@ public final class FallingBoulders {
     private static final TagKey<Block> HOLYSTONE = blockTag("aether", "holystone");
     private static final TagKey<Block> HOLYSTONE_REPLACEABLES = blockTag("aether", "holystone_ore_replaceables");
 
-    private static final TagKey<Block> AERCLOUDS = blockTag("aether", "aerclouds");
-
     private static TagKey<Block> blockTag(String namespace, String path) {
         return TagKey.create(Registries.BLOCK, ResourceLocation.fromNamespaceAndPath(namespace, path));
     }
@@ -342,13 +346,13 @@ public final class FallingBoulders {
                 || state.is(BlockTags.DIRT) || state.is(BlockTags.BASE_STONE_OVERWORLD);
     }
 
-    /** What a falling boulder goes straight through: trees, plants, torches and anything else a block can replace. */
+    /**
+     * What a falling boulder goes straight through: trees, plants, torches and anything else a block can replace.
+     * Aerclouds aren't broken: Sable lets the boulder through them, and they phase (see AercloudPhasing).
+     */
     private static boolean breakable(ServerLevel level, BlockPos pos, BlockState state) {
-        if (state.isAir() || !state.getFluidState().isEmpty() || embeddable(state)) {
+        if (state.isAir() || !state.getFluidState().isEmpty() || embeddable(state) || AercloudPhasing.passes(state)) {
             return false;
-        }
-        if (state.is(AERCLOUDS) || BuiltInRegistries.BLOCK.getKey(state.getBlock()).getPath().contains("aercloud")) {
-            return true;
         }
         if (state.is(BlockTags.LEAVES) || state.is(BlockTags.LOGS) || state.is(BlockTags.REPLACEABLE)
                 || state.canBeReplaced()) {
@@ -360,7 +364,8 @@ public final class FallingBoulders {
 
     /**
      * Clears what the boulder is about to hit: every breakable block within reach of any of its blocks, now and a
-     * tenth of a second ahead, is broken (with its drops) so Sable's collision never sees it.
+     * tenth of a second ahead, is broken (with its drops) so Sable's collision never sees it. Clouds in reach phase
+     * instead, so the tunnel opens just ahead of it.
      */
     private static void breakThrough(ServerLevel level, ServerSubLevel sub, Vector3d velocity) {
         List<Vec3> centres = worldCentres(level, sub);
@@ -376,7 +381,14 @@ public final class FallingBoulders {
                 for (int z = Mth.floor(box.minZ); z <= Mth.floor(box.maxZ); z++) {
                     cursor.set(x, y, z);
                     BlockState state = level.getBlockState(cursor);
-                    if (state.isAir() || !breakable(level, cursor, state) || !touches(centres, velocity, ahead, x, y, z)) {
+                    if (state.isAir() || !touches(centres, velocity, ahead, x, y, z)) {
+                        continue;
+                    }
+                    if (AercloudPhasing.passes(state)) {
+                        AercloudPhasing.phase(level, cursor.immutable());
+                        continue;
+                    }
+                    if (!breakable(level, cursor, state)) {
                         continue;
                     }
                     if (BoulderProtection.allowed(level, cursor)) {
@@ -422,9 +434,9 @@ public final class FallingBoulders {
         return cells.size() >= 4;
     }
 
-    /** Whether a settling block may go where {@code there} is. */
+    /** Whether a settling block may go where {@code there} is; a boulder at rest in a cloud displaces it. */
     private static boolean fits(ServerLevel level, BlockPos pos, BlockState there, boolean sunk) {
-        return there.isAir() || there.canBeReplaced() && there.getFluidState().isEmpty()
+        return there.isAir() || there.canBeReplaced() && there.getFluidState().isEmpty() || AercloudPhasing.passes(there)
                 || sunk && (embeddable(there) || breakable(level, pos, there));
     }
 

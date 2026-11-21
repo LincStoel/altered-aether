@@ -1,0 +1,17 @@
+{
+  "type": "altered_aether:canopy_moss",
+  "config": {
+    "cover": 0.6,
+    "moss": {
+      "type": "altered_aether:substitute",
+      "candidates": [
+        {
+          "Name": "deep_aether:aether_moss_carpet"
+        },
+        {
+          "Name": "minecraft:moss_carpet"
+        }
+      ]
+    }
+  }
+}

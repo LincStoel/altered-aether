@@ -51,6 +51,53 @@ public final class AACompatProvider extends FeatureData {
         deepAetherCover();
         snuffles();
         airshipVillage();
+        coldSweat();
+    }
+
+    // -------------------------------------------------------------------------------------- cold sweat
+
+    /**
+     * What each biome feels like under Cold Sweat, in °F: {low, high}. Without these Cold Sweat works the heat out from
+     * the vanilla temperature, which puts the dunes and the rift at 130-175°F.
+     */
+    private static final Map<String, int[]> COLD_SWEAT_TEMPS = Map.ofEntries(
+            Map.entry("sky_tundra", new int[]{10, 48}),
+            Map.entry("frozen_crags", new int[]{10, 40}),
+            Map.entry("cascading_archwood_grove", new int[]{45, 65}),
+            Map.entry("nurselog_hollow", new int[]{55, 75}),
+            Map.entry("blazing_archwood_grove", new int[]{73, 100}),
+            Map.entry("shrouded_forest", new int[]{50, 70}),
+            Map.entry("skyroot_cathedral", new int[]{50, 70}),
+            Map.entry("flourishing_archwood_grove", new int[]{60, 75}),
+            Map.entry("flower_bowl", new int[]{60, 75}),
+            Map.entry("aether_plateau", new int[]{65, 85}),
+            Map.entry("vexing_archwood_grove", new int[]{75, 95}),
+            Map.entry("flashing_archwood_grove", new int[]{85, 95}),
+            Map.entry("shattered_rift", new int[]{35, 45}),
+            Map.entry("tempest_peaks", new int[]{75, 100}),
+            Map.entry("windswept_dunes", new int[]{35, 120}));
+
+    /** Cold Sweat's default config adds this to the whole Aether, on top of the biome. */
+    private static final int COLD_SWEAT_AETHER_OFFSET = 32;
+
+    /**
+     * Cold Sweat's biome temperatures. It blends min_temp to max_temp by {@code sin(dayTime)} on a 24000-tick day, and
+     * the Aether's eternal day holds dayTime at 18000 (a quarter of its 72000-tick day), which Cold Sweat reads as
+     * midnight: min_temp is what players feel. So the high goes in min_temp, the low in max_temp. With the daylight
+     * cycle off the Aether's clock sits at -1, and players feel the midpoint. Only Cold Sweat reads this folder, so the
+     * files need no mod condition.
+     */
+    private void coldSweat() {
+        COLD_SWEAT_TEMPS.forEach((biome, temps) -> {
+            JsonObject json = new JsonObject();
+            com.google.gson.JsonArray biomes = new com.google.gson.JsonArray();
+            biomes.add(NS + biome);
+            json.add("biomes", biomes);
+            json.addProperty("min_temp", temps[1] - COLD_SWEAT_AETHER_OFFSET);
+            json.addProperty("max_temp", temps[0] - COLD_SWEAT_AETHER_OFFSET);
+            json.addProperty("units", "F");
+            data("cold_sweat/world/biome_temp", AlteredAether.id(biome), json);
+        });
     }
 
     // ------------------------------------------------------------------------------ overworld ores
@@ -325,14 +372,25 @@ public final class AACompatProvider extends FeatureData {
     /**
      * Integrated Villages' airship village, set drifting through the Aether. Its own structure set puts it in the
      * overworld, and AirshipVillageSetMixin keeps that one from placing anywhere; this one is ours, with the village's
-     * own template pools, on the Aether's biomes. The start height is
-     * a stock-Aether height (166 to 176), which the tall Aether stretches to 185..200 like any other.
+     * own template pools, on the Aether's biomes. The start height is a stock-Aether height, 166 to 176; the tall pack
+     * replaces the structure with a higher one (see {@link #airshipVillageStructure}).
      */
     private void airshipVillage() {
+        data("worldgen/structure", com.linc.alteredaether.AlteredAether.id("airship_village"),
+                airshipVillageStructure(166, 176), "integrated_villages");
+        airshipVillageSet();
+    }
+
+    /**
+     * The airship village's structure, starting between two stock-Aether heights (the tall Aether stretches them like
+     * any other: {@code y' = -64 + 1.5 y}). Its ships hang about 21 blocks under the start and their balloons rise
+     * about 35 over it.
+     */
+    static JsonObject airshipVillageStructure(int minY, int maxY) {
         JsonObject start = new JsonObject();
         start.addProperty("type", "minecraft:uniform");
-        start.add("min_inclusive", Placement.absolute(166));
-        start.add("max_inclusive", Placement.absolute(176));
+        start.add("min_inclusive", Placement.absolute(minY));
+        start.add("max_inclusive", Placement.absolute(maxY));
         JsonObject structure = new JsonObject();
         structure.addProperty("type", "integrated_api:generic_structure");
         structure.addProperty("start_pool", "integrated_villages:airship_village/intersection");
@@ -346,9 +404,10 @@ public final class AACompatProvider extends FeatureData {
         structure.add("start_height", start);
         structure.addProperty("use_bounding_box_hack", false);
         structure.add("spawn_overrides", new JsonObject());
-        data("worldgen/structure", com.linc.alteredaether.AlteredAether.id("airship_village"), structure,
-                "integrated_villages");
+        return structure;
+    }
 
+    private void airshipVillageSet() {
         JsonObject placement = new JsonObject();
         placement.addProperty("type", "minecraft:random_spread");
         placement.addProperty("salt", 1982700830);

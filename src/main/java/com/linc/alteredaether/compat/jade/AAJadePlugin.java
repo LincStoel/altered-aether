@@ -209,7 +209,9 @@ public final class AAJadePlugin implements IWailaPlugin {
             GolemStorage.Pins pins = GolemStorage.pins(level, pos);
             tag.putString("role", role == GolemStorage.Role.SINK && pins.isEmpty() ? "sink_unfiltered"
                     : role.name().toLowerCase(java.util.Locale.ROOT));
-            tag.putBoolean("encased", com.linc.alteredaether.entity.golem.GolemAccess.encased(level, pos));
+            // walled in, or open only into a pocket no golem of its network can get into
+            tag.putBoolean("encased", com.linc.alteredaether.entity.golem.GolemAccess.encased(level, pos)
+                    || com.linc.alteredaether.entity.golem.GolemSorter.cutOff(level, net, pos));
             if (!pins.isEmpty() && role != GolemStorage.Role.SINK) {
                 ItemStack first = pins.items().isEmpty() ? pins.filters().get(0) : pins.items().get(0);
                 tag.putString("pin", first.getHoverName().getString());

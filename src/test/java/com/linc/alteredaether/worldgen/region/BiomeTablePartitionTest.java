@@ -33,7 +33,7 @@ class BiomeTablePartitionTest {
     private static final List<String> OPTIONAL = List.of(
             BiomeTable.PLATEAU, BiomeTable.CRAGS, BiomeTable.TEMPEST, BiomeTable.RIFT, BiomeTable.DUNES,
             BiomeTable.CATHEDRAL, BiomeTable.NURSELOG, BiomeTable.BLAZING, BiomeTable.CASCADING, BiomeTable.FLASHING, BiomeTable.FLOURISHING,
-            BiomeTable.VEXING);
+            BiomeTable.VEXING, BiomeTable.TUNDRA, BiomeTable.BOWL, BiomeTable.SHROUDED);
     private static final int SAMPLES = 40_000;
 
     @Test
@@ -46,7 +46,7 @@ class BiomeTablePartitionTest {
                 }
             }
             // The full set and the empty set get a denser check; the rest a lighter one.
-            int samples = mask == 0 || mask == (1 << OPTIONAL.size()) - 1 ? SAMPLES * 10 : SAMPLES / 40;
+            int samples = mask == 0 || mask == (1 << OPTIONAL.size()) - 1 ? SAMPLES * 10 : SAMPLES / 320;
             assertPartition(present, samples, mask);
         }
     }
@@ -75,8 +75,14 @@ class BiomeTablePartitionTest {
         }
     }
 
-    /** Mostly inside [-1, 1] like the real noises, with some tail past it. */
+    /**
+     * Mostly inside [-1, 1] like the real noises, with some tail past it, and now and then anywhere in the table's
+     * bounds, so the tempest's far erosion tier is tried too.
+     */
     private static double axis(Random random) {
+        if (random.nextInt(8) == 0) {
+            return BiomeTable.LOW + random.nextDouble() * (BiomeTable.HIGH - BiomeTable.LOW) * 0.9999;
+        }
         return Math.max(-1.99, Math.min(1.99, random.nextGaussian() * 0.6));
     }
 }

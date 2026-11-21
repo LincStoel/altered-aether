@@ -53,8 +53,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.stream.Stream;
 
 /**
- * {@code /altered_aether}, for operators: find the nearest landmark or grove giant, roll a rumour map, or build a grove
- * ruin to look at. Dev runs add more under the same command (the dev source set's {@code DebugCommands}).
+ * {@code /altered_aether}, for operators: find the nearest landmark or grove giant, roll a rumour map, or
+ * build a grove ruin to look at. Dev runs add more under the same command (the dev source set's {@code DebugCommands}).
  */
 @EventBusSubscriber(modid = AlteredAether.MOD_ID)
 public final class AACommands {

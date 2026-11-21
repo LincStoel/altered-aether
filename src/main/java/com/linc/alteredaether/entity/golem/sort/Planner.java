@@ -139,6 +139,70 @@ public final class Planner {
     }
 
     public static Plan plan(SortSnapshot snapshot, SortMode mode, Focus focus, Settings settings) {
+        return planRound(snapshot, mode, focus, settings, false).plan();
+    }
+
+    /** A plan, and whether a focused one was made a whole one because the layout shifted. */
+    public record Round(Plan plan, boolean escalated) {
+    }
+
+    /**
+     * What GolemSorter.round does: a focused plan, or a whole one when the layout has shifted ({@link #layoutChanged}).
+     * Tidy's layout is worked out once and shared by the focused plan, its follow passes and the escalation.
+     */
+    public static Round planRound(SortSnapshot snapshot, SortMode mode, Focus focus, Settings settings,
+                                  boolean escalate) {
+        if (mode != SortMode.TIDY) {
+            Plan plan = planFollowing(snapshot, mode, focus, settings);
+            if (escalate && !focus.all() && layoutChanged(snapshot, plan)) {
+                return new Round(planFollowing(snapshot, mode, new Focus(null, focus.gather()), settings), true);
+            }
+            return new Round(plan, false);
+        }
+        Work base = new Work(snapshot, focus, settings);
+        base.assignBulk();
+        Layout layout = layout(base);
+        boolean escalated = false;
+        if (escalate && !focus.all() && changed(snapshot, base.claims)) {
+            focus = new Focus(null, focus.gather());
+            escalated = true;
+        }
+        Set<Integer> follow = new HashSet<>();
+        Plan plan = pass(base, layout, focus, follow);
+        for (int pass = 0; pass < FOLLOW_PASSES && !focus.all(); pass++) {
+            Set<Integer> moved = new HashSet<>(follow);
+            for (Move move : plan.moves()) {
+                if (move.srcInv() != move.dstInv() && snapshot.invs().get(move.dstInv()).kind() != Kind.SINK) {
+                    moved.add(move.key());
+                }
+            }
+            if (moved.size() == follow.size()) {
+                break;
+            }
+            follow = moved;
+            plan = pass(base, layout, focus, follow);
+        }
+        return new Round(plan, escalated);
+    }
+
+    private static Plan pass(Work base, Layout layout, Focus focus, Set<Integer> follow) {
+        Work w = new Work(base, focus);
+        w.gatherKeys.addAll(follow);
+        moves(w, layout);
+        return new Plan(List.copyOf(w.moves), w.unplaced, w.claims.clone(), Set.copyOf(w.stuck));
+    }
+
+    private static boolean changed(SortSnapshot snapshot, int[] claims) {
+        for (int i = 0; i < snapshot.invs().size(); i++) {
+            SortSnapshot.Inv inv = snapshot.invs().get(i);
+            if (!inv.isEmpty() && !inv.frozen() && claims[i] != inv.claim()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static Plan planFollowing(SortSnapshot snapshot, SortMode mode, Focus focus, Settings settings) {
         Set<Integer> follow = new HashSet<>();
         Plan plan = plan(snapshot, mode, focus, settings, follow);
         // a focused plan follows the items it moves: the rest of each across the network comes together too
@@ -163,11 +227,7 @@ public final class Planner {
         Work work = new Work(snapshot, focus, settings);
         work.gatherKeys.addAll(follow);
         work.assignBulk();
-        if (mode == SortMode.TIDY) {
-            tidy(work);
-        } else {
-            compact(work);
-        }
+        compact(work);
         return new Plan(List.copyOf(work.moves), work.unplaced, work.claims, Set.copyOf(work.stuck));
     }
 
@@ -178,8 +238,25 @@ public final class Planner {
     private static final int SOURCE = -1, EMPTY = 0, PINNED = 1, DOMINANT = 2, CRATE = 3, BULK = 4, SINK = 5,
             SURPLUS = 6;
 
-    private static void tidy(Work w) {
+    /** What tidy judged every inventory to be for: the same for every pass of one round, focused or not. */
+    private static final class Layout {
+        int n;
+        int[] type, dominant;
+        List<Set<Integer>> pinGroups;
+        List<Integer> crates, equipmentCrates, order;
+        Map<Integer, List<Integer>> exclusive, newHome;
+        final Map<Integer, List<Integer>> pinnedByKey = new HashMap<>(), pinnedByGroup = new HashMap<>(),
+                dominantByGroup = new HashMap<>();
+        final Map<Integer, int[]> primary = new HashMap<>(), full = new HashMap<>();
+        /** How many of each key's homes are its own family's, at the front; the rest are other families' room. */
+        final Map<Integer, Integer> own = new HashMap<>();
+        final Map<Integer, List<Integer>> nearby = new HashMap<>();
+    }
+
+    private static Layout layout(Work w) {
         int n = w.invs.size();
+        Layout L = new Layout();
+        L.n = n;
         w.group = w.grouping();
         Map<Integer, Integer> groupSlots = w.groupSlots();
         int[] type = new int[n];
@@ -279,7 +356,30 @@ public final class Planner {
             }
         }
         unclaimed.sort(Comparator.<Integer>comparingInt(g -> -groupSlots.get(g)).thenComparingInt(g -> g));
-        // they take empty chests, or chests their families gave up, whichever holds the most of them already
+        // families that have chests but fill more than those hold: room for the rest, before anything new is placed,
+        // so a full chest's overflow lands beside it rather than in some other family's chest
+        Map<Integer, Integer> overflow = new HashMap<>();
+        for (int i = 0; i < n; i++) {
+            if (type[i] == DOMINANT) {
+                overflow.merge(dominant[i], -w.invs.get(i).size(), Integer::sum);
+            } else if (type[i] == PINNED) {
+                for (int g : pinGroups.get(i)) {
+                    overflow.merge(g, -w.invs.get(i).size(), Integer::sum);
+                }
+            }
+        }
+        List<Integer> overflowing = new ArrayList<>();
+        for (Map.Entry<Integer, Integer> entry : overflow.entrySet()) {
+            int group = entry.getKey();
+            int left = groupSlots.getOrDefault(group, 0) + entry.getValue();
+            if (left > 0 && group != SortSnapshot.ROOT && !w.crated(group)) {
+                entry.setValue(left);
+                overflowing.add(group);
+            }
+        }
+        overflowing.sort(Comparator.<Integer>comparingInt(g -> -overflow.get(g)).thenComparingInt(g -> g));
+        // they take empty chests, or chests their families gave up: whichever holds the most of them already, then
+        // the one nearest the family's own chests (or, for a family new to the storage, its closest relatives')
         List<Integer> free = new ArrayList<>();
         for (int i = 0; i < n; i++) {
             if ((type[i] == EMPTY || type[i] == SURPLUS) && !w.invs.get(i).frozen()) {
@@ -287,13 +387,23 @@ public final class Planner {
             }
         }
         Map<Integer, List<Integer>> newHome = new HashMap<>();
-        for (int group : unclaimed) {
-            int left = groupSlots.get(group);
+        List<Integer> wanting = new ArrayList<>(overflowing);
+        wanting.addAll(unclaimed);
+        for (int k = 0; k < wanting.size() && !free.isEmpty(); k++) {
+            int group = wanting.get(k);
+            boolean more = k < overflowing.size();
+            int left = more ? overflow.get(group) : groupSlots.get(group);
             Map<Integer, Integer> slotsHere = new HashMap<>();
             for (int i : free) {
                 slotsHere.put(i, w.groupSlotsIn(i, group));
             }
-            free.sort(Comparator.<Integer>comparingInt(i -> -slotsHere.get(i)).thenComparingInt(i -> i));
+            List<Integer> anchors = anchors(w, group, type, dominant, pinGroups, newHome, more);
+            Map<Integer, Long> distance = new HashMap<>();
+            for (int i : free) {
+                distance.put(i, w.distance(i, anchors));
+            }
+            free.sort(Comparator.<Integer>comparingInt(i -> -slotsHere.get(i))
+                    .thenComparingLong(distance::get).thenComparingInt(i -> i));
             while (left > 0 && !free.isEmpty()) {
                 int chest = free.remove(0);
                 left -= w.invs.get(chest).size();
@@ -306,8 +416,6 @@ public final class Planner {
                 }
             }
         }
-        Map<Integer, List<Integer>> nearby = new HashMap<>();
-
         List<Integer> order = new ArrayList<>();
         for (int i = 0; i < n; i++) {
             if (type[i] == SOURCE) {
@@ -319,7 +427,152 @@ public final class Planner {
                 order.add(i);
             }
         }
-        for (int i : order) {
+        for (int j = 0; j < n; j++) {
+            if (type[j] == PINNED) {
+                for (int key : w.invs.get(j).pins()) {
+                    L.pinnedByKey.computeIfAbsent(key, k -> new ArrayList<>()).add(j);
+                }
+                for (int g : pinGroups.get(j)) {
+                    L.pinnedByGroup.computeIfAbsent(g, k -> new ArrayList<>()).add(j);
+                }
+            } else if (type[j] == DOMINANT) {
+                L.dominantByGroup.computeIfAbsent(dominant[j], k -> new ArrayList<>()).add(j);
+            }
+        }
+        L.type = type;
+        L.dominant = dominant;
+        L.pinGroups = pinGroups;
+        L.crates = crates;
+        L.equipmentCrates = equipmentCrates;
+        L.exclusive = exclusive;
+        L.newHome = newHome;
+        L.order = order;
+        return L;
+    }
+
+    /**
+     * The chests a chest for {@code group} is best placed beside: its own (pinned for it or kept for it) when
+     * {@code own}, else those of its closest relatives that have any, chests just given out included.
+     */
+    private static List<Integer> anchors(Work w, int group, int[] type, int[] dominant, List<Set<Integer>> pinGroups,
+                                         Map<Integer, List<Integer>> newHome, boolean own) {
+        List<Integer> out = new ArrayList<>();
+        if (w.positions == null) {
+            return out;
+        }
+        List<Integer> families = own || group <= SortSnapshot.ROOT ? List.of(group) : w.nearestGroups(group);
+        for (int g : families) {
+            for (int i = 0; i < type.length; i++) {
+                if (type[i] == DOMINANT && dominant[i] == g || type[i] == PINNED && pinGroups.get(i).contains(g)) {
+                    out.add(i);
+                }
+            }
+            out.addAll(newHome.getOrDefault(g, List.of()));
+            if (!out.isEmpty()) {
+                break;
+            }
+        }
+        return out;
+    }
+
+    private static int indexOf(int[] list, int x) {
+        for (int k = 0; k < list.length; k++) {
+            if (list[k] == x) {
+                return k;
+            }
+        }
+        return -1;
+    }
+
+    /**
+     * {@code key}'s homes, best first, with the strict chests that refuse it left out: the same for every slot of it
+     * this round, so worked out once. Without {@code all}, an item too many for the odds and ends may be given only
+     * the homes its own family has; the nearest families' are added only when asked for.
+     */
+    private static int[] homes(Work w, Layout L, int key, int group, boolean all) {
+        int[] cached = (all ? L.full : L.primary).get(key);
+        if (cached != null) {
+            return cached;
+        }
+        List<Integer> homes = new ArrayList<>();
+        boolean[] in = new boolean[L.n];
+        for (int j : L.pinnedByKey.getOrDefault(key, List.of())) {
+            homes.add(j);
+            in[j] = true;
+        }
+        for (int j : w.bulkHomes.getOrDefault(key, List.of())) {
+            if (!in[j]) {
+                homes.add(j);
+                in[j] = true;
+            }
+        }
+        List<Integer> tier = new ArrayList<>();
+        for (int j : L.pinnedByGroup.getOrDefault(group, List.of())) {
+            if (!in[j]) {
+                tier.add(j);
+            }
+        }
+        addAll(homes, in, w.byHeld(tier, key));
+        if (group == SortSnapshot.ROOT) {
+            addAll(homes, in, w.byHeld(L.crates, key));
+        } else if (w.crated(group)) {
+            addAll(homes, in, w.byHeld(L.equipmentCrates, key));
+        }
+        addAll(homes, in, w.byHeld(L.dominantByGroup.getOrDefault(group, List.of()), key));
+        // then the chests just given to its family: all it has if it had none, else room for what overflows
+        for (int j : L.newHome.getOrDefault(group, List.of())) {
+            if (!in[j]) {
+                homes.add(j);
+                in[j] = true;
+            }
+        }
+        boolean lazy = false;
+        int own = homes.size();
+        if (w.many.contains(key)) {
+            // too many to be odds and ends: when its family has no room, the nearest family with room takes it instead
+            if (!all && !homes.isEmpty()) {
+                lazy = true;
+            } else {
+                for (int j : nearby(w, L, key, group)) {
+                    if (!in[j]) {
+                        homes.add(j);
+                        in[j] = true;
+                    }
+                }
+            }
+        }
+        if (!lazy && homes.isEmpty()) {
+            // nowhere for its family: in with the miscellaneous items
+            addAll(homes, in, w.byHeld(L.crates, key));
+            addAll(homes, in, w.byHeld(L.dominantByGroup.getOrDefault(SortSnapshot.ROOT, List.of()), key));
+            addAll(homes, in, L.newHome.getOrDefault(SortSnapshot.ROOT, List.of()));
+            own = homes.size();
+        }
+        // a strict chest never takes what isn't pinned to it, even as its family's dominant chest
+        int kept = 0;
+        for (int x = 0; x < own; x++) {
+            kept += w.invs.get(homes.get(x)).refuses(key) ? 0 : 1;
+        }
+        L.own.put(key, kept);
+        int[] out = homes.stream().filter(j -> !w.invs.get(j).refuses(key)).mapToInt(Integer::intValue).toArray();
+        L.primary.put(key, out);
+        if (!lazy) {
+            L.full.put(key, out);
+        }
+        return out;
+    }
+
+    private static void addAll(List<Integer> homes, boolean[] in, List<Integer> add) {
+        for (int j : add) {
+            homes.add(j);
+            in[j] = true;
+        }
+    }
+
+    private static void moves(Work w, Layout L) {
+        int n = w.invs.size();
+        int[] type = L.type;
+        for (int i : L.order) {
             SortSnapshot.Inv inv = w.invs.get(i);
             if (inv.frozen() || !w.movable(i)) {
                 continue;
@@ -330,107 +583,77 @@ public final class Planner {
                     continue;
                 }
                 int group = w.groupOf(key);
-                List<Integer> homes = new ArrayList<>();
-                List<Integer> shared = exclusive.get(key);
+                int[] homes;
+                int at, own;
+                List<Integer> shared = L.exclusive.get(key);
                 if (shared != null) {
                     // pinned strictly to several chests: it stays in any of them (they are evened out below), and
                     // from anywhere else it goes to the one holding fewest
                     if (shared.contains(i)) {
                         continue;
                     }
-                    homes.addAll(w.byFewest(shared, key));
+                    homes = w.byFewest(shared, key).stream().filter(j -> !w.invs.get(j).refuses(key))
+                            .mapToInt(Integer::intValue).toArray();
+                    at = indexOf(homes, i);
+                    own = homes.length;
                 } else {
-                    for (int j = 0; j < n; j++) {
-                        if (type[j] == PINNED && w.invs.get(j).pins().contains(key)) {
-                            homes.add(j);
-                        }
+                    // the nearest families' homes are only needed when it isn't already in one of its own
+                    homes = homes(w, L, key, group, false);
+                    at = indexOf(homes, i);
+                    if (at < 0) {
+                        homes = homes(w, L, key, group, true);
+                        at = indexOf(homes, i);
                     }
-                    for (int j : w.bulkHomes.getOrDefault(key, List.of())) {
-                        if (!homes.contains(j)) {
-                            homes.add(j);
-                        }
-                    }
-                    List<Integer> tier = new ArrayList<>();
-                    for (int j = 0; j < n; j++) {
-                        if (type[j] == PINNED && !homes.contains(j) && pinGroups.get(j).contains(group)) {
-                            tier.add(j);
-                        }
-                    }
-                    homes.addAll(w.byHeld(tier, key));
-                    if (group == SortSnapshot.ROOT) {
-                        homes.addAll(w.byHeld(crates, key));
-                    } else if (w.crated(group)) {
-                        homes.addAll(w.byHeld(equipmentCrates, key));
-                    }
-                    tier.clear();
-                    for (int j = 0; j < n; j++) {
-                        if (type[j] == DOMINANT && dominant[j] == group) {
-                            tier.add(j);
-                        }
-                    }
-                    homes.addAll(w.byHeld(tier, key));
-                    if (homes.isEmpty() || group == SortSnapshot.ROOT) {
-                        homes.addAll(newHome.getOrDefault(group, List.of()));
-                    }
-                    if (w.many.contains(key)) {
-                        // too many to be odds and ends: when its family has no room, the nearest family with room
-                        // takes it instead
-                        int g = group;
-                        for (int j : nearby.computeIfAbsent(key, x -> nearbyHomes(w, x, g, type, dominant, pinGroups,
-                                newHome, equipmentCrates))) {
-                            if (!homes.contains(j)) {
-                                homes.add(j);
-                            }
-                        }
-                    }
-                    if (homes.isEmpty()) {
-                        // nowhere for its family: in with the miscellaneous items
-                        homes.addAll(w.byHeld(crates, key));
-                        tier.clear();
-                        for (int j = 0; j < n; j++) {
-                            if (type[j] == DOMINANT && dominant[j] == SortSnapshot.ROOT) {
-                                tier.add(j);
-                            }
-                        }
-                        homes.addAll(w.byHeld(tier, key));
-                        homes.addAll(newHome.getOrDefault(SortSnapshot.ROOT, List.of()));
-                    }
+                    own = L.own.get(key);
                 }
-                // a strict chest never takes what isn't pinned to it, even as its family's dominant chest
-                homes.removeIf(j -> w.invs.get(j).refuses(key));
-                int at = homes.indexOf(i);
                 if (at == 0) {
                     continue;
                 }
-                List<Integer> better = at > 0 ? homes.subList(0, at) : homes;
+                int[] better;
+                int length = at > 0 ? at : homes.length;
                 boolean evicting = inv.refuses(key);
                 if (inv.source() || evicting) {
                     // anywhere else will do: the crates for it and misc chests, then unpinned chests, then ones
                     // pinned for something else (never a crate for something else)
-                    better = new ArrayList<>(better);
-                    for (int c : w.crated(group) ? equipmentCrates : crates) {
-                        if (c != i && !better.contains(c)) {
-                            better.add(c);
+                    boolean[] mark = new boolean[n];
+                    int[] wider = new int[length + n + L.crates.size() + L.equipmentCrates.size()];
+                    int size = 0;
+                    for (int x = 0; x < length; x++) {
+                        wider[size++] = homes[x];
+                        mark[homes[x]] = true;
+                    }
+                    for (int c : w.crated(group) ? L.equipmentCrates : L.crates) {
+                        if (c != i && !mark[c]) {
+                            wider[size++] = c;
+                            mark[c] = true;
                         }
                     }
                     for (int pass = 0; pass < 2; pass++) {
                         for (int j = 0; j < n; j++) {
                             if (j == i || type[j] == SOURCE || type[j] == SINK || type[j] == BULK || type[j] == CRATE
-                                    || better.contains(j) || w.invs.get(j).refuses(key)
+                                    || mark[j] || w.invs.get(j).refuses(key)
                                     || (pass == 0) == (type[j] == PINNED)) {
                                 continue;
                             }
-                            better.add(j);
+                            wider[size++] = j;
+                            mark[j] = true;
                         }
                     }
+                    better = wider;
+                    length = size;
+                } else {
+                    better = homes;
                 }
-                for (int j : better) {
+                for (int x = 0; x < length; x++) {
                     if (inv.key()[slot] < 0 || w.full()) {
                         break;
                     }
-                    w.place(i, slot, j, Integer.MAX_VALUE, true, true);
+                    w.place(i, slot, better[x], Integer.MAX_VALUE, true, true);
                 }
-                if (inv.key()[slot] >= 0 && (!better.isEmpty() || homes.isEmpty())) {
+                // stuck: it belongs elsewhere and found no room there. An item already in one of its family's homes
+                // (the second chest of a family that fills more than one, say) is at home, however full the better
+                // ones are; one only lodging with another family is not.
+                if (inv.key()[slot] >= 0 && (at < 0 || at >= own || evicting || inv.source())) {
                     w.stuck.add(i);
                 }
                 if (inv.source() && inv.key()[slot] >= 0) {
@@ -440,7 +663,7 @@ public final class Planner {
         }
 
         w.feedSinks();
-        w.balance(exclusive);
+        w.balance(L.exclusive);
         // partial stacks of one item within a chest are merged; a plain chest does that itself (see orderWithin)
         for (int i = 0; i < n; i++) {
             if ((type[i] == PINNED || type[i] == DOMINANT || type[i] == CRATE || type[i] == EMPTY || type[i] == SURPLUS)
@@ -455,38 +678,28 @@ public final class Planner {
      * those pinned for it, then those it is the dominant family of, holding the most of {@code key} first, then the
      * chests just given to it (or the equipment's crates, for a group they hold).
      */
-    private static List<Integer> nearbyHomes(Work w, int key, int group, int[] type, int[] dominant,
-                                             List<Set<Integer>> pinGroups, Map<Integer, List<Integer>> newHome,
-                                             List<Integer> crates) {
+    private static List<Integer> nearby(Work w, Layout L, int key, int group) {
+        List<Integer> cached = L.nearby.get(key);
+        if (cached != null) {
+            return cached;
+        }
         List<Integer> homes = new ArrayList<>();
-        List<Integer> tier = new ArrayList<>();
         for (int near : w.nearestGroups(w.keys.get(key).node())) {
             if (near == group) {
                 continue;
             }
-            tier.clear();
-            for (int j = 0; j < type.length; j++) {
-                if (type[j] == PINNED && pinGroups.get(j).contains(near)) {
-                    tier.add(j);
-                }
-            }
-            homes.addAll(w.byHeld(tier, key));
-            tier.clear();
-            for (int j = 0; j < type.length; j++) {
-                if (type[j] == DOMINANT && dominant[j] == near) {
-                    tier.add(j);
-                }
-            }
-            homes.addAll(w.byHeld(tier, key));
-            homes.addAll(newHome.getOrDefault(near, List.of()));
+            homes.addAll(w.byHeld(L.pinnedByGroup.getOrDefault(near, List.of()), key));
+            homes.addAll(w.byHeld(L.dominantByGroup.getOrDefault(near, List.of()), key));
+            homes.addAll(L.newHome.getOrDefault(near, List.of()));
             if (w.crated(near)) {
-                for (int c : w.byHeld(crates, key)) {
+                for (int c : w.byHeld(L.equipmentCrates, key)) {
                     if (!homes.contains(c)) {
                         homes.add(c);
                     }
                 }
             }
         }
+        L.nearby.put(key, homes);
         return homes;
     }
 
@@ -773,6 +986,9 @@ public final class Planner {
         final List<int[]> heldKeys;
         final Focus focus;
         final Settings settings;
+        /** Where each inventory is, or null if unknown. */
+        @Nullable
+        final List<SortSnapshot.Pos> positions;
         /** Keys, and families, pinned to the inventories being gathered for: those move from anywhere. */
         final Set<Integer> gatherKeys = new HashSet<>(), gatherNodes = new HashSet<>();
         final int[] claims;
@@ -800,6 +1016,7 @@ public final class Planner {
             keys = snapshot.keys();
             nodes = snapshot.nodes();
             invs = snapshot.copy().invs();
+            positions = snapshot.positions();
             this.focus = focus;
             this.settings = settings;
             claims = new int[invs.size()];
@@ -838,6 +1055,7 @@ public final class Planner {
             invs = other.invs.stream().map(SortSnapshot.Inv::copy).toList();
             held = other.held;
             heldKeys = other.heldKeys;
+            positions = other.positions;
             focus = other.focus;
             settings = other.settings;
             gatherKeys.addAll(other.gatherKeys);
@@ -858,6 +1076,41 @@ public final class Planner {
 
         Work copy() {
             return new Work(this);
+        }
+
+        /** How far (squared) {@code inv} is from the nearest of {@code others}; 0 if positions are unknown. */
+        long distance(int inv, List<Integer> others) {
+            if (positions == null || others.isEmpty()) {
+                return 0;
+            }
+            long best = Long.MAX_VALUE;
+            for (int other : others) {
+                best = Math.min(best, positions.get(inv).distSqr(positions.get(other)));
+            }
+            return best;
+        }
+
+        /** A fresh pass over {@code base}'s slots (drawers assigned, layout judged), with {@code focus}. */
+        Work(Work base, Focus focus) {
+            keys = base.keys;
+            nodes = base.nodes;
+            invs = base.invs.stream().map(SortSnapshot.Inv::copy).toList();
+            held = base.held;
+            heldKeys = base.heldKeys;
+            positions = base.positions;
+            this.focus = focus;
+            settings = base.settings;
+            gatherKeys.addAll(base.gatherKeys);
+            gatherNodes.addAll(base.gatherNodes);
+            claims = base.claims;
+            bulkHomes = base.bulkHomes;
+            group = base.group;
+            equipmentCrates = base.equipmentCrates;
+            many = base.many;
+            rehomed = base.rehomed;
+            nearest = base.nearest;
+            depth = base.depth;
+            groups = base.groups;
         }
 
         void adopt(Work other) {
@@ -1103,6 +1356,8 @@ public final class Planner {
                 }
             }
             nearest = new HashMap<>();
+            depth = null;
+            groups = null;
             return result;
         }
 
@@ -1146,14 +1401,24 @@ public final class Planner {
          * up the family tree from {@code node} they meet it), then the fewest slots filled, then the earlier node (as
          * {@link Grouping.Result#nearest} has it).
          */
+        int[] depth;
+        List<Integer> groups;
+
         private List<Integer> nearestGroups(Grouping.Result result, int node) {
-            int[] depth = new int[nodes.size()];
-            for (int i = 1; i < nodes.size(); i++) {
-                depth[i] = depth[nodes.get(i).parent()] + 1;
+            if (depth == null) {
+                depth = new int[nodes.size()];
+                for (int i = 1; i < nodes.size(); i++) {
+                    depth[i] = depth[nodes.get(i).parent()] + 1;
+                }
+                Set<Integer> distinct = new java.util.LinkedHashSet<>();
+                for (int g : result.group()) {
+                    distinct.add(g);
+                }
+                groups = new ArrayList<>(distinct);
             }
             int own = result.group()[node];
             Map<Integer, Integer> distance = new HashMap<>();
-            for (int g : result.group()) {
+            for (int g : groups) {
                 if (g == SortSnapshot.ROOT || g == own || distance.containsKey(g)) {
                     continue;
                 }
@@ -1188,15 +1453,16 @@ public final class Planner {
             return chests > 0 ? (int) Math.max(1, Math.round((double) slots / chests)) : 27;
         }
 
+        /** Each inventory's slots by group, merged, as planning began (the layout is judged before any move). */
+        final Map<Integer, Map<Integer, Integer>> groupSlotsByInv = new HashMap<>();
+
         /** The slots {@code group}'s items fill in {@code inv}, merged. */
         int groupSlotsIn(int inv, int group) {
-            int slots = 0;
-            for (Map.Entry<Integer, Long> entry : counts(inv).entrySet()) {
-                if (groupOf(entry.getKey()) == group) {
-                    slots += need(entry.getKey(), entry.getValue());
-                }
-            }
-            return slots;
+            return groupSlotsByInv.computeIfAbsent(inv, x -> {
+                Map<Integer, Integer> out = new HashMap<>();
+                held.get(x).forEach((key, count) -> out.merge(groupOf(key), need(key, count), Integer::sum));
+                return out;
+            }).getOrDefault(group, 0);
         }
 
         /** The slots each group fills across the network, merged; drawers, compacting drawers and sinks left out. */
@@ -1205,7 +1471,7 @@ public final class Planner {
             for (int i = 0; i < invs.size(); i++) {
                 Kind kind = invs.get(i).kind();
                 if (kind != Kind.BULK && kind != Kind.POOLED && kind != Kind.SINK) {
-                    counts(i).forEach((key, count) -> totals.merge(key, count, Long::sum));
+                    held.get(i).forEach((key, count) -> totals.merge(key, (long) count, Long::sum));
                 }
             }
             Map<Integer, Integer> slots = new HashMap<>();
@@ -1220,9 +1486,9 @@ public final class Planner {
         int dominantGroup(int inv, Map<Integer, Integer> groupSlots) {
             Map<Integer, Integer> slots = new HashMap<>();
             Map<Integer, Long> items = new HashMap<>();
-            counts(inv).forEach((key, count) -> {
+            held.get(inv).forEach((key, count) -> {
                 slots.merge(groupOf(key), need(key, count), Integer::sum);
-                items.merge(groupOf(key), count, Long::sum);
+                items.merge(groupOf(key), (long) count, Long::sum);
             });
             int best = -1;
             for (int g : slots.keySet()) {

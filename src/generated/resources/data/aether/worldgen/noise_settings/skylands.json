@@ -15,7 +15,7 @@
   "disable_mob_generation": false,
   "legacy_random_source": false,
   "noise": {
-    "height": 128,
+    "height": 224,
     "min_y": 0,
     "size_horizontal": 2,
     "size_vertical": 1
@@ -24,36 +24,79 @@
     "barrier": 0.0,
     "continents": "altered_aether:terrain/continentalness",
     "depth": "aeroblender:depth",
-    "erosion": "altered_aether:terrain/crag_noise",
+    "erosion": "altered_aether:terrain/erosion",
     "final_density": {
       "type": "altered_aether:basin_carve",
       "argument": {
-        "type": "minecraft:squeeze",
+        "type": "altered_aether:plateau_stacks",
         "argument": {
-          "type": "minecraft:interpolated",
+          "type": "minecraft:squeeze",
           "argument": {
-            "type": "minecraft:blend_density",
+            "type": "minecraft:interpolated",
             "argument": {
-              "type": "altered_aether:atoll",
+              "type": "minecraft:blend_density",
               "argument": {
-                "type": "altered_aether:choose",
-                "high": "altered_aether:terrain/plateau_terraced",
-                "low": {
-                  "type": "altered_aether:choose",
-                  "high": "altered_aether:terrain/crag_tier",
-                  "low": {
-                    "type": "altered_aether:choose",
-                    "high": "altered_aether:terrain/rift",
-                    "low": "altered_aether:terrain/island_groves",
-                    "mask": "altered_aether:terrain/rift_weight"
-                  },
-                  "mask": "altered_aether:terrain/crag_weight"
+                "type": "minecraft:range_choice",
+                "input": {
+                  "type": "minecraft:y_clamped_gradient",
+                  "from_value": -2048.0,
+                  "from_y": -2048,
+                  "to_value": 2048.0,
+                  "to_y": 2048
                 },
-                "mask": "altered_aether:terrain/plateau_weight"
-              },
-              "surface": 69,
-              "vertical_scale": 0.6666666666666666,
-              "weight": "altered_aether:terrain/region_mask"
+                "max_exclusive": 4096.0,
+                "min_inclusive": 136.0,
+                "when_in_range": "altered_aether:terrain/highlands",
+                "when_out_of_range": {
+                  "type": "altered_aether:cave_carve",
+                  "argument": {
+                    "type": "altered_aether:choose",
+                    "high": "altered_aether:terrain/tempest",
+                    "low": {
+                      "type": "altered_aether:choose",
+                      "high": "altered_aether:terrain/dune_sheet",
+                      "low": {
+                        "type": "minecraft:add",
+                        "argument1": {
+                          "type": "altered_aether:atoll",
+                          "argument": {
+                            "type": "altered_aether:choose",
+                            "high": "altered_aether:terrain/plateau_terraced",
+                            "low": {
+                              "type": "altered_aether:shift_y",
+                              "argument": {
+                                "type": "altered_aether:choose",
+                                "high": "altered_aether:terrain/crags",
+                                "low": {
+                                  "type": "altered_aether:choose",
+                                  "high": "altered_aether:terrain/rift",
+                                  "low": "altered_aether:terrain/island_tundra",
+                                  "mask": "altered_aether:terrain/rift_weight"
+                                },
+                                "mask": "altered_aether:terrain/crag_weight"
+                              },
+                              "offset": "altered_aether:terrain/cold_lift"
+                            },
+                            "mask": "altered_aether:terrain/plateau_weight"
+                          },
+                          "surface": 69,
+                          "vertical_scale": 0.6666666666666666,
+                          "weight": "altered_aether:terrain/region_mask"
+                        },
+                        "argument2": {
+                          "type": "minecraft:mul",
+                          "argument1": -12.0,
+                          "argument2": "altered_aether:terrain/isolation_fade"
+                        }
+                      },
+                      "mask": "altered_aether:terrain/dune_weight"
+                    },
+                    "mask": "altered_aether:terrain/tempest_weight"
+                  },
+                  "caves": "altered_aether:terrain/caves",
+                  "entrance": "altered_aether:terrain/cave_entrance"
+                }
+              }
             }
           }
         }

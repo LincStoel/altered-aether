@@ -1,0 +1,10 @@
+{
+  "type": "minecraft:flat_cache",
+  "argument": {
+    "type": "altered_aether:island_mass",
+    "argument": "altered_aether:terrain/island",
+    "max_y": 128,
+    "min_y": -38,
+    "radius": 40
+  }
+}

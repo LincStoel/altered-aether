@@ -1,0 +1,10 @@
+{
+  "type": "minecraft:stonecutting",
+  "ingredient": {
+    "item": "altered_aether:nadirite"
+  },
+  "result": {
+    "count": 1,
+    "id": "altered_aether:nadirite_brick_wall"
+  }
+}

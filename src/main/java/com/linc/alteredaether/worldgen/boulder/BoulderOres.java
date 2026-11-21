@@ -116,9 +116,14 @@ public final class BoulderOres {
     }
 
     private static boolean isOre(Block block) {
+        return anyOre(block) && block != AetherBlocks.GRAVITITE_ORE.get();
+    }
+
+    /** Whether a block an ore feature places is an ore, gravitite included, and not blacklisted. */
+    public static boolean anyOre(Block block) {
         BlockState state = block.defaultBlockState();
         return (state.is(Tags.Blocks.ORES) || BuiltInRegistries.BLOCK.getKey(block).getPath().endsWith("_ore"))
-                && block != AetherBlocks.GRAVITITE_ORE.get() && !state.is(AATags.BOULDER_ORE_BLACKLIST);
+                && !state.is(AATags.BOULDER_ORE_BLACKLIST);
     }
 
     /** The Aether's own ores, in every biome, and how common each is in a boulder. Gravitite is left out of boulders. */
@@ -161,7 +166,7 @@ public final class BoulderOres {
     }
 
     /** Rarer ores weigh less, found by name since the pool is whatever the loaded mods add. */
-    private static int weight(Block block) {
+    public static int weight(Block block) {
         String name = BuiltInRegistries.BLOCK.getKey(block).getPath();
         if (name.contains("diamond") || name.contains("emerald") || name.contains("uranium")) {
             return 1;

@@ -1,0 +1,8 @@
+{
+  "biomes": [
+    "altered_aether:shattered_rift"
+  ],
+  "max_temp": 3,
+  "min_temp": 13,
+  "units": "F"
+}

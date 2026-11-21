@@ -1,0 +1,14 @@
+{
+  "replace": false,
+  "values": [
+    "altered_aether:nadirite_stairs",
+    "altered_aether:nadirite_slab",
+    "altered_aether:nadirite_wall",
+    "altered_aether:polished_nadirite_stairs",
+    "altered_aether:polished_nadirite_slab",
+    "altered_aether:polished_nadirite_wall",
+    "altered_aether:nadirite_brick_stairs",
+    "altered_aether:nadirite_brick_slab",
+    "altered_aether:nadirite_brick_wall"
+  ]
+}

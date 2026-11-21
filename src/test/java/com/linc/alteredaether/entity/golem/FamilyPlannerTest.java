@@ -14,6 +14,7 @@
  */
 package com.linc.alteredaether.entity.golem;
 
+import com.linc.alteredaether.entity.golem.sort.Grouping;
 import com.linc.alteredaether.entity.golem.sort.Move;
 import com.linc.alteredaether.entity.golem.sort.Planner;
 import com.linc.alteredaether.entity.golem.sort.SortMode;
@@ -514,5 +515,67 @@ class FamilyPlannerTest {
         SortSnapshot kept = snapshot(chest(PLANKS, 64, IRON, 64).with(false, 4));
         assertEquals(4, Planner.plan(kept, SortMode.TIDY, Planner.Focus.ALL, SETTINGS).claims()[0],
                 "the spruce chest was given up");
+    }
+
+    private static SortSnapshot placed(List<SortSnapshot.Pos> positions, SortSnapshot.Inv... invs) {
+        return new SortSnapshot(KEYS, List.of(invs), NODES, positions);
+    }
+
+    private static SortSnapshot.Pos at(int x) {
+        return new SortSnapshot.Pos(x, 64, 0);
+    }
+
+    @Test
+    void aFullFamilysOverflowTakesTheEmptyChestBesideIt() {
+        // the spruce chest is full and two stacks of spruce logs are dropped in the andesite chest: they go to the
+        // empty chest beside the spruce, not into the andesite chest, and nothing is left stuck
+        SortSnapshot snapshot = placed(List.of(at(0), at(5), at(20), at(1)),
+                chest(stacks(PLANKS, 27)).with(false, 4),
+                chest(concat(stacks(ANDESITE, 10), stacks(STRIPPED, 2))).with(false, 7),
+                chest(), chest());
+        settle(snapshot, SortMode.TIDY);
+        assertEquals(128, count(snapshot.invs().get(3), STRIPPED),
+                "the logs aren't beside the spruce: " + dump(snapshot));
+        assertTrue(Planner.plan(snapshot, SortMode.TIDY, Planner.Focus.ALL, SETTINGS).stuck().isEmpty(), "stuck");
+    }
+
+    @Test
+    void aFamilyFillingAChestAndAHalfIsNotStuck() {
+        SortSnapshot snapshot = snapshot(
+                chest(stacks(ANDESITE, 27)).with(false, 7),
+                chest(stacks(ANDESITE, 13)).with(false, 7),
+                chest(IRON, 5));
+        Planner.Plan plan = Planner.plan(snapshot, SortMode.TIDY, Planner.Focus.ALL, SETTINGS);
+        assertTrue(plan.isEmpty(), "moved: " + plan.moves());
+        assertTrue(plan.stuck().isEmpty(), "reported stuck: " + plan.stuck());
+    }
+
+    @Test
+    void aNewFamilyTakesTheFreeChestNearestItsRelatives() {
+        // oak is new to the storage; of the two empty chests it takes the one beside the spruce, its closest relative,
+        // though the other comes first
+        SortSnapshot snapshot = placed(List.of(at(0), at(10), at(11), at(1)),
+                chest(stacks(PLANKS, 20)).with(false, 4),
+                chest(concat(stacks(ANDESITE, 12), stacks(OAK, 8))).with(false, 7),
+                chest(), chest());
+        settle(snapshot, SortMode.TIDY);
+        assertEquals(8 * 64, count(snapshot.invs().get(3), OAK), "the oak isn't beside the spruce: " + dump(snapshot));
+    }
+
+    @Test
+    void aKeptFamilyKeepsItsChestFromAHeavierNewcomer() {
+        // two chests: room for one family besides the odds and ends. "a" was kept before; "b" is heavier but new
+        List<SortSnapshot.Node> nodes = List.of(new SortSnapshot.Node(-1, "misc"), new SortSnapshot.Node(0, "a"),
+                new SortSnapshot.Node(0, "b"));
+        int[] slots = {10, 8, 10}, fill = {1000, 800, 1000}, items = {640, 512, 640};
+        Grouping.Crates none = new Grouping.Crates(new int[0], new long[0], new int[0]);
+        Grouping.Result kept = Grouping.compute(nodes, slots, new int[3], fill, items, new boolean[3], 2, 27, none,
+                700, 200, Set.of(), Set.of(1));
+        assertEquals(1, kept.group()[1], "the kept family lost its chest");
+        assertEquals(SortSnapshot.ROOT, kept.group()[2], "the newcomer took a chest there was no room for");
+        // with nothing kept, the heavier takes it
+        Grouping.Result fresh = Grouping.compute(nodes, slots, new int[3], fill, items, new boolean[3], 2, 27, none,
+                700, 200, Set.of(), Set.of());
+        assertEquals(2, fresh.group()[2], "the heavier family didn't get the chest");
     }
 }

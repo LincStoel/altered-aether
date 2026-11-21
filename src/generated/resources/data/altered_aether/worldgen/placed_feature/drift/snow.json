@@ -3,11 +3,17 @@
   "placement": [
     {
       "type": "altered_aether:config_count",
-      "count": 0.5,
+      "count": 1.25,
       "key": "snow_drifts"
     },
     {
       "type": "minecraft:in_square"
+    },
+    {
+      "type": "altered_aether:noise_clump",
+      "salt": -1070645210,
+      "scale": 48.0,
+      "threshold": 0.125
     },
     {
       "type": "minecraft:heightmap",

@@ -1,0 +1,31 @@
+{
+  "type": "altered_aether:fallen_log",
+  "config": {
+    "length": {
+      "type": "minecraft:uniform",
+      "max_inclusive": 9,
+      "min_inclusive": 4
+    },
+    "log": {
+      "type": "minecraft:simple_state_provider",
+      "state": {
+        "Name": "aether:skyroot_log",
+        "Properties": {
+          "double_drops": "true"
+        }
+      }
+    },
+    "moss": {
+      "type": "altered_aether:substitute",
+      "candidates": [
+        {
+          "Name": "deep_aether:aether_moss_carpet"
+        },
+        {
+          "Name": "minecraft:moss_carpet"
+        }
+      ]
+    },
+    "moss_chance": 0.45
+  }
+}

@@ -57,12 +57,16 @@ public final class AABiomeModifierProvider extends JsonDataProvider {
         seal.addProperty("features", AAFeatureProvider.BASIN_SEAL);
         seal.addProperty("step", "top_layer_modification");
         data(FOLDER, AlteredAether.id("basin_seal"), seal);
-        // The cloud skirts round the tall Aether's low islands, in every Aether biome and last of all, so what lies
-        // under a collar is already in place. The rift is left out by the field itself.
+        // The cloud sheet, then the cloud skirts round some of the tall Aether's Highlands islets, in every Aether
+        // biome and last of all, so what lies under them is already in place. The rift is left out by the skirts'
+        // field itself.
         JsonObject skirts = new JsonObject();
         skirts.addProperty("type", "neoforge:add_features");
         skirts.addProperty("biomes", IS_AETHER);
-        skirts.addProperty("features", AAFeatureProvider.CLOUD_SKIRT);
+        JsonArray clouds = new JsonArray();
+        clouds.add(AAFeatureProvider.CLOUD_SEA);
+        clouds.add(AAFeatureProvider.CLOUD_SKIRT);
+        skirts.add("features", clouds);
         skirts.addProperty("step", "top_layer_modification");
         data(FOLDER, AlteredAether.id("cloud_skirts"), skirts);
 
@@ -180,6 +184,15 @@ public final class AABiomeModifierProvider extends JsonDataProvider {
         familiars();
 
         data(FOLDER, AlteredAether.id("climate"), climate());
+
+        // Pale sea-glass water for every Aether biome still on vanilla's default blue; themed waters are kept.
+        JsonObject water = new JsonObject();
+        water.addProperty("type", "altered_aether:water_color");
+        water.addProperty("biomes", IS_AETHER);
+        water.addProperty("from", 0x3F76E4);
+        water.addProperty("water_color", 0x9AD4BE);
+        water.addProperty("water_fog_color", 0x2B5A4E);
+        data(FOLDER, AlteredAether.id("water_color"), water);
 
         // Ars Nouveau's archwood mix and Ars Elemental's flashing archwood, both added to #minecraft:is_overworld.
         // Our own Aether archwood placements live under our namespace and are untouched.

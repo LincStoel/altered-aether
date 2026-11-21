@@ -14,6 +14,7 @@
  */
 package com.linc.alteredaether.worldgen.density;
 
+import com.linc.alteredaether.worldgen.surface.IslandBase;
 import com.linc.alteredaether.AlteredAether;
 import com.linc.alteredaether.config.AACommonConfig;
 import net.minecraft.server.level.ServerLevel;
@@ -24,6 +25,7 @@ import com.linc.alteredaether.worldgen.TerrainProbe;
 import com.linc.alteredaether.worldgen.grove.BreakField;
 import com.linc.alteredaether.worldgen.grove.GroveField;
 import com.linc.alteredaether.worldgen.landmark.LandmarkField;
+import com.linc.alteredaether.worldgen.sea.CloudSea;
 import com.linc.alteredaether.worldgen.skirt.SkirtField;
 import net.minecraft.world.level.levelgen.DensityFunction;
 import net.minecraft.world.level.levelgen.NoiseBasedChunkGenerator;
@@ -70,6 +72,11 @@ public final class RegionBinding {
         List<Atoll> atolls = new ArrayList<>();
         Set<VoronoiFracture.Binding> fractures = Collections.newSetFromMap(new IdentityHashMap<>());
         List<GroveBreak> breaks = new ArrayList<>();
+        List<CloudSeaMarker> seas = new ArrayList<>();
+        List<BiomeEdge> edges = new ArrayList<>();
+        List<IslandMass> masses = new ArrayList<>();
+        List<CaveCarve> caves = new ArrayList<>();
+        List<PlateauStacks> stacks = new ArrayList<>();
         RandomState randomState = level.getChunkSource().randomState();
         randomState.router().mapAll(new DensityFunction.Visitor() {
             @Override
@@ -84,10 +91,24 @@ public final class RegionBinding {
                     fractures.add(fracture.binding());
                 } else if (function instanceof GroveBreak groveBreak && groveBreak.binding() != null) {
                     breaks.add(groveBreak);
+                } else if (function instanceof CloudSeaMarker sea) {
+                    seas.add(sea);
+                } else if (function instanceof BiomeEdge edge && edge.binding() != null) {
+                    edges.add(edge);
+                } else if (function instanceof IslandMass mass && mass.binding() != null) {
+                    masses.add(mass);
+                } else if (function instanceof CaveCarve cave && cave.binding() != null) {
+                    caves.add(cave);
+                } else if (function instanceof PlateauStacks stack && stack.binding() != null) {
+                    stacks.add(stack);
                 }
                 return function;
             }
         });
+        // The cloud sea's sheet, in the tall Aether, whose terrain alone carries the marker.
+        if (!seas.isEmpty() && level.getMinBuildHeight() < 0) {
+            CloudSea.put(level.dimension(), new CloudSea(level.getSeed(), seas.getFirst().argument()));
+        }
         if (bindings.isEmpty()) {
             return;
         }
@@ -98,7 +119,16 @@ public final class RegionBinding {
             bindings.forEach(binding -> binding.bind(solver));
             SOLVERS.put(level.dimension(), solver);
             AlteredAether.LOGGER.info("Bound Altered Aether's region mask for {}", level.dimension().location());
-            bindFields(level, randomState, source, carves, atolls, fractures, breaks);
+            bindEdges(level, randomState, source, edges);
+            // The island mass is read off its own argument: the Aether's islands before any of them is shed.
+            if (!masses.isEmpty()) {
+                IslandMass first = masses.getFirst();
+                ColumnMassField field = new ColumnMassField(TerrainProbe.columnMemo(first.argument()), first.radius(),
+                        first.minY(), first.maxY());
+                masses.forEach(mass -> mass.binding().bind(field));
+                ColumnMassField.put(level.dimension(), field);
+            }
+            bindFields(level, randomState, source, carves, atolls, fractures, breaks, caves, stacks);
         } else {
             AlteredAether.LOGGER.warn("{} uses Altered Aether's region mask but its biome source has no TerraBlender "
                     + "regions; our landforms are disabled there.", level.dimension().location());
@@ -112,7 +142,8 @@ public final class RegionBinding {
      */
     private static void bindFields(ServerLevel level, RandomState randomState, BiomeSource source,
                                    List<BasinCarve> carves, List<Atoll> atolls, Set<VoronoiFracture.Binding> fractures,
-                                   List<GroveBreak> breaks) {
+                                   List<GroveBreak> breaks, List<CaveCarve> caves,
+                                   List<PlateauStacks> stacks) {
         if (carves.isEmpty() && atolls.isEmpty() && fractures.isEmpty()
                 || !(level.getChunkSource().getGenerator() instanceof NoiseBasedChunkGenerator generator)) {
             return;
@@ -120,14 +151,19 @@ public final class RegionBinding {
         NoiseSettings noise = generator.generatorSettings().value().noiseSettings();
         BasinCarve carve = carves.isEmpty() ? null : carves.getFirst();
         Atoll atoll = atolls.isEmpty() ? null : atolls.getFirst();
-        TerrainProbe probe = new TerrainProbe(source, randomState.sampler(), carve == null ? null : carve.argument(),
-                atoll == null ? null : atoll.weight(), noise.minY(), noise.minY() + noise.height());
+        // Sites are read off the terrain before the caves (which then keep clear of them), or, without caves, the
+        // whole terrain the basins are carved from.
+        DensityFunction sited = !caves.isEmpty() ? caves.getFirst().argument() : carve == null ? null : carve.argument();
+        TerrainProbe probe = new TerrainProbe(source, randomState.sampler(), sited,
+                atoll == null ? null : atoll.weight(), noise.minY(), mainTop(noise));
+        // Island bases (nadirite) tell a cave's roof from an underside by the terrain before the caves.
+        IslandBase.bind(randomState, probe);
         double vertical = carve != null ? carve.verticalScale() : atoll != null ? atoll.verticalScale() : 1;
         BasinField basins = null;
         if (carve != null || atoll != null) {
             // The atolls read their height off the land as it is before any of them is laid over it.
             TerrainProbe hosts = atoll == null ? null : new TerrainProbe(source, randomState.sampler(), atoll.argument(),
-                    atoll.weight(), noise.minY(), noise.minY() + noise.height());
+                    atoll.weight(), noise.minY(), mainTop(noise));
             BasinField field = new BasinField(level.getSeed(), probe, hosts, vertical,
                     atoll == null ? null : new BasinField.AtollSettings(atoll.surface(), atoll.verticalScale()));
             carves.forEach(c -> c.binding().bind(field));
@@ -140,7 +176,7 @@ public final class RegionBinding {
         if (!breaks.isEmpty()) {
             GroveBreak first = breaks.getFirst();
             breakField = new BreakField(level.getSeed(), new TerrainProbe(source, randomState.sampler(),
-                    first.argument(), atoll == null ? null : atoll.weight(), noise.minY(), noise.minY() + noise.height()),
+                    first.argument(), atoll == null ? null : atoll.weight(), noise.minY(), mainTop(noise)),
                     first.verticalScale());
             BreakField bound = breakField;
             breaks.forEach(b -> b.binding().bind(bound));
@@ -148,6 +184,16 @@ public final class RegionBinding {
         LandmarkField landmarks = new LandmarkField(level.getSeed(), probe, basins, vertical, level.getMaxBuildHeight());
         fractures.forEach(f -> f.bind(landmarks));
         LandmarkField.put(level.dimension(), landmarks);
+        if (!caves.isEmpty()) {
+            CaveField caveField = new CaveField(probe, basins, landmarks);
+            caves.forEach(cave -> cave.binding().bind(caveField));
+        }
+        if (!stacks.isEmpty()) {
+            com.linc.alteredaether.worldgen.landmark.StackField stackField =
+                    new com.linc.alteredaether.worldgen.landmark.StackField(level.getSeed(), probe, landmarks, basins);
+            stacks.forEach(stack -> stack.binding().bind(stackField));
+            com.linc.alteredaether.worldgen.landmark.StackField.put(level.dimension(), stackField);
+        }
         GroveField.put(level.dimension(), new GroveField(level.getSeed(), probe, landmarks, breakField, vertical,
                 level.getMaxBuildHeight()));
         // The cloud skirts are the tall Aether's alone.
@@ -156,14 +202,44 @@ public final class RegionBinding {
         }
     }
 
+    /**
+     * The top of the main island band, where every probe stops: the noise band itself reaches higher, for the
+     * Highlands floating above, and a probe looking for the ground must never land on one of those. It is the
+     * Highlands' floor (y 140 in the tall Aether, 136 in the stock one), under which the plateau's mesas and the
+     * crags' summits now reach.
+     */
+    public static final int MAIN_TOP = 140;
+    private static final int STOCK_MAIN_TOP = 136;
+
+    private static int mainTop(NoiseSettings noise) {
+        return Math.min(noise.minY() + noise.height(), noise.minY() < 0 ? MAIN_TOP : STOCK_MAIN_TOP);
+    }
+
+    /** The biome edge distances, read off the same biome map the world generates with. */
+    private static void bindEdges(ServerLevel level, RandomState randomState, BiomeSource source, List<BiomeEdge> edges) {
+        if (edges.isEmpty() || !(level.getChunkSource().getGenerator() instanceof NoiseBasedChunkGenerator generator)) {
+            return;
+        }
+        NoiseSettings noise = generator.generatorSettings().value().noiseSettings();
+        BiomeEdgeField field = new BiomeEdgeField(new TerrainProbe(source, randomState.sampler(), null, null,
+                noise.minY(), mainTop(noise)));
+        edges.forEach(edge -> edge.binding().bind(field.solver(edge.classifier(), edge.reach())));
+        BiomeEdgeField.put(level.dimension(), field);
+    }
+
     @SubscribeEvent
     public static void onLevelUnload(LevelEvent.Unload event) {
         if (event.getLevel() instanceof ServerLevel level) {
             SOLVERS.remove(level.dimension());
+            IslandBase.bind(level.getChunkSource().randomState(), null);
+            BiomeEdgeField.put(level.dimension(), null);
+            ColumnMassField.put(level.dimension(), null);
+            com.linc.alteredaether.worldgen.landmark.StackField.put(level.dimension(), null);
             BasinField.put(level.dimension(), null);
             LandmarkField.put(level.dimension(), null);
             GroveField.put(level.dimension(), null);
             SkirtField.put(level.dimension(), null);
+            CloudSea.put(level.dimension(), null);
         }
     }
 

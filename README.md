@@ -24,11 +24,13 @@ switch in the config's `[compat]` section is on).
 
 | Biome | Terrain |
 |---|---|
-| Aether Plateau | stepped mesas with lakes, pools and the odd waterfall off a cliff |
-| Frozen Crags | floating mountain massifs along ridgelines, tarns, snow drifts, ice spikes |
-| Tempest Peaks | the crags' sharpest summits: needle spires, branching native copper crystals with spidery roots of greening copper spreading through the rock, strike craters, storms |
+| Aether Plateau | a tall tableland of stepped mesas, its ground near y 96 in the tall Aether, with lakes, pools and the odd waterfall off a cliff |
+| Frozen Crags | floating mountain massifs along ridgelines, tarns, snow drifts, ice spikes; with the Sky Tundra round them, they stand about 30 blocks above the islands nearby, which climb to meet them |
+| Sky Tundra | snowfield plates ringing the crags, with great wind drifts and buried trees |
+| Tempest Peaks | rare, broad ranges standing alone in the open sky, apart from the cold lands: needle spires, branching native copper crystals with spidery roots of greening copper spreading through the rock, strike craters, storms |
 | Shattered Rift | an island torn apart: a sparse field of tall, blocky columns standing apart, with clouds of rubble hanging in the gaps between them |
-| Windswept Dunes | thin sheets of quicksoil winding high through the sky, rippled by long wind ridges; ruins, dead bushes |
+| Windswept Dunes | thin sheets of quicksoil winding low through the sky, rippled by long wind ridges, what is left of an island the clouds have blown over: rare, alone in the open sky with the land round them thinning away; ruins, dead bushes |
+| Flower Bowl | a meadow basin inside a raised rim, flowers, sometimes a pond |
 | Skyroot Cathedral | broad forest islands of giant skyroots standing shoulder to shoulder, joined by roots, layering bows and canopy bridges: hollow elders you can build in, tunnel giants, Tule masses, bow colonies and cathedral rings; trails, lamps and camps |
 | Nurselog Hollow | the cathedral's fallen elders, round its edges and now and then alone: colossal fallen logs with walkable hollows and root plates over craters, some flooded into muddy ponds, snags, giant stumps, lattice skeletons and rings of regrowth |
 | Blazing, Cascading, Flourishing and Vexing Archwood Groves | Ars Nouveau's archwood forests (need Ars Nouveau) |
@@ -112,7 +114,8 @@ builds a ruin (`cottage`, `keep`, `circle` or `head`) where you stand. All three
 
 **Tempest storms**: storm cells drift over Tempest Peaks and strike the high ground near players, with a warning
 of sparks and thunder first. Lightning rods take strikes as in vanilla. Explosions and scorch marks respect
-`mobGriefing`. Clients see flashes in the distance, rain, sparks and storm fog.
+`mobGriefing`. Clients see flashes in the distance, rain, sparks and storm fog. With Sable, the storms never single
+out anyone riding a ship: no strike is drawn by their copper or metal or aimed at the ground under them.
 
 **Ambrosium campfire**: a campfire of skyroot and ambrosium that burns in the Aether. Aether: Beyond Parity's
 campfire is replaced by it when that mod is installed.
@@ -197,6 +200,14 @@ Stone breaks off the islands above and falls. Some of it did long ago, and some 
 - **Claims.** With FTB Chunks, a boulder never drops on, settles in or hurts anyone in a claim whose team has turned off
   mob griefing or explosion damage, and neither does it touch a structure; one that rolls into such land vanishes in dust.
 
+### Passable Aerclouds (with Sable)
+
+Airships, contraptions and falling boulders pass straight through aerclouds, the Aether's and Deep Aether's, without
+slowing or breaking them. The clouds they touch, and those a block around, turn faint and fade back in over 15 seconds
+(configurable), then are the same clouds as before. A cloud only gives way to Sable bodies and to whoever is riding
+one: anyone else still stands, bounces and drifts on it as usual, so the crew on an open deck isn't pushed off as the
+ship sails through, while a player on the cloud beside it doesn't fall. Clouds built into a ship collide as any block does.
+
 ## The tall Aether
 
 The built-in datapack **Altered Aether: Tall Aether** (on by default) makes the Aether -64..319 like the Overworld,
@@ -204,6 +215,11 @@ with deeper islands and room for the tallest landmarks. Turn it off in the Data 
 for the stock 0..255 Aether. The height can't change once a world's Aether has been generated.
 
 With the tall pack, other mods' Aether structures and ores are moved to the matching heights automatically.
+
+The tall Aether also has a **cloud sea**: a rolling sheet of cold aercloud at about y -35..-8 under every region's
+plain islands, level with the dunes. The bigger islands plunge through it, sky lakes and holes break it up, and it
+gives way to our landforms. Falling water washes its own way down through the cloud. About one in five of the
+Highlands' islets wears a **cloud skirt**, a collar of the same cloud round its rim.
 
 ## Optional mods
 
@@ -229,7 +245,7 @@ With the tall pack, other mods' Aether structures and ores are moved to the matc
 | Mowzie's Mobs | nagas in Deep Aether's Yagroot Swamp; lanterns in the Skyroot Cathedral and Deep Aether's Luminescent Forest                                                                                                                                                           |
 | Integrated Villages | its airship village in the Aether, and no longer in the overworld (configurable)                                                                                                                                                                      |
 | Aether: Beyond Parity | its ambrosium campfire is replaced                                                                                                                                                                                                                    |
-| Sable | falling boulders; gravitite lifts (enchanted gravitite only while powered)                                                                                                                                                                              |
+| Sable | falling boulders; ships pass through aerclouds; gravitite lifts (enchanted gravitite only while powered)                                                                                                                                                  |
 | Create Simulated (Create Aeronautics) | falling boulders pass through its void-holding "end sea" while ships don't; the tall Aether's end sea is lowered to the world's floor                                                                                                              |
 | FTB Chunks | falling boulders keep out of claims protected from griefing                                                                                                                                                                                          |
 
@@ -242,8 +258,9 @@ on cold aerclouds.
 `config/altered_aether-common.toml`. Every value is commented with its default and range.
 
 - `[region]`: the region's weight and each biome on or off.
-- `[terrain]`: landform strengths, rift fracture size and drift, dune height and wind, atoll size, and
-  `landmark_rarity` (higher is rarer, 0 turns landmarks off).
+- `[terrain]`: landform strengths, rift fracture size and drift, dune height and wind, atoll size,
+  `landmark_rarity` (higher is rarer, 0 turns landmarks off), and the cloud skirts and cloud seas on or off, with the
+  share of breezes that spawn on each.
 - `[basins]`: each kind of lake on or off and its rarity, waterfall frequency, coral density.
 - `[groves]`: giant spacing, golden heartwood chance, the share of Deep Aether wood colonies, camp and secret-chest
   chances, the share of trails and camps still tended, and the chance and size of the swamp lakes (`mire_chance`,
@@ -262,6 +279,8 @@ on cold aerclouds.
 - `[boulders]`: minutes between falling boulders per player (0 turns them off), how many at once, the chance one is
   dropped over the void, and the damage they do. How many ancient boulders there are is `ancient_boulders` under
   `[features]`.
+- `[phased_aerclouds]`: how many seconds a cloud a Sable body passed through takes to fade back in (`fade_seconds`,
+  15 by default).
 - `[tall_mode]`: structures the tall Aether should leave at their own heights.
 - `[compat]`: one switch per optional mod, the Beyond Parity campfire swap, and `disable_overworld_archwood`.
 
@@ -272,30 +291,7 @@ it lasts, flying items on or off, and fewer particles.
 ## Shaders
 
 The atmospheric effects are made to work under Iris shaderpacks, and are tested with BSL v10.1.1 (Iris 1.8.14,
-Sodium 0.8.13): the flashes are real lightning to the shaderpack, and the storm's rain and thunder levels drive its
-wetness and darkening. Storm fog is left to the shaderpack when one is active. See
-[docs/shaders.md](docs/shaders.md).
-
-## Performance
-
-Measured with the dev server's benchmark: fresh worlds with the same seed, 225 chunks around each of two points,
-twice each. The baseline is the same mod with its worldgen switched off in the config (region weight 0, no
-landmarks, no basins), so the terrain is the stock Aether's.
-
-| Area | Stock terrain | Altered Aether | Cost |
-|---|---|---|---|
-| Around 0, 0 | 28.3 ms per chunk | 35.1 ms | +24% |
-| Around 3000, -2000 | 16.1 ms | 17.0 ms | +6% |
-
-Overall the difference is about 18%. Most of it goes on the extra terrain the plateau's mesas and the groves'
-islands put where stock islands leave sky: more blocks to surface, light and decorate.
-
-Exploring keeps up with flight: a server-side stand-in for a player crossing 11,000 blocks at 30 blocks a second
-(`/altered_aether fly`) has every chunk near it generated in time, at an average tick of under 4 ms.
-
-The Skyroot Cathedral's forest islands cost about the same as the plateau, for the same reason. The giants
-themselves are cheap: planning and building every giant in a 289-chunk benchmark takes 2 to 3 seconds of worker
-time in all (the benchmark reports it as `ms/grove_plan` and `ms/grove_build`).
+Sodium 0.8.13)
 
 ## Development
 
@@ -335,6 +331,10 @@ Worldgen tools, all on the dev server:
   `campfire`, `biome:<name>`, `giant:<type>`) into `run/screenshots/tour/`.
 - `/altered_aether fly <from> <to> <speed> [radius]` (run in the Aether, e.g. through RCON) moves a chunk ticket
   along a line like a flying player and logs tick times, chunks generated and how many near it are still missing.
+- `-PaaPerf=fingerprint,bench,chunkhash,fly,spark,jfr` (with `-PaaPerfTag=<name>` and `-PaaWorld=<fresh world>`)
+  measures worldgen for before/after comparisons and writes to `run-server/perf/`; `/altered_aether fingerprint`
+  hashes the terrain of a running world. `tools/perf/compare.py` and `tools/perf/JfrAgg.java` read the results. See
+  [docs/worldgen-performance.md](docs/worldgen-performance.md).
 - `python tools/parity/parity.py` compares the biomes with the World Traveler 2 datapack they replace.
 
 ## License

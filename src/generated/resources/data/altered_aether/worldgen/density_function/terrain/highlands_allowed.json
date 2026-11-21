@@ -1,0 +1,22 @@
+{
+  "type": "minecraft:flat_cache",
+  "argument": {
+    "type": "minecraft:clamp",
+    "input": {
+      "type": "minecraft:add",
+      "argument1": -0.25,
+      "argument2": {
+        "type": "minecraft:mul",
+        "argument1": 0.041666666666666664,
+        "argument2": {
+          "type": "altered_aether:biome_edge",
+          "classifier": "highlands",
+          "inside": 1,
+          "reach": 32
+        }
+      }
+    },
+    "max": 1.0,
+    "min": 0.0
+  }
+}

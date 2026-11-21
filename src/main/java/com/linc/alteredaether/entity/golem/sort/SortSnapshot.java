@@ -14,6 +14,7 @@
  */
 package com.linc.alteredaether.entity.golem.sort;
 
+import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -30,11 +31,25 @@ import java.util.TreeSet;
  *
  * @param keys  every item seen (and every item pinned), by key number
  * @param invs  the inventories, in a fixed order; a move names them by their index here
- * @param nodes the family tree, root first; every node's parent comes before it
+ * @param nodes     the family tree, root first; every node's parent comes before it
+ * @param positions where each inventory is, by the index in {@code invs}, or null if unknown: a family new to the
+ *                  storage is given the free chest nearest its relatives
  */
-public record SortSnapshot(List<Key> keys, List<Inv> invs, List<Node> nodes) {
+public record SortSnapshot(List<Key> keys, List<Inv> invs, List<Node> nodes, @Nullable List<Pos> positions) {
     /** The root of the family tree: the miscellaneous items, what no finer family is kept for. */
     public static final int ROOT = 0;
+
+    public SortSnapshot(List<Key> keys, List<Inv> invs, List<Node> nodes) {
+        this(keys, invs, nodes, null);
+    }
+
+    /** A block position. */
+    public record Pos(int x, int y, int z) {
+        public long distSqr(Pos other) {
+            long dx = x - other.x, dy = y - other.y, dz = z - other.z;
+            return dx * dx + dy * dy + dz * dz;
+        }
+    }
 
     /** A slot that takes any item. */
     public static final int ANY = -1;
@@ -238,6 +253,6 @@ public record SortSnapshot(List<Key> keys, List<Inv> invs, List<Node> nodes) {
 
     /** A copy whose slots can be changed without touching this one. */
     public SortSnapshot copy() {
-        return new SortSnapshot(keys, invs.stream().map(Inv::copy).toList(), nodes);
+        return new SortSnapshot(keys, invs.stream().map(Inv::copy).toList(), nodes, positions);
     }
 }

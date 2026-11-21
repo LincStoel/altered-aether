@@ -14,10 +14,9 @@
  */
 package com.linc.alteredaether.worldgen.basin;
 
-import com.google.common.cache.Cache;
-import com.google.common.cache.CacheBuilder;
 import com.linc.alteredaether.config.AACommonConfig;
 import com.linc.alteredaether.worldgen.AABiomes;
+import com.linc.alteredaether.worldgen.CellCache;
 import com.linc.alteredaether.worldgen.TerrainProbe;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.util.Mth;
@@ -30,9 +29,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutionException;
 
 /**
  * Every basin and atoll in one world, as a pure function of the seed: the carve density function, the atoll density
@@ -52,12 +49,29 @@ public final class BasinField {
     static final int ATOLL_CELL = 320;
     /**
      * Cells of the second, finer atoll grid, for small single atolls in the gaps the big ones leave. A small atoll
-     * stands only clear of every big one, and trims less of the land around it.
+     * stands only clear of every big one, and trims less of the land around it. Wide enough past a small atoll's
+     * extent (32 to 43 blocks) that each can drift well off its cell's centre, so they don't read as a grid.
      */
-    static final int MINOR_CELL = 88;
+    static final int MINOR_CELL = 136;
     private static final double MINOR_INFLUENCE = 16;
     /** Double atolls are landmarks, on a grid of their own this times the configured atoll size. */
     static final int DOUBLE_CELL = 1024;
+    /** Cells of the big lakes' grid: room for a lake's widest outline and its banks, with some left to drift in. */
+    static final int LAKE_CELL = 384;
+    /** Bearings round a big lake where its rim is read, and points out from its centre where the ground under it is. */
+    private static final int LAKE_RIM = 24, LAKE_INTERIOR = 5;
+    /** How far above the water a big lake planes the ground, and how high its rim may stand, in tall-Aether blocks. */
+    private static final int LAKE_PLANE = 40, LAKE_RIM_HILL = 20;
+    /** Spots tried per lake cell, and how much smaller than its rolled outline the last one tries the lake. */
+    private static final int LAKE_ATTEMPTS = 24;
+    private static final double LAKE_SHRINK = 0.45;
+    /**
+     * Rim bearings a big lake may have with no ground, where it runs past the island's edge (the fill builds ground
+     * under it and a lip to hold it there), and the share of its water (one in this many) that may lie past the edge.
+     */
+    private static final int LAKE_OPEN_RIM = 8, LAKE_VOID_SHARE = 4;
+    /** How far under the rim's middling height a rim point may drop before it counts as a spill, in tall blocks. */
+    private static final int LAKE_STEP_DOWN = 8;
     /** The chance a double-atoll cell holds one, before the landmark rarity multiplier. */
     private static final double DOUBLE_CHANCE = 0.6;
     /** The biomes a double atoll stands in: the skyroot islands, where clearing a moat leaves open sky. */
@@ -78,7 +92,7 @@ public final class BasinField {
     private static final BasinType[] SMALL = {BasinType.DEEP_LAKE, BasinType.POOL, BasinType.CASCADING_LAKE,
             BasinType.FROZEN_POOL, BasinType.POISON_POOL};
     private static final long BASIN_SALT = 0x5DEECE66DL, ATOLL_SALT = 0x2545F4914F6CDD1DL,
-            MINOR_SALT = 0x9E3779B97F4A7C15L, DOUBLE_SALT = 0x6A09E667F3BCC909L;
+            MINOR_SALT = 0x9E3779B97F4A7C15L, DOUBLE_SALT = 0x6A09E667F3BCC909L, LAKE_SALT = 0x3243F6A8885A308DL;
     /** The chance a fine-grid cell holds a small atoll, as a share of the atoll lagoon's own chance. */
     private static final double MINOR_ATOLL_CHANCE = 0.3;
     /** The share of atolls that are rings with a river round them. */
@@ -121,10 +135,11 @@ public final class BasinField {
     /** Why candidates were turned down, for the debug tools' tuning output. */
     private final Map<String, java.util.concurrent.atomic.AtomicInteger> rejections = new ConcurrentHashMap<>();
 
-    private final Cache<Long, Optional<BasinSite>> basins = CacheBuilder.newBuilder().maximumSize(1 << 14).build();
-    private final Cache<Long, Optional<AtollSite>> atolls = CacheBuilder.newBuilder().maximumSize(1 << 12).build();
-    private final Cache<Long, Optional<AtollSite>> minors = CacheBuilder.newBuilder().maximumSize(1 << 13).build();
-    private final Cache<Long, Optional<AtollSite>> doubles = CacheBuilder.newBuilder().maximumSize(1 << 10).build();
+    private final CellCache<Optional<BasinSite>> basins = new CellCache<>(1 << 14);
+    private final CellCache<Optional<AtollSite>> atolls = new CellCache<>(1 << 12);
+    private final CellCache<Optional<AtollSite>> minors = new CellCache<>(1 << 13);
+    private final CellCache<Optional<AtollSite>> doubles = new CellCache<>(1 << 10);
+    private final CellCache<Optional<BasinSite>> lakes = new CellCache<>(1 << 11);
 
     /**
      * @param probe    the terrain before basins are cut; when it has none, the world has no basin carve and only atoll
@@ -156,6 +171,15 @@ public final class BasinField {
     /** Every basin whose extent reaches into the given block rectangle, atoll lagoons included. */
     public List<BasinSite> sitesTouching(int minX, int minZ, int maxX, int maxZ) {
         List<BasinSite> found = new ArrayList<>(2);
+        if (carves) {
+            int reach = LAKE_CELL / 2;
+            for (int cx = Math.floorDiv(minX - reach, LAKE_CELL); cx <= Math.floorDiv(maxX + reach, LAKE_CELL); cx++) {
+                for (int cz = Math.floorDiv(minZ - reach, LAKE_CELL); cz <= Math.floorDiv(maxZ + reach, LAKE_CELL); cz++) {
+                    lake(cx, cz).filter(site -> touches(site.x(), site.z(), site.extent(), minX, minZ, maxX, maxZ))
+                            .ifPresent(found::add);
+                }
+            }
+        }
         if (carves) {
             int reach = CELL / 2;
             for (int cx = Math.floorDiv(minX - reach, CELL); cx <= Math.floorDiv(maxX + reach, CELL); cx++) {
@@ -228,6 +252,15 @@ public final class BasinField {
 
     public int atollCell() {
         return atollCell;
+    }
+
+    /** The big lake in a cell of the lake grid, if it has one. */
+    public Optional<BasinSite> lakeInCell(int cx, int cz) {
+        return carves ? lake(cx, cz) : Optional.empty();
+    }
+
+    public int lakeCell() {
+        return LAKE_CELL;
     }
 
     /** The double atoll in a cell of its own grid, if it has one. */
@@ -373,6 +406,11 @@ public final class BasinField {
                 }
                 double radius = Mth.lerp(r1, type.minRadius, type.maxRadius);
                 double depth = Mth.lerp(r2, type.minDepth, type.maxDepth) * vertical;
+                // A basin inside a big lake's planed ground would hold its water above the lake's, walled in.
+                if (!clearOfLakes(x, z, radius * BasinSite.MAX_WOBBLE + BasinSite.BANK_HEIGHT * BasinSite.BANK_SLOPE + 2)) {
+                    reject("basin_lake");
+                    break;
+                }
                 BasinSite site = validate(type, x, z, radius, depth, phase1, phase2);
                 if (site != null) {
                     return site;
@@ -435,6 +473,204 @@ public final class BasinField {
             }
         }
         return new BasinSite(type, x, z, radius, depth, water, phase1, phase2);
+    }
+
+    // ------------------------------------------------------------------------------------------- big lakes --
+
+    private Optional<BasinSite> lake(int cx, int cz) {
+        return cached(lakes, cx, cz, () -> timed(() -> Optional.ofNullable(findLake(cx, cz))));
+    }
+
+    /**
+     * The cell's big lake. The cell rolls once; each spot tried takes the lake type its centre's biome suits (the
+     * poison lake first), if the roll beats that type's chance. The outline is rolled with the cell and the spot only
+     * moves it about, so the atoll check (cheap, as the atolls are found anyway) goes before any terrain is read.
+     */
+    @Nullable
+    private BasinSite findLake(int cx, int cz) {
+        RandomSource random = random(cx, cz, LAKE_SALT);
+        double roll = random.nextDouble();
+        double r1 = random.nextDouble(), r2 = random.nextDouble();
+        long shapeSeed = random.nextLong();
+        if (roll >= Math.max(Math.max(chances[BasinType.LAKE.ordinal()], chances[BasinType.POISON_LAKE.ordinal()]),
+                chances[BasinType.FROZEN_LAKE.ordinal()])) {
+            return null;
+        }
+        double outline = Mth.lerp(r1, BasinType.LAKE.minRadius, BasinType.LAKE.maxRadius);
+        double widest = BasinSite.lake(BasinType.LAKE, 0, 0, 0, 0, new LakeShape(shapeSeed, outline, 0)).extent();
+        int jitter = Math.max(0, (int) (LAKE_CELL / 2.0 - widest));
+        for (int attempt = 0; attempt < LAKE_ATTEMPTS; attempt++) {
+            // Islands are often smaller than the widest outline, so later spots try the lake smaller.
+            double scale = 1 - LAKE_SHRINK * attempt / (LAKE_ATTEMPTS - 1);
+            LakeShape shape = new LakeShape(shapeSeed, outline * scale, (int) Math.round(LAKE_PLANE * vertical));
+            double extent = BasinSite.lake(BasinType.LAKE, 0, 0, 0, 0, shape).extent();
+            int x = cx * LAKE_CELL + LAKE_CELL / 2 + random.nextInt(2 * jitter + 1) - jitter;
+            int z = cz * LAKE_CELL + LAKE_CELL / 2 + random.nextInt(2 * jitter + 1) - jitter;
+            String biome = biomeAt(x, z);
+            BasinType type = BasinType.POISON_LAKE.suits(biome) ? BasinType.POISON_LAKE
+                    : BasinType.LAKE.suits(biome) ? BasinType.LAKE
+                    : BasinType.FROZEN_LAKE.suits(biome) ? BasinType.FROZEN_LAKE : null;
+            if (type == null || roll >= chances[type.ordinal()]) {
+                continue;
+            }
+            if (type == BasinType.FROZEN_LAKE) {
+                // A tarn: the same outline drawn at a tarn's size.
+                double tarn = Mth.lerp(r1, type.minRadius, type.maxRadius) * scale;
+                shape = new LakeShape(shapeSeed, tarn, (int) Math.round(LAKE_PLANE * vertical));
+                extent = BasinSite.lake(type, 0, 0, 0, 0, shape).extent();
+            }
+            if (!clearOfAtolls(x, z, extent)) {
+                reject("lake_atoll");
+                continue;
+            }
+            double depth = Mth.lerp(r2, type.minDepth, type.maxDepth) * vertical;
+            BasinSite site = validateLake(type, x, z, depth, shape);
+            if (site != null) {
+                return site;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * A big lake checked against the terrain before any carve: in its biome across the middle, its rim (just past the
+     * outermost shore on each bearing) solid at the water line and not standing too far over it, ground under all of
+     * it within reach of the bed and none rising past what the planing clears, and island enough under the bed. The
+     * water lies a block under the rim's lowest point, as a basin's does.
+     */
+    @Nullable
+    private BasinSite validateLake(BasinType type, int x, int z, double depth, LakeShape shape) {
+        double outline = shape.radius();
+        for (int d = 0; d < 4; d++) {
+            double angle = d * Math.PI / 2;
+            if (!type.suits(biomeAt(x + (int) (Math.cos(angle) * outline * 0.4),
+                    z + (int) (Math.sin(angle) * outline * 0.4)))) {
+                return reject("lake_biome");
+            }
+        }
+        int centre = surface(x, z, maxY - 1, minY);
+        if (centre == Integer.MIN_VALUE) {
+            return reject("lake_no_ground");
+        }
+        int hill = (int) Math.round(LAKE_RIM_HILL * vertical);
+        int[] rimX = new int[LAKE_RIM], rimZ = new int[LAKE_RIM], tops = new int[LAKE_RIM];
+        int lowest = Integer.MAX_VALUE, highest = Integer.MIN_VALUE, open = 0;
+        for (int i = 0; i < LAKE_RIM; i++) {
+            double angle = i * Mth.TWO_PI / LAKE_RIM;
+            double cos = Math.cos(angle), sin = Math.sin(angle);
+            // The outermost wet point on the bearing, so an inlet doesn't put the rim inside the water.
+            double shore = 0;
+            for (double r = 2; r <= outline; r += 2) {
+                if (shape.wet((int) Math.round(cos * r), (int) Math.round(sin * r))) {
+                    shore = r;
+                }
+            }
+            rimX[i] = x + (int) Math.round(cos * (shore + 3));
+            rimZ[i] = z + (int) Math.round(sin * (shore + 3));
+            // No ground within reach of the centre's height: the island ends there, and the lake spills off it.
+            tops[i] = surfaceNear(rimX[i], rimZ[i], centre, centre - hill, centre + shape.plane());
+            if (tops[i] == Integer.MIN_VALUE && ++open > LAKE_OPEN_RIM) {
+                return reject("lake_no_rim");
+            }
+        }
+        // The water sits under the rim's lowest point, but a point far under the rest (the island stepping down) is
+        // somewhere for the lake to spill instead, while the budget for those lasts.
+        int[] grounded = java.util.Arrays.stream(tops).filter(t -> t != Integer.MIN_VALUE).sorted().toArray();
+        int median = grounded[grounded.length / 2];
+        for (int i = 0; i < LAKE_RIM; i++) {
+            if (tops[i] != Integer.MIN_VALUE && tops[i] < median - LAKE_STEP_DOWN * vertical && open < LAKE_OPEN_RIM) {
+                tops[i] = Integer.MIN_VALUE;
+                open++;
+            }
+        }
+        for (int top : tops) {
+            if (top != Integer.MIN_VALUE) {
+                lowest = Math.min(lowest, top);
+                highest = Math.max(highest, top);
+            }
+        }
+        // Higher ground round the rim is cut back to a bank, or left as a cliff behind it.
+        if (highest - lowest > shape.plane() - 4) {
+            return reject("lake_hill");
+        }
+        int water = lowest - 1;
+        if (water + shape.plane() + 4 * vertical >= maxY || water - depth - 8 <= minY) {
+            return reject("lake_height");
+        }
+        for (int i = 0; i < LAKE_RIM; i++) {
+            if (tops[i] != Integer.MIN_VALUE && (!solid(rimX[i], water, rimZ[i]) || !solid(rimX[i], water - 2, rimZ[i]))
+                    && ++open > LAKE_OPEN_RIM) {
+                return reject("lake_rim_open");
+            }
+        }
+        // Across the water: ground no deeper than a few blocks under the bed, and none higher than the plane clears.
+        // Where the water runs off the island there is no ground under it at all, which is fine for part of it.
+        int step = (int) Math.ceil(outline / LAKE_INTERIOR);
+        int ceiling = water + shape.plane() - 4;
+        int wet = 0, voids = 0;
+        for (int dx = -LAKE_INTERIOR * step; dx <= LAKE_INTERIOR * step; dx += step) {
+            for (int dz = -LAKE_INTERIOR * step; dz <= LAKE_INTERIOR * step; dz += step) {
+                if (!shape.wet(dx, dz)) {
+                    continue;
+                }
+                wet++;
+                int bed = (int) Math.floor(water + 1 - depth * shape.depthShare(dx, dz));
+                int top = surfaceNear(x + dx, z + dz, water, bed - 6, ceiling + 1);
+                if (top == Integer.MIN_VALUE) {
+                    voids++;
+                    continue;
+                }
+                if (top > ceiling) {
+                    return reject("lake_peak");
+                }
+                if (!solid(x + dx, Math.min(top, bed) - 4, z + dz)) {
+                    return reject("lake_thin_floor");
+                }
+            }
+        }
+        if (voids * LAKE_VOID_SHARE > wet) {
+            return reject("lake_void");
+        }
+        return BasinSite.lake(type, x, z, depth, water, shape);
+    }
+
+    /** Whether a circle of {@code extent} round (x, z) keeps clear of every atoll of the three grids and its land. */
+    private boolean clearOfAtolls(int x, int z, double extent) {
+        if (atoll == null) {
+            return true;
+        }
+        return clearOf(x, z, extent, atollCell, this::atoll) && clearOf(x, z, extent, minorCell, this::minor)
+                && clearOf(x, z, extent, doubleCell, this::doubleAtoll);
+    }
+
+    private static boolean clearOf(int x, int z, double extent, int cell, AtollGrid grid) {
+        // An atoll and its land stay inside its own cell, so only cells the circle reaches can hold one touching it.
+        for (int cx = Math.floorDiv((int) (x - extent), cell); cx <= Math.floorDiv((int) (x + extent), cell); cx++) {
+            for (int cz = Math.floorDiv((int) (z - extent), cell); cz <= Math.floorDiv((int) (z + extent), cell); cz++) {
+                AtollSite site = grid.in(cx, cz).orElse(null);
+                if (site != null && Math.hypot(x - site.x(), z - site.z()) < site.extent() + extent) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    /** Whether a circle of {@code extent} round (x, z) keeps clear of every big lake and its banks. */
+    private boolean clearOfLakes(int x, int z, double extent) {
+        if (!carves) {
+            return true;
+        }
+        int reach = (int) Math.ceil(extent);
+        for (int cx = Math.floorDiv(x - reach, LAKE_CELL); cx <= Math.floorDiv(x + reach, LAKE_CELL); cx++) {
+            for (int cz = Math.floorDiv(z - reach, LAKE_CELL); cz <= Math.floorDiv(z + reach, LAKE_CELL); cz++) {
+                BasinSite lake = lake(cx, cz).orElse(null);
+                if (lake != null && Math.hypot(x - lake.x(), z - lake.z()) < lake.extent() + extent) {
+                    return false;
+                }
+            }
+        }
+        return true;
     }
 
     // ------------------------------------------------------------------------------------------ atoll sites --
@@ -785,13 +1021,8 @@ public final class BasinField {
         return new XoroshiroRandomSource(mix(seed ^ salt) ^ mix(cx * 0x9E3779B97F4A7C15L + cz));
     }
 
-    private static <T> T cached(Cache<Long, T> cache, int cx, int cz, Callable<T> loader) {
-        long key = ((long) cx << 32) ^ (cz & 0xFFFFFFFFL);
-        try {
-            return cache.get(key, loader);
-        } catch (ExecutionException e) {
-            throw new IllegalStateException(e.getCause());
-        }
+    private static <T> T cached(CellCache<T> cache, int cx, int cz, java.util.function.Supplier<T> loader) {
+        return cache.get(((long) cx << 32) ^ (cz & 0xFFFFFFFFL), k -> loader.get());
     }
 
     // --------------------------------------------------------------------------------------------- helpers --

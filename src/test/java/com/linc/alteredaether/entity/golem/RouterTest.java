@@ -31,7 +31,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * An item's route: straight through open air, setting off along the longest axis, round a wall one axis at a time,
- * none when walled in, never doubling back; and its flight lands where the route ends, sooner for shorter routes.
+ * through a door at the far end of a room, none when walled in (found out at once), never doubling back; floods that
+ * tell storage shut off from a golem; and its flight lands where the route ends, sooner for shorter routes, taking each
+ * corner at the same speed.
  */
 class RouterTest {
     private static final Router.Bounds BOUNDS = new Router.Bounds(-20, -5, -20, 20, 10, 20);
@@ -145,5 +147,128 @@ class RouterTest {
         }
         double[] stretched = FlightPath.at(table, 1000, 1000);
         assertEquals(8.5, stretched[0], 1.0E-9);
+    }
+
+    /** The cells inside a closed room, x and z -14..14 and y 0..2, with a wall at x = 4 holding one door. */
+    private static Router.CellGrid room(int doorZ, Set<Cell> chests, int[] probes) {
+        return (x, y, z) -> {
+            probes[0]++;
+            if (x < -14 || x > 14 || z < -14 || z > 14 || y < 0 || y > 2 || chests.contains(new Cell(x, y, z))) {
+                return false;
+            }
+            return x != 4 || z == doorZ && y <= 1;
+        };
+    }
+
+    /** The open cells beside a one-block chest, as GolemAccess.openFaces finds them. */
+    private static List<Cell> faces(Router.CellGrid grid, Cell chest) {
+        List<Cell> faces = new ArrayList<>();
+        for (int[] d : new int[][]{{0, -1, 0}, {0, 1, 0}, {0, 0, -1}, {0, 0, 1}, {-1, 0, 0}, {1, 0, 0}}) {
+            Cell beside = new Cell(chest.x() + d[0], chest.y() + d[1], chest.z() + d[2]);
+            if (grid.isOpen(beside.x(), beside.y(), beside.z())) {
+                faces.add(beside);
+            }
+        }
+        return faces;
+    }
+
+    @Test
+    void aDoorAtTheFarEndOfARoomIsFound() {
+        // a search that spent its budget on every way it might bend used to give this up as no route
+        Cell src = new Cell(-6, 0, -12), dst = new Cell(10, 0, -12);
+        int[] probes = {0};
+        Router.CellGrid grid = room(13, Set.of(src, dst), probes);
+        Router.Bounds bounds = new Router.Bounds(-18, -11, -18, 18, 11, 18);
+        List<Cell> from = faces(grid, src), to = faces(grid, dst);
+        assertNull(Router.straight(grid, from, to, bounds), "the wall should block every three-leg route");
+        Router.Search search = Router.search(grid, from, to, bounds);
+        assertNotNull(search.corners(), "no way through the door");
+        assertAxisAligned(search.corners());
+        for (Cell cell : cells(search.corners())) {
+            assertTrue(grid.isOpen(cell.x(), cell.y(), cell.z()), "went through a closed cell at " + cell);
+        }
+        assertTrue(cells(search.corners()).contains(new Cell(4, 0, 13)) || cells(search.corners()).contains(new Cell(4, 1, 13)),
+                "didn't go through the door");
+    }
+
+    @Test
+    void aGoalShutInARoomIsNoRouteAtOnce() {
+        // the target's room has no door: the search shouldn't spend its whole budget outside before it says so
+        Cell goal = new Cell(10, 0, 0);
+        int[] probes = {0};
+        Router.CellGrid grid = (x, y, z) -> {
+            probes[0]++;
+            boolean inRoom = x >= 8 && x <= 12 && z >= -2 && z <= 2 && y >= 0 && y <= 2;
+            boolean roomWall = x >= 7 && x <= 13 && z >= -3 && z <= 3 && y >= -1 && y <= 3 && !inRoom;
+            return !roomWall && y >= -1;
+        };
+        Router.Search search = Router.search(grid, List.of(new Cell(-6, 0, 0)), List.of(goal), BOUNDS);
+        assertNull(search.corners());
+        assertTrue(!search.exhausted(), "it gave up instead of finding there's no way in");
+        assertTrue(probes[0] < 2000, "it looked at " + probes[0] + " cells to find the room shut");
+    }
+
+    @Test
+    void aClosedGoalIsNoRoute() {
+        Router.Search search = Router.search(open(Set.of(new Cell(5, 0, 0))), List.of(new Cell(0, 0, 0)),
+                List.of(new Cell(5, 0, 0)), BOUNDS);
+        assertNull(search.corners());
+        assertTrue(!search.exhausted());
+    }
+
+    @Test
+    void aFloodTellsShutOffFromJoined() {
+        int[] probes = {0};
+        Cell src = new Cell(-6, 0, -12), dst = new Cell(10, 0, -12);
+        Router.Bounds bounds = new Router.Bounds(-18, -11, -18, 18, 11, 18);
+        List<Cell> golem = List.of(new Cell(0, 0, 0), new Cell(0, 1, 0));
+        // with the door, the target's side reaches the golem; without it, that side is a pocket of its own
+        Router.CellGrid withDoor = room(13, Set.of(src, dst), probes);
+        Router.CellGrid noDoor = room(99, Set.of(src, dst), probes);
+        assertEquals(Router.Reach.REACHES, Router.flood(withDoor, faces(withDoor, dst), golem, bounds, 4096).reach());
+        Router.Pocket pocket = Router.flood(noDoor, faces(noDoor, dst), golem, bounds, 4096);
+        assertEquals(Router.Reach.SEALED, pocket.reach());
+        assertTrue(pocket.contains(new Cell(12, 2, 10)) && !pocket.contains(new Cell(0, 0, 0)), "the pocket is the wrong cells");
+        assertEquals(Router.Reach.REACHES, Router.flood(noDoor, faces(noDoor, src), golem, bounds, 4096).reach());
+        // a flood in open air stops at its cap without deciding
+        assertEquals(Router.Reach.OPEN_ENDED,
+                Router.flood(open(Set.of()), List.of(new Cell(0, 0, 0)), List.of(new Cell(19, 9, 19)), BOUNDS, 100).reach());
+    }
+
+    @Test
+    void cornersAreTakenAtTheSameSpeed() {
+        for (double leg : new double[]{3, 5}) {
+            List<double[]> points = new ArrayList<>();
+            double x = 0.5, z = 0.5;
+            points.add(new double[]{x, 1, z});
+            for (int i = 0; i < 10; i++) {
+                if (i % 2 == 0) {
+                    x += leg;
+                } else {
+                    z += leg;
+                }
+                points.add(new double[]{x, 1, z});
+            }
+            double[][] table = FlightPath.table(points);
+            double lo = Double.MAX_VALUE, hi = 0;
+            // past the first corner, which it may reach before it is up to speed
+            for (int c = 2; c < points.size() - 1; c++) {
+                int nearest = 1;
+                for (int i = 1; i < table.length; i++) {
+                    if (distance(table[i], points.get(c)) < distance(table[nearest], points.get(c))) {
+                        nearest = i;
+                    }
+                }
+                double speed = distance(table[nearest], table[nearest - 1]);
+                lo = Math.min(lo, speed);
+                hi = Math.max(hi, speed);
+            }
+            assertTrue(hi - lo < 0.05, "corner speeds range from " + lo + " to " + hi + " on legs of " + leg);
+        }
+    }
+
+    private static double distance(double[] a, double[] b) {
+        double dx = a[0] - b[0], dy = a[1] - b[1], dz = a[2] - b[2];
+        return Math.sqrt(dx * dx + dy * dy + dz * dz);
     }
 }

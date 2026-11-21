@@ -1,0 +1,47 @@
+{
+  "type": "minecraft:min",
+  "argument1": {
+    "type": "minecraft:add",
+    "argument1": {
+      "type": "minecraft:shifted_noise",
+      "noise": "altered_aether:cave_cavern",
+      "shift_x": "minecraft:shift_x",
+      "shift_y": 0.0,
+      "shift_z": "minecraft:shift_z",
+      "xz_scale": 1.0,
+      "y_scale": 2.25
+    },
+    "argument2": 0.27
+  },
+  "argument2": {
+    "type": "minecraft:add",
+    "argument1": {
+      "type": "minecraft:max",
+      "argument1": {
+        "type": "minecraft:abs",
+        "argument": {
+          "type": "minecraft:shifted_noise",
+          "noise": "altered_aether:cave_tunnel_a",
+          "shift_x": "minecraft:shift_x",
+          "shift_y": 0.0,
+          "shift_z": "minecraft:shift_z",
+          "xz_scale": 1.0,
+          "y_scale": 1.7999999999999998
+        }
+      },
+      "argument2": {
+        "type": "minecraft:abs",
+        "argument": {
+          "type": "minecraft:shifted_noise",
+          "noise": "altered_aether:cave_tunnel_b",
+          "shift_x": "minecraft:shift_x",
+          "shift_y": 0.0,
+          "shift_z": "minecraft:shift_z",
+          "xz_scale": 1.0,
+          "y_scale": 1.7999999999999998
+        }
+      }
+    },
+    "argument2": -0.13
+  }
+}

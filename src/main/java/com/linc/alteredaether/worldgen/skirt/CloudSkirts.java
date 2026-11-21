@@ -45,6 +45,8 @@ public final class CloudSkirts {
     private static final int OPEN_HEIGHT = 8;
     /** Blocks either way the clearance under the collar is averaged over. */
     private static final int CLEAR_BLUR = 4;
+    /** Blocks round a chunk whose collar the feature reads, for the clearance it measures there. */
+    static final int MARGIN = SkirtGrid.CLEAR_MIN + CLEAR_BLUR;
 
     @Nullable
     public static SkirtField field(WorldGenLevel level) {
@@ -63,7 +65,7 @@ public final class CloudSkirts {
      * averaged over {@link #CLEAR_BLUR} blocks either way so the collar thins smoothly rather than in steps.
      */
     public static int place(WorldGenLevel level, SkirtField field, int x0, int z0) {
-        int margin = SkirtGrid.CLEAR_MIN + CLEAR_BLUR, side = 16 + 2 * margin;
+        int margin = MARGIN, side = 16 + 2 * margin;
         double[][] spans = new double[side * side][];
         double[] out = new double[2];
         boolean any = false;
@@ -187,7 +189,7 @@ public final class CloudSkirts {
     // ------------------------------------------------------------------------------------------------- cover --
 
     /** Whether a block has open sky above it for a few blocks: out from under the island. */
-    private static boolean open(WorldGenLevel level, BlockPos pos) {
+    public static boolean open(WorldGenLevel level, BlockPos pos) {
         BlockPos.MutableBlockPos up = new BlockPos.MutableBlockPos();
         for (int dy = 1; dy <= OPEN_HEIGHT; dy++) {
             up.set(pos.getX(), pos.getY() + dy, pos.getZ());
@@ -203,7 +205,7 @@ public final class CloudSkirts {
     }
 
     /** Whether open air lies a few steps away through air at the same height, as under an overhang. */
-    private static boolean opensNearby(WorldGenLevel level, BlockPos start) {
+    public static boolean opensNearby(WorldGenLevel level, BlockPos start) {
         Set<Long> seen = new HashSet<>();
         ArrayDeque<int[]> queue = new ArrayDeque<>();
         queue.add(new int[]{start.getX(), start.getZ(), 0});
@@ -234,7 +236,7 @@ public final class CloudSkirts {
     }
 
     /** Cold aercloud as the Aether's own world generation places it, with double drops. */
-    private static BlockState cloud() {
+    public static BlockState cloud() {
         return AetherBlocks.COLD_AERCLOUD.get().defaultBlockState()
                 .setValue(AetherBlockStateProperties.DOUBLE_DROPS, true);
     }

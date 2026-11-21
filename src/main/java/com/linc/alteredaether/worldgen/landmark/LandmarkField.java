@@ -14,9 +14,8 @@
  */
 package com.linc.alteredaether.worldgen.landmark;
 
-import com.google.common.cache.Cache;
-import com.google.common.cache.CacheBuilder;
 import com.linc.alteredaether.config.AACommonConfig;
+import com.linc.alteredaether.worldgen.CellCache;
 import com.linc.alteredaether.worldgen.TerrainProbe;
 import com.linc.alteredaether.worldgen.basin.BasinField;
 import net.minecraft.core.BlockPos;
@@ -32,7 +31,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutionException;
 
 /**
  * Every landmark in one world, as a pure function of the seed, in the manner of {@link BasinField}. Each candidate is
@@ -68,7 +66,7 @@ public final class LandmarkField {
     private final double vertical;
     private final int buildTop;
     private final double fractureScale;
-    private final Map<LandmarkType, Cache<Long, Optional<Landmark>>> cells = new EnumMap<>(LandmarkType.class);
+    private final Map<LandmarkType, CellCache<Optional<Landmark>>> cells = new EnumMap<>(LandmarkType.class);
 
     /**
      * @param probe    the terrain before any landmark is added
@@ -85,7 +83,7 @@ public final class LandmarkField {
         this.fractureScale = Math.max(1, AACommonConfig.RIFT_FRACTURE_SIZE.get());
         for (LandmarkType type : LandmarkType.values()) {
             if (type.gridded()) {
-                cells.put(type, CacheBuilder.newBuilder().maximumSize(1 << 12).build());
+                cells.put(type, new CellCache<>(1 << 12));
             }
         }
     }
@@ -226,11 +224,7 @@ public final class LandmarkField {
 
     private Optional<Landmark> in(LandmarkType type, int cx, int cz) {
         long key = ((long) cx << 32) ^ (cz & 0xFFFFFFFFL);
-        try {
-            return cells.get(type).get(key, () -> Optional.ofNullable(find(type, cx, cz)));
-        } catch (ExecutionException e) {
-            throw new IllegalStateException(e.getCause());
-        }
+        return cells.get(type).get(key, k -> Optional.ofNullable(find(type, cx, cz)));
     }
 
     @Nullable

@@ -21,6 +21,7 @@ import com.linc.alteredaether.registry.AARegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.server.packs.resources.ResourceManagerReloadListener;
+import net.minecraft.world.level.ItemLike;
 import net.minecraft.world.item.crafting.RecipeHolder;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.ModList;
@@ -30,6 +31,7 @@ import net.neoforged.neoforge.event.BuildCreativeModeTabContentsEvent;
 
 import java.util.List;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 /**
@@ -51,6 +53,20 @@ public final class GravititeRework {
 
     private static boolean modOn(String mod) {
         return ModList.get().isLoaded(mod) && AACommonConfig.compat(mod);
+    }
+
+    /** The rework's ingredients in creative-tab order: crushed raw gravitite only with Create, the dusts only with Oritech. */
+    public static void ingredients(Consumer<ItemLike> output) {
+        output.accept(AARegistries.RAW_GRAVITITE.get());
+        if (modOn(CreateCompat.MOD)) {
+            output.accept(AARegistries.CRUSHED_RAW_GRAVITITE.get());
+        }
+        if (modOn("oritech")) {
+            output.accept(AARegistries.GRAVITITE_DUST.get());
+            output.accept(AARegistries.SMALL_GRAVITITE_DUST.get());
+        }
+        output.accept(AARegistries.ENCHANTED_GRAVITITE_NUGGET.get());
+        output.accept(AARegistries.ENCHANTED_GRAVITITE_INGOT.get());
     }
 
     /** Game-bus events: the recipes. */
@@ -88,16 +104,7 @@ public final class GravititeRework {
                 event.accept(AARegistries.RAW_GRAVITITE_BLOCK_ITEM.get());
             }
             if (event.getTabKey().equals(AetherCreativeTabs.AETHER_INGREDIENTS.getKey())) {
-                event.accept(AARegistries.RAW_GRAVITITE.get());
-                if (modOn(CreateCompat.MOD)) {
-                    event.accept(AARegistries.CRUSHED_RAW_GRAVITITE.get());
-                }
-                if (modOn("oritech")) {
-                    event.accept(AARegistries.GRAVITITE_DUST.get());
-                    event.accept(AARegistries.SMALL_GRAVITITE_DUST.get());
-                }
-                event.accept(AARegistries.ENCHANTED_GRAVITITE_NUGGET.get());
-                event.accept(AARegistries.ENCHANTED_GRAVITITE_INGOT.get());
+                ingredients(event::accept);
             }
         }
 

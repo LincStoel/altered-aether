@@ -27,7 +27,6 @@ import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.core.particles.DustParticleOptions;
 import net.minecraft.util.Mth;
-import net.minecraft.world.entity.Entity;
 import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.AABB;
@@ -204,15 +203,5 @@ public final class GolemFlights {
             FLIGHTS.clear();
             level = current;
         }
-    }
-
-    /** Whether {@code entity} has an item in the air. */
-    static boolean busy(Entity entity) {
-        for (View view : FLIGHTS.values()) {
-            if (view.golem == entity.getId()) {
-                return true;
-            }
-        }
-        return false;
     }
 }

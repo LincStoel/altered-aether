@@ -47,8 +47,11 @@ import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.ComparatorBlock;
+import net.minecraft.world.level.block.DoorBlock;
 import net.minecraft.world.level.block.entity.BaseContainerBlockEntity;
 import net.minecraft.world.level.block.entity.ComparatorBlockEntity;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.properties.DoubleBlockHalf;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
@@ -64,8 +67,9 @@ import java.util.UUID;
 /**
  * Gravitite golems: built from their blocks (handing the builder a pebble), linked with their pebble (storage doesn't
  * open), sorting what changed after a delay without losing or making an item, safe when an item is taken mid-flight,
- * emptying hoppers, refusing machines and walled-in storage, following pins, networking by colour within reach up to
- * a cap, pushing attackers off, resting under redstone, going home, healing at home, and dropping their blocks.
+ * emptying hoppers, refusing machines and walled-in storage (or storage shut off behind a door until it opens), flying
+ * items round walls and through open doors, handing an item on only when no one golem reaches both ends, following
+ * pins, networking by colour within reach up to a cap, pushing attackers off, resting under redstone, going home, healing at home, and dropping their blocks.
  */
 @GameTestHolder(AlteredAether.MOD_ID)
 @PrefixGameTestTemplate(false)
@@ -778,6 +782,123 @@ public final class GravititeGolemTests {
                 .thenWaitUntil(() -> {
                     helper.assertTrue(count(behind, Items.OAK_LOG) == 0, "the chest behind the wall wasn't used");
                     helper.assertTrue(count(front, Items.OAK_LOG) == 512, "logs made or lost");
+                }).thenSucceed();
+    }
+
+    /** Fills the box from {@code a} to {@code b}, inclusive, with {@code block}. */
+    private static void box(GameTestHelper helper, BlockPos a, BlockPos b, Block block) {
+        for (BlockPos pos : BlockPos.betweenClosed(a, b)) {
+            helper.setBlock(pos, block);
+        }
+    }
+
+    /** An oak door standing at {@code pos} (its lower half), open or shut. */
+    private static void door(GameTestHelper helper, BlockPos pos, boolean open) {
+        BlockState state = Blocks.OAK_DOOR.defaultBlockState().setValue(DoorBlock.OPEN, open);
+        helper.setBlock(pos, state.setValue(DoorBlock.HALF, DoubleBlockHalf.LOWER));
+        helper.setBlock(pos.above(), state.setValue(DoorBlock.HALF, DoubleBlockHalf.UPPER));
+    }
+
+    /**
+     * A closed room north of the golem, its one way in a door at (16, 2, 22), and a chest inside it holding a stack of
+     * logs and eight of cobblestone. Returns the chest.
+     */
+    private static BaseContainerBlockEntity roomWithADoor(GameTestHelper helper, boolean open) {
+        box(helper, new BlockPos(12, 2, 22), new BlockPos(20, 5, 28), Blocks.STONE);
+        box(helper, new BlockPos(13, 2, 23), new BlockPos(19, 4, 27), Blocks.AIR);
+        door(helper, new BlockPos(16, 2, 22), open);
+        return chest(helper, new BlockPos(16, 2, 26), join(stacks(Items.OAK_LOG, 1), stacks(Items.COBBLESTONE, 8)));
+    }
+
+    /** A chest in a room whose one way in is an open door is used: an item slips past an open door. */
+    @GameTest(template = "arena", timeoutTicks = 600)
+    public static void aChestBehindAnOpenDoorIsUsed(GameTestHelper helper) {
+        floor(helper);
+        GravititeGolem golem = golem(helper, HOME);
+        BaseContainerBlockEntity inside = roomWithADoor(helper, true);
+        BlockPos open = new BlockPos(20, 2, 12);
+        BaseContainerBlockEntity outside = chest(helper, open, stacks(Items.OAK_LOG, 7));
+        helper.startSequence().thenIdle(5).thenExecute(() -> link(helper, golem, new BlockPos(16, 2, 26), open))
+                .thenWaitUntil(() -> {
+                    helper.assertTrue(count(inside, Items.OAK_LOG) == 0, "the chest behind the open door wasn't used");
+                    helper.assertTrue(count(outside, Items.OAK_LOG) == 512, "logs made or lost");
+                }).thenSucceed();
+    }
+
+    /**
+     * Behind a shut door the chest is shut off: reported blocked and left alone, and the sort still finishes. Opening
+     * the door lets the golem at it.
+     */
+    @GameTest(template = "arena", timeoutTicks = 1200)
+    public static void aChestBehindAShutDoorIsBlockedUntilItOpens(GameTestHelper helper) {
+        floor(helper);
+        GravititeGolem golem = golem(helper, HOME);
+        BaseContainerBlockEntity inside = roomWithADoor(helper, false);
+        BlockPos open = new BlockPos(20, 2, 12);
+        BaseContainerBlockEntity outside = chest(helper, open, stacks(Items.OAK_LOG, 7));
+        helper.startSequence().thenIdle(5).thenExecute(() -> link(helper, golem, new BlockPos(16, 2, 26), open))
+                .thenWaitUntil(() -> {
+                    assertSettled(helper, golem);
+                    helper.assertTrue(report(helper, golem).blocked() == 1, "the shut-off chest isn't reported blocked: "
+                            + report(helper, golem));
+                })
+                .thenExecute(() -> {
+                    helper.assertTrue(count(inside, Items.OAK_LOG) == 64 && count(inside, Items.COBBLESTONE) == 512,
+                            "the shut-off chest was used");
+                    helper.assertTrue(count(outside, Items.OAK_LOG) == 448, "logs made or lost");
+                    door(helper, new BlockPos(16, 2, 22), true);
+                })
+                .thenWaitUntil(() -> {
+                    helper.assertTrue(count(inside, Items.OAK_LOG) == 0, "the door is open, but the chest wasn't used");
+                    helper.assertTrue(count(outside, Items.OAK_LOG) == 512, "logs made or lost");
+                    assertSettled(helper, golem);
+                    helper.assertTrue(report(helper, golem).blocked() == 0, "still blocked: " + report(helper, golem));
+                }).thenSucceed();
+    }
+
+    /**
+     * No golem reaches both chests, so the item is handed from one to the other, and every leg of the way has to be
+     * searched for: two walls across a closed hall, each with its doorway far off the line between the golems.
+     */
+    @GameTest(template = "arena", timeoutTicks = 1200)
+    public static void anItemIsHandedOnRoundTwoWalls(GameTestHelper helper) {
+        floor(helper);
+        box(helper, new BlockPos(1, 8, 1), new BlockPos(39, 8, 39), Blocks.STONE);
+        box(helper, new BlockPos(1, 2, 1), new BlockPos(1, 7, 39), Blocks.STONE);
+        box(helper, new BlockPos(39, 2, 1), new BlockPos(39, 7, 39), Blocks.STONE);
+        box(helper, new BlockPos(1, 2, 1), new BlockPos(39, 7, 1), Blocks.STONE);
+        box(helper, new BlockPos(1, 2, 39), new BlockPos(39, 7, 39), Blocks.STONE);
+        box(helper, new BlockPos(6, 2, 2), new BlockPos(6, 7, 38), Blocks.STONE);
+        box(helper, new BlockPos(6, 2, 36), new BlockPos(6, 3, 36), Blocks.AIR);
+        box(helper, new BlockPos(18, 2, 2), new BlockPos(18, 7, 38), Blocks.STONE);
+        box(helper, new BlockPos(18, 2, 4), new BlockPos(18, 3, 4), Blocks.AIR);
+        GravititeGolem a = golem(helper, new BlockPos(10, 2, 20));
+        GravititeGolem b = golem(helper, new BlockPos(26, 2, 20));
+        BlockPos srcPos = new BlockPos(3, 2, 20), dstPos = new BlockPos(37, 2, 20);
+        BaseContainerBlockEntity src = chest(helper, srcPos, join(stacks(Items.OAK_LOG, 1), stacks(Items.COBBLESTONE, 8)));
+        BaseContainerBlockEntity dst = chest(helper, dstPos, stacks(Items.OAK_LOG, 7));
+        helper.startSequence().thenWaitUntil(() -> helper.assertTrue(net(helper, a) == net(helper, b), "not one network"))
+                .thenExecute(() -> link(helper, a, srcPos, dstPos))
+                .thenWaitUntil(() -> {
+                    helper.assertTrue(count(src, Items.OAK_LOG) == 0, "the logs weren't handed on");
+                    helper.assertTrue(count(dst, Items.OAK_LOG) == 512, "logs made or lost");
+                }).thenSucceed();
+    }
+
+    /** A golem that reaches both chests carries the item itself, even when another golem sits nearer the target. */
+    @GameTest(template = "arena", timeoutTicks = 600)
+    public static void aGolemReachingBothEndsDoesTheWholeMove(GameTestHelper helper) {
+        floor(helper);
+        GravititeGolem lifter = golem(helper, new BlockPos(14, 2, 16));
+        GravititeGolem other = golem(helper, new BlockPos(28, 2, 16));
+        BlockPos src = new BlockPos(16, 2, 18), dst = new BlockPos(26, 2, 18);
+        chest(helper, src, new ItemStack(Items.COBBLESTONE, 64), new ItemStack(Items.OAK_LOG, 64), new ItemStack(Items.OAK_LOG, 64));
+        chest(helper, dst, new ItemStack(Items.OAK_LOG, 64), new ItemStack(Items.OAK_LOG, 64), new ItemStack(Items.OAK_LOG, 64));
+        helper.startSequence().thenWaitUntil(() -> helper.assertTrue(net(helper, lifter) == net(helper, other), "not one network"))
+                .thenExecute(() -> link(helper, lifter, src, dst))
+                .thenWaitUntil(() -> {
+                    helper.assertTrue(lifter.state() == GravititeGolem.CONCENTRATING, "the golem by the source isn't lifting");
+                    helper.assertTrue(other.state() != GravititeGolem.CONCENTRATING, "the item was handed on to the other golem");
                 }).thenSucceed();
     }
 

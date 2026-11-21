@@ -17,6 +17,7 @@ package com.linc.alteredaether;
 import com.linc.alteredaether.compat.CreateCompat;
 import com.linc.alteredaether.compat.SableLift;
 import com.linc.alteredaether.compat.boulder.FallingBoulders;
+import com.linc.alteredaether.compat.cloud.AercloudPhasing;
 import com.linc.alteredaether.config.AAClientConfig;
 import com.linc.alteredaether.config.AACommonConfig;
 import com.linc.alteredaether.registry.AARegistries;
@@ -48,6 +49,7 @@ public final class AlteredAether {
         if (ModList.get().isLoaded(SableLift.MOD)) {
             SableLift.register();
             FallingBoulders.register();
+            AercloudPhasing.register();
         }
         modBus.addListener(this::commonSetup);
     }

@@ -14,11 +14,11 @@
  */
 package com.linc.alteredaether.worldgen.grove;
 
-import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import com.linc.alteredaether.config.AACommonConfig;
+import com.linc.alteredaether.worldgen.CellCache;
 import com.linc.alteredaether.worldgen.TerrainProbe;
 import com.linc.alteredaether.worldgen.basin.BasinField;
 import com.linc.alteredaether.worldgen.landmark.LandmarkField;
@@ -36,9 +36,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutionException;
 
 /**
  * Every giant tree in one world, as a pure function of the seed, in the manner of the landmark field but far denser:
@@ -50,6 +48,10 @@ import java.util.concurrent.ExecutionException;
 public final class GroveField {
     static final String CATHEDRAL = "altered_aether:skyroot_cathedral";
     static final String NURSELOG = "altered_aether:nurselog_hollow";
+    /** The cathedral's dark, mossy edge: its giants are the cathedral's own kinds, grown lower. */
+    static final String SHROUDED = "altered_aether:shrouded_forest";
+    /** How tall the shrouded forest's giants grow, against the cathedral's. */
+    private static final double SHROUDED_HEIGHT = 0.75;
     /** How far any giant may reach from its centre. */
     public static final int REACH = 64;
     /** Grid cell size at the default spacing. */
@@ -96,11 +98,11 @@ public final class GroveField {
                 return new double[]{(cellX(key) + 0.15 + random.nextDouble() * 0.7) * REGION,
                         (cellZ(key) + 0.15 + random.nextDouble() * 0.7) * REGION};
             }));
-    private final Cache<Long, Optional<Giant>> sites = CacheBuilder.newBuilder().maximumSize(1 << 10).build();
-    private final Cache<Long, List<Long>> neighbours = CacheBuilder.newBuilder().maximumSize(1 << 12).build();
-    private final Cache<Long, List<Giant>> links = CacheBuilder.newBuilder().maximumSize(1 << 10).build();
-    private final Cache<Long, Optional<Mire>> mires = CacheBuilder.newBuilder().maximumSize(1 << 10).build();
-    private final Cache<Long, Optional<Giant>> bridges = CacheBuilder.newBuilder().maximumSize(1 << 8).build();
+    private final CellCache<Optional<Giant>> sites = new CellCache<>(1 << 10);
+    private final CellCache<List<Long>> neighbours = new CellCache<>(1 << 12);
+    private final CellCache<List<Giant>> links = new CellCache<>(1 << 10);
+    private final CellCache<Optional<Mire>> mires = new CellCache<>(1 << 10);
+    private final CellCache<Optional<Giant>> bridges = new CellCache<>(1 << 8);
 
     /**
      * @param vertical vertical scale for the height mode: 1 in the tall Aether
@@ -253,12 +255,8 @@ public final class GroveField {
         return cached(sites, key(cx, cz), () -> Optional.ofNullable(find(cx, cz)));
     }
 
-    private static <T> T cached(Cache<Long, T> cache, long key, Callable<T> loader) {
-        try {
-            return cache.get(key, loader);
-        } catch (ExecutionException e) {
-            throw new IllegalStateException(e.getCause());
-        }
+    private static <T> T cached(CellCache<T> cache, long key, java.util.function.Supplier<T> loader) {
+        return cache.get(key, k -> loader.get());
     }
 
     @Nullable
@@ -272,7 +270,9 @@ public final class GroveField {
             int x = cx * cell + cell / 2 + random.nextInt(2 * jitter + 1) - jitter;
             int z = cz * cell + cell / 2 + random.nextInt(2 * jitter + 1) - jitter;
             String biome = probe.biomeAt(x, z);
-            GiantType type = pick(biome, random);
+            // The shrouded forest grows the cathedral's kinds of giant (drawn lower, below).
+            String kind = biome.equals(SHROUDED) ? CATHEDRAL : biome;
+            GiantType type = pick(kind, random);
             if (type == null || probe.regionWeight(x, z) < 0.99) {
                 continue;
             }
@@ -291,7 +291,7 @@ public final class GroveField {
                 return null;
             }
             // Now and then one of the Cathedral's giants has come down among the living.
-            if (biome.equals(CATHEDRAL) && random.nextDouble() < CATHEDRAL_FALLEN) {
+            if (kind.equals(CATHEDRAL) && random.nextDouble() < CATHEDRAL_FALLEN) {
                 type = GiantType.FALLEN_COLOSSUS;
             }
             // Now and then a stump holds a spring. The roll draws on a stream of its own, so every other stump is
@@ -319,7 +319,8 @@ public final class GroveField {
     /** Draws one giant of a type at a site, with its lake and its roots under the island if it has them. */
     private Sketch draw(GiantType type, int cx, int cz, int attempt, int x, int z, int ground, String biome,
                         RandomSource random) {
-        Sketch sketch = new Sketch(probe, random, vertical, buildTop, x, z, ground);
+        Sketch sketch = new Sketch(probe, random, biome.equals(SHROUDED) ? vertical * SHROUDED_HEIGHT : vertical,
+                buildTop, x, z, ground);
         sketch.palette = palette(x, z, biome);
         sketch.arching = type.crowned();
         sketch.tended = random.nextDouble() < AACommonConfig.TENDED_FRACTION.get();

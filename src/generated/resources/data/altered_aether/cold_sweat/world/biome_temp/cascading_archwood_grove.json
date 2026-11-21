@@ -1,0 +1,8 @@
+{
+  "biomes": [
+    "altered_aether:cascading_archwood_grove"
+  ],
+  "max_temp": 13,
+  "min_temp": 33,
+  "units": "F"
+}

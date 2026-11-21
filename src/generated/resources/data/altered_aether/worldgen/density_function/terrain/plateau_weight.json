@@ -1,5 +1,38 @@
 {
   "type": "minecraft:mul",
   "argument1": "altered_aether:terrain/region_mask",
-  "argument2": "altered_aether:terrain/plateau_mask"
+  "argument2": {
+    "type": "minecraft:add",
+    "argument1": {
+      "type": "minecraft:mul",
+      "argument1": {
+        "type": "minecraft:add",
+        "argument1": 1.0,
+        "argument2": {
+          "type": "minecraft:mul",
+          "argument1": -1.0,
+          "argument2": "altered_aether:terrain/tundra_mask"
+        }
+      },
+      "argument2": "altered_aether:terrain/plateau_mask"
+    },
+    "argument2": {
+      "type": "minecraft:mul",
+      "argument1": "altered_aether:terrain/tundra_mask",
+      "argument2": {
+        "type": "minecraft:clamp",
+        "input": {
+          "type": "minecraft:add",
+          "argument1": -17.666666666666668,
+          "argument2": {
+            "type": "minecraft:mul",
+            "argument1": 33.333333333333336,
+            "argument2": "altered_aether:terrain/continentalness"
+          }
+        },
+        "max": 1.0,
+        "min": 0.0
+      }
+    }
+  }
 }

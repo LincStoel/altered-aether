@@ -40,6 +40,7 @@ import com.linc.alteredaether.worldgen.grove.Mire;
 import com.linc.alteredaether.worldgen.landmark.Landmark;
 import com.linc.alteredaether.worldgen.landmark.LandmarkField;
 import com.linc.alteredaether.worldgen.landmark.LandmarkType;
+import com.linc.alteredaether.worldgen.sea.CloudSea;
 import com.linc.alteredaether.worldgen.skirt.SkirtField;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.levelgen.Heightmap;
@@ -98,6 +99,7 @@ public final class DebugCommands {
                         .then(Commands.argument("item", net.minecraft.commands.arguments.item.ItemArgument.item(event.getBuildContext()))
                                 .executes(ctx -> golemPath(ctx,
                                         net.minecraft.commands.arguments.item.ItemArgument.getItem(ctx, "item").createItemStack(1, false)))))
+                .then(Commands.literal("fingerprint").executes(DebugCommands::fingerprint))
                 .then(Commands.literal("rumourwarm").executes(DebugCommands::rumourWarm))
                 .then(Commands.literal("rumourbiomes").executes(DebugCommands::rumourBiomes))
                 .then(Commands.literal("fly")
@@ -107,6 +109,34 @@ public final class DebugCommands {
                                                 .executes(ctx -> fly(ctx, 10))
                                                 .then(Commands.argument("radius", IntegerArgumentType.integer(2, 32))
                                                         .executes(ctx -> fly(ctx, IntegerArgumentType.getInteger(ctx, "radius")))))))));
+    }
+
+    /**
+     * {@code /altered_aether fingerprint}: hashes the Aether's noise columns over PerfProbe's fixed areas (and round the
+     * nearest plateau's sea stacks), so two builds can be checked for the same terrain without a fresh world. Runs in
+     * the background; the result goes to the chat, the log and run-server/perf/command-fingerprint.txt.
+     */
+    private static int fingerprint(CommandContext<CommandSourceStack> ctx) {
+        CommandSourceStack source = ctx.getSource();
+        ServerLevel aether = source.getServer().getLevel(THE_AETHER);
+        if (aether == null) {
+            source.sendFailure(Component.literal("The Aether isn't loaded."));
+            return 0;
+        }
+        source.sendSuccess(() -> Component.literal("Fingerprinting the Aether's terrain..."), false);
+        CompletableFuture.runAsync(() -> {
+            try {
+                PerfProbe.fingerprint(aether, line -> {
+                    AlteredAether.LOGGER.info("PERF {}", line);
+                    String hash = line.replaceAll(".*hash=([0-9a-f]+).*", "$1");
+                    source.getServer().execute(() -> source.sendSuccess(() -> Component.literal(
+                            "Terrain fingerprint " + hash + " (per area in the log)"), false));
+                }, "command");
+            } catch (Exception e) {
+                AlteredAether.LOGGER.error("Fingerprint failed", e);
+            }
+        }, Util.backgroundExecutor());
+        return 1;
     }
 
     /**
@@ -276,6 +306,46 @@ public final class DebugCommands {
     }
 
     /**
+     * What the cloud sea made of the chunks: its cloud blocks, how many sat with solid rock straight above them (a cave
+     * or an overhang it crept under), and columns of open sea whose ground lies in or just above the sheet's band.
+     */
+    private static void seaTally(ServerLevel aether, List<ChunkPos> positions) {
+        CloudSea sea = CloudSea.terrain(THE_AETHER);
+        if (sea == null) {
+            return;
+        }
+        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
+        long cloud = 0, covered = 0, columns = 0, lowGround = 0;
+        for (ChunkPos chunk : positions) {
+            for (int dx = 0; dx < 16; dx++) {
+                for (int dz = 0; dz < 16; dz++) {
+                    int x = chunk.getMinBlockX() + dx, z = chunk.getMinBlockZ() + dz;
+                    boolean open = sea.weight(x, z) > 0.9;
+                    columns += open ? 1 : 0;
+                    boolean low = false;
+                    for (int y = -40; y <= 8; y++) {
+                        var state = aether.getBlockState(pos.set(x, y, z));
+                        if (state.is(com.aetherteam.aether.block.AetherBlocks.COLD_AERCLOUD.get())) {
+                            cloud++;
+                            var above = aether.getBlockState(pos.set(x, y + 1, z));
+                            if (!above.isAir() && !above.is(com.aetherteam.aether.block.AetherBlocks.COLD_AERCLOUD.get())
+                                    && above.isSolidRender(aether, pos)) {
+                                covered++;
+                            }
+                        } else if (open && !state.isAir() && state.getFluidState().isEmpty()
+                                && aether.getBlockState(pos.set(x, y + 1, z)).isAir()) {
+                            low = true;
+                        }
+                    }
+                    lowGround += low ? 1 : 0;
+                }
+            }
+        }
+        AlteredAether.LOGGER.info("Cloud sea: {} cloud blocks at y -40..8, {} under solid rock; {} open-sea columns, "
+                + "{} with ground at y -40..8", cloud, covered, columns, lowGround);
+    }
+
+    /**
      * Pictures of the cloud skirt round one spot: the area from above and from the sides, the cloud alone, sections
      * east-west and north-south through it, and the skirt field's own grid there ({@link #skirtGrid}).
      */
@@ -325,7 +395,9 @@ public final class DebugCommands {
                 } else if (top == com.linc.alteredaether.worldgen.skirt.SkirtGrid.HIGH) {
                     colour = new java.awt.Color(0x8A8A8A);
                 } else {
-                    float t = Math.max(0, Math.min(1, (top + 64) / 87f)) * 0.7f + 0.3f;
+                    float t = Math.max(0, Math.min(1, (top - com.linc.alteredaether.worldgen.skirt.SkirtGrid.PROBE_BOTTOM)
+                            / (float) (com.linc.alteredaether.worldgen.skirt.SkirtGrid.PROBE_TOP
+                            - com.linc.alteredaether.worldgen.skirt.SkirtGrid.PROBE_BOTTOM))) * 0.7f + 0.3f;
                     int[] tint = switch (column[2]) {
                         case 1 -> new int[]{80, 230, 90};
                         case 2 -> new int[]{80, 120, 240};
@@ -352,6 +424,91 @@ public final class DebugCommands {
             javax.imageio.ImageIO.write(image, "png", folder.resolve(name + ".png").toFile());
         } catch (java.io.IOException e) {
             AlteredAether.LOGGER.error("Couldn't write the skirt grid {}", name, e);
+        }
+    }
+
+    /**
+     * The biome groups round the benchmark, 2 blocks a pixel: other biomes grey, peaks pale blue, woodland green, dunes
+     * yellow.
+     */
+    private static void edgeMap(ServerLevel aether, String name, int minX, int minZ, int maxX, int maxZ) {
+        var field = com.linc.alteredaether.worldgen.density.BiomeEdgeField.get(THE_AETHER);
+        if (field == null) {
+            AlteredAether.LOGGER.warn("Edge map: no biome edge field for the Aether");
+            return;
+        }
+        var solver = field.solver(com.linc.alteredaether.worldgen.region.BiomeGroups.GROUP, 40);
+        int scale = 2, w = (maxX - minX) / scale, h = (maxZ - minZ) / scale;
+        java.awt.image.BufferedImage image = new java.awt.image.BufferedImage(w, h,
+                java.awt.image.BufferedImage.TYPE_INT_RGB);
+        int[] colours = {0x808080, 0xC8DCF0, 0x3C963C, 0xE6C850};
+        int[] counts = new int[4];
+        for (int j = 0; j < h; j++) {
+            for (int i = 0; i < w; i++) {
+                int x = minX + i * scale, z = minZ + j * scale;
+                int group = solver.classAt(x, z);
+                counts[group]++;
+                image.setRGB(i, j, colours[group]);
+            }
+        }
+        massMap(aether, name.replace("_groups", "_mass"), minX, minZ, maxX, maxZ);
+        // A profile across the area's middle, east-west: the ground's height and how far inside a flower bowl.
+        var bowl = field.solver(com.linc.alteredaether.worldgen.region.BiomeGroups.BOWL, 64);
+        StringBuilder profile = new StringBuilder();
+        int midZ = (minZ + maxZ) / 2;
+        for (int x = minX; x <= maxX; x += 8) {
+            int ground = aether.getHeight(Heightmap.Types.OCEAN_FLOOR, x, midZ);
+            profile.append(String.format(" %d:%.0f", ground, bowl.inside(x, midZ, 1)));
+        }
+        AlteredAether.LOGGER.info("Profile {} (ground:bowl depth, every 8 blocks):{}", name, profile);
+        AlteredAether.LOGGER.info("Edge map {}: other {} peaks {} woodland {} dunes {} pixels", name, counts[0], counts[1],
+                counts[2], counts[3]);
+        try {
+            java.nio.file.Path folder = aether.getServer().getServerDirectory().resolve("renders");
+            java.nio.file.Files.createDirectories(folder);
+            javax.imageio.ImageIO.write(image, "png", folder.resolve(name + ".png").toFile());
+        } catch (java.io.IOException e) {
+            AlteredAether.LOGGER.error("Couldn't write the edge map {}", name, e);
+        }
+    }
+
+    /**
+     * The island mass round the benchmark ({@code ColumnMassField}), 2 blocks a pixel: the thickness of island in each
+     * column as grey (white is 64 blocks or more), tinted red where the smoothed mass is under 4 (shed outright) and
+     * orange under 8 (partly shed). Logs a histogram of the mass.
+     */
+    private static void massMap(ServerLevel aether, String name, int minX, int minZ, int maxX, int maxZ) {
+        var field = com.linc.alteredaether.worldgen.density.ColumnMassField.get(THE_AETHER);
+        if (field == null) {
+            return;
+        }
+        int scale = 2, w = (maxX - minX) / scale, h = (maxZ - minZ) / scale;
+        java.awt.image.BufferedImage image = new java.awt.image.BufferedImage(w, h,
+                java.awt.image.BufferedImage.TYPE_INT_RGB);
+        int[] histogram = new int[9];
+        for (int j = 0; j < h; j++) {
+            for (int i = 0; i < w; i++) {
+                int x = minX + i * scale, z = minZ + j * scale;
+                double mass = field.mass(x, z), thick = field.thickness(x, z);
+                histogram[Math.min(8, (int) (mass / 4))]++;
+                int g = (int) Math.min(255, thick * 4);
+                int colour = thick <= 0 ? 0x1A1E33 : (g << 16) | (g << 8) | g;
+                if (thick > 0 && mass < 4) {
+                    colour = 0xD03030;
+                } else if (thick > 0 && mass < 8) {
+                    colour = 0xE08A30;
+                }
+                image.setRGB(i, j, colour);
+            }
+        }
+        AlteredAether.LOGGER.info("Mass map {}: pixels by mass in steps of 4 (last 32+): {}", name,
+                java.util.Arrays.toString(histogram));
+        try {
+            java.nio.file.Path folder = aether.getServer().getServerDirectory().resolve("renders");
+            java.nio.file.Files.createDirectories(folder);
+            javax.imageio.ImageIO.write(image, "png", folder.resolve(name + ".png").toFile());
+        } catch (java.io.IOException e) {
+            AlteredAether.LOGGER.error("Couldn't write the mass map {}", name, e);
         }
     }
 
@@ -448,8 +605,60 @@ public final class DebugCommands {
                 origin = new BlockPos(found.x(), 64, found.z());
                 AlteredAether.LOGGER.info("Worldgen benchmark: centred on {} at {}: {}", biome, origin.toShortString(),
                         found);
+            } else if (biome != null && biome.equals("stack")) {
+                // The nearest plateau sea stack, searched in growing squares.
+                var field = com.linc.alteredaether.worldgen.landmark.StackField.get(THE_AETHER);
+                com.linc.alteredaether.worldgen.landmark.StackField.Stack found = null;
+                // Stacks stand off the plateau's cliffs: start from the nearest plateau.
+                var plateau = aether.findClosestBiome3d(b -> b.is(com.linc.alteredaether.worldgen.AABiomes.AETHER_PLATEAU),
+                        origin, 12000, 32, 64);
+                if (plateau != null) {
+                    origin = plateau.getFirst().atY(64);
+                }
+                for (int r = 128; r <= 1024 && field != null && found == null; r *= 2) {
+                    var stacks = field.touching(origin.getX() - r, origin.getZ() - r, origin.getX() + r,
+                            origin.getZ() + r);
+                    if (!stacks.isEmpty()) {
+                        int ox = origin.getX(), oz = origin.getZ();
+                        found = stacks.stream().min(java.util.Comparator.comparingDouble(st ->
+                                Math.hypot(st.x() - ox, st.z() - oz))).orElse(null);
+                    }
+                }
+                if (found == null) {
+                    AlteredAether.LOGGER.error("Worldgen benchmark: no stack found");
+                    return;
+                }
+                origin = new BlockPos(found.x(), 64, found.z());
+                AlteredAether.LOGGER.info("Worldgen benchmark: centred on a stack at {}: {}", origin.toShortString(),
+                        found);
+            } else if (biome != null && (biome.equals("lake") || biome.equals("lake:poison")
+                    || biome.equals("lake:frozen"))) {
+                // The nearest big lake, searched outward ring by ring over the lake grid.
+                BasinType type = biome.equals("lake") ? BasinType.LAKE
+                        : biome.equals("lake:frozen") ? BasinType.FROZEN_LAKE : BasinType.POISON_LAKE;
+                BasinField field = BasinField.get(THE_AETHER);
+                int cell = field == null ? 1 : field.lakeCell();
+                int ox = Math.floorDiv(origin.getX(), cell), oz = Math.floorDiv(origin.getZ(), cell);
+                BasinSite found = null;
+                for (int r = 0; r < 40 && field != null && found == null; r++) {
+                    for (int cx = ox - r; cx <= ox + r && found == null; cx++) {
+                        for (int cz = oz - r; cz <= oz + r && found == null; cz++) {
+                            if (Math.max(Math.abs(cx - ox), Math.abs(cz - oz)) == r) {
+                                found = field.lakeInCell(cx, cz).filter(s -> s.type() == type).orElse(null);
+                            }
+                        }
+                    }
+                }
+                if (found == null) {
+                    AlteredAether.LOGGER.error("Worldgen benchmark: no {} found", biome);
+                    return;
+                }
+                origin = new BlockPos(found.x(), 64, found.z());
+                AlteredAether.LOGGER.info("Worldgen benchmark: centred on a {} at {} (outline {}, water {}, depth {})",
+                        biome, origin.toShortString(), String.format("%.0f", found.radius()), found.waterLevel(),
+                        String.format("%.1f", found.depth()));
             } else if (biome != null && biome.equals("skirt")) {
-                // The nearest rim of a low island, which wears a cloud skirt.
+                // The nearest rim of a skirted islet.
                 SkirtField field = SkirtField.get(THE_AETHER);
                 int[] rim = field == null ? null : field.nearestRim(origin.getX(), origin.getZ(), 4000).orElse(null);
                 if (rim == null) {
@@ -458,7 +667,32 @@ public final class DebugCommands {
                     return;
                 }
                 origin = new BlockPos(rim[0], rim[1], rim[2]);
-                AlteredAether.LOGGER.info("Worldgen benchmark: centred on a low island's rim at {}", origin.toShortString());
+                AlteredAether.LOGGER.info("Worldgen benchmark: centred on a skirted islet's rim at {}", origin.toShortString());
+            } else if (biome != null && (biome.equals("sea") || biome.equals("sea:edge"))) {
+                // Open cloud sea, or its border where the sheet breaks up, searched outward on a 128-block spiral.
+                CloudSea sea = CloudSea.terrain(THE_AETHER);
+                boolean edge = biome.equals("sea:edge");
+                BlockPos found = null;
+                for (int r = 0; r < 100 && sea != null && found == null; r++) {
+                    for (int i = -r; i <= r && found == null; i++) {
+                        for (int[] p : new int[][]{{i, -r}, {i, r}, {-r, i}, {r, i}}) {
+                            int x = origin.getX() + p[0] * 128, z = origin.getZ() + p[1] * 128;
+                            double w = sea.weight(x, z);
+                            if (edge ? w > 0.25 && w < 0.6 : w > 0.98 && sea.weight(x + 160, z) > 0.98
+                                    && sea.weight(x - 160, z) > 0.98) {
+                                found = new BlockPos(x, -20, z);
+                                break;
+                            }
+                        }
+                    }
+                }
+                if (found == null) {
+                    AlteredAether.LOGGER.error("Worldgen benchmark: no {} found{}", biome,
+                            sea == null ? " (no cloud sea: is this the tall Aether?)" : "");
+                    return;
+                }
+                origin = found;
+                AlteredAether.LOGGER.info("Worldgen benchmark: centred on {} at {}", biome, origin.toShortString());
             } else if (biome != null && biome.matches("-?\\d+:-?\\d+")) {
                 String[] xz = biome.split(":");
                 origin = new BlockPos(Integer.parseInt(xz[0]), 64, Integer.parseInt(xz[1]));
@@ -540,6 +774,8 @@ public final class DebugCommands {
                 Thread.currentThread().interrupt();
             }
             server.submit(() -> basinTally(aether, positions)).join();
+            server.submit(() -> caveTally(aether, positions)).join();
+            server.submit(() -> nadiriteTally(aether, positions)).join();
             server.submit(() -> mireTally(aether, positions)).join();
             server.submit(() -> landmarkTally(aether, positions)).join();
             // The debug command at the centre, so its output can be checked headlessly.
@@ -566,12 +802,38 @@ public final class DebugCommands {
                 }
             }
             if (Boolean.getBoolean("altered_aether.render")) {
+                int r = radius * 16;
+                edgeMap(aether, (biome == null ? "bench" : biome.replace(':', '_')) + "_groups", origin.getX() - r,
+                        origin.getZ() - r, origin.getX() + r, origin.getZ() + r);
+                // Sections east-west and north-south through the middle, to see inside the islands (caves).
+                String slice = (biome == null ? "bench" : biome.replace(':', '_')) + "_slice";
+                int sx = origin.getX(), sz = origin.getZ(), sr = Math.min(r, 192);
+                server.submit(() -> WorldRender.render(aether, slice + "_x", sx - sr, sz, sx + sr, sz, -64, 260, 3))
+                        .join();
+                server.submit(() -> WorldRender.render(aether, slice + "_z", sx, sz - sr, sx, sz + sr, -64, 260, 3))
+                        .join();
                 for (int i = 0; i < spots.size(); i++) {
                     skirtRenders(server, aether, "spot" + i, spots.get(i));
                 }
                 if (biome != null && biome.startsWith("core:")) {
                     skirtRenders(server, aether, "core", origin.atY(0));
                 }
+            }
+            if (Boolean.getBoolean("altered_aether.render") && biome != null && biome.startsWith("sea")) {
+                // The sea from above, the cloud alone, a plan through the sheet's band, and sections east-west and
+                // north-south from the roots to the ground above.
+                int sx = origin.getX(), sz = origin.getZ(), r = Math.min(radius * 16, 160);
+                server.submit(() -> WorldRender.render(aether, "sea", sx - r, sz - r, sx + r, sz + r, -64, 127, 2))
+                        .join();
+                server.submit(() -> WorldRender.render(aether, "sea_cloud", sx - r, sz - r, sx + r, sz + r, -64, 127, 2,
+                        state -> state.is(com.aetherteam.aether.block.AetherBlocks.COLD_AERCLOUD.get()))).join();
+                server.submit(() -> WorldRender.render(aether, "sea_plan", sx - r, sz - r, sx + r, sz + r, -36, -6, 2))
+                        .join();
+                server.submit(() -> WorldRender.render(aether, "sea_slice_x", sx - r, sz, sx + r, sz, -64, 100, 3))
+                        .join();
+                server.submit(() -> WorldRender.render(aether, "sea_slice_z", sx, sz - r, sx, sz + r, -64, 100, 3))
+                        .join();
+                server.submit(() -> seaTally(aether, positions)).join();
             }
             if (Boolean.getBoolean("altered_aether.render") && biome != null && biome.equals("skirt")) {
                 // Sections through the rim, east-west and north-south, a plan cut through the collar, and the same
@@ -831,6 +1093,137 @@ public final class DebugCommands {
     }
 
     /** The basins over the given chunks, the water they hold, and any water that has since started to flow. */
+    /**
+     * Air shut inside the islands: gaps of air at most 20 tall between rock above and rock below in a column, split by
+     * how far under the ground they lie. Mostly caves, plus the odd overhang; compare runs, not absolutes.
+     */
+    private static void caveTally(ServerLevel level, List<ChunkPos> positions) {
+        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
+        long enclosed = 0, deep = 0, columns = 0, wet = 0;
+        for (ChunkPos chunk : positions) {
+            for (int dx = 0; dx < 16; dx++) {
+                for (int dz = 0; dz < 16; dz++) {
+                    int x = chunk.getMinBlockX() + dx, z = chunk.getMinBlockZ() + dz;
+                    int top = level.getHeight(Heightmap.Types.WORLD_SURFACE, x, z);
+                    int gap = 0, lastSolid = Integer.MIN_VALUE;
+                    boolean seenRock = false, gapWet = false;
+                    for (int y = Math.min(top, 128); y >= -64; y--) {
+                        var state = level.getBlockState(pos.set(x, y, z));
+                        boolean rock = state.isSolidRender(level, pos);
+                        if (rock) {
+                            if (seenRock && gap > 0 && gap <= 20) {
+                                enclosed += gap;
+                                if (top - lastSolid > 12) {
+                                    deep += gap;
+                                }
+                                wet += gapWet ? 1 : 0;
+                            }
+                            seenRock = true;
+                            gap = 0;
+                            gapWet = false;
+                            lastSolid = y;
+                        } else if (seenRock) {
+                            gap++;
+                            gapWet |= !state.getFluidState().isEmpty();
+                        }
+                    }
+                    columns++;
+                }
+            }
+        }
+        AlteredAether.LOGGER.info("Caves: {} enclosed air blocks over {} columns ({} more than 12 under the ground); {} "
+                + "enclosed gaps hold fluid", enclosed, columns, deep, wet);
+    }
+
+    /**
+     * Nadirite in the island bases: how many columns have a band, its mean and largest thickness, and two faults:
+     * nadirite on a cave's roof (an air gap of at most 20 under it with rock below), and nadirite in an island under
+     * 24 blocks thick.
+     */
+    private static void nadiriteTally(ServerLevel level, List<ChunkPos> positions) {
+        var nadirite = BuiltInRegistries.BLOCK.get(AlteredAether.id("nadirite"));
+        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
+        long blocks = 0, banded = 0, columns = 0, roofs = 0, thin = 0;
+        java.util.TreeMap<Integer, Integer> roofGaps = new java.util.TreeMap<>();
+        var probe = com.linc.alteredaether.worldgen.surface.IslandBase.probe(level.getChunkSource().randomState());
+        long missed = 0;
+        java.util.TreeMap<Integer, Integer> missedReach = new java.util.TreeMap<>();
+        int widest = 0;
+        for (ChunkPos chunk : positions) {
+            for (int dx = 0; dx < 16; dx++) {
+                for (int dz = 0; dz < 16; dz++) {
+                    int x = chunk.getMinBlockX() + dx, z = chunk.getMinBlockZ() + dz;
+                    int top = level.getHeight(Heightmap.Types.WORLD_SURFACE, x, z);
+                    columns++;
+                    // Runs of solid blocks top down; for each, its nadirite count and the gap of air under it.
+                    int runTop = Integer.MIN_VALUE, runNadirite = 0, columnNadirite = 0;
+                    for (int y = top; y >= level.getMinBuildHeight() - 1; y--) {
+                        var state = y < level.getMinBuildHeight() ? null : level.getBlockState(pos.set(x, y, z));
+                        boolean solid = state != null && !state.isAir() && state.getFluidState().isEmpty();
+                        if (solid) {
+                            if (runTop == Integer.MIN_VALUE) {
+                                runTop = y;
+                                runNadirite = 0;
+                            }
+                            if (state.is(nadirite)) {
+                                runNadirite++;
+                            }
+                        } else if (runTop != Integer.MIN_VALUE) {
+                            int bottom = y + 1;
+                            if (runNadirite > 0) {
+                                blocks += runNadirite;
+                                columnNadirite += runNadirite;
+                                widest = Math.max(widest, runNadirite);
+                                // Rock within 20 blocks below this run's bottom: a cave's roof (or a near island).
+                                for (int d = 1; d <= 20 && y - d + 1 >= level.getMinBuildHeight(); d++) {
+                                    var below = level.getBlockState(pos.set(x, y - d + 1, z));
+                                    if (!below.isAir() && below.getFluidState().isEmpty()) {
+                                        // Only island ground counts: clouds, leaves and roots hang under islands.
+                                        if (below.is(nadirite) || below.is(com.aetherteam.aether.AetherTags.Blocks.AETHER_ISLAND_BLOCKS)
+                                                || below.is(com.aetherteam.aether.AetherTags.Blocks.HOLYSTONE)) {
+                                            roofs += runNadirite;
+                                            roofGaps.merge(d, 1, Integer::sum);
+                                            // A cave the pre-cave terrain says was rock: a roof IslandBase should have closed.
+                                            if (probe != null && probe.solid(x, y - d / 2, z)) {
+                                                // How high this nadirite reaches above the bottom of the rock under
+                                                // the cave: within the band's reach (22 + 2 rough) it is the band
+                                                // carrying on across a low cave, as it should.
+                                                int floor = y - d + 1;
+                                                while (floor > level.getMinBuildHeight() && !level.getBlockState(
+                                                        pos.set(x, floor - 1, z)).isAir()) {
+                                                    floor--;
+                                                }
+                                                int reach = (bottom + runNadirite - 1) - floor + 1;
+                                                if (reach > 24) {
+                                                    missed++;
+                                                }
+                                                missedReach.merge(Math.min(reach / 4 * 4, 60), 1, Integer::sum);
+                                            }
+                                        }
+                                        break;
+                                    }
+                                }
+                                if (runTop - bottom + 1 < 24) {
+                                    thin += runNadirite;
+                                }
+                            }
+                            runTop = Integer.MIN_VALUE;
+                        }
+                    }
+                    if (columnNadirite > 0) {
+                        banded++;
+                    }
+                }
+            }
+        }
+        AlteredAether.LOGGER.info("Nadirite: {} blocks in {} of {} columns (mean {} a banded column, widest run {}); {} "
+                        + "over a gap of 20 or less with island ground below, {} in runs under 24 thick", blocks, banded, columns,
+                String.format("%.1f", blocks / (double) Math.max(1, banded)), widest, roofs, thin);
+        AlteredAether.LOGGER.info("Nadirite roofs by gap height: {}; {} over a cave reaching past the band "
+                + "(probe bound: {}); over caves, nadirite top above the true bottom (by 4s): {}", roofGaps, missed,
+                probe != null, missedReach);
+    }
+
     private static void basinTally(ServerLevel level, List<ChunkPos> positions) {
         BasinField field = BasinField.get(level.dimension());
         if (field == null) {
@@ -860,11 +1253,21 @@ public final class DebugCommands {
                                     Integer::sum);
                             if (ours && !fluid.isSource() && leaks.size() < 12) {
                                 leaks.add(cursor.toShortString() + " below=" + BuiltInRegistries.BLOCK.getKey(
-                                        level.getBlockState(cursor.below()).getBlock()).getPath());
+                                        level.getBlockState(cursor.below()).getBlock()).getPath()
+                                        + (sites.stream().anyMatch(site -> site.inFootprint(fx, fz)) ? " wet" : " dry"));
                             }
                         }
                         if (state.is(net.minecraft.tags.BlockTags.CORAL_BLOCKS)) {
                             blocks.merge("coral", 1, Integer::sum);
+                        }
+                        // What a big lake is filled with and what its shore and bed are made of.
+                        String id = BuiltInRegistries.BLOCK.getKey(state.getBlock()).toString();
+                        if (id.equals("deep_aether:poison") || id.equals("deep_aether:aether_mud")
+                                || id.equals("aether:quicksoil") || id.equals("minecraft:clay")) {
+                            final int lx = x, lz = z;
+                            if (sites.stream().anyMatch(site -> site.isLake() && site.reach(lx, lz) < 1.3)) {
+                                blocks.merge("lake_" + id.substring(id.indexOf(':') + 1), 1, Integer::sum);
+                            }
                         }
                     }
                 }
@@ -879,6 +1282,11 @@ public final class DebugCommands {
         }
         sites.forEach(site -> AlteredAether.LOGGER.info("  {} at {} {} radius {} water {}: {}", site.type(), site.x(),
                 site.z(), String.format("%.1f", site.radius()), site.waterLevel(), column(level, site)));
+        sites.stream().filter(BasinSite::isLake).forEach(site -> {
+            var shore = com.linc.alteredaether.worldgen.feature.BasinFillFeature.lakeShore(field, site);
+            AlteredAether.LOGGER.info("  lake shore: {}", shore == null ? "grass" : BuiltInRegistries.BLOCK.getKey(
+                    shore.getBlock()));
+        });
     }
 
     /**

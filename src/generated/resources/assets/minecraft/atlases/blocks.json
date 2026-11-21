@@ -1,0 +1,94 @@
+{
+  "sources": [
+    {
+      "type": "altered_aether:faded",
+      "alphas": [
+        0.15,
+        0.25,
+        0.35,
+        0.45,
+        0.55,
+        0.65,
+        0.75,
+        0.85
+      ],
+      "prefix": "altered_aether:block/phased/cold_",
+      "source": "aether:block/natural/cold_aercloud"
+    },
+    {
+      "type": "altered_aether:faded",
+      "alphas": [
+        0.15,
+        0.25,
+        0.35,
+        0.45,
+        0.55,
+        0.65,
+        0.75,
+        0.85
+      ],
+      "prefix": "altered_aether:block/phased/blue_",
+      "source": "aether:block/natural/blue_aercloud"
+    },
+    {
+      "type": "altered_aether:faded",
+      "alphas": [
+        0.15,
+        0.25,
+        0.35,
+        0.45,
+        0.55,
+        0.65,
+        0.75,
+        0.85
+      ],
+      "prefix": "altered_aether:block/phased/golden_",
+      "source": "aether:block/natural/golden_aercloud"
+    },
+    {
+      "type": "altered_aether:faded",
+      "alphas": [
+        0.15,
+        0.25,
+        0.35,
+        0.45,
+        0.55,
+        0.65,
+        0.75,
+        0.85
+      ],
+      "prefix": "altered_aether:block/phased/rain_",
+      "source": "deep_aether:block/rain_aercloud"
+    },
+    {
+      "type": "altered_aether:faded",
+      "alphas": [
+        0.15,
+        0.25,
+        0.35,
+        0.45,
+        0.55,
+        0.65,
+        0.75,
+        0.85
+      ],
+      "prefix": "altered_aether:block/phased/sterling_",
+      "source": "deep_aether:block/sterling_aercloud"
+    },
+    {
+      "type": "altered_aether:faded",
+      "alphas": [
+        0.15,
+        0.25,
+        0.35,
+        0.45,
+        0.55,
+        0.65,
+        0.75,
+        0.85
+      ],
+      "prefix": "altered_aether:block/phased/chromatic_",
+      "source": "deep_aether:block/chromatic_aercloud"
+    }
+  ]
+}

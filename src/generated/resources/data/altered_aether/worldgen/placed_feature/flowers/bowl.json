@@ -1,0 +1,26 @@
+{
+  "neoforge:conditions": [
+    {
+      "type": "altered_aether:mod_enabled",
+      "modid": "deep_aether"
+    }
+  ],
+  "feature": "altered_aether:flowers/bowl",
+  "placement": [
+    {
+      "type": "altered_aether:config_count",
+      "count": 3.0,
+      "key": "vegetation"
+    },
+    {
+      "type": "minecraft:in_square"
+    },
+    {
+      "type": "minecraft:heightmap",
+      "heightmap": "MOTION_BLOCKING"
+    },
+    {
+      "type": "minecraft:biome"
+    }
+  ]
+}

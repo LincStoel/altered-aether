@@ -53,6 +53,8 @@ public final class AASurfaceRuleProvider extends JsonDataProvider {
     private static final String MUD = "deep_aether:aether_mud[double_drops=true]";
     private static final String QUICKSAND = "deep_aether:virulent_quicksand";
     private static final String CLORITE = "deep_aether:clorite";
+    private static final String ASETERITE = "deep_aether:aseterite";
+    private static final String PACKED_ICE = "minecraft:packed_ice";
 
     private static final String PLATEAU = biome("aether_plateau");
     private static final String CRAGS = biome("frozen_crags");
@@ -61,6 +63,8 @@ public final class AASurfaceRuleProvider extends JsonDataProvider {
     private static final String DUNES = biome("windswept_dunes");
     private static final String CATHEDRAL = biome("skyroot_cathedral");
     private static final String NURSELOG = biome("nurselog_hollow");
+    private static final String TUNDRA = biome("sky_tundra");
+    private static final String SHROUDED = biome("shrouded_forest");
 
     public AASurfaceRuleProvider(PackOutput output) {
         super(output, "surface rules");
@@ -70,6 +74,7 @@ public final class AASurfaceRuleProvider extends JsonDataProvider {
     protected void generate() {
         data("surface_rules", AlteredAether.id("aether"), seq(
                 when(stoneDepth(false), floor()),
+                when(ceiling(1), underside()),
                 when(stoneDepth(true), under()),
                 body()));
     }
@@ -117,9 +122,16 @@ public final class AASurfaceRuleProvider extends JsonDataProvider {
                         when(noiseBand("minecraft:calcite", 0.26, BIG), block(MOSSY_HOLYSTONE)),
                         block(HOLYSTONE))),
                 when(inBiome(DUNES), block(QUICKSOIL)),
+                // Snowfields, with icestone breaking through here and there and coarse dirt where trees once stood.
+                when(inBiome(TUNDRA), seq(
+                        when(noiseBand("minecraft:surface", 0.5, BIG), substitute(COARSE_DIRT)),
+                        when(noiseBand("minecraft:powder_snow", 0.3, BIG), block(ICESTONE)),
+                        block(SNOW_BLOCK))),
                 // Root litter: coarse dirt patches in the cathedral's shade, and wide worn ground between the fallen
                 // logs, with bare aether dirt in bands.
                 when(inBiome(CATHEDRAL), when(noiseBand("minecraft:surface", 0.44, BIG), substitute(COARSE_DIRT))),
+                // The shrouded forest's floor is deep in litter: more coarse dirt than the cathedral's.
+                when(inBiome(SHROUDED), when(noiseBand("minecraft:surface", 0.2, BIG), substitute(COARSE_DIRT))),
                 when(inBiome(NURSELOG), seq(
                         when(noiseBand("minecraft:surface", 0.15, BIG), substitute(COARSE_DIRT)),
                         when(noiseBand("minecraft:surface_secondary", 0.18, BIG), block(DIRT)))),
@@ -135,17 +147,20 @@ public final class AASurfaceRuleProvider extends JsonDataProvider {
     private static JsonObject cliffs() {
         JsonObject holystoneRock = seq(when(noiseBand("minecraft:calcite", 0.26, BIG), block(MOSSY_HOLYSTONE)),
                 block(HOLYSTONE));
+        // The biome is asked before the slope: the slope reads neighbouring columns, the biome only this block.
         return seq(
                 // The mountains show rock on any real slope.
-                when(steep(3), seq(
+                when(inBiome(PLATEAU, CRAGS, TEMPEST), when(steep(3), seq(
                         when(inBiome(PLATEAU), plateauStrata()),
                         when(inBiome(CRAGS), seq(when(noiseBand("minecraft:surface_secondary", 0.18, BIG),
                                 substitute(CLORITE)), block(ICESTONE))),
                         when(inBiome(TEMPEST), seq(when(noiseBand("minecraft:surface_secondary", 0.18, BIG),
-                                block(BLACKSTONE)), block(DEEPSLATE))))),
+                                block(BLACKSTONE)), block(DEEPSLATE)))))),
                 // Forested and gentler islands only on true cliffs, so ordinary lumpy ground stays green.
-                when(steep(5), when(inBiome(RIFT, CATHEDRAL, NURSELOG, grove("blazing"), grove("cascading"), grove("flashing"),
-                        grove("flourishing"), grove("vexing")), holystoneRock)));
+                when(inBiome(TUNDRA, RIFT, CATHEDRAL, NURSELOG, SHROUDED, grove("blazing"), grove("cascading"),
+                        grove("flashing"), grove("flourishing"), grove("vexing")), when(steep(5), seq(
+                        when(inBiome(TUNDRA), block(ICESTONE)),
+                        holystoneRock))));
     }
 
     private static JsonObject steep(int rise) {
@@ -160,6 +175,7 @@ public final class AASurfaceRuleProvider extends JsonDataProvider {
                 when(inBiome(grove("vexing")), substitute(MUD)),
                 // The crags, peaks and rift are stone all the way down; no dirt under the snow.
                 when(inBiome(CRAGS), block(ICESTONE)),
+                when(inBiome(TUNDRA), block(SNOW_BLOCK)),
                 when(inBiome(TEMPEST), block(DEEPSLATE)),
                 when(inBiome(RIFT), block(HOLYSTONE)),
                 // A few blocks of quicksoil under the dunes, so digging in doesn't hit ordinary dirt.
@@ -168,11 +184,51 @@ public final class AASurfaceRuleProvider extends JsonDataProvider {
     }
 
     /**
+     * The undersides of the islands (and the roofs of caves), two blocks deep, mottled: patches of mossy holystone and
+     * bare Aether dirt everywhere, and packed ice under the crags, the peaks and the tundra. Anything not matched keeps
+     * the rock the body rules give it.
+     */
+    private static JsonObject underside() {
+        return seq(
+                when(inBiome(CRAGS, TEMPEST, TUNDRA), when(noiseBand("minecraft:surface", 0.25, BIG), block(PACKED_ICE))),
+                when(noiseBand("minecraft:surface", 0.3, BIG), block(MOSSY_HOLYSTONE)),
+                when(noiseBand("minecraft:surface_secondary", 0.3, BIG), block(DIRT)));
+    }
+
+    /**
+     * Blobs of {@code rule}'s block through the rock, {@code size} blocks across. {@code threshold} sets their share
+     * of the rock: 0.58 is about 6%, 0.45 12%, 0.40 15%, 0.21 30% (measured on the lattice noise).
+     */
+    private static JsonObject patches(JsonObject rule, double size, double flatten, double threshold, int salt) {
+        JsonObject json = typed("altered_aether:stone_patches");
+        json.add("then_run", rule);
+        json.addProperty("size", size);
+        json.addProperty("flatten", flatten);
+        json.addProperty("threshold", threshold);
+        json.addProperty("salt", salt);
+        return json;
+    }
+
+    private static JsonObject ceiling(int offset) {
+        JsonObject json = typed("minecraft:stone_depth");
+        json.addProperty("add_surface_depth", false);
+        json.addProperty("offset", offset);
+        json.addProperty("secondary_depth_range", 0);
+        json.addProperty("surface_type", "ceiling");
+        return json;
+    }
+
+    /**
      * The island bodies. Anything not matched here keeps the dimension's holystone. The plateau's body is banded
      * rock, so every mesa cliff shows sedimentary layers.
      */
     private static JsonObject body() {
         return seq(
+                // Lenses of packed ice in the crags and the peaks, Deep Aether's aseterite through the rift's columns,
+                // and quicksoil seams in the dunes' sheets.
+                when(inBiome(CRAGS, TEMPEST, TUNDRA), patches(block(PACKED_ICE), 10, 0.6, 0.58, 1)),
+                when(inBiome(RIFT), patches(substitute(ASETERITE), 12, 1.0, 0.45, 2)),
+                when(inBiome(DUNES), patches(block(QUICKSOIL), 24, 0.15, 0.40, 3)),
                 when(inBiome(PLATEAU), plateauStrata()),
                 when(inBiome(CRAGS), seq(
                         when(noiseBand("minecraft:surface_secondary", 0.18, BIG), substitute(CLORITE)),

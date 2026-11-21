@@ -1,0 +1,13 @@
+{
+  "variants": {
+    "type=bottom": {
+      "model": "altered_aether:block/polished_nadirite_slab"
+    },
+    "type=double": {
+      "model": "altered_aether:block/polished_nadirite"
+    },
+    "type=top": {
+      "model": "altered_aether:block/polished_nadirite_slab_top"
+    }
+  }
+}

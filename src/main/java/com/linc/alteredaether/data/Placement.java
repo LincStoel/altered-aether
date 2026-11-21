@@ -63,6 +63,15 @@ final class Placement {
         return json;
     }
 
+    /** Keeps positions only in clumps where a 2D noise passes {@code threshold} (see NoiseClump). */
+    static JsonObject noiseClump(double scale, double threshold, int salt) {
+        JsonObject json = type("altered_aether:noise_clump");
+        json.addProperty("scale", scale);
+        json.addProperty("threshold", threshold);
+        json.addProperty("salt", salt);
+        return json;
+    }
+
     /** Moves the position to the top of the nearest island edge column (see IslandEdge). */
     static JsonObject islandEdge(int reach, int drop) {
         JsonObject json = type("altered_aether:island_edge");
@@ -173,6 +182,13 @@ final class Placement {
         JsonObject json = type("minecraft:uniform");
         json.addProperty("min_inclusive", min);
         json.addProperty("max_inclusive", max);
+        return json;
+    }
+
+    /** Drops a position below an anchor: after a heightmap, ground that doesn't stand that high (see MinHeight). */
+    static JsonObject minHeight(JsonObject anchor) {
+        JsonObject json = type("altered_aether:min_height");
+        json.add("min_inclusive", anchor);
         return json;
     }
 

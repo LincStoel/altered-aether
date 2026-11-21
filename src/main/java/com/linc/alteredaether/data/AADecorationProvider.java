@@ -42,6 +42,9 @@ public final class AADecorationProvider extends FeatureData {
     static final String TEMPEST_LONE_SPIKE = NS + "copper_spike/lone";
     static final String TEMPEST_COPPER_VEIN = NS + "copper_vein/tempest";
     static final String SNOW_DRIFT = NS + "drift/snow";
+    static final String TUNDRA_DRIFTS = NS + "drift/tundra";
+    static final String CANOPY_MOSS = NS + "vegetation/canopy_moss";
+    static final String FALLEN_LOG = NS + "vegetation/fallen_log";
     static final String ICE_SPIKE = NS + "drift/ice_spike";
     static final String ICESTONE_SHARD = NS + "shard/icestone";
     static final String HANGING_CHAIN = NS + "hanging/chain";
@@ -62,14 +65,16 @@ public final class AADecorationProvider extends FeatureData {
     static final String ASETERITE_BOULDER = NS + "boulder/aseterite";
     static final String CLORITE_BOULDER = NS + "boulder/clorite";
     static final String GROVE_BLUE_CLOUD = NS + "cloud/grove_blue";
-    static final String CLOUD_MASS = NS + "cloud/mass";
     static final String GOLDEN_HIGH_CLOUD = NS + "cloud/golden_high";
     static final String CRAG_CAMPFIRE = NS + "camp/crag_campfire";
     static final String LUSH_GRASS = NS + "vegetation/lush_grass";
+    static final String BOWL_FLOWERS = NS + "vegetation/bowl_flowers";
 
     private static final String SURFACE = "WORLD_SURFACE_WG";
     private static final String CRAG_ROCK = NS + "frozen_crag_ore_replaceables";
     private static final String TEMPEST_ROCK = NS + "tempest_peak_ore_replaceables";
+    /** The Highlands' floor, y 140 in the tall Aether, in the stock-Aether terms anchors are written in (TallRemap). */
+    private static final int HIGHLANDS = 136;
 
     public AADecorationProvider(PackOutput output) {
         super(output, "decoration");
@@ -119,6 +124,26 @@ public final class AADecorationProvider extends FeatureData {
         placed("boulder/ancient", "boulder/ancient", Placement.list(Placement.configCount(1 / 300.0, "ancient_boulders"),
                 Placement.inSquare(), Placement.heightmap(SURFACE), Placement.biome()));
         addFeature("boulder/ancient", List.of(IS_AETHER), "local_modifications");
+        // The Highlands' own: the same long-fallen boulders now and then on an islet's top (only ground above y 140
+        // in the tall Aether is an islet's), and blobs of celezite through the islets' holystone.
+        placed("boulder/highlands", "boulder/ancient", Placement.list(Placement.configCount(1 / 2.0, "ancient_boulders"),
+                Placement.inSquare(), Placement.heightmap(SURFACE), Placement.minHeight(Placement.absolute(HIGHLANDS)),
+                Placement.biome()));
+        addFeature("boulder/highlands", List.of(IS_AETHER), "local_modifications");
+        configured("ore/highlands_celezite", "minecraft:ore",
+                ore("altered_aether:celezite[double_drops=true]", 40, 0.0, "aether:holystone"));
+        placed("ore/highlands_celezite", "ore/highlands_celezite", Placement.list(Placement.count(4),
+                Placement.inSquare(), Placement.heightRange("uniform", Placement.absolute(HIGHLANDS),
+                        Placement.absolute(213)), Placement.biome()));
+        addFeature("ore/highlands_celezite", List.of(IS_AETHER), "underground_ores");
+        // Veins of any ore the Aether has through the islets' holystone, each twice its usual size (see
+        // HighlandsOresFeature, which picks the ore and does nothing outside the tall Aether).
+        configured("ore/highlands_veins", "highlands_ores", new JsonObject());
+        // 12 tries kept 1 in 8: about 300 ore blocks in 484 chunks of the Highlands, 400 with what was there.
+        placed("ore/highlands_veins", "ore/highlands_veins", Placement.list(Placement.count(12),
+                Placement.rarity(8), Placement.inSquare(), Placement.heightRange("uniform", Placement.absolute(HIGHLANDS),
+                        Placement.absolute(213)), Placement.biome()));
+        addFeature("ore/highlands_veins", List.of(IS_AETHER), "underground_ores");
         placed("boulder/clorite", "boulder/clorite", surface(1 / 26.0, "boulders"));
     }
 
@@ -193,6 +218,23 @@ public final class AADecorationProvider extends FeatureData {
         config.addProperty("wind_aligned", true);
         configured("drift/snow", "snow_drift", config);
         placed("drift/snow", "drift/snow", surface(0.5, "snow_drifts"));
+        // The Sky Tundra's great drifts and buried trees, built a chunk at a time (TundraDriftsFeature).
+        configured("drift/tundra", "tundra_drifts", new JsonObject());
+        placed("drift/tundra", "drift/tundra", Placement.list());
+        // Moss over the shrouded forest's canopy, in broad patches (Deep Aether's moss; vanilla's without it).
+        JsonObject moss = new JsonObject();
+        moss.add("moss", Substitutes.provider("deep_aether:aether_moss_carpet"));
+        moss.addProperty("cover", 0.6);
+        configured("vegetation/canopy_moss", "canopy_moss", moss);
+        placed("vegetation/canopy_moss", "vegetation/canopy_moss", Placement.list());
+        // Small fallen skyroot logs among the giants, mossed (Deep Aether's moss; vanilla's without it), in clumps.
+        JsonObject log = new JsonObject();
+        log.add("log", simple("aether:skyroot_log[double_drops=true]"));
+        log.add("moss", Substitutes.provider("deep_aether:aether_moss_carpet"));
+        log.add("length", uniform(4, 9));
+        log.addProperty("moss_chance", 0.45);
+        configured("vegetation/fallen_log", "fallen_log", log);
+        placed("vegetation/fallen_log", "vegetation/fallen_log", surface(1.0, "fallen_logs"));
 
         // Vanilla's tapered packed-ice spire grows only from snow blocks, so it rises out of the drifts and
         // nowhere else, which is the whole spacing rule.
@@ -269,6 +311,13 @@ public final class AADecorationProvider extends FeatureData {
         placed("vegetation/lush_grass", "aether:grass_patch", Placement.list(
                 Placement.configCount(20, "vegetation"), Placement.inSquare(), Placement.heightmap("MOTION_BLOCKING"),
                 Placement.biome()));
+        // The flower bowls' carpet: the Aether's white and purple flowers wall to wall (Deep Aether's join them with
+        // that mod), dense patches a few blocks across, several to a chunk.
+        configured("vegetation/bowl_flowers", "minecraft:random_patch", patch(64, 6, 2,
+                weighted("aether:white_flower", 3, "aether:purple_flower", 2), airOnTag("minecraft:dirt")));
+        placed("vegetation/bowl_flowers", "vegetation/bowl_flowers", Placement.list(
+                Placement.configCount(5, "vegetation"), Placement.inSquare(), Placement.heightmap("MOTION_BLOCKING"),
+                Placement.biome()));
         placed("vegetation/dead_bush", "minecraft:patch_dead_bush", Placement.list(
                 Placement.configCount(1 / 8.0, "vegetation"), Placement.inSquare(), Placement.heightmap(SURFACE),
                 Placement.biome()));
@@ -301,23 +350,66 @@ public final class AADecorationProvider extends FeatureData {
         // low blue wisps over the cascading grove and the dunes, a sixth as common as on the crags
         placed("cloud/grove_blue", "cloud/crag", skyPlacement(1 / 6.0, 2, 6));
 
-        // Great drifting banks of cold cloud through the whole Aether, between the heights of 32 and 96 (the stock
-        // Aether's: the tall Aether stretches them). They stand in for the stock large aercloud where it is off, and
-        // replace the stock cold aercloud everywhere: its boxes re-roll their size on every step of the fill, which
-        // leaves them pitted with holes.
-        removeFeatures("cloud/stock_cold", List.of(IS_AETHER), List.of("aether:cold_aercloud"),
-                "top_layer_modification");
-        configured("cloud/mass", "aercloud", cloud(cold, "streak", 22, 26, 4));
-        placed("cloud/mass", "cloud/mass", Placement.list(
-                Placement.heightRange("uniform", Placement.absolute(32), Placement.absolute(96)),
-                Placement.rarity(9), Placement.inSquare(), Placement.configCount(2, "aerclouds"), Placement.biome()));
-        addFeature("cloud/mass", List.of(IS_AETHER), "top_layer_modification");
+        // The sky's clouds thicken with height: none at y 0 (tall), rising steadily to their thickest among the
+        // Highlands, and change colour on the way up, cold banks low, blue in the middle, golden near the Highlands,
+        // with each colour's heights overlapping the next so they mingle at the seams. Above the Highlands, with Deep
+        // Aether, scattered sterling clouds. They replace the stock Aether's cold, blue and golden aerclouds, whose
+        // boxes re-roll their size on every step of the fill and are left pitted with holes. Heights are written in
+        // stock-Aether blocks, which the tall Aether stretches (tall y = 1.5 * stock y - 64); counts are per chunk,
+        // the thickest band matching the old banks of cold cloud (0.22 a chunk over 96 tall blocks).
+        removeFeatures("cloud/stock_cold", List.of(IS_AETHER), List.of("aether:cold_aercloud", "aether:blue_aercloud",
+                "aether:golden_aercloud"), "top_layer_modification");
+        JsonObject sterling = Substitutes.provider("deep_aether:sterling_aercloud");
+        configured("cloud/layer_cold", "aercloud", cloud(cold, "streak", 20, 26, 4));
+        configured("cloud/layer_blue", "aercloud", cloud(blue, "streak", 12, 20, 3));
+        configured("cloud/layer_golden", "aercloud", cloud(golden, "streak", 8, 16, 2));
+        configured("cloud/layer_golden_puff", "aercloud", cloud(golden, "puff", 4, 6, 2));
+        configured("cloud/layer_sterling", "aercloud", cloud(sterling, "streak", 10, 18, 2), "deep_aether");
+        // tall y 0-45, 45-100: few low down, more higher up
+        layer("cloud/layer_cold_low", "cloud/layer_cold", 0.01, 43, 73);
+        layer("cloud/layer_cold_high", "cloud/layer_cold", 0.035, 73, 109);
+        // tall y 80-175, overlapping the cold below and the gold above
+        layer("cloud/layer_blue", "cloud/layer_blue", 0.09, 96, 159);
+        // tall y 155-235, the Highlands' own: thinner than the blue, so the islets stand in clear air with a few
+        // golden streaks drifting among them, and the odd puff
+        layer("cloud/layer_golden", "cloud/layer_golden", 0.045, 146, 199);
+        layer("cloud/layer_golden_puff", "cloud/layer_golden_puff", 0.008, 146, 199);
+        placed("cloud/layer_sterling", "cloud/layer_sterling", Placement.list(
+                Placement.heightRange("uniform", Placement.absolute(203), Placement.absolute(243)),
+                Placement.inSquare(), Placement.configCount(0.03, "aerclouds"), Placement.biome(), dungeonBlacklist()),
+                "deep_aether");
+        for (String layer : List.of("cloud/layer_cold_low", "cloud/layer_cold_high", "cloud/layer_blue",
+                "cloud/layer_golden", "cloud/layer_golden_puff")) {
+            addFeature(layer, List.of(IS_AETHER), "top_layer_modification");
+        }
+        addFeature("cloud/layer_sterling", List.of(IS_AETHER), "top_layer_modification", "deep_aether");
+
+        // The snowline, among the Highlands' highest islets: snow on any ground above y 215 (tall), give or take.
+        JsonObject snowline = new JsonObject();
+        snowline.addProperty("tall_line", 215);
+        snowline.addProperty("wander", 6);
+        configured("snowline", "snowline", snowline);
+        placed("snowline", "snowline", Placement.list());
+        addFeature("snowline", List.of(IS_AETHER), "top_layer_modification");
+
+        // The pools on top of the plateau's sea stacks.
+        configured("stack_pool", "stack_pool", new JsonObject());
+        placed("stack_pool", "stack_pool", Placement.list());
+        addFeature("stack_pool", List.of(IS_AETHER), "lakes");
 
         JsonObject bridge = new JsonObject();
         bridge.add("block", cold);
         configured("cloud/rift_bridge", "aercloud_bridge", bridge);
         placed("cloud/rift_bridge", "cloud/rift_bridge", Placement.list(Placement.configCount(1.2, "aerclouds"),
                 Placement.inSquare(), Placement.islandEdge(12, 16), Placement.biome()));
+    }
+
+    /** One band of the sky's clouds: {@code perChunk} of them between two stock-Aether heights. */
+    private void layer(String name, String configured, double perChunk, int stockMin, int stockMax) {
+        placed(name, configured, Placement.list(
+                Placement.heightRange("uniform", Placement.absolute(stockMin), Placement.absolute(stockMax)),
+                Placement.inSquare(), Placement.configCount(perChunk, "aerclouds"), Placement.biome(),
+                dungeonBlacklist()));
     }
 
     /** Clouds anchor over the surface, so they sit near the terrain they decorate rather than in empty sky. */
@@ -406,10 +498,18 @@ public final class AADecorationProvider extends FeatureData {
 
     // ---------------------------------------------------------------------------------------- helpers
 
+    /**
+     * Scattered decoration on the ground, in clumps: the positions are kept only where a noise 48 blocks across passes
+     * its threshold, about 40% of the ground, so the count is raised to match and the total stays as it was. Each
+     * family clumps in places of its own.
+     */
     private static JsonArray surface(double perChunk, String family) {
-        return Placement.list(Placement.configCount(perChunk, family), Placement.inSquare(),
-                Placement.heightmap(SURFACE), Placement.biome());
+        return Placement.list(Placement.configCount(perChunk / CLUMP_SHARE, family), Placement.inSquare(),
+                Placement.noiseClump(48, 0.125, family.hashCode()), Placement.heightmap(SURFACE), Placement.biome());
     }
+
+    /** The share of the ground {@link #surface}'s clumps cover (the 0.125 threshold, measured). */
+    private static final double CLUMP_SHARE = 0.4;
 
     private void spike(String name, int minHeight, int maxHeight, float radius, float lean, float taper,
                        float branch, float rod, JsonArray blocks, int minVeins, int maxVeins) {

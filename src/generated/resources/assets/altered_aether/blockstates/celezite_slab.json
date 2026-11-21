@@ -1,0 +1,13 @@
+{
+  "variants": {
+    "type=bottom": {
+      "model": "altered_aether:block/celezite_slab"
+    },
+    "type=double": {
+      "model": "altered_aether:block/celezite"
+    },
+    "type=top": {
+      "model": "altered_aether:block/celezite_slab_top"
+    }
+  }
+}

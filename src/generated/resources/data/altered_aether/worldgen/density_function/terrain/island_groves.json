@@ -1,6 +1,6 @@
 {
   "type": "altered_aether:choose",
   "high": "altered_aether:terrain/grove_land_broken",
-  "low": "altered_aether:terrain/island_dunes",
+  "low": "altered_aether:terrain/island_clean",
   "mask": "altered_aether:terrain/grove_weight"
 }

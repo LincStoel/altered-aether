@@ -7,9 +7,9 @@
       "argument1": {
         "type": "minecraft:y_clamped_gradient",
         "from_value": 1.0,
-        "from_y": 45,
+        "from_y": 80,
         "to_value": -1.0,
-        "to_y": 99
+        "to_y": 133
       },
       "argument2": {
         "type": "minecraft:mul",
@@ -48,13 +48,16 @@
     "type": "minecraft:mul",
     "argument1": 0.125,
     "argument2": {
-      "type": "minecraft:shifted_noise",
-      "noise": "altered_aether:plateau_relief",
-      "shift_x": "minecraft:shift_x",
-      "shift_y": 0.0,
-      "shift_z": "minecraft:shift_z",
-      "xz_scale": 0.35,
-      "y_scale": 0.0
+      "type": "minecraft:cache_2d",
+      "argument": {
+        "type": "minecraft:shifted_noise",
+        "noise": "altered_aether:plateau_relief",
+        "shift_x": "minecraft:shift_x",
+        "shift_y": 0.0,
+        "shift_z": "minecraft:shift_z",
+        "xz_scale": 0.35,
+        "y_scale": 0.0
+      }
     }
   }
 }

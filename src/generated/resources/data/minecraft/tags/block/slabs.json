@@ -1,0 +1,14 @@
+{
+  "replace": false,
+  "values": [
+    "altered_aether:nadirite_slab",
+    "altered_aether:polished_nadirite_slab",
+    "altered_aether:nadirite_brick_slab",
+    "altered_aether:celezite_slab",
+    "altered_aether:polished_celezite_slab",
+    "altered_aether:celezite_brick_slab",
+    "altered_aether:sylicite_slab",
+    "altered_aether:polished_sylicite_slab",
+    "altered_aether:sylicite_brick_slab"
+  ]
+}

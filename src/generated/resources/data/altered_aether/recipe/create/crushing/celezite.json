@@ -1,0 +1,24 @@
+{
+  "neoforge:conditions": [
+    {
+      "type": "altered_aether:mod_enabled",
+      "modid": "create"
+    }
+  ],
+  "type": "create:crushing",
+  "ingredients": [
+    {
+      "item": "altered_aether:celezite"
+    }
+  ],
+  "processing_time": 250,
+  "results": [
+    {
+      "id": "aether:quicksoil"
+    },
+    {
+      "chance": 0.1,
+      "id": "minecraft:quartz"
+    }
+  ]
+}

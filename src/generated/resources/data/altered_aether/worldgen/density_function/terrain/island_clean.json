@@ -1,0 +1,6 @@
+{
+  "type": "altered_aether:choose",
+  "high": -1.0,
+  "low": "altered_aether:terrain/island",
+  "mask": "altered_aether:terrain/island_shed"
+}

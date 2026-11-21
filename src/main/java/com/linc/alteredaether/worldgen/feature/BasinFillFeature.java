@@ -16,6 +16,7 @@ package com.linc.alteredaether.worldgen.feature;
 
 import com.linc.alteredaether.AlteredAether;
 import com.linc.alteredaether.config.AACommonConfig;
+import com.linc.alteredaether.registry.AARegistries;
 import com.linc.alteredaether.worldgen.LootChest;
 import com.linc.alteredaether.worldgen.basin.AtollSite;
 import com.linc.alteredaether.worldgen.basin.BasinField;
@@ -65,6 +66,8 @@ import java.util.Map;
  * is sealed with stone, so nothing can leak when the water first ticks. Frozen basins freeze only at the surface: a
  * column that would be ice lying straight on the bed is dug one block deeper, so there is always water under the ice.
  * The holystone under every basin's bed is richer in zanite and gravitite.
+ *
+ * <p>Lakes and pools that aren't poisonous get sylicite boulders (see {@link LakeBoulders}).
  *
  * <p>Lagoons get a reef (see {@link #colonies}): branching coral colonies built from a seeded grid, each chunk placing
  * the blocks of every colony that reaches into it.
@@ -163,9 +166,12 @@ public final class BasinFillFeature extends Feature<NoneFeatureConfiguration> {
         int bottom = water - site.maxDepth() - 4;
         BlockState liquid = liquid(site.type());
         BlockState seal = seal(site.type());
+        // A big lake's shore: quicksoil, Deep Aether's mud, or just the grass it was.
+        BlockState lakeShore = site.isLake() ? lakeShore(field, site) : null;
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
         List<BlockPos> beds = new ArrayList<>();
-        boolean placed = false;
+        List<int[]> filled = new ArrayList<>();
+        boolean placed = site.isLake() && underpin(level, chunk, site, seal, pos);
         // Water first, so the seal pass below sees this chunk's columns as they'll finally be.
         for (int x = chunk.getMinBlockX(); x <= chunk.getMaxBlockX(); x++) {
             for (int z = chunk.getMinBlockZ(); z <= chunk.getMaxBlockZ(); z++) {
@@ -181,6 +187,9 @@ public final class BasinFillFeature extends Feature<NoneFeatureConfiguration> {
                             ? Blocks.ICE.defaultBlockState() : liquid;
                     level.setBlock(pos.set(x, y, z), state, Block.UPDATE_CLIENTS);
                 }
+                if (site.isLake()) {
+                    filled.add(new int[]{x, z, waterBottom});
+                }
                 placed = true;
                 pos.set(x, waterBottom - 1, z);
                 if (waterBottom <= bottom) {
@@ -188,15 +197,19 @@ public final class BasinFillFeature extends Feature<NoneFeatureConfiguration> {
                     level.setBlock(pos, seal, Block.UPDATE_CLIENTS);
                 } else {
                     beds.add(pos.immutable());
-                    dressFloor(level, field, site, pos, water - waterBottom + 1, random);
+                    dressFloor(level, field, site, pos, water - waterBottom + 1, random, lakeShore);
                 }
             }
         }
+        // A chunk may hold only shore, so this goes before the check for water.
         if (site.type() == BasinType.ATOLL_LAGOON) {
-            // A chunk may hold only shore, so this goes before the check for water.
-            placed |= shore(level, field, chunk, site, pos);
+            placed |= shore(level, field, chunk, site, pos,
+                    GrovePalette.natural(block("aether:quicksoil", Blocks.SAND).defaultBlockState()));
+        } else if (lakeShore != null) {
+            placed |= shore(level, field, chunk, site, pos, lakeShore);
         }
         if (!placed) {
+            LakeBoulders.place(level, field, chunk, site);
             return false;
         }
         if (site.type() == BasinType.ATOLL_LAGOON) {
@@ -204,6 +217,9 @@ public final class BasinFillFeature extends Feature<NoneFeatureConfiguration> {
             seabed(level, field, chunk, site, bottom, random);
         }
         bedOres(level, beds, random);
+        for (int[] column : filled) {
+            spill(level, site, liquid, column[0], column[1], column[2], bottom, pos);
+        }
         for (int x = chunk.getMinBlockX(); x <= chunk.getMaxBlockX(); x++) {
             for (int z = chunk.getMinBlockZ(); z <= chunk.getMaxBlockZ(); z++) {
                 if (site.reach(x, z) > 1.3) {
@@ -221,17 +237,41 @@ public final class BasinFillFeature extends Feature<NoneFeatureConfiguration> {
                 }
             }
         }
+        LakeBoulders.place(level, field, chunk, site);
         return true;
     }
 
     /**
-     * Quicksoil shores round an atoll's lagoon, whatever biome it lies in: a beach running up from the water to the
-     * crest, breaking into patches further out and giving way to the land's own ground. The soil is turned a few
-     * blocks deep, so digging into the beach doesn't hit dirt at once; rock is left alone.
+     * The shore a big lake takes, the same for the whole lake: mostly quicksoil, as round the Aether II's lakes, or
+     * with Deep Aether its mud, which the poison lakes favour; now and then none, the grass running down to the water.
+     * A frozen tarn's shore is always packed ice.
+     */
+    @org.jetbrains.annotations.Nullable
+    public static BlockState lakeShore(BasinField field, BasinSite site) {
+        float roll = field.randomAt(SHORE_SALT, site.x(), site.z()).nextFloat();
+        Block mud = AACommonConfig.COMPAT_ENABLED.get("deep_aether").get() ? block("deep_aether:aether_mud", null) : null;
+        Block quicksoil = block("aether:quicksoil", Blocks.SAND);
+        Block shore;
+        if (site.type() == BasinType.FROZEN_LAKE) {
+            return Blocks.PACKED_ICE.defaultBlockState();
+        }
+        if (site.type().fluid() == BasinType.Fluid.POISON) {
+            shore = mud != null ? roll < 0.7f ? mud : null : roll < 0.6f ? quicksoil : null;
+        } else if (mud != null) {
+            shore = roll < 0.4f ? quicksoil : roll < 0.8f ? mud : null;
+        } else {
+            shore = roll < 0.8f ? quicksoil : null;
+        }
+        return shore == null ? null : GrovePalette.natural(shore.defaultBlockState());
+    }
+
+    /**
+     * A shore round an atoll's lagoon or a big lake, whatever biome it lies in: a beach running up from the water to
+     * the crest or bank, breaking into patches further out and giving way to the land's own ground. The soil is turned
+     * a few blocks deep, so digging into the beach doesn't hit dirt at once; rock is left alone.
      */
     private static boolean shore(WorldGenLevel level, BasinField field, ChunkPos chunk, BasinSite site,
-                                 BlockPos.MutableBlockPos pos) {
-        BlockState quicksoil = GrovePalette.natural(block("aether:quicksoil", Blocks.SAND).defaultBlockState());
+                                 BlockPos.MutableBlockPos pos, BlockState quicksoil) {
         int water = site.waterLevel();
         boolean placed = false;
         for (int x = chunk.getMinBlockX(); x <= chunk.getMaxBlockX(); x++) {
@@ -303,6 +343,45 @@ public final class BasinFillFeature extends Feature<NoneFeatureConfiguration> {
     }
 
     /**
+     * Where a big lake runs past the island's edge, the ground it builds to hold itself up (see
+     * {@link BasinSite#lakeUnderpin}): rock under the water, and a lip past the shore, topped with grass (or with
+     * packed ice round a frozen tarn) over a little dirt. Only open blocks are filled, from the top of each column's run
+     * down to the first solid block, and the run is pure geometry, so a neighbouring chunk can count on it before it is
+     * built. Only this chunk's columns are written.
+     */
+    private static boolean underpin(WorldGenLevel level, ChunkPos chunk, BasinSite site, BlockState rock,
+                                    BlockPos.MutableBlockPos pos) {
+        BlockState grass = site.type() == BasinType.FROZEN_LAKE ? Blocks.PACKED_ICE.defaultBlockState()
+                : block("aether:aether_grass_block", Blocks.GRASS_BLOCK).defaultBlockState();
+        BlockState dirt = site.type() == BasinType.FROZEN_LAKE ? rock
+                : block("aether:aether_dirt", Blocks.DIRT).defaultBlockState();
+        int[] run = new int[2];
+        boolean placed = false;
+        for (int x = chunk.getMinBlockX(); x <= chunk.getMaxBlockX(); x++) {
+            for (int z = chunk.getMinBlockZ(); z <= chunk.getMaxBlockZ(); z++) {
+                if (!site.lakeUnderpin(x, z, run)) {
+                    continue;
+                }
+                boolean lip = !site.inFootprint(x, z), built = false;
+                for (int y = run[1]; y >= run[0]; y--) {
+                    if (!level.getBlockState(pos.set(x, y, z)).isAir()) {
+                        break;
+                    }
+                    int depth = run[1] - y;
+                    level.setBlock(pos, !lip ? rock : depth == 0 ? grass : depth < 3 ? dirt : rock,
+                            Block.UPDATE_CLIENTS);
+                    built = true;
+                }
+                if (built) {
+                    placed = true;
+                    FeatureStats.placed("lake_underpin");
+                }
+            }
+        }
+        return placed;
+    }
+
+    /**
      * The lowest block of the column's open run down from the water line: everything from here up holds water. The
      * run is measured on blocks as the noise left them, counting water already placed as open, and the reef grown in
      * it too, so a neighbouring chunk that runs before or after this one gets the same answer.
@@ -320,6 +399,11 @@ public final class BasinFillFeature extends Feature<NoneFeatureConfiguration> {
                 && !open(level.getBlockState(pos.set(x, water - 2, z)))) {
             return water - 1;
         }
+        // A big lake's own columns are underpinned to the bed wherever the island runs out under them, so a
+        // neighbouring chunk not yet built is read as it will be.
+        if (site.isLake() && site.inFootprint(x, z)) {
+            return Math.max(y + 1, site.lakeBed(x, z) + 1);
+        }
         return y + 1;
     }
 
@@ -328,16 +412,53 @@ public final class BasinFillFeature extends Feature<NoneFeatureConfiguration> {
             return false;
         }
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
-        return y >= waterBottom(level, site, x, z, bottom, pos);
+        int waterBottom = waterBottom(level, site, x, z, bottom, pos);
+        return y >= waterBottom;
+    }
+
+    /**
+     * Wakes a big lake's water wherever it stands beside open air (rare now that a lake builds a lip where the island
+     * runs out), so it pours off the island's edge as the Aether
+     * II's lakes do, instead of waiting, frozen in place, for something to disturb it.
+     */
+    private static void spill(WorldGenLevel level, BasinSite site, BlockState liquid, int x, int z, int waterBottom,
+                              int bottom, BlockPos.MutableBlockPos pos) {
+        if (liquid.getFluidState().isEmpty()) {
+            return;
+        }
+        var fluid = liquid.getFluidState().getType();
+        BlockPos.MutableBlockPos beside = new BlockPos.MutableBlockPos();
+        boolean[] dry = new boolean[4];
+        int i = 0;
+        for (Direction side : Direction.Plane.HORIZONTAL) {
+            // A neighbour that is lake too will hold water once its own chunk is filled; only one left dry is a spill.
+            int nx = x + side.getStepX(), nz = z + side.getStepZ();
+            dry[i++] = !site.inFootprint(nx, nz) || waterBottom(level, site, nx, nz, bottom, beside) <= bottom;
+        }
+        for (int y = site.waterLevel(); y >= waterBottom; y--) {
+            i = 0;
+            for (Direction side : Direction.Plane.HORIZONTAL) {
+                if (dry[i++] && level.getBlockState(beside.set(x + side.getStepX(), y, z + side.getStepZ())).isAir()) {
+                    level.scheduleTick(pos.set(x, y, z), fluid, 0);
+                    FeatureStats.placed("lake_spill");
+                    break;
+                }
+            }
+        }
     }
 
     private static boolean open(BlockState state) {
         return state.isAir() || !state.getFluidState().isEmpty() || state.is(Blocks.ICE);
     }
 
-    /** Open as far as the reef is concerned: the reef's own blocks count as the water they stand in. */
+    /**
+     * Open as far as the reef is concerned: the reef's own blocks count as the water they stand in, and so do the
+     * sylicite boulders (see {@link LakeBoulders}), so a chunk reading a neighbour's column finds the same bed whether
+     * or not the neighbour has placed its boulders yet.
+     */
     private static boolean reefOpen(BlockState state) {
-        return open(state) || state.is(BlockTags.CORAL_BLOCKS) || state.is(Blocks.GLOWSTONE);
+        return open(state) || state.is(BlockTags.CORAL_BLOCKS) || state.is(Blocks.GLOWSTONE)
+                || state.is(AARegistries.SYLICITE.natural.block());
     }
 
     private static BlockState liquid(BasinType type) {
@@ -357,7 +478,7 @@ public final class BasinFillFeature extends Feature<NoneFeatureConfiguration> {
 
     /** The floor under the water: soil becomes lake bed, and lagoons get quicksoil and their glowing thickets. */
     private void dressFloor(WorldGenLevel level, BasinField field, BasinSite site, BlockPos.MutableBlockPos floor,
-                            int depth, RandomSource random) {
+                            int depth, RandomSource random, @org.jetbrains.annotations.Nullable BlockState lakeShore) {
         BlockState ground = level.getBlockState(floor);
         boolean soil = ground.is(BlockTags.DIRT) || ground.is(AETHER_DIRT) || ground.is(Blocks.SNOW_BLOCK)
                 || ground.is(BlockTags.SAND) || ground.is(block("aether:quicksoil", Blocks.SAND));
@@ -375,9 +496,14 @@ public final class BasinFillFeature extends Feature<NoneFeatureConfiguration> {
             return;
         }
         double patch = field.noise(FLOOR_SALT, floor.getX(), floor.getZ(), 6);
+        // A mud-shored lake has a muddy bed where the others have clay, and so does every poison lake Deep Aether fills.
+        Block mud = site.type() == BasinType.POISON_LAKE && AACommonConfig.COMPAT_ENABLED.get("deep_aether").get()
+                ? block("deep_aether:aether_mud", null) : null;
+        Block clay = mud != null ? mud : lakeShore != null && !lakeShore.is(block("aether:quicksoil", Blocks.SAND))
+                ? lakeShore.getBlock() : Blocks.CLAY;
         Block bed = switch (site.type()) {
-            case FROZEN_POOL -> block("aether:holystone", Blocks.STONE);
-            default -> patch > 0.45 ? Blocks.CLAY : patch < -0.5 ? block("aether:mossy_holystone", Blocks.MOSSY_COBBLESTONE)
+            case FROZEN_POOL, FROZEN_LAKE -> block("aether:holystone", Blocks.STONE);
+            default -> patch > 0.45 ? clay : patch < -0.5 ? block("aether:mossy_holystone", Blocks.MOSSY_COBBLESTONE)
                     : block("aether:aether_dirt", Blocks.DIRT);
         };
         level.setBlock(floor, bed.defaultBlockState(), Block.UPDATE_CLIENTS);

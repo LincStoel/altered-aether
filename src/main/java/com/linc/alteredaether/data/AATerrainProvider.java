@@ -79,7 +79,17 @@ public final class AATerrainProvider extends JsonDataProvider {
     private static final Set<String> HEIGHT_DEPENDENT =
             Set.of("crag_3d_noise", "jag", "crags", "tempest", "tempest_spires", "dune_ridges", "dune_centre", "dune_sheet",
                     "plateau", "plateau_terraced", "island", "tall_base_3d_noise", "rift",
-                    "grove_land", "grove_land_broken");
+                    "grove_land", "grove_land_broken", "cloud_sheet", "island_mass", "highlands", "caves", "tundra_land", "bowl_land", "cold_lift");
+
+    /**
+     * The tall Aether's island floor: where the Aether's own island noise starts to fade in, its stock y 8. Raised from
+     * -52 (a plain 1.5 stretch of the stock band) so that no plain island's ground lies lower than the dune sheets', and
+     * the cloud sheet at y -35..-8 meets mostly the bodies of the big islands plunging through it.
+     */
+    private static final int ISLAND_FLOOR = -38;
+
+    /** Where the Highlands start, in tall-Aether blocks: above the main island band's top (y 128) in both modes. */
+    private static final int HIGHLANDS_FLOOR = 140;
 
     private final HeightMode mode;
 
@@ -100,6 +110,7 @@ public final class AATerrainProvider extends JsonDataProvider {
             dimensionType();
             quicksoilShelf();
             aetherStructures();
+            airshipVillage();
             endSea();
             packMeta();
         }
@@ -121,6 +132,16 @@ public final class AATerrainProvider extends JsonDataProvider {
         data("end_sea", ResourceLocation.fromNamespaceAndPath("simulated", "the_aether"), json);
     }
 
+    /**
+     * The airship village floats clear over the Highlands in the tall Aether: their islets top out about y 240 with
+     * their trees, the ships hang about 21 blocks under the start, and the balloons rise about 35 over it, so it starts
+     * at y 272..281 (stock heights 224..230, stretched). The stock Aether has no Highlands and keeps its own heights.
+     */
+    private void airshipVillage() {
+        data("worldgen/structure", com.linc.alteredaether.AlteredAether.id("airship_village"),
+                AACompatProvider.airshipVillageStructure(224, 230), "integrated_villages");
+    }
+
     private void packMeta() {
         JsonObject pack = new JsonObject();
         pack.addProperty("pack_format", 48);
@@ -140,6 +161,8 @@ public final class AATerrainProvider extends JsonDataProvider {
         noise("crag_jag", -4, 1.0, 0.5);
         // Same recipe as the crags, an independent field, so CRAG_E's measured threshold carries over.
         noise("rift", -9, 1.0, 1.5, 1.2, 0.6);
+        // The Tempest Peaks' own field: the crags' recipe an octave coarser, so its patches are about twice as wide.
+        noise("tempest", -10, 1.0, 1.5, 1.2, 0.6);
         // Ridged landforms. Lattice sizes: -7 is 128 blocks, -6 is 64, -4 is 16, -3 is 8.
         noise("crag_ridges", -6, 1.0, 0.5);
         noise("crag_spurs", -4, 1.0);
@@ -164,6 +187,23 @@ public final class AATerrainProvider extends JsonDataProvider {
         noise("path_region", -6, 1.0);
         noise("plateau_path", -8, 1.0, 1.2, 0.7, 1.2, 1.0);
         noise("plateau_quicksoil_vein", -7, 1.0, 0.5, 0.0, 0.5, 1.0);
+        // The Highlands: islets on a 64-block footprint noise, their heights drifting on a 256-block one.
+        noise("highlands_footprint", -6, 1.0, 0.5, 0.25);
+        noise("highlands_level", -8, 1.0, 0.5);
+        noise("highlands_root", -5, 1.0, 0.5);
+        // Where a cave breaks through to daylight: rare patches a few dozen blocks across.
+        noise("cave_entrance", -5, 1.0, 0.5);
+        // The Sky Tundra's plates: broad and low, gently rolling, with lobes hanging beneath.
+        noise("tundra_footprint", -8, 1.0, 0.5);
+        noise("tundra_roll", -7, 1.0, 0.5);
+        noise("tundra_root", -6, 1.0, 0.5);
+        // The flower bowls' rims: the crest's height wandering along it, and the notches where it dips.
+        noise("bowl_crest", -6, 1.0, 0.5);
+        noise("bowl_notch", -5, 1.0);
+        // The caves: caverns on a 64-block 3D noise, tunnels where two 32-block ones both pass near zero.
+        noise("cave_cavern", -6, 1.0, 0.5, 0.25);
+        noise("cave_tunnel_a", -5, 1.0, 0.3);
+        noise("cave_tunnel_b", -5, 1.0, 0.3);
     }
 
     private void noise(String name, int firstOctave, double... amplitudes) {
@@ -186,12 +226,13 @@ public final class AATerrainProvider extends JsonDataProvider {
         df("continentalness", flatCache(shiftedNoise(NS + "continents", 1.0, 0.0)));
         df("plateau_mask", ramp(terrain("continentalness"), -1.68, 4.0));
         df("mesa_mask", ramp(flatCache(shiftedNoise(NS + "mesa", 0.25, 0.0)), -9.0, 20.0));
+        // Its ground sits about y 96 (tall), the mesas about 15 above that, all well under the Highlands.
         df("plateau", add(
-                min(add(yGradient(mode.y(4), 1.0, mode.y(84), -1.0),
+                min(add(yGradient(mode.y(56), 1.0, mode.y(136), -1.0),
                                 mul(terrain("mesa_mask"), add(0.25, mul(0.125,
                                         flatCache(shiftedNoise(NS + "mesa_height", 0.25, 0.0)))))),
                         yGradient(mode.y(-40), -1.0, mode.y(0), 1.0)),
-                mul(0.125, shiftedNoise(NS + "plateau_relief", 0.35, 0.0))));
+                mul(0.125, column(shiftedNoise(NS + "plateau_relief", 0.35, 0.0)))));
 
         // Stepped mesas: the plateau sampled at stepped heights. The config's step height is in tall-Aether blocks.
         JsonObject terraced = Df.type(NS + "terrace");
@@ -200,16 +241,26 @@ public final class AATerrainProvider extends JsonDataProvider {
         terraced.addProperty("step_scale", mode == HeightMode.TALL ? 1.0 : 1 / 1.5);
         df("plateau_terraced", terraced);
 
-        // Crag tier, on erosion: the same field drives the biome (erosion > 0.6125) and this mask, which ramps
-        // 0 -> 1 across 0.4875..0.7375, so the biome edge sits mid-ramp. Tempest Peaks is the top slice of the same
-        // tier (erosion > 0.8044), where the crag mask is saturated and the tempest mask takes over.
+        // Crag tier, on erosion: the same field drives the biome (erosion > 0.75) and this mask, which ramps
+        // 0 -> 1 across 0.70..0.80, so the biome edge sits mid-ramp; the band below belongs to the Sky Tundra
+        // (erosion > 0.67), which rings the crags.
         df("crag_noise", flatCache(shiftedNoise(NS + "crags", 0.25, 0.0)));
-        df("crag_mask", ramp(terrain("crag_noise"), -1.95, 4.0));
-        df("tempest_mask", ramp(terrain("crag_noise"), -0.76 / 0.09, 1 / 0.09));
+        // Tempest Peaks, apart from the cold lands, on a coarse field of their own, where it passes 0.75: a few broad
+        // ranges, each nearly a thousand blocks across, about 1% of the region (0.85 left one range in 16,000 blocks). The router's erosion is the crag noise less four times a sharp ramp on it, so inside the
+        // tempest erosion falls far below anything the crag noise reaches, through the plain islands' band (never
+        // the crags' or the tundra's) on the way; BiomeTable gives the tempest everything below -2.2.
+        df("tempest_noise", flatCache(shiftedNoise(NS + "tempest", 0.25, 0.0)));
+        df("erosion", flatCache(add(terrain("crag_noise"), mul(-4.0,
+                ramp(terrain("tempest_noise"), -0.72 / 0.06, 1 / 0.06)))));
+        df("crag_mask", ramp(terrain("erosion"), -7.0, 10.0));
+        // The tempest's land eases in over a broad band either side of its biome's edge, so its massifs thin away
+        // into the open sky round them rather than stopping at a wall.
+        df("tempest_mask", ramp(terrain("tempest_noise"), -0.71 / 0.08, 1 / 0.08));
         // The island noise made half as wide and twice as tall, for overhangs and hollows inside the massifs.
-        df("crag_3d_noise", oldBlendedNoise(0.25, 0.25, 40.0, mode.height(480.0), 8.0));
+        // cache_once: the crags and the tempest both read it at the same points where they blend.
+        df("crag_3d_noise", Df.wrap("minecraft:cache_once", oldBlendedNoise(0.25, 0.25, 40.0, mode.height(480.0), 8.0)));
         // A fine wobble that roughens isosurfaces so cliffs and crack walls don't look stamped.
-        df("jag", shiftedNoise(NS + "crag_jag", 1.0, mode.frequency(0.5)));
+        df("jag", Df.wrap("minecraft:cache_once", shiftedNoise(NS + "crag_jag", 1.0, mode.frequency(0.5))));
 
         // Ridgelines: sharp crests along the zero contours of a 64-block noise, with 16-block spurs branching off
         // them. 1 on a crest, falling to 0 between crests.
@@ -226,18 +277,19 @@ public final class AATerrainProvider extends JsonDataProvider {
                 clamp(mul(1.6, shiftedNoise(NS + "tempest_spires", 1.0, 0.0)), 0.0, 1.0))))));
         df("tempest", massif(mul(terrain("crag_ridges"), terrain("crag_ridges")), 10, 105, "tempest_strength",
                 -24, 36, 1.0, 0.4, 0.15));
-        df("crag_tier", Df.choose(terrain("tempest_mask"), terrain("crags"), terrain("tempest")));
 
         // Shattered Rift, on weirdness: inside the rift the island breaks into Voronoi slabs about 48 blocks
         // across, each lifted or dropped and tilted, with long straight cracks between them.
         df("rift_noise", flatCache(shiftedNoise(NS + "rift", 0.25, 0.0)));
         df("rift_mask", ramp(terrain("rift_noise"), -1.95, 4.0));
 
-        // Windswept Dunes: a box on the same temperature and humidity fields the biome selector reads, so the lean
-        // lines up with the biome window exactly.
+        // The temperature and humidity fields the biome selector reads, for the climate windows' masks.
         df("dune_temperature", flatCache(shiftedNoise("aeroblender:temperature", 0.25, 0.0)));
         df("dune_humidity", flatCache(shiftedNoise("aether:vegetation", 0.25, 0.0)));
-        df("dune_mask", climateBox(0.21, 0.41, -0.68, -0.08));
+        // Windswept Dunes: the far low tail of the rift's weirdness (below -0.78), ramping in across 0.05 either side.
+        // They are what is left of a low island the clouds have blown over and over: they stand alone, the land
+        // round them thinning away (isolation_fade), with the cloud sea all about.
+        df("dune_mask", ramp(terrain("rift_noise"), -7.3, -10.0));
         // Long, low dune crests across the prevailing wind: gentle windward slopes, steep lee faces, up to 5 blocks.
         JsonObject ridges = Df.type(NS + "wind_ridges");
         ridges.addProperty("wavelength", 64.0);
@@ -264,7 +316,8 @@ public final class AATerrainProvider extends JsonDataProvider {
         // Skyroot Cathedral and Nurselog Hollow: broad, gentle forest islands for the giants to stand on, in place of
         // the Aether's scattered ones. The mask covers the nurselog frame (and so the cathedral inside it) and the
         // nurselog's own solo window.
-        df("grove_mask", max(climateBox(-0.51, 0.03, 0.17, 0.63), climateBox(-0.60, -0.44, -0.44, -0.20)));
+        df("grove_mask", max(max(climateBox(-0.51, 0.13, 0.01, 0.47), climateBox(-0.60, -0.44, -0.44, -0.20)),
+                climateBox(-0.50, 0.13, 0.47, 1.0)));
         // Broad swells, and over them low mounds and hollows a few dozen blocks across, so the forest floor is never
         // a lawn.
         // The whole island is lifted or dropped by a level that sits flat over large tracts: a 256-block noise, held at
@@ -282,21 +335,121 @@ public final class AATerrainProvider extends JsonDataProvider {
         JsonObject groveGap = flatCache(clamp(mul(6.0, add(shiftedNoise(NS + "grove_gap", 1.0, 0.0), -0.12)),
                 0.0, 1.0));
         JsonObject groveSummit = add(add(add(mode.y(44), groveLevel),
-                        mul(mode.height(7), shiftedNoise(NS + "grove_roll", 1.0, 0.0))),
-                mul(mode.height(3), shiftedNoise(NS + "grove_hummock", 1.0, 0.0)));
+                        mul(mode.height(7), column(shiftedNoise(NS + "grove_roll", 1.0, 0.0)))),
+                mul(mode.height(3), column(shiftedNoise(NS + "grove_hummock", 1.0, 0.0))));
         JsonObject groveUnderside = add(add(mode.y(22), groveLevel), mul(-mode.height(26),
-                clamp(add(shiftedNoise(NS + "grove_root", 1.0, 0.0), 0.2), 0.0, 1.0)));
+                clamp(add(column(shiftedNoise(NS + "grove_root", 1.0, 0.0)), 0.2), 0.0, 1.0)));
         df("grove_land", min(min(mul(0.125, add(groveSummit, mul(-1.0, Df.y()))),
                         mul(1.0 / 6, add(Df.y(), mul(-1.0, groveUnderside)))),
                 add(mul(6.0, add(flatCache(shiftedNoise(NS + "grove_footprint", 1.0, 0.0)), 0.3)),
                         mul(-14.0, mul(groveSeam, groveGap)))));
 
+        // Sky Tundra, on the erosion band under the crags (0.67..0.75): its mask ramps in across 0.64..0.70 and the
+        // crags take over above it. Broad, low snowfields on plates a few hundred blocks across with sky between,
+        // their ground at y 30..42 (tall), hanging lobes beneath; the drifts are built on them by TundraDriftsFeature.
+        df("tundra_mask", ramp(terrain("erosion"), -0.64 / 0.06, 1 / 0.06));
+        JsonObject tundraSummit = add(add(mode.y(36), mul(mode.height(5), column(shiftedNoise(NS + "tundra_roll", 1.0, 0.0)))),
+                mul(mode.height(2), column(shiftedNoise(NS + "grove_hummock", 1.0, 0.0))));
+        JsonObject tundraUnderside = add(mode.y(14), mul(-mode.height(20),
+                clamp(add(column(shiftedNoise(NS + "tundra_root", 1.0, 0.0)), 0.15), 0.0, 1.0)));
+        df("tundra_land", min(min(mul(0.125, add(tundraSummit, mul(-1.0, Df.y()))),
+                        mul(1.0 / 6, add(Df.y(), mul(-1.0, tundraUnderside)))),
+                mul(6.0, add(flatCache(shiftedNoise(NS + "tundra_footprint", 1.0, 0.0)), 0.25))));
+
+        // Flower Bowl: an island raised round its edges and sinking gently toward the middle, an irregular bowl of
+        // meadow. The rim follows the biome's own edge: from it the ground climbs over 10 blocks to a crest 14 to 26
+        // blocks above the floor (lower where a notch cuts it), then eases down over 26 blocks to a broad flat floor
+        // at y 36 (tall). The land itself follows the biome exactly, rather than a soft climate window.
+        JsonObject bowlEdge = Df.type(NS + "biome_edge");
+        bowlEdge.addProperty("classifier", "bowl");
+        bowlEdge.addProperty("reach", 64);
+        bowlEdge.addProperty("inside", 1);
+        df("bowl_edge", flatCache(bowlEdge));
+        JsonObject bowlCrest = mul(add(20.0, mul(6.0, shiftedNoise(NS + "bowl_crest", 1.0, 0.0))),
+                add(1.0, mul(-0.65, clamp(mul(4.0, add(shiftedNoise(NS + "bowl_notch", 1.0, 0.0), -0.45)), 0.0, 1.0))));
+        // up the outer slope (sqrt-like: steep at first, rounding over the crest), then down the inner one
+        JsonObject up = clamp(mul(1.0 / 10, terrain("bowl_edge")), 0.0, 1.0);
+        JsonObject rise = add(mul(2.0, up), mul(-1.0, mul(up, up)));
+        JsonObject down = clamp(mul(1.0 / 26, add(terrain("bowl_edge"), -10.0)), 0.0, 1.0);
+        JsonObject fall = add(1.0, mul(mul(down, down), add(-3.0, mul(2.0, down))));
+        df("bowl_rim", flatCache(mul(bowlCrest, mul(rise, fall))));
+        JsonObject bowlSummit = add(add(mode.y(36), mul(mode.height(1), terrain("bowl_rim"))),
+                mul(mode.height(2), column(shiftedNoise(NS + "grove_hummock", 1.0, 0.0))));
+        JsonObject bowlUnderside = add(mode.y(10), mul(-mode.height(24),
+                clamp(add(column(shiftedNoise(NS + "grove_root", 1.0, 0.0)), 0.2), 0.0, 1.0)));
+        df("bowl_land", min(mul(0.125, add(bowlSummit, mul(-1.0, Df.y()))),
+                mul(1.0 / 6, add(Df.y(), mul(-1.0, bowlUnderside)))));
+
         // Each landform's weight, confined to our region.
-        df("plateau_weight", mul(terrain("region_mask"), terrain("plateau_mask")));
+        // The plateau's ramp is broad, but in the tundra's band it would raise half-terraces under the tundra's drifts;
+        // there the plateau rises sharply at its biome's edge instead.
+        df("plateau_weight", mul(terrain("region_mask"), Df.lerp(terrain("tundra_mask"), terrain("plateau_mask"),
+                ramp(terrain("continentalness"), -0.53 / 0.03, 1 / 0.03))));
         df("crag_weight", mul(terrain("region_mask"), terrain("crag_mask")));
-        df("rift_weight", mul(terrain("region_mask"), terrain("rift_mask")));
+        df("rift_weight", mul(mul(terrain("region_mask"), terrain("rift_mask")),
+                add(1.0, mul(-1.0, terrain("tundra_mask")))));
         df("dune_weight", mul(terrain("region_mask"), terrain("dune_mask")));
         df("grove_weight", mul(terrain("region_mask"), terrain("grove_mask")));
+        df("tundra_weight", mul(terrain("region_mask"), terrain("tundra_mask")));
+        df("bowl_weight", mul(terrain("region_mask"), clamp(mul(1.0 / 3, terrain("bowl_edge")), 0.0, 1.0)));
+        df("tempest_weight", mul(terrain("region_mask"), terrain("tempest_mask")));
+
+        // The cold lands stand 30 blocks higher than the islands round them: everything up to the crags is raised
+        // by this much, climbing smoothly from nothing at erosion 0.55 to the full lift at the tundra's edge (0.67),
+        // so the islands beside the tundra slope up to meet it.
+        JsonObject climb = ramp(terrain("erosion"), -0.55 / 0.12, 1 / 0.12);
+        df("cold_lift", flatCache(mul(mul(terrain("region_mask"), mode.height(30)),
+                mul(mul(climb, climb), add(3.0, mul(-2.0, climb))))));
+
+        // The dunes and the tempest stand alone in the sky. The land of every other biome thins away toward them:
+        // from 112 blocks out it is pared from above and below, smoothly harder the nearer it lies, until the last
+        // 16 blocks are open sky. Only looked for where their noises come near enough for one to be in reach.
+        JsonObject isolated = Df.type(NS + "biome_edge");
+        isolated.addProperty("classifier", "isolated");
+        isolated.addProperty("reach", 112);
+        // Signed: negative outside them, the distance in to their edge; unbound, -112, so nothing is thinned.
+        isolated.addProperty("inside", 1);
+        isolated.addProperty("signed", true);
+        JsonObject away = clamp(mul(-1.0 / 96, add(isolated, 16.0)), 0.0, 1.0);
+        JsonObject near = max(ramp(terrain("rift_noise"), -7.0, -20.0),
+                ramp(terrain("tempest_noise"), -0.45 / 0.05, 1 / 0.05));
+        df("isolation_fade", flatCache(Df.choose(near, 0.0,
+                add(1.0, mul(mul(away, away), add(-3.0, mul(2.0, away)))))));
+
+        // The Highlands: small islets floating high over the Aether's own biomes, Deep Aether's, the plateau and the
+        // flower bowls, but never over the peaks, dunes, giant-tree biomes or groves. Each islet is a lens on a
+        // footprint noise, 20 to 60 blocks across: a gently domed top at y 175..233 (tall) and an underside hanging
+        // 8 to 30 blocks beneath, deepest under its middle. They fade out 24 blocks short of a biome they can't float
+        // over, so none straddles the border.
+        JsonObject allowed = Df.type(NS + "biome_edge");
+        allowed.addProperty("classifier", "highlands");
+        allowed.addProperty("reach", 32);
+        allowed.addProperty("inside", 1);
+        df("highlands_allowed", flatCache(ramp(allowed, -0.25, 1.0 / 24)));
+        // Islets crowd the open sky but are rare over islands, and rarer still over the plateau: the footprint has
+        // to pass 0.42 over the void or the cloud sea, up to 0.82 over solid ground and 0.94 over the plateau.
+        JsonObject landBelow = max(ramp(terrain("island_mass"), -4.0 / 6, 1.0 / 6), terrain("bowl_weight"));
+        df("highlands_excess", flatCache(add(shiftedNoise(NS + "highlands_footprint", 1.0, 0.0),
+                add(-0.42, mul(-1.0, max(mul(0.40, landBelow), mul(0.52, terrain("plateau_weight"))))))));
+        JsonObject core = flatCache(ramp(terrain("highlands_excess"), 0.0, 5.0));
+        JsonObject isletLevel = add(mode.y(200), mul(mode.height(26), flatCache(shiftedNoise(NS + "highlands_level", 1.0, 0.0))));
+        JsonObject islandTop = add(isletLevel, mul(mode.height(7), core));
+        JsonObject isletBottom = add(isletLevel, mul(-mode.height(1), add(8.0, mul(22.0, mul(core,
+                add(0.7, mul(0.3, column(shiftedNoise(NS + "highlands_root", 1.0, 0.0)))))))));
+        JsonObject lens = min(min(mul(0.125, add(islandTop, mul(-1.0, Df.y()))),
+                        mul(1.0 / 6, add(Df.y(), mul(-1.0, isletBottom)))),
+                add(mul(8.0, terrain("highlands_excess")),
+                        mul(10.0, add(terrain("highlands_allowed"), -1.0))));
+        df("highlands", add(lens, mul(0.3, terrain("jag"))));
+
+        // The caves themselves, negative inside: broad caverns where the cheese noise dips, and winding tunnels where
+        // two spaghetti noises both pass near zero. Where a cave may open is the cave field's business (CaveField):
+        // thick bodies only, with rock above and below.
+        JsonObject cheese = add(shiftedNoise(NS + "cave_cavern", 1.0, mode.frequency(1.5)), 0.27);
+        JsonObject tunnels = add(max(abs(shiftedNoise(NS + "cave_tunnel_a", 1.0, mode.frequency(1.2))),
+                abs(shiftedNoise(NS + "cave_tunnel_b", 1.0, mode.frequency(1.2)))), -0.13);
+        df("caves", min(cheese, tunnels));
+        df("cave_entrance", flatCache(ramp(shiftedNoise(NS + "cave_entrance", 1.0, 0.0), -0.55 * 5, 5.0)));
 
         if (mode == HeightMode.TALL) {
             // The Aether's own island noise, stretched to the taller band (y_factor 160 -> 240).
@@ -323,8 +476,8 @@ public final class AATerrainProvider extends JsonDataProvider {
         if (spires > 0) {
             summit = add(summit, mul(spires, terrain("tempest_spires")));
         }
-        // Clamped just under the top of the noise band so no summit is sliced flat by the band's ceiling.
-        summit = clamp(summit, mode.y(-64), mode.y(124));
+        // Clamped under the Highlands' floor, above which only the islets are evaluated, so no summit is sliced flat.
+        summit = clamp(summit, mode.y(-64), mode.y(138));
         JsonObject underside = add(mode.y(root), mul(-mode.height(rootDrop), ridges));
         JsonObject below = mul(0.125, add(summit, mul(-1.0, Df.y())));
         JsonObject above = mul(1.0 / 6, add(Df.y(), mul(-1.0, underside)));
@@ -381,7 +534,7 @@ public final class AATerrainProvider extends JsonDataProvider {
                 "skylands.json");
         JsonObject router = settings.getAsJsonObject("noise_router");
         router.add("continents", terrain("continentalness"));
-        router.add("erosion", terrain("crag_noise"));
+        router.add("erosion", terrain("erosion"));
         router.add("ridges", terrain("rift_noise"));
 
         JsonObject squeeze = router.getAsJsonObject("final_density");
@@ -392,42 +545,109 @@ public final class AATerrainProvider extends JsonDataProvider {
         require(blend, "minecraft:blend_density");
 
         JsonElement island = blend.get("argument");
+        // The noise band reaches up past the islands for the Highlands: -64..255 in the tall Aether, 0..223 in the
+        // stock one (a noise band's height must be a multiple of 16, or the world won't load). Above HIGHLANDS_FLOOR only the Highlands are evaluated, which costs a few cached 2D noises.
+        JsonObject noise = settings.getAsJsonObject("noise");
         if (mode == HeightMode.TALL) {
-            JsonObject noise = settings.getAsJsonObject("noise");
             noise.addProperty("min_y", -64);
-            noise.addProperty("height", 192);
+            noise.addProperty("height", 320);
             island = remapIsland(island);
+        } else {
+            noise.addProperty("height", 224);
         }
         // The island expression gets a file of its own, so every blend below refers to it rather than copying it.
         df("island", island);
-        // The island given over to the dune sheets.
-        df("island_dunes", Df.choose(terrain("dune_weight"), terrain("island"), terrain("dune_sheet")));
+        // Fewer small islands: where little island stands round a column (the average thickness of the Aether's own
+        // islands over a disc 80 blocks across), its land is shed, so scattered fragments go and the landmasses stay.
+        // The rift keeps its pieces.
+        JsonObject mass = Df.type(NS + "island_mass");
+        mass.add("argument", terrain("island"));
+        mass.addProperty("radius", 40);
+        mass.addProperty("min_y", mode == HeightMode.TALL ? ISLAND_FLOOR : 8);
+        mass.addProperty("max_y", mode.y(128));
+        df("island_mass", flatCache(mass));
+        df("island_shed", flatCache(mul(ramp(terrain("island_mass"), 2.0, -0.25),
+                add(1.0, mul(-1.0, terrain("rift_weight"))))));
+        df("island_clean", Df.choose(terrain("island_shed"), terrain("island"), -1.0));
         // The grove islands broken apart where the Nurselog Hollow's have drifted (see BreakField).
         JsonObject broken = Df.type(NS + "grove_break");
         broken.add("argument", terrain("grove_land"));
         broken.addProperty("vertical_scale", vertical());
         df("grove_land_broken", broken);
-        df("island_groves", Df.choose(terrain("grove_weight"), terrain("island_dunes"), terrain("grove_land_broken")));
+        df("island_groves", Df.choose(terrain("grove_weight"), terrain("island_clean"), terrain("grove_land_broken")));
         // The rift: the same island broken into drifting slabs, so the slabs carry the dunes and groves too.
-        rift(terrain("island_groves"));
-        JsonObject islandTier = Df.choose(terrain("rift_weight"), terrain("island_groves"), terrain("rift"));
-        JsonObject withCrags = Df.choose(terrain("crag_weight"), islandTier, terrain("crag_tier"));
+        df("island_bowls", Df.choose(terrain("bowl_weight"), terrain("island_groves"), terrain("bowl_land")));
+        df("island_tundra", Df.choose(terrain("tundra_weight"), terrain("island_bowls"), terrain("tundra_land")));
+        rift(terrain("island_tundra"));
+        JsonObject islandTier = Df.choose(terrain("rift_weight"), terrain("island_tundra"), terrain("rift"));
+        JsonObject withCrags = Df.choose(terrain("crag_weight"), islandTier, terrain("crags"));
+        // The cold lands and the climb up to them, raised whole (cliffs and undersides with them).
+        JsonObject lifted = Df.type(NS + "shift_y");
+        lifted.add("argument", withCrags);
+        lifted.add("offset", terrain("cold_lift"));
         // Atolls are set into whatever tier is beneath them, each kept wholly inside our region by its site check.
         JsonObject atoll = Df.type(NS + "atoll");
-        atoll.add("argument", Df.choose(terrain("plateau_weight"), withCrags, terrain("plateau_terraced")));
+        JsonObject landforms = Df.choose(terrain("plateau_weight"), lifted, terrain("plateau_terraced"));
+        atoll.add("argument", landforms);
         atoll.add("weight", terrain("region_mask"));
         // Set-in atolls and double atolls take their height from the islands round them; this is a double atoll's
         // where there are none.
         atoll.addProperty("surface", mode.y(40));
         atoll.addProperty("vertical_scale", vertical());
-        blend.add("argument", atoll);
+        // Caves in the thick island bodies, cut last so everything sited on the land is sited on rock.
+        JsonObject caves = Df.type(NS + "cave_carve");
+        // The land thinned away round the dunes and the tempest, and then the two set into the sky so opened.
+        JsonObject faded = add(atoll, mul(-12.0, terrain("isolation_fade")));
+        JsonObject withDunes = Df.choose(terrain("dune_weight"), faded, terrain("dune_sheet"));
+        JsonObject withTempest = Df.choose(terrain("tempest_weight"), withDunes, terrain("tempest"));
+        caves.add("argument", withTempest);
+        caves.add("caves", terrain("caves"));
+        caves.add("entrance", terrain("cave_entrance"));
+        blend.add("argument", Df.rangeChoice(Df.y(), mode.y(HIGHLANDS_FLOOR), 4096, terrain("highlands"), caves));
         // Basins are cut last, outside the interpolation, so their bowls and water lines are exact to the block.
+        // The plateau's sea stacks, stood in the open sky beside its cliffs: outside the interpolation, like the
+        // basins, since a column a few blocks across is finer than the noise cells.
+        JsonObject stacks = Df.type(NS + "plateau_stacks");
+        stacks.add("argument", squeeze);
         JsonObject carve = Df.type(NS + "basin_carve");
-        carve.add("argument", squeeze);
+        carve.add("argument", stacks);
         carve.addProperty("vertical_scale", vertical());
         router.add("final_density", carve);
+        if (mode == HeightMode.TALL) {
+            cloudSheet(router);
+        }
 
+        if (mode == HeightMode.TALL) {
+            settings.getAsJsonObject("surface_rule").getAsJsonArray("sequence").add(nadiriteBase());
+        }
         data("worldgen/noise_settings", ResourceLocation.fromNamespaceAndPath("aether", "skylands"), settings);
+    }
+
+    /**
+     * Nadirite through the base of every thick island in the tall Aether, measured from its true underside (a cave's
+     * roof doesn't count; see IslandBase): 8 blocks, up to 14 more where a broad noise rises, never past 40% of the
+     * island's height, and none in islands under 24 blocks. It sits in the dimension's own surface rule, which
+     * TerraBlender falls back to wherever a biome's rules leave the rock alone, so it reaches the Aether's, Deep
+     * Aether's and our biomes alike; biomes whose rules give their own rock (the crags, the peaks, the rift, the
+     * plateau's strata) keep it all the way down.
+     */
+    private static JsonObject nadiriteBase() {
+        JsonObject base = Df.type(NS + "island_base");
+        base.addProperty("depth", 8);
+        base.addProperty("variation", 14);
+        base.addProperty("max_fraction", 0.4);
+        base.addProperty("min_thickness", 24);
+        JsonObject state = new JsonObject();
+        state.addProperty("Name", NS + "nadirite");
+        JsonObject properties = new JsonObject();
+        properties.addProperty("double_drops", "true");
+        state.add("Properties", properties);
+        JsonObject block = Df.type("minecraft:block");
+        block.add("result_state", state);
+        JsonObject rule = Df.type("minecraft:condition");
+        rule.add("if_true", base);
+        rule.add("then_run", block);
+        return rule;
     }
 
     private double vertical() {
@@ -457,13 +677,36 @@ public final class AATerrainProvider extends JsonDataProvider {
         df("rift", fracture);
     }
 
+    /**
+     * The tall Aether's cloud sheet: a layer of cloud at about y -35..-8 (laid by {@code CloudSea}) under the plain
+     * islands of every region, thinning away where a landform (dunes, groves, rift, crags, plateau) takes over.
+     *
+     * <p>Its weight reaches {@code CloudSea} through a {@code CloudSeaMarker} in the router's {@code barrier} slot,
+     * which nothing evaluates: the Aether has no aquifers. So the sheet costs the terrain nothing.
+     */
+    private void cloudSheet(JsonObject router) {
+        JsonObject sheet = null;
+        for (String landform : new String[]{"dune", "grove", "rift", "crag", "plateau", "tempest"}) {
+            JsonObject open = add(1.0, mul(-1.0, terrain(landform + "_weight")));
+            sheet = sheet == null ? open : mul(sheet, open);
+        }
+        df("cloud_sheet", Df.wrap("minecraft:cache_2d", sheet));
+        JsonObject marker = Df.type(NS + "cloud_sea");
+        marker.add("argument", terrain("cloud_sheet"));
+        router.add("barrier", marker);
+    }
+
     /** The island expression's height anchors, remapped to the tall band, and its base noise stretched to match. */
     private static JsonElement remapIsland(JsonElement node) {
-        Map<Integer, Integer> anchors = Map.of(8, -52, 40, -4, 56, 20, 128, 128);
+        return restretch(reanchor(node, Map.of(8, ISLAND_FLOOR, 40, -4, 56, 20, 128, 128)));
+    }
+
+    /** A copy of a function with its y gradients' heights moved, each by the map. */
+    private static JsonElement reanchor(JsonElement node, Map<Integer, Integer> anchors) {
         if (node instanceof JsonObject object) {
             JsonObject copy = new JsonObject();
             for (Map.Entry<String, JsonElement> entry : object.entrySet()) {
-                copy.add(entry.getKey(), remapIsland(entry.getValue()));
+                copy.add(entry.getKey(), reanchor(entry.getValue(), anchors));
             }
             if (copy.has("type") && copy.get("type").getAsString().equals("minecraft:y_clamped_gradient")) {
                 for (String key : new String[]{"from_y", "to_y"}) {
@@ -476,13 +719,30 @@ public final class AATerrainProvider extends JsonDataProvider {
             }
             return copy;
         }
+        if (node instanceof JsonArray array) {
+            JsonArray copy = new JsonArray();
+            array.forEach(e -> copy.add(reanchor(e, anchors)));
+            return copy;
+        }
+        return node.deepCopy();
+    }
+
+    /** A copy of the island expression on the tall Aether's stretched base noise. */
+    private static JsonElement restretch(JsonElement node) {
+        if (node instanceof JsonObject object) {
+            JsonObject copy = new JsonObject();
+            for (Map.Entry<String, JsonElement> entry : object.entrySet()) {
+                copy.add(entry.getKey(), restretch(entry.getValue()));
+            }
+            return copy;
+        }
         if (node instanceof JsonPrimitive primitive && primitive.isString()
                 && primitive.getAsString().equals("aether:base_3d_noise_aether")) {
             return terrain("tall_base_3d_noise");
         }
         if (node instanceof JsonArray array) {
             JsonArray copy = new JsonArray();
-            array.forEach(e -> copy.add(remapIsland(e)));
+            array.forEach(e -> copy.add(restretch(e)));
             return copy;
         }
         return node.deepCopy();
@@ -590,4 +850,13 @@ public final class AATerrainProvider extends JsonDataProvider {
                     + node.get("type"));
         }
     }
+
+    /**
+     * A 2D noise read at the 3D cell corners of a landform: cache_2d keeps it for the column, so the corners down one
+     * column sample it once. It is lazy, unlike flat_cache, so chunks the landform's choose never reaches pay nothing.
+     */
+    private static JsonObject column(JsonObject noise) {
+        return Df.wrap("minecraft:cache_2d", noise);
+    }
+
 }

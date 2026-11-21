@@ -16,8 +16,15 @@ package com.linc.alteredaether.block;
 
 import com.linc.alteredaether.AlteredAether;
 import com.linc.alteredaether.registry.AARegistries;
+import com.aetherteam.aether.block.AetherBlocks;
+import com.aetherteam.aether.item.AetherCreativeTabs;
+import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.CreativeModeTabs;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.level.ItemLike;
+import net.minecraft.world.level.block.Block;
+import net.neoforged.neoforge.registries.DeferredBlock;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -56,6 +63,36 @@ public final class AABlockEvents {
             event.accept(AARegistries.SQUALL_SPAWN_EGG.get());
             event.accept(AARegistries.GRAVITITE_GOLEM_SPAWN_EGG.get());
         }
+        stones(event);
+    }
+
+    /** The new stones follow holystone: the natural stone among the Aether's natural blocks, every block among its building blocks. */
+    private static void stones(BuildCreativeModeTabContentsEvent event) {
+        if (event.getTabKey().equals(AetherCreativeTabs.AETHER_NATURAL_BLOCKS.getKey())) {
+            ItemLike after = AetherBlocks.MOSSY_HOLYSTONE.get();
+            for (StoneSet stone : StoneSet.ALL) {
+                after = insertAfter(event, after, stone.natural.block().get());
+            }
+        }
+        if (event.getTabKey().equals(AetherCreativeTabs.AETHER_BUILDING_BLOCKS.getKey())) {
+            ItemLike after = AetherBlocks.HOLYSTONE_BRICK_WALL.get();
+            for (StoneSet stone : StoneSet.ALL) {
+                for (DeferredBlock<? extends Block> block : stone.blocks()) {
+                    after = insertAfter(event, after, block.get());
+                }
+            }
+        }
+    }
+
+    /** Inserts {@code item} after {@code anchor}, or at the end if another mod has taken the anchor out of the tab. */
+    private static ItemLike insertAfter(BuildCreativeModeTabContentsEvent event, ItemLike anchor, ItemLike item) {
+        boolean present = event.getParentEntries().stream().anyMatch(stack -> stack.is(anchor.asItem()));
+        if (present) {
+            event.insertAfter(new ItemStack(anchor), new ItemStack(item), CreativeModeTab.TabVisibility.PARENT_AND_SEARCH_TABS);
+        } else {
+            event.accept(item);
+        }
+        return item;
     }
 
     private AABlockEvents() {

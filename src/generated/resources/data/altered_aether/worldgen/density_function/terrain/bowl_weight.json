@@ -1,0 +1,14 @@
+{
+  "type": "minecraft:mul",
+  "argument1": "altered_aether:terrain/region_mask",
+  "argument2": {
+    "type": "minecraft:clamp",
+    "input": {
+      "type": "minecraft:mul",
+      "argument1": 0.3333333333333333,
+      "argument2": "altered_aether:terrain/bowl_edge"
+    },
+    "max": 1.0,
+    "min": 0.0
+  }
+}

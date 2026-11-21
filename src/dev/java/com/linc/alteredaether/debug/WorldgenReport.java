@@ -19,6 +19,7 @@ import com.linc.alteredaether.worldgen.basin.BasinField;
 import com.linc.alteredaether.worldgen.basin.BasinSite;
 import com.linc.alteredaether.worldgen.density.RegionBinding;
 import com.linc.alteredaether.worldgen.landmark.LandmarkField;
+import com.linc.alteredaether.worldgen.sea.CloudSea;
 import net.minecraft.core.Holder;
 import net.minecraft.core.QuartPos;
 import net.minecraft.resources.ResourceKey;
@@ -69,7 +70,10 @@ public final class WorldgenReport {
         Map<String, Stats> byBiome = new TreeMap<>();
         Stats all = new Stats();
         int minY = level.getMinBuildHeight();
-        DensityFunction probe = probe(level, random, "terrain/crag_tier");
+        DensityFunction probe = probe(level, random, "terrain/crags");
+        // The Highlands: columns with an islet over the floor, by what lies beneath (sky, the plateau, other land).
+        int floor = minY < 0 ? 140 : 136;
+        long[] islets = new long[3], columns = new long[3];
 
         for (int x = originX - radius; x <= originX + radius; x += step) {
             for (int z = originZ - radius; z <= originZ + radius; z += step) {
@@ -95,6 +99,21 @@ public final class WorldgenReport {
                             probeTop = y;
                         }
                     }
+                }
+                boolean high = false, low = false;
+                for (int y = minY; y < minY + level.getHeight(); y++) {
+                    if (!column.getBlock(y).isAir()) {
+                        if (y >= floor) {
+                            high = true;
+                        } else {
+                            low = true;
+                        }
+                    }
+                }
+                int under = !low ? 0 : id.equals("altered_aether:aether_plateau") ? 1 : 2;
+                columns[under]++;
+                if (high) {
+                    islets[under]++;
                 }
                 for (Stats s : new Stats[]{stats, all}) {
                     if (probeSolid > 0) {
@@ -132,11 +151,15 @@ public final class WorldgenReport {
                 s.columnsWithLand == 0 ? 0 : s.topMin, s.columnsWithLand == 0 ? 0 : s.topMax,
                 100.0 * s.probeLand / s.samples, s.probeLand == 0 ? 0 : (double) s.probeSolid / s.probeLand,
                 s.probeLand == 0 ? 0 : (double) s.probeTopSum / s.probeLand)));
+        lines.add(String.format("Highlands: islets over %.2f%% of open sky, %.2f%% of the plateau, %.2f%% of other land",
+                100.0 * islets[0] / Math.max(1, columns[0]), 100.0 * islets[1] / Math.max(1, columns[1]),
+                100.0 * islets[2] / Math.max(1, columns[2])));
         String climate = System.getProperty("altered_aether.report.climate", "");
         if (!climate.isEmpty()) {
             climateDump(level, originX, originZ, radius, Math.max(1, step / 4), java.nio.file.Path.of(climate), lines);
         }
         basinSurvey(level, originX, originZ, radius, lines);
+        seaSurvey(level, originX, originZ, radius, step, lines);
         landmarkSurvey(level, originX, originZ, radius, lines);
         if (Boolean.getBoolean("altered_aether.report.structures")) {
             structureHeights(level, originX, originZ, lines);
@@ -146,13 +169,15 @@ public final class WorldgenReport {
     }
 
     /**
-     * Writes the climate (t, h, c, e, w) at every in-region sample to a CSV, at a finer step than the column survey
-     * since it generates nothing. For sizing BiomeTable's windows against the real distribution.
+     * Writes the position, climate (t, h, c, e, w) and biome at every in-region sample to a CSV, at a finer step than
+     * the column survey since it generates nothing. For sizing BiomeTable's windows against the real distribution, and
+     * measuring patch sizes from the positions.
      */
     private static void climateDump(ServerLevel level, int originX, int originZ, int radius, int step,
                                     java.nio.file.Path out, List<String> lines) {
         var sampler = level.getChunkSource().randomState().sampler();
-        StringBuilder csv = new StringBuilder("t,h,c,e,w\n");
+        var biomes = level.getChunkSource().getGenerator().getBiomeSource();
+        StringBuilder csv = new StringBuilder("x,z,t,h,c,e,w,biome\n");
         int rows = 0;
         for (int x = originX - radius; x <= originX + radius; x += step) {
             for (int z = originZ - radius; z <= originZ + radius; z += step) {
@@ -160,10 +185,12 @@ public final class WorldgenReport {
                     continue;
                 }
                 var p = sampler.sample(QuartPos.fromBlock(x), QuartPos.fromBlock(64), QuartPos.fromBlock(z));
-                csv.append(String.format(java.util.Locale.ROOT, "%.4f,%.4f,%.4f,%.4f,%.4f%n",
+                String biome = biomes.getNoiseBiome(QuartPos.fromBlock(x), QuartPos.fromBlock(64),
+                        QuartPos.fromBlock(z), sampler).unwrapKey().map(k -> k.location().getPath()).orElse("?");
+                csv.append(String.format(java.util.Locale.ROOT, "%d,%d,%.4f,%.4f,%.4f,%.4f,%.4f,%s%n", x, z,
                         Climate.unquantizeCoord(p.temperature()), Climate.unquantizeCoord(p.humidity()),
                         Climate.unquantizeCoord(p.continentalness()), Climate.unquantizeCoord(p.erosion()),
-                        Climate.unquantizeCoord(p.weirdness())));
+                        Climate.unquantizeCoord(p.weirdness()), biome));
                 rows++;
             }
         }
@@ -240,6 +267,80 @@ public final class WorldgenReport {
                 type, list.size(), list.stream().mapToDouble(BasinSite::radius).average().orElse(0),
                 list.stream().mapToInt(BasinSite::waterLevel).average().orElse(0),
                 list.stream().limit(3).map(site -> site.x() + "," + site.z()).toList())));
+        // Big lakes must keep clear of every atoll, and basins of every big lake.
+        int clashes = 0;
+        for (BasinSite lake : sites) {
+            if (!lake.isLake()) {
+                continue;
+            }
+            int e = (int) Math.ceil(lake.extent());
+            for (var atoll : field.atollsTouching(lake.x() - e, lake.z() - e, lake.x() + e, lake.z() + e)) {
+                if (Math.hypot(lake.x() - atoll.x(), lake.z() - atoll.z()) < lake.extent() + atoll.extent()) {
+                    clashes++;
+                    lines.add(String.format("  CLASH: lake at %d,%d overlaps an atoll at %d,%d", lake.x(), lake.z(),
+                            atoll.x(), atoll.z()));
+                }
+            }
+            for (BasinSite other : sites) {
+                if (other != lake && !other.type().atollShaped() && Math.hypot(lake.x() - other.x(),
+                        lake.z() - other.z()) < lake.extent() + other.extent()) {
+                    clashes++;
+                    lines.add(String.format("  CLASH: lake at %d,%d overlaps a %s at %d,%d", lake.x(), lake.z(),
+                            other.type().name().toLowerCase(), other.x(), other.z()));
+                }
+            }
+        }
+        lines.add("  big lake clashes: " + clashes);
+    }
+
+    /**
+     * The tall Aether's cloud sheet over the area. On a fine 2D grid: how much of the world keeps its sheet once the
+     * landforms have taken theirs. At the column samples where the sheet is whole: whether any ground surface lies in
+     * or just above the sheet's band, how many columns have land at all, and how much of the sheet is hole.
+     */
+    private static void seaSurvey(ServerLevel level, int originX, int originZ, int radius, int step, List<String> lines) {
+        CloudSea sea = CloudSea.terrain(level.dimension());
+        if (sea == null) {
+            lines.add("Cloud sheet: none in this world");
+            return;
+        }
+        int fine = Math.max(16, radius / 250);
+        int n = 2 * radius / fine + 1, sheeted = 0;
+        for (int j = 0; j < n; j++) {
+            for (int i = 0; i < n; i++) {
+                sheeted += sea.weight(originX - radius + i * fine, originZ - radius + j * fine) > 0.5 ? 1 : 0;
+            }
+        }
+        lines.add(String.format("Cloud sheet: covers %.1f%% (grid %d)", 100.0 * sheeted / (n * n), fine));
+
+        ChunkGenerator generator = level.getChunkSource().getGenerator();
+        RandomState random = level.getChunkSource().randomState();
+        int columns = 0, land = 0, ground = 0, holes = 0;
+        int[] span = new int[2];
+        for (int x = originX - radius; x <= originX + radius; x += step) {
+            for (int z = originZ - radius; z <= originZ + radius; z += step) {
+                double w = sea.weight(x, z);
+                if (w < 0.9) {
+                    continue;
+                }
+                columns++;
+                holes += sea.span(x, z, w, span) ? 0 : 1;
+                NoiseColumn column = generator.getBaseColumn(x, z, level, random);
+                boolean anyLand = false, low = false;
+                for (int y = level.getMinBuildHeight(); y < 8; y++) {
+                    boolean solid = !column.getBlock(y).isAir() && column.getBlock(y).getFluidState().isEmpty();
+                    anyLand |= solid;
+                    if (solid && y >= -40 && column.getBlock(y + 1).isAir()) {
+                        low = true;
+                    }
+                }
+                land += anyLand ? 1 : 0;
+                ground += low ? 1 : 0;
+            }
+        }
+        lines.add(String.format("  open sheet columns %d: %.0f%% with land below y 8, %.1f%% with ground at y -40..7, "
+                        + "%.0f%% hole", columns, columns == 0 ? 0 : 100.0 * land / columns,
+                columns == 0 ? 0 : 100.0 * ground / columns, columns == 0 ? 0 : 100.0 * holes / columns));
     }
 
     /** Every landmark over the area by type, with how each turned out where that varies. */

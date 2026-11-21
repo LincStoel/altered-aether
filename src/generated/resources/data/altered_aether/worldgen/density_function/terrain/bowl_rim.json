@@ -1,0 +1,163 @@
+{
+  "type": "minecraft:flat_cache",
+  "argument": {
+    "type": "minecraft:mul",
+    "argument1": {
+      "type": "minecraft:mul",
+      "argument1": {
+        "type": "minecraft:add",
+        "argument1": 20.0,
+        "argument2": {
+          "type": "minecraft:mul",
+          "argument1": 6.0,
+          "argument2": {
+            "type": "minecraft:shifted_noise",
+            "noise": "altered_aether:bowl_crest",
+            "shift_x": "minecraft:shift_x",
+            "shift_y": 0.0,
+            "shift_z": "minecraft:shift_z",
+            "xz_scale": 1.0,
+            "y_scale": 0.0
+          }
+        }
+      },
+      "argument2": {
+        "type": "minecraft:add",
+        "argument1": 1.0,
+        "argument2": {
+          "type": "minecraft:mul",
+          "argument1": -0.65,
+          "argument2": {
+            "type": "minecraft:clamp",
+            "input": {
+              "type": "minecraft:mul",
+              "argument1": 4.0,
+              "argument2": {
+                "type": "minecraft:add",
+                "argument1": {
+                  "type": "minecraft:shifted_noise",
+                  "noise": "altered_aether:bowl_notch",
+                  "shift_x": "minecraft:shift_x",
+                  "shift_y": 0.0,
+                  "shift_z": "minecraft:shift_z",
+                  "xz_scale": 1.0,
+                  "y_scale": 0.0
+                },
+                "argument2": -0.45
+              }
+            },
+            "max": 1.0,
+            "min": 0.0
+          }
+        }
+      }
+    },
+    "argument2": {
+      "type": "minecraft:mul",
+      "argument1": {
+        "type": "minecraft:add",
+        "argument1": {
+          "type": "minecraft:mul",
+          "argument1": 2.0,
+          "argument2": {
+            "type": "minecraft:clamp",
+            "input": {
+              "type": "minecraft:mul",
+              "argument1": 0.1,
+              "argument2": "altered_aether:terrain/bowl_edge"
+            },
+            "max": 1.0,
+            "min": 0.0
+          }
+        },
+        "argument2": {
+          "type": "minecraft:mul",
+          "argument1": -1.0,
+          "argument2": {
+            "type": "minecraft:mul",
+            "argument1": {
+              "type": "minecraft:clamp",
+              "input": {
+                "type": "minecraft:mul",
+                "argument1": 0.1,
+                "argument2": "altered_aether:terrain/bowl_edge"
+              },
+              "max": 1.0,
+              "min": 0.0
+            },
+            "argument2": {
+              "type": "minecraft:clamp",
+              "input": {
+                "type": "minecraft:mul",
+                "argument1": 0.1,
+                "argument2": "altered_aether:terrain/bowl_edge"
+              },
+              "max": 1.0,
+              "min": 0.0
+            }
+          }
+        }
+      },
+      "argument2": {
+        "type": "minecraft:add",
+        "argument1": 1.0,
+        "argument2": {
+          "type": "minecraft:mul",
+          "argument1": {
+            "type": "minecraft:mul",
+            "argument1": {
+              "type": "minecraft:clamp",
+              "input": {
+                "type": "minecraft:mul",
+                "argument1": 0.038461538461538464,
+                "argument2": {
+                  "type": "minecraft:add",
+                  "argument1": "altered_aether:terrain/bowl_edge",
+                  "argument2": -10.0
+                }
+              },
+              "max": 1.0,
+              "min": 0.0
+            },
+            "argument2": {
+              "type": "minecraft:clamp",
+              "input": {
+                "type": "minecraft:mul",
+                "argument1": 0.038461538461538464,
+                "argument2": {
+                  "type": "minecraft:add",
+                  "argument1": "altered_aether:terrain/bowl_edge",
+                  "argument2": -10.0
+                }
+              },
+              "max": 1.0,
+              "min": 0.0
+            }
+          },
+          "argument2": {
+            "type": "minecraft:add",
+            "argument1": -3.0,
+            "argument2": {
+              "type": "minecraft:mul",
+              "argument1": 2.0,
+              "argument2": {
+                "type": "minecraft:clamp",
+                "input": {
+                  "type": "minecraft:mul",
+                  "argument1": 0.038461538461538464,
+                  "argument2": {
+                    "type": "minecraft:add",
+                    "argument1": "altered_aether:terrain/bowl_edge",
+                    "argument2": -10.0
+                  }
+                },
+                "max": 1.0,
+                "min": 0.0
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

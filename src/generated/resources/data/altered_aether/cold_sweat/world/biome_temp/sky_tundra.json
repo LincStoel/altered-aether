@@ -1,0 +1,8 @@
+{
+  "biomes": [
+    "altered_aether:sky_tundra"
+  ],
+  "max_temp": -22,
+  "min_temp": 16,
+  "units": "F"
+}

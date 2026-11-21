@@ -17,6 +17,7 @@ package com.linc.alteredaether.storm;
 import com.linc.alteredaether.AATags;
 import com.linc.alteredaether.AlteredAether;
 import com.linc.alteredaether.advancement.AAAdvancements;
+import com.linc.alteredaether.compat.cloud.ShipRiders;
 import com.linc.alteredaether.config.AACommonConfig;
 import com.linc.alteredaether.registry.AARegistries;
 import net.minecraft.advancements.AdvancementHolder;
@@ -178,12 +179,14 @@ public final class TempestStorms {
             if (time % 20 == player.getId() % 20) {
                 PacketDistributor.sendToPlayer(player, new StormPayload((float) intensity));
             }
-            if (enabled && time % 20 == player.getId() % 20 && !player.isSpectator() && !player.isCreative()
+            // a ship's crew is never singled out: no strike is drawn by them or aimed at them, only the storm's own
+            boolean riding = ShipRiders.onShip(player);
+            if (enabled && !riding && time % 20 == player.getId() % 20 && !player.isSpectator() && !player.isCreative()
                     && level.getBiome(player.blockPosition()).is(AATags.HAS_STORMS) && holds(level, player, Cause.METAL)) {
                 // carrying metal that would call lightning down on them
                 AAAdvancements.award(player, AAAdvancements.LIVING_LIGHTNING_ROD, "carrying");
             }
-            if (enabled && budget > 0 && !player.isSpectator() && !player.isCreative()
+            if (enabled && !riding && budget > 0 && !player.isSpectator() && !player.isCreative()
                     && level.getBiome(player.blockPosition()).is(AATags.HAS_STORMS) && !targeted(player)
                     && time >= SPARED_UNTIL.getOrDefault(player.getUUID(), Long.MIN_VALUE)) {
                 Cause cause = holds(level, player, Cause.COPPER) ? Cause.COPPER
@@ -199,7 +202,7 @@ public final class TempestStorms {
                     || random.nextDouble() >= AACommonConfig.STORM_STRIKE_CHANCE.get() * intensity) {
                 continue;
             }
-            PendingStrike strike = aim(level, player, random);
+            PendingStrike strike = aim(level, player, random, riding);
             if (strike != null) {
                 budget--;
                 if (strike.ticks()[0] <= 0) {
@@ -360,12 +363,13 @@ public final class TempestStorms {
 
     /**
      * Picks where a strike lands: usually the highest of a few spots in a ring round the player, so the peaks and the
-     * spires take most of them, and now and then the ground under the player. A rod in range wins over either.
+     * spires take most of them, and now and then the ground under the player, unless they are riding a ship. A rod in
+     * range wins over either.
      */
     @Nullable
-    private static PendingStrike aim(ServerLevel level, ServerPlayer player, RandomSource random) {
+    private static PendingStrike aim(ServerLevel level, ServerPlayer player, RandomSource random, boolean riding) {
         BlockPos target = null;
-        if (random.nextDouble() < AACommonConfig.STORM_DIRECT_HIT_CHANCE.get()) {
+        if (!riding && random.nextDouble() < AACommonConfig.STORM_DIRECT_HIT_CHANCE.get()) {
             target = strikeSpot(level, player);
         } else {
             int min = AACommonConfig.STORM_MIN_RADIUS.get(), max = Math.max(min, AACommonConfig.STORM_MAX_RADIUS.get());

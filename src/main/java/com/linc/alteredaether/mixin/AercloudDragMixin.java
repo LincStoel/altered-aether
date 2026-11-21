@@ -16,6 +16,7 @@ package com.linc.alteredaether.mixin;
 
 import com.aetherteam.aether.block.natural.AercloudBlock;
 import com.linc.alteredaether.AATags;
+import com.linc.alteredaether.compat.cloud.ShipRiders;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.BlockGetter;
@@ -38,6 +39,9 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
  * friction. Fliers in {@link AATags#IGNORES_AERCLOUD_DRAG} are spared both: a cloud only collides with them from
  * above, so they still land on its top but pass through its sides and underside, and it doesn't slow them. A blue
  * aercloud still bounces them, since its bounce comes before this.
+ *
+ * <p>Anyone riding a Sable body passes straight through every cloud, as the body itself does (see ShipRiders), so a
+ * cloud a ship sails through doesn't shove its crew off the deck or bounce them.
  */
 @Mixin(AercloudBlock.class)
 public abstract class AercloudDragMixin {
@@ -45,8 +49,9 @@ public abstract class AercloudDragMixin {
     private void altered_aether$onlyFromAbove(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context,
             CallbackInfoReturnable<VoxelShape> cir) {
         if (context instanceof EntityCollisionContext entityContext && entityContext.getEntity() instanceof Entity entity
-                && entity.getType().is(AATags.IGNORES_AERCLOUD_DRAG)
-                && !cir.getReturnValue().isEmpty() && !context.isAbove(cir.getReturnValue(), pos, false)) {
+                && !cir.getReturnValue().isEmpty()
+                && (entity.getType().is(AATags.IGNORES_AERCLOUD_DRAG) && !context.isAbove(cir.getReturnValue(), pos, false)
+                || ShipRiders.onShip(entity))) {
             cir.setReturnValue(Shapes.empty());
         }
     }
@@ -55,6 +60,8 @@ public abstract class AercloudDragMixin {
     private void altered_aether$skipDrag(BlockState state, Level level, BlockPos pos, Entity entity, CallbackInfo ci) {
         if (entity.getType().is(AATags.IGNORES_AERCLOUD_DRAG)) {
             entity.resetFallDistance();
+            ci.cancel();
+        } else if (ShipRiders.onShip(entity)) {
             ci.cancel();
         }
     }

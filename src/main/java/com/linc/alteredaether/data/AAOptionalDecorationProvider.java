@@ -91,6 +91,16 @@ public final class AAOptionalDecorationProvider extends FeatureData {
                 Placement.heightmap("MOTION_BLOCKING"), Placement.biome()), "deep_aether");
         addFeature("squash/frozen_blue", biomes("frozen_crags", "shattered_rift"), "vegetal_decoration", "deep_aether");
 
+        // Deep Aether's flowers in the flower bowls' carpet.
+        configured("flowers/bowl", "minecraft:random_patch", patch(48, 6, 2,
+                weighted("deep_aether:aerlavender", 3, "deep_aether:radiant_orchid", 2, "deep_aether:sky_tulips", 2,
+                        "deep_aether:golden_flower", 1, "deep_aether:enchanted_blossom", 1),
+                airOnTag(DIRT)), "deep_aether");
+        placed("flowers/bowl", "flowers/bowl", Placement.list(
+                Placement.configCount(3, "vegetation"), Placement.inSquare(),
+                Placement.heightmap("MOTION_BLOCKING"), Placement.biome()), "deep_aether");
+        addFeature("flowers/bowl", biomes("flower_bowl"), "vegetal_decoration", "deep_aether");
+
         // Sparse blue roseroot trees: Deep Aether's own selector tests whether the sapling would survive, which lands
         // the trees on the crags' patches of bare soil and nowhere else, so they read as lone trees in the snow.
         placed("tree/crag_roseroot", "deep_aether:blue_roseroot_trees_placement", Placement.list(Placement.rarity(5),

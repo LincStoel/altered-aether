@@ -76,6 +76,36 @@ public final class FallingBoulderTests {
         FallingBoulderCheck.natural(helper);
     }
 
+    /** A boulder falls through a layer of aercloud without slowing, phasing the clouds in its path. */
+    @GameTest(template = "arena", batch = "boulder_aercloud", timeoutTicks = 1500)
+    public static void boulderPunchesThroughAerclouds(GameTestHelper helper) {
+        if (!ModList.get().isLoaded("sable")) {
+            helper.succeed();
+            return;
+        }
+        FallingBoulderCheck.throughAerclouds(helper, false);
+    }
+
+    /** Any Sable body passes through aerclouds unslowed; they phase, and all firm up again. */
+    @GameTest(template = "arena", batch = "ship_aercloud", timeoutTicks = 1600)
+    public static void shipPassesThroughAerclouds(GameTestHelper helper) {
+        if (!ModList.get().isLoaded("sable")) {
+            helper.succeed();
+            return;
+        }
+        FallingBoulderCheck.shipThroughAerclouds(helper);
+    }
+
+    /** One that meets the clouds at a crawl, just under where it starts, still falls through them unslowed. */
+    @GameTest(template = "arena", batch = "boulder_aercloud_slow", timeoutTicks = 1500)
+    public static void slowBoulderPunchesThroughAerclouds(GameTestHelper helper) {
+        if (!ModList.get().isLoaded("sable")) {
+            helper.succeed();
+            return;
+        }
+        FallingBoulderCheck.throughAerclouds(helper, true);
+    }
+
     /**
      * Create Simulated's end sea holds an ordinary ship up, and lets a boulder fall through it: both start above an end
      * sea registered for the overworld, which is set well above the ground.

@@ -1,0 +1,8 @@
+{
+  "biomes": [
+    "altered_aether:flourishing_archwood_grove"
+  ],
+  "max_temp": 28,
+  "min_temp": 43,
+  "units": "F"
+}

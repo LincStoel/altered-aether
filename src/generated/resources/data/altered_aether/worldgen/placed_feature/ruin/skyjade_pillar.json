@@ -3,11 +3,17 @@
   "placement": [
     {
       "type": "altered_aether:config_count",
-      "count": 0.03571428571428571,
+      "count": 0.08928571428571427,
       "key": "ruins"
     },
     {
       "type": "minecraft:in_square"
+    },
+    {
+      "type": "altered_aether:noise_clump",
+      "salt": 108871371,
+      "scale": 48.0,
+      "threshold": 0.125
     },
     {
       "type": "minecraft:heightmap",

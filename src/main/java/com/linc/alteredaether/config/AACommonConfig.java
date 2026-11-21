@@ -51,6 +51,8 @@ public final class AACommonConfig {
     public static final DoubleValue LANDMARK_RARITY;
     public static final BooleanValue CLOUD_SKIRTS;
     public static final DoubleValue CLOUD_SKIRT_BREEZE_CHANCE;
+    public static final BooleanValue CLOUD_SEA;
+    public static final DoubleValue CLOUD_SEA_BREEZE_CHANCE;
     public static final DoubleValue GIANT_SPACING;
     public static final DoubleValue GOLDEN_HEART_CHANCE;
     public static final DoubleValue DEEP_AETHER_WOOD_CHANCE;
@@ -111,6 +113,7 @@ public final class AACommonConfig {
     public static final DoubleValue BOULDER_INTERVAL_MINUTES;
     public static final IntValue BOULDER_MAX_ACTIVE;
     public static final DoubleValue BOULDER_DAMAGE;
+    public static final DoubleValue PHASED_AERCLOUD_SECONDS;
     public static final IntValue STORM_PLAYER_WARNING_TICKS;
     public static final IntValue STORM_PLAYER_COOLDOWN_MIN;
     public static final IntValue STORM_PLAYER_COOLDOWN_MAX;
@@ -157,7 +160,8 @@ public final class AACommonConfig {
     public static final BooleanValue DISABLE_OVERWORLD_ARCHWOOD;
 
     public static final List<String> BASIN_TYPES =
-            List.of("pool", "deep_lake", "cascading_lake", "frozen_pool", "poison_pool", "atoll_lagoon");
+            List.of("pool", "deep_lake", "cascading_lake", "frozen_pool", "poison_pool", "atoll_lagoon", "lake",
+                    "poison_lake", "frozen_lake");
     public static final List<String> FEATURE_FAMILIES =
             List.of("boulders", "copper_spikes", "aerclouds", "rift_debris", "totems", "ruins", "craters",
                     "dried_ghast_fields", "snow_drifts", "hanging_chains", "vegetation", "ancient_boulders");
@@ -208,12 +212,17 @@ public final class AACommonConfig {
                 .defineInRange("atoll_chest_chance", 0.35, 0.0, 1.0);
         LANDMARK_RARITY = b.comment("Multiplier on how rare landmarks are. Higher is rarer, 0 disables them.")
                 .defineInRange("landmark_rarity", 1.0, 0.0, 10.0);
-        CLOUD_SKIRTS = b.comment("Collars of cold aercloud round the islands whose rim lies mostly below y 0, in the tall",
+        CLOUD_SKIRTS = b.comment("Collars of cold aercloud round about one in five of the Highlands' islets, in the tall",
                         "Aether only. Not in the Shattered Rift.")
                 .define("cloud_skirts", true);
         CLOUD_SKIRT_BREEZE_CHANCE = b.comment("Share of the breezes that would spawn on a cloud skirt that do. The skirts",
                         "are wide, so all of them would bring swarms.")
                 .defineInRange("cloud_skirt_breeze_chance", 0.25, 0.0, 1.0);
+        CLOUD_SEA = b.comment("The sheet of cold aercloud at about y -35..-8 under the tall Aether's plain islands. Off leaves",
+                        "open sky below the islands.")
+                .define("cloud_sea", true);
+        CLOUD_SEA_BREEZE_CHANCE = b.comment("Share of the breezes that would spawn on the cloud sheet that do.")
+                .defineInRange("cloud_sea_breeze_chance", 0.25, 0.0, 1.0);
         b.pop();
 
         b.comment("The giant trees of the Skyroot Cathedral and Nurselog Hollow. Only affects newly generated chunks.")
@@ -472,11 +481,19 @@ public final class AACommonConfig {
                 .push("boulders");
         BOULDER_INTERVAL_MINUTES = b.comment("Average minutes between boulders falling near each player in the Aether, with a",
                         "random spread. 0 turns falling boulders off.")
-                .defineInRange("interval_minutes", 8.0, 0.0, 1440.0);
+                .defineInRange("interval_minutes", 5.0, 0.0, 1440.0);
         BOULDER_MAX_ACTIVE = b.comment("Most boulders falling or rolling in one dimension at once.")
                 .defineInRange("max_active", 6, 1, 32);
         BOULDER_DAMAGE = b.comment("Multiplier on the damage a moving boulder does to what it hits. 0 for none.")
                 .defineInRange("damage", 1.0, 0.0, 10.0);
+        b.pop();
+
+        b.comment("Aerclouds a Sable body (an airship, a falling boulder) passes through: they turn see-through, let it",
+                        "through, then fade back in. Needs Sable.")
+                .push("phased_aerclouds");
+        PHASED_AERCLOUD_SECONDS = b.comment("Seconds a cloud takes to fade back in and become solid again after a body last",
+                        "touched it.")
+                .defineInRange("fade_seconds", 15.0, 1.0, 600.0);
         b.pop();
 
         b.comment("Optional mod integrations. Each only takes effect when that mod is loaded.").push("compat");

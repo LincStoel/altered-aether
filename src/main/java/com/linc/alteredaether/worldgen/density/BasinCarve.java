@@ -63,6 +63,13 @@ public final class BasinCarve implements DensityFunctions.TwoArgumentSimpleFunct
         java.lang.ref.WeakReference<BasinField> field = new java.lang.ref.WeakReference<>(null);
         int x = Integer.MIN_VALUE, z = Integer.MIN_VALUE;
         BasinSite[] sites = NONE;
+        /**
+         * The big lake's open run in each of the chunk's columns, {@code lo < y <= hi}, worked out once per chunk:
+         * the lake's outline is noise, too dear to read for every block. Empty columns have {@code lo >= hi}. Lakes
+         * keep clear of each other, so a chunk has at most one.
+         */
+        boolean lake;
+        final int[] lo = new int[256], hi = new int[256];
     }
 
     private static final ThreadLocal<Column> COLUMN = ThreadLocal.withInitial(Column::new);
@@ -90,12 +97,7 @@ public final class BasinCarve implements DensityFunctions.TwoArgumentSimpleFunct
                 return Double.MAX_VALUE;
             }
             int x = context.blockX(), y = context.blockY(), z = context.blockZ();
-            for (BasinSite site : sitesAt(field, x, z)) {
-                if (site.carves(x, y, z)) {
-                    return -1;
-                }
-            }
-            return Double.MAX_VALUE;
+            return carved(field, x, y, z) ? -1 : Double.MAX_VALUE;
         }
 
         @Override
@@ -176,26 +178,57 @@ public final class BasinCarve implements DensityFunctions.TwoArgumentSimpleFunct
             return density;
         }
         int x = context.blockX(), y = context.blockY(), z = context.blockZ();
-        for (BasinSite site : sitesAt(field, x, z)) {
-            if (site.carves(x, y, z)) {
-                return -1;
-            }
-        }
-        return density;
+        return carved(field, x, y, z) ? -1 : density;
     }
 
-    private static BasinSite[] sitesAt(BasinField field, int x, int z) {
+    private static boolean carved(BasinField field, int x, int y, int z) {
+        Column column = columnAt(field, x, z);
+        if (column.lake) {
+            int i = (x & 15) << 4 | (z & 15);
+            if (y > column.lo[i] && y <= column.hi[i]) {
+                return true;
+            }
+        }
+        for (BasinSite site : column.sites) {
+            if (site.carves(x, y, z)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static Column columnAt(BasinField field, int x, int z) {
         Column column = COLUMN.get();
         int chunkX = x >> 4, chunkZ = z >> 4;
         if (column.field.get() != field || column.x != chunkX || column.z != chunkZ) {
             List<BasinSite> sites = field.sitesTouching(chunkX << 4, chunkZ << 4, (chunkX << 4) + 15, (chunkZ << 4) + 15);
             sites.removeIf(site -> site.type().atollShaped());
+            BasinSite lake = null;
+            for (BasinSite site : sites) {
+                if (site.isLake()) {
+                    lake = site;
+                }
+            }
+            sites.removeIf(BasinSite::isLake);
             column.field = new java.lang.ref.WeakReference<>(field);
             column.x = chunkX;
             column.z = chunkZ;
             column.sites = sites.isEmpty() ? NONE : sites.toArray(BasinSite[]::new);
+            column.lake = lake != null;
+            if (lake != null) {
+                int[] run = new int[2];
+                for (int i = 0; i < 256; i++) {
+                    if (lake.lakeColumn((chunkX << 4) + (i >> 4), (chunkZ << 4) + (i & 15), run)) {
+                        column.lo[i] = run[0];
+                        column.hi[i] = run[1];
+                    } else {
+                        column.lo[i] = 0;
+                        column.hi[i] = 0;
+                    }
+                }
+            }
         }
-        return column.sites;
+        return column;
     }
 
     @Override

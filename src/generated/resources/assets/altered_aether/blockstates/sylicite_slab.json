@@ -1,0 +1,13 @@
+{
+  "variants": {
+    "type=bottom": {
+      "model": "altered_aether:block/sylicite_slab"
+    },
+    "type=double": {
+      "model": "altered_aether:block/sylicite"
+    },
+    "type=top": {
+      "model": "altered_aether:block/sylicite_slab_top"
+    }
+  }
+}

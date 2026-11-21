@@ -148,8 +148,24 @@ public final class Tour {
                     whaleShots(spawn, shots);
                     continue;
                 }
+                if (stop.startsWith("sea")) {
+                    seaShots(stop, spawn, shots);
+                    continue;
+                }
                 if (stop.startsWith("skirt")) {
                     skirtShots(stop, spawn, shots);
+                    continue;
+                }
+                if (stop.equals("tarn")) {
+                    tarnShots(spawn, shots);
+                    continue;
+                }
+                if (stop.equals("highlands")) {
+                    highlandsShots(spawn, shots);
+                    continue;
+                }
+                if (stop.equals("stack")) {
+                    stackShots(aether, spawn, shots);
                     continue;
                 }
                 if (stop.equals("leap")) {
@@ -250,6 +266,84 @@ public final class Tour {
             shots.add(new Shot(label + "_ground", x, 100, z, x, 90, z - 120, 6000, false, false, true));
         }
 
+        /** The nearest frozen tarn: low across the ice, and from above. */
+        private static void tarnShots(BlockPos spawn, List<Shot> shots) {
+            var field = com.linc.alteredaether.worldgen.basin.BasinField.get(THE_AETHER);
+            com.linc.alteredaether.worldgen.basin.BasinSite found = null;
+            int cell = field == null ? 1 : field.lakeCell();
+            int ox = Math.floorDiv(spawn.getX(), cell), oz = Math.floorDiv(spawn.getZ(), cell);
+            for (int r = 0; r < 60 && field != null && found == null; r++) {
+                for (int cx = ox - r; cx <= ox + r && found == null; cx++) {
+                    for (int cz = oz - r; cz <= oz + r && found == null; cz++) {
+                        if (Math.max(Math.abs(cx - ox), Math.abs(cz - oz)) == r) {
+                            found = field.lakeInCell(cx, cz).filter(site ->
+                                    site.type() == com.linc.alteredaether.worldgen.basin.BasinType.FROZEN_LAKE)
+                                    .orElse(null);
+                        }
+                    }
+                }
+            }
+            if (found == null) {
+                AlteredAether.LOGGER.error("Tour: no frozen tarn found");
+                return;
+            }
+            AlteredAether.LOGGER.info("Tour: frozen tarn at {} {}", found.x(), found.z());
+            double x = found.x() + 0.5, z = found.z() + 0.5, w = found.waterLevel(), out = found.radius() * 0.9;
+            shots.add(new Shot("tarn", x + out, w + 6, z + out * 0.4, x, w, z, 6000, false, false));
+            shots.add(new Shot("tarn_above", x - out, w + out, z - out, x, w, z, 6000, false, false));
+        }
+
+        /** The Highlands, from below among the main islands looking up at them, among them, and from above. */
+        private static void highlandsShots(BlockPos spawn, List<Shot> shots) {
+            var field = com.linc.alteredaether.worldgen.density.BiomeEdgeField.get(THE_AETHER);
+            if (field == null) {
+                AlteredAether.LOGGER.error("Tour: no biome edge field");
+                return;
+            }
+            var allowed = field.solver(com.linc.alteredaether.worldgen.region.BiomeGroups.HIGHLANDS, 32);
+            int x = spawn.getX(), z = spawn.getZ();
+            outer:
+            for (int r = 0; r < 100; r++) {
+                for (int i = -r; i <= r; i++) {
+                    for (int[] p : new int[][]{{i, -r}, {i, r}, {-r, i}, {r, i}}) {
+                        int px = spawn.getX() + p[0] * 64, pz = spawn.getZ() + p[1] * 64;
+                        if (allowed.inside(px, pz, 1) >= 31) {
+                            x = px;
+                            z = pz;
+                            break outer;
+                        }
+                    }
+                }
+            }
+            AlteredAether.LOGGER.info("Tour: Highlands at {} {}", x, z);
+            // level with the islets, looking along them; then from just under them, looking out and up
+            shots.add(new Shot("highlands_among", x, 205, z, x + 100, 198, z + 40, 6000, false, false));
+            shots.add(new Shot("highlands_below", x, 150, z, x + 100, 190, z - 30, 6000, false, false));
+            shots.add(new Shot("highlands_far", x - 60, 240, z - 60, x + 120, 190, z + 120, 6000, false, false));
+        }
+
+        /** One of the plateau's sea stacks near the nearest plateau (one with a pool if there is one), and above. */
+        private static void stackShots(ServerLevel aether, BlockPos spawn, List<Shot> shots) {
+            var field = com.linc.alteredaether.worldgen.landmark.StackField.get(THE_AETHER);
+            var plateau = aether.findClosestBiome3d(b -> b.is(com.linc.alteredaether.worldgen.AABiomes.AETHER_PLATEAU),
+                    spawn, 24000, 32, 64);
+            BlockPos from = plateau == null ? spawn : plateau.getFirst();
+            com.linc.alteredaether.worldgen.landmark.StackField.Stack found = null;
+            for (int r = 128; r <= 1024 && field != null && found == null; r *= 2) {
+                var stacks = field.touching(from.getX() - r, from.getZ() - r, from.getX() + r, from.getZ() + r);
+                found = stacks.stream().filter(st -> st.pond() > 0).findFirst()
+                        .orElse(stacks.isEmpty() ? null : stacks.getFirst());
+            }
+            if (found == null) {
+                AlteredAether.LOGGER.error("Tour: no stack found");
+                return;
+            }
+            AlteredAether.LOGGER.info("Tour: stack at {} {} {}", found.x(), found.top(), found.z());
+            double x = found.x() + 0.5, z = found.z() + 0.5, top = found.top();
+            shots.add(new Shot("stack", x + 34, top + 6, z + 20, x, top - 12, z, 6000, false, false));
+            shots.add(new Shot("stack_above", x - 18, top + 30, z - 18, x, top, z, 6000, false, false));
+        }
+
         /**
          * A saddled aerwhale held still in open sky over spawn, facing south, from each side and from above to see the
          * saddle sit on its back; then the player riding it, from behind in third person.
@@ -265,7 +359,7 @@ public final class Tour {
         }
 
         /**
-         * The cloud skirt round a low island: the nearest low rim to a point well away from spawn ({@code skirt} or
+         * The cloud skirt round a Highlands islet: the nearest skirted rim to a point well away from spawn ({@code skirt} or
          * {@code skirt:dx:dz} for the offset), so its chunks are new and wear the skirt, framed from four sides
          * just above the rim and once from high up.
          */
@@ -289,6 +383,42 @@ public final class Tour {
                         y - 5, z, 6000, false, false));
             }
             shots.add(new Shot("skirt_above", x + 70, y + 55, z + 70, x, y - 4, z, 6000, false, false));
+        }
+
+        /**
+         * A cloud sea: {@code sea} or {@code sea:dx:dz} searches outward from spawn plus that offset (default 6000,6000,
+         * so its chunks are new) for open sea, then looks across it from four sides at the height of its islands' ground,
+         * and down on it from high above.
+         */
+        private static void seaShots(String stop, BlockPos spawn, List<Shot> shots) {
+            String[] parts = stop.split(":");
+            int dx = parts.length == 3 ? Integer.parseInt(parts[1]) : 6000;
+            int dz = parts.length == 3 ? Integer.parseInt(parts[2]) : 6000;
+            com.linc.alteredaether.worldgen.sea.CloudSea sea = com.linc.alteredaether.worldgen.sea.CloudSea.terrain(THE_AETHER);
+            int[] found = null;
+            for (int r = 0; r < 100 && sea != null && found == null; r++) {
+                for (int i = -r; i <= r && found == null; i++) {
+                    for (int[] p : new int[][]{{i, -r}, {i, r}, {-r, i}, {r, i}}) {
+                        int x = spawn.getX() + dx + p[0] * 128, z = spawn.getZ() + dz + p[1] * 128;
+                        if (sea.weight(x, z) > 0.98 && sea.weight(x + 120, z + 120) > 0.98) {
+                            found = new int[]{x, z};
+                            break;
+                        }
+                    }
+                }
+            }
+            if (found == null) {
+                AlteredAether.LOGGER.error("Tour: no cloud sea found{}", sea == null ? " (no cloud sea)" : "");
+                return;
+            }
+            AlteredAether.LOGGER.info("Tour: cloud sea at {} {}", found[0], found[1]);
+            double x = found[0] + 0.5, z = found[1] + 0.5;
+            for (int i = 0; i < 4; i++) {
+                double angle = Math.PI * 0.25 + i * Math.PI / 2;
+                shots.add(new Shot("sea_" + i, x + Math.cos(angle) * 60, 20, z + Math.sin(angle) * 60,
+                        x - Math.cos(angle) * 60, -14, z - Math.sin(angle) * 60, 6000, false, false));
+            }
+            shots.add(new Shot("sea_above", x + 90, 110, z + 90, x, -20, z, 6000, false, false));
         }
 
         /** Walks from a point toward where the biome is widest, so the shots sit well inside it. */
@@ -343,7 +473,7 @@ public final class Tour {
     @EventBusSubscriber(modid = AlteredAether.MOD_ID, value = Dist.CLIENT)
     public static final class Client {
         /** Ticks to wait at a new place at least, and at most before shooting regardless. */
-        private static final int SETTLE = 60, GIVE_UP = 1600;
+        private static final int SETTLE = 60, GIVE_UP = 4000;
         private static int index = -1, waited;
         private static Shot current;
         /** How far the camera has been raised to see over whatever stood in its way. */

@@ -1,0 +1,37 @@
+{
+  "neoforge:conditions": [
+    {
+      "type": "altered_aether:mod_enabled",
+      "modid": "deep_aether"
+    }
+  ],
+  "feature": "altered_aether:cloud/layer_sterling",
+  "placement": [
+    {
+      "type": "minecraft:height_range",
+      "height": {
+        "type": "minecraft:uniform",
+        "max_inclusive": {
+          "absolute": 243
+        },
+        "min_inclusive": {
+          "absolute": 203
+        }
+      }
+    },
+    {
+      "type": "minecraft:in_square"
+    },
+    {
+      "type": "altered_aether:config_count",
+      "count": 0.03,
+      "key": "aerclouds"
+    },
+    {
+      "type": "minecraft:biome"
+    },
+    {
+      "type": "aether:dungeon_blacklist_filter"
+    }
+  ]
+}

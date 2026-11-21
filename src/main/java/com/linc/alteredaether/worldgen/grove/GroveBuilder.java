@@ -56,6 +56,8 @@ public final class GroveBuilder {
     private static final double STRIP_DEPTH = 1.5;
     /** Per-column odds, at density 1, of a gleam vine hanging from a Cathedral canopy; and of each block bearing. */
     private static final double GLEAM_VINE = 0.03, GLEAM_BERRIES = 0.4;
+    /** The shrouded forest's canopies trail this many times as many gleam vines as the cathedral's. */
+    private static final double SHROUDED_VINES = 4;
     private static final Block DIRT_PATH = BuiltInRegistries.BLOCK
             .getOptional(ResourceLocation.parse("aether:aether_dirt_path")).orElse(Blocks.DIRT_PATH);
 
@@ -129,7 +131,8 @@ public final class GroveBuilder {
     }
 
     /**
-     * Hangs gleam vines from the underside of a Skyroot Cathedral giant's canopy: from the lowest leaves over air in a
+     * Hangs gleam vines from the underside of a Skyroot Cathedral giant's canopy (four times as thick in the shrouded
+     * forest): from the lowest leaves over air in a
      * scattering of its columns, mostly a block or two long, now and then a long strand, hung with gleamberries. Runs
      * after every giant in the chunk is built, so no later canopy grows round them.
      */
@@ -149,7 +152,8 @@ public final class GroveBuilder {
                 : null;
         for (int x = Math.max(minX, canopy.minX()); x <= Math.min(maxX, canopy.maxX()); x++) {
             for (int z = Math.max(minZ, canopy.minZ()); z <= Math.min(maxZ, canopy.maxZ()); z++) {
-                if (hash(giant.salt(), x, 7, z) >= chance) {
+                double roll = hash(giant.salt(), x, 7, z);
+                if (roll >= chance * SHROUDED_VINES) {
                     continue;
                 }
                 int bottom = Integer.MAX_VALUE, top = Integer.MIN_VALUE;
@@ -165,7 +169,11 @@ public final class GroveBuilder {
                         && level.getBlockState(pos.set(x, y - 1, z)).isAir())) {
                     y++;
                 }
-                if (y > top || !level.getBiome(pos.set(x, y - 1, z)).is(AABiomes.SKYROOT_CATHEDRAL)) {
+                if (y > top) {
+                    continue;
+                }
+                var biome = level.getBiome(pos.set(x, y - 1, z));
+                if (!(biome.is(AABiomes.SHROUDED_FOREST) || biome.is(AABiomes.SKYROOT_CATHEDRAL) && roll < chance)) {
                     continue;
                 }
                 double r = hash(giant.salt(), x, 8, z);

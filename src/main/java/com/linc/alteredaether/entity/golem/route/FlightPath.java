@@ -44,14 +44,19 @@ public final class FlightPath {
      * point), along {@code points} with its corners rounded.
      */
     public static double[][] table(List<double[]> points) {
-        List<double[]> dense = smooth(points);
+        List<Integer> cornerAt = new ArrayList<>();
+        List<double[]> dense = smooth(points, cornerAt);
         int n = dense.size();
         double[] along = new double[n];
         for (int i = 1; i < n; i++) {
             along[i] = along[i - 1] + distance(dense.get(i - 1), dense.get(i));
         }
         double length = along[n - 1];
-        List<Double> corners = cornerDistances(points);
+        // how far along the rounded route the middle of each corner is: where the item is when it turns
+        List<Double> corners = new ArrayList<>(cornerAt.size());
+        for (int index : cornerAt) {
+            corners.add(along[index]);
+        }
         List<double[]> table = new ArrayList<>();
         table.add(dense.get(0).clone());
         double s = 0, v = START_SPEED;
@@ -102,8 +107,11 @@ public final class FlightPath {
         return lerp(table[i], table[i + 1], t - i);
     }
 
-    /** The points with each corner replaced by a short curve. */
-    private static List<double[]> smooth(List<double[]> points) {
+    /**
+     * The points with each corner replaced by a short curve; {@code cornerAt} is given the index of each corner's
+     * middle in the result.
+     */
+    private static List<double[]> smooth(List<double[]> points, List<Integer> cornerAt) {
         List<double[]> dense = new ArrayList<>();
         dense.add(points.get(0));
         for (int i = 1; i < points.size() - 1; i++) {
@@ -111,6 +119,7 @@ public final class FlightPath {
             double in = distance(prev, corner), out = distance(corner, next);
             double r = Math.min(CORNER_RADIUS, Math.min(in, out) / 2);
             if (r <= 1.0E-6) {
+                cornerAt.add(dense.size());
                 dense.add(corner);
                 continue;
             }
@@ -121,6 +130,9 @@ public final class FlightPath {
                 for (int c = 0; c < 3; c++) {
                     p[c] = (1 - t) * (1 - t) * a[c] + 2 * (1 - t) * t * corner[c] + t * t * b[c];
                 }
+                if (k == 3) {
+                    cornerAt.add(dense.size());
+                }
                 dense.add(p);
             }
         }
@@ -130,17 +142,6 @@ public final class FlightPath {
             dense.add(points.get(0));
         }
         return dense;
-    }
-
-    /** How far along the unrounded route each corner is. */
-    private static List<Double> cornerDistances(List<double[]> points) {
-        List<Double> corners = new ArrayList<>();
-        double s = 0;
-        for (int i = 1; i < points.size() - 1; i++) {
-            s += distance(points.get(i - 1), points.get(i));
-            corners.add(s);
-        }
-        return corners;
     }
 
     static double distance(double[] a, double[] b) {
