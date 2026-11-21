@@ -17,19 +17,43 @@ package com.linc.alteredaether.compat.cloud;
 import dev.ryanhcode.sable.Sable;
 import net.minecraft.world.entity.Entity;
 
+import java.util.Collections;
+import java.util.Map;
+import java.util.WeakHashMap;
+
 /**
  * Who is riding a Sable body: standing on it, or in a seat on it. Aerclouds don't collide with them, as they don't with
  * the body itself, so a cloud a ship sails through doesn't shove its crew off the deck (see AercloudDragMixin and
  * PhasedAercloudBlock). Asked on both sides: the client works out its own player's collisions too.
  *
+ * <p>Sable stops counting someone as on a body the moment they leave its deck, as in a jump, so anyone seen on one in
+ * the last {@link #GRACE} ticks still counts: otherwise a jump inside a cloud would meet the cloud, and a blue one
+ * throws them high above the ship.
+ *
  * <p>Safe to load without Sable; only the inner class touches it.
  */
 public final class ShipRiders {
+    /** Ticks someone still counts as riding after Sable last had them on a body; longer than a jump. */
+    public static final int GRACE = 20;
+
+    /** Each entity's own tick count when it was last on a body; one map serves both sides, as each has its own entities. */
+    private static final Map<Entity, Integer> LAST_ON = Collections.synchronizedMap(new WeakHashMap<>());
+
     private ShipRiders() {
     }
 
     public static boolean onShip(Entity entity) {
-        return entity != null && AercloudPhasing.enabled() && WithSable.onShip(entity);
+        if (entity == null || !AercloudPhasing.enabled()) {
+            return false;
+        }
+        Integer last = LAST_ON.get(entity);
+        if (WithSable.onShip(entity)) {
+            if (last == null || last != entity.tickCount) {
+                LAST_ON.put(entity, entity.tickCount);
+            }
+            return true;
+        }
+        return last != null && entity.tickCount - last <= GRACE;
     }
 
     private static final class WithSable {

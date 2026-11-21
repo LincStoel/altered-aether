@@ -57,7 +57,10 @@ neoForge {
             // -PaaGravititeTour=<label> quick-plays it too and runs the scripted gravitite rework check in debug/GravititeTour.
             val gravititeTour = findProperty("aaGravititeTour") as String?
             systemProperty("altered_aether.gravitite_tour", gravititeTour ?: "")
-            if (tour != null || jeiShot != null || golemTour != null || gravititeTour != null) {
+            // -PaaCloudTour=<label> quick-plays it too and runs the scripted phased aercloud check in debug/CloudTour.
+            val cloudTour = findProperty("aaCloudTour") as String?
+            systemProperty("altered_aether.cloud_tour", cloudTour ?: "")
+            if (tour != null || jeiShot != null || golemTour != null || gravititeTour != null || cloudTour != null) {
                 programArguments.addAll("--quickPlaySingleplayer", "tour")
             }
             // -PaaJoin=host:port joins that server on start, to check a dedicated server end to end.
