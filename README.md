@@ -200,7 +200,7 @@ Stone breaks off the islands above and falls. Some of it did long ago, and some 
 - **Claims.** With FTB Chunks, a boulder never drops on, settles in or hurts anyone in a claim whose team has turned off
   mob griefing or explosion damage, and neither does it touch a structure; one that rolls into such land vanishes in dust.
 
-### Clouds that give way (with Sable)
+### Passable Aerclouds (with Sable)
 
 Airships, contraptions and falling boulders pass straight through aerclouds, the Aether's and Deep Aether's, without
 slowing or breaking them. The clouds they touch, and those a block around, turn faint and fade back in over 15 seconds
@@ -291,39 +291,7 @@ it lasts, flying items on or off, and fewer particles.
 ## Shaders
 
 The atmospheric effects are made to work under Iris shaderpacks, and are tested with BSL v10.1.1 (Iris 1.8.14,
-Sodium 0.8.13): the flashes are real lightning to the shaderpack, and the storm's rain and thunder levels drive its
-wetness and darkening. Storm fog is left to the shaderpack when one is active. See
-[docs/shaders.md](docs/shaders.md).
-
-## Performance
-
-Measured with the dev server's benchmark: a fresh world on one seed, the same 484 chunks in four places, the tall
-Aether, on an i7-13700KF; and with `/altered_aether fly`, a server-side stand-in for a player crossing 6,000 blocks at
-40 blocks a second with a view distance of 10.
-
-| | 1.3.0 | 1.4.0 |
-|---|---|---|
-| Generation, no other mods | 25.6 ms per chunk | 35.5 ms |
-| Generation, with ByePregen, Deep Aether, Lithium and a pack's worth of other mods | 23.5 ms | 36.6 ms |
-| Flying: chunks missing near the player, on average | 0 | 0 |
-| Flying: longest server tick | 2.4 s | 1.0 s |
-
-The stock-height Aether is quicker still, at about 24 ms per chunk with no other mods. This version does a good deal
-more than 1.3.0 (cloud skirts and seas, big lakes, caves, the Highlands, sea stacks, nadirite), and still keeps up
-with flight.
-
-Minecraft works out structures and places features one chunk at a time; only the terrain itself is shared out among
-the worker threads. So what costs time while exploring is the work done in those steps, and Altered Aether keeps it
-small:
-
-- every site search (lakes, stacks, caves, landmarks) is cached per world;
-- the terrain probes that site searches use sample each 2D noise once per column;
-- the cloud skirts' collars are worked out ahead, on threads of their own.
-
-With ByePregen installed, its compiled terrain evaluator handles our terrain
-too.
-
-Rules for keeping it this way when adding terrain or features: [docs/worldgen-performance.md](docs/worldgen-performance.md).
+Sodium 0.8.13)
 
 ## Development
 
