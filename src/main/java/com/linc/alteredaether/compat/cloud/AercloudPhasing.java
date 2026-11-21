@@ -41,7 +41,7 @@ import java.util.Map;
 
 /**
  * Aerclouds give way to Sable bodies. Sable lets every body through every cloud (AercloudPassCallback), and the clouds
- * it touches, with a block's margin round each, turn into phased clouds that fade back in over about thirty seconds
+ * it touches, with a block's margin round each, turn into phased clouds that fade back in over the configured time
  * (PhasedAercloudBlock). A body still inside keeps touching them, which keeps them phased. Players riding a body open
  * the same tunnel round themselves, so a cloud above an open deck gives way too.
  *

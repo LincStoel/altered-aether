@@ -91,7 +91,7 @@ public final class PhasedAercloudTests {
         helper.succeed();
     }
 
-    /** A phased cloud steps up one at a time and is its cloud again, double drops and all, about thirty seconds on. */
+    /** A phased cloud steps up one at a time and is its cloud again, double drops and all, after the configured time. */
     @GameTest(template = "arena", timeoutTicks = 1000)
     public static void phasedCloudFadesBack(GameTestHelper helper) {
         BlockPos pos = helper.absolutePos(new BlockPos(16, 3, 16));
@@ -99,8 +99,9 @@ public final class PhasedAercloudTests {
         AercloudPhasing.phase(helper.getLevel(), pos);
         int[] ticks = {0};
         int[] fade = {0};
-        int least = PhasedAercloudBlock.STEP * PhasedAercloudBlock.MAX_FADE + PhasedAercloudBlock.STEP / 2;
-        int most = PhasedAercloudBlock.STEP * (PhasedAercloudBlock.MAX_FADE + 2) + 5;
+        int step = PhasedAercloudBlock.step();
+        int least = step * PhasedAercloudBlock.MAX_FADE + step / 2;
+        int most = step * (PhasedAercloudBlock.MAX_FADE + 2) + 5;
         helper.onEachTick(() -> {
             ticks[0]++;
             BlockState state = helper.getLevel().getBlockState(pos);

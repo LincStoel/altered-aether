@@ -199,6 +199,14 @@ Stone breaks off the islands above and falls. Some of it did long ago, and some 
 - **Claims.** With FTB Chunks, a boulder never drops on, settles in or hurts anyone in a claim whose team has turned off
   mob griefing or explosion damage, and neither does it touch a structure; one that rolls into such land vanishes in dust.
 
+### Clouds that give way (with Sable)
+
+Airships, contraptions and falling boulders pass straight through aerclouds, the Aether's and Deep Aether's, without
+slowing or breaking them. The clouds they touch, and those a block around, turn faint and fade back in over 15 seconds
+(configurable), then are the same clouds as before. A cloud only gives way to Sable bodies and to whoever is riding
+one: anyone else still stands, bounces and drifts on it as usual, so the crew on an open deck isn't pushed off as the
+ship sails through, while a player on the cloud beside it doesn't fall. Clouds built into a ship collide as any block does.
+
 ## The tall Aether
 
 The built-in datapack **Altered Aether: Tall Aether** (on by default) makes the Aether -64..319 like the Overworld,
@@ -236,7 +244,7 @@ Highlands' islets wears a **cloud skirt**, a collar of the same cloud round its 
 | Mowzie's Mobs | nagas in Deep Aether's Yagroot Swamp; lanterns in the Skyroot Cathedral and Deep Aether's Luminescent Forest                                                                                                                                                           |
 | Integrated Villages | its airship village in the Aether, and no longer in the overworld (configurable)                                                                                                                                                                      |
 | Aether: Beyond Parity | its ambrosium campfire is replaced                                                                                                                                                                                                                    |
-| Sable | falling boulders; gravitite lifts (enchanted gravitite only while powered)                                                                                                                                                                              |
+| Sable | falling boulders; ships pass through aerclouds; gravitite lifts (enchanted gravitite only while powered)                                                                                                                                                  |
 | Create Simulated (Create Aeronautics) | falling boulders pass through its void-holding "end sea" while ships don't; the tall Aether's end sea is lowered to the world's floor                                                                                                              |
 | FTB Chunks | falling boulders keep out of claims protected from griefing                                                                                                                                                                                          |
 
@@ -270,6 +278,8 @@ on cold aerclouds.
 - `[boulders]`: minutes between falling boulders per player (0 turns them off), how many at once, the chance one is
   dropped over the void, and the damage they do. How many ancient boulders there are is `ancient_boulders` under
   `[features]`.
+- `[phased_aerclouds]`: how many seconds a cloud a Sable body passed through takes to fade back in (`fade_seconds`,
+  15 by default).
 - `[tall_mode]`: structures the tall Aether should leave at their own heights.
 - `[compat]`: one switch per optional mod, the Beyond Parity campfire swap, and `disable_overworld_archwood`.
 

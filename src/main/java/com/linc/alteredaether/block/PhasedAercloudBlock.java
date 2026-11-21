@@ -16,6 +16,7 @@ package com.linc.alteredaether.block;
 
 import com.aetherteam.aether.block.AetherBlockStateProperties;
 import com.linc.alteredaether.compat.cloud.ShipRiders;
+import com.linc.alteredaether.config.AACommonConfig;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -50,7 +51,8 @@ import java.util.stream.Stream;
 
 /**
  * An aercloud a Sable body has just passed through (see compat/cloud/AercloudPhasing): it shows mostly see-through and
- * firms up a step at a time, then turns back into the cloud it was, about thirty seconds on. Sable bodies pass through
+ * firms up a step at a time, then turns back into the cloud it was, {@code [phased_aerclouds] fade_seconds} on (15 by
+ * default). Sable bodies pass through
  * it as they do every cloud. For anything else it is that cloud: the same shape, bounce, slowed fall and drops. Only
  * someone riding a Sable body passes through it, as they do every cloud (see ShipRiders).
  *
@@ -116,8 +118,10 @@ public class PhasedAercloudBlock extends HalfTransparentBlock {
     /** Aether's own property, so its double-drops loot function reads the same value off either block. */
     public static final BooleanProperty DOUBLE_DROPS = AetherBlockStateProperties.DOUBLE_DROPS;
 
-    /** Ticks per step; eight steps make about thirty seconds. */
-    public static final int STEP = 75;
+    /** Ticks per step: the configured fade time split over the eight steps, at least one tick. */
+    public static int step() {
+        return Math.max(1, (int) Math.round(AACommonConfig.PHASED_AERCLOUD_SECONDS.get() * 20 / (MAX_FADE + 1)));
+    }
 
     public PhasedAercloudBlock(Properties properties) {
         super(properties);
@@ -169,14 +173,15 @@ public class PhasedAercloudBlock extends HalfTransparentBlock {
         }
     }
 
-    /** Schedules the next step on the next {@link #STEP} boundary of the game clock, at least half a step away. */
+    /** Schedules the next step on the next {@link #step()} boundary of the game clock, at least half a step away. */
     private void schedule(Level level, BlockPos pos) {
         if (level.isClientSide || level.getBlockTicks().hasScheduledTick(pos, this)) {
             return;
         }
-        int delay = (int) (STEP - level.getGameTime() % STEP);
-        if (delay < STEP / 2) {
-            delay += STEP;
+        int step = step();
+        int delay = (int) (step - level.getGameTime() % step);
+        if (delay < step / 2) {
+            delay += step;
         }
         level.scheduleTick(pos.immutable(), this, delay);
     }

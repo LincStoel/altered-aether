@@ -113,6 +113,7 @@ public final class AACommonConfig {
     public static final DoubleValue BOULDER_INTERVAL_MINUTES;
     public static final IntValue BOULDER_MAX_ACTIVE;
     public static final DoubleValue BOULDER_DAMAGE;
+    public static final DoubleValue PHASED_AERCLOUD_SECONDS;
     public static final IntValue STORM_PLAYER_WARNING_TICKS;
     public static final IntValue STORM_PLAYER_COOLDOWN_MIN;
     public static final IntValue STORM_PLAYER_COOLDOWN_MAX;
@@ -485,6 +486,14 @@ public final class AACommonConfig {
                 .defineInRange("max_active", 6, 1, 32);
         BOULDER_DAMAGE = b.comment("Multiplier on the damage a moving boulder does to what it hits. 0 for none.")
                 .defineInRange("damage", 1.0, 0.0, 10.0);
+        b.pop();
+
+        b.comment("Aerclouds a Sable body (an airship, a falling boulder) passes through: they turn see-through, let it",
+                        "through, then fade back in. Needs Sable.")
+                .push("phased_aerclouds");
+        PHASED_AERCLOUD_SECONDS = b.comment("Seconds a cloud takes to fade back in and become solid again after a body last",
+                        "touched it.")
+                .defineInRange("fade_seconds", 15.0, 1.0, 600.0);
         b.pop();
 
         b.comment("Optional mod integrations. Each only takes effect when that mod is loaded.").push("compat");
