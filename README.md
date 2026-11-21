@@ -301,7 +301,7 @@ Measured with the dev server's benchmark: a fresh world on one seed, the same 48
 Aether, on an i7-13700KF; and with `/altered_aether fly`, a server-side stand-in for a player crossing 6,000 blocks at
 40 blocks a second with a view distance of 10.
 
-| | 1.3.0 | This version |
+| | 1.3.0 | 1.4.0 |
 |---|---|---|
 | Generation, no other mods | 25.6 ms per chunk | 35.5 ms |
 | Generation, with ByePregen, Deep Aether, Lithium and a pack's worth of other mods | 23.5 ms | 36.6 ms |
