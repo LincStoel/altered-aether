@@ -38,11 +38,12 @@ import java.util.Optional;
 @GameTestHolder(AlteredAether.MOD_ID)
 @PrefixGameTestTemplate(false)
 public final class NadiriteProcessingTests {
-    private static final Map<String, Item> RECIPES = Map.of(
-            "nadirite/milling", AARegistries.CRUSHED_NADIRITE.get(),
-            "nadirite/splashing", AARegistries.NADIRITE_GRIT.get(),
-            "nadirite/aether_crust_mix", AARegistries.AETHER_CRUST_MIX.get(),
-            "nadirite/andesite_enchanting", Items.ANDESITE);
+    /** Each step's recipe, its product and how many it makes. */
+    private static final Map<String, Map.Entry<Item, Integer>> RECIPES = Map.of(
+            "nadirite/milling", Map.entry(AARegistries.CRUSHED_NADIRITE.get(), 2),
+            "nadirite/splashing", Map.entry(AARegistries.NADIRITE_GRIT.get(), 2),
+            "nadirite/aether_crust_mix", Map.entry(AARegistries.AETHER_CRUST_MIX.get(), 2),
+            "nadirite/andesite_enchanting", Map.entry(Items.ANDESITE, 1));
 
     @GameTest(template = "arena")
     public static void nadiriteMakesAndesiteWithCreate(GameTestHelper helper) {
@@ -57,8 +58,10 @@ public final class NadiriteProcessingTests {
             }
             if (holder.isPresent()) {
                 var result = holder.get().value().getResultItem(level.registryAccess());
-                if (!result.is(entry.getValue()) || result.getCount() != 1) {
-                    helper.fail(entry.getKey() + " should make one " + entry.getValue() + ", got " + result);
+                Item item = entry.getValue().getKey();
+                int count = entry.getValue().getValue();
+                if (!result.is(item) || result.getCount() != count) {
+                    helper.fail(entry.getKey() + " should make " + count + " " + item + ", got " + result);
                     return;
                 }
             }

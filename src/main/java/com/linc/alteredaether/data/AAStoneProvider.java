@@ -457,8 +457,8 @@ public final class AAStoneProvider extends JsonDataProvider {
 
     /**
      * Nadirite into andesite, with no heat: Create's millstone (or crushing wheels, which run milling recipes too) grinds
-     * it to crushed nadirite; washing carries off the heavy iron, an iron nugget now and then as from gravel, and leaves
-     * nadirite grit; grit and quicksoil make Aether crust mix, which the altar (or Create's fan enchanting) sets into
+     * it to two crushed nadirite; washing each carries off the heavy iron, an iron nugget now and then as from gravel, and leaves
+     * two nadirite grit; a grit and a quicksoil make two Aether crust mix, which the altar (or Create's fan enchanting) sets into
      * andesite. Only crushed nadirite starts it, so every step waits on Create.
      */
     private void nadiriteProcessing() {
@@ -468,11 +468,11 @@ public final class AAStoneProvider extends JsonDataProvider {
         String mix = NS + "aether_crust_mix";
 
         JsonArray milled = new JsonArray();
-        milled.add(stack(crushed, 1, 1));
+        milled.add(stack(crushed, 2, 1));
         create("milling", nadirite, milled, 250);
 
         JsonArray washed = new JsonArray();
-        washed.add(stack(grit, 1, 1));
+        washed.add(stack(grit, 2, 1));
         washed.add(stack("minecraft:iron_nugget", 1, 0.125));
         create("splashing", crushed, washed, 0);
 
@@ -483,7 +483,7 @@ public final class AAStoneProvider extends JsonDataProvider {
         crafting.addProperty("type", "minecraft:crafting_shapeless");
         crafting.addProperty("category", "misc");
         crafting.add("ingredients", ingredients);
-        crafting.add("result", stack(mix, 1, 1));
+        crafting.add("result", stack(mix, 2, 1));
         data("recipe", AlteredAether.id("nadirite/aether_crust_mix"), crafting, "create");
 
         JsonObject enchanting = new JsonObject();
