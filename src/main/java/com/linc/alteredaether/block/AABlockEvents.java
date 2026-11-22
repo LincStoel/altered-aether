@@ -15,6 +15,8 @@
 package com.linc.alteredaether.block;
 
 import com.linc.alteredaether.AlteredAether;
+import com.linc.alteredaether.compat.CreateCompat;
+import com.linc.alteredaether.config.AACommonConfig;
 import com.linc.alteredaether.registry.AARegistries;
 import com.aetherteam.aether.block.AetherBlocks;
 import com.aetherteam.aether.item.AetherCreativeTabs;
@@ -27,9 +29,12 @@ import net.minecraft.world.level.block.Block;
 import net.neoforged.neoforge.registries.DeferredBlock;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.ModList;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.BuildCreativeModeTabContentsEvent;
 import net.neoforged.neoforge.event.BlockEntityTypeAddBlocksEvent;
+
+import java.util.function.Consumer;
 
 /** Mod-bus events for our blocks. */
 @EventBusSubscriber(modid = AlteredAether.MOD_ID, bus = EventBusSubscriber.Bus.MOD)
@@ -81,6 +86,18 @@ public final class AABlockEvents {
                     after = insertAfter(event, after, block.get());
                 }
             }
+        }
+        if (event.getTabKey().equals(AetherCreativeTabs.AETHER_INGREDIENTS.getKey())) {
+            nadiriteProcessing(event::accept);
+        }
+    }
+
+    /** Nadirite's way to andesite (see data/AAStoneProvider), listed only with Create, the only way to start it. */
+    public static void nadiriteProcessing(Consumer<ItemLike> output) {
+        if (ModList.get().isLoaded(CreateCompat.MOD) && AACommonConfig.compat(CreateCompat.MOD)) {
+            output.accept(AARegistries.CRUSHED_NADIRITE.get());
+            output.accept(AARegistries.NADIRITE_GRIT.get());
+            output.accept(AARegistries.AETHER_CRUST_MIX.get());
         }
     }
 

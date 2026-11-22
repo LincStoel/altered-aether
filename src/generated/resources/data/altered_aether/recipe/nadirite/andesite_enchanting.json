@@ -1,0 +1,18 @@
+{
+  "neoforge:conditions": [
+    {
+      "type": "altered_aether:mod_enabled",
+      "modid": "create"
+    }
+  ],
+  "type": "aether:enchanting",
+  "category": "enchanting_misc",
+  "cookingtime": 200,
+  "experience": 0.1,
+  "ingredient": {
+    "item": "altered_aether:aether_crust_mix"
+  },
+  "result": {
+    "id": "minecraft:andesite"
+  }
+}

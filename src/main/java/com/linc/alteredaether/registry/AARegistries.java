@@ -203,6 +203,14 @@ public final class AARegistries {
         return ITEMS.register(name, () -> new GravititeItem(new Item.Properties()));
     }
 
+    /**
+     * Nadirite into andesite, for Create only (see data/AAStoneProvider): milled to crushed nadirite, washed to grit
+     * (the iron washing out), mixed with quicksoil into crust mix and enchanted into andesite.
+     */
+    public static final DeferredItem<Item> CRUSHED_NADIRITE = ITEMS.registerSimpleItem("crushed_nadirite");
+    public static final DeferredItem<Item> NADIRITE_GRIT = ITEMS.registerSimpleItem("nadirite_grit");
+    public static final DeferredItem<Item> AETHER_CRUST_MIX = ITEMS.registerSimpleItem("aether_crust_mix");
+
     public static final DeferredRegister<EntityType<?>> ENTITY_TYPES =
             DeferredRegister.create(Registries.ENTITY_TYPE, AlteredAether.MOD_ID);
 

@@ -1,0 +1,23 @@
+{
+  "neoforge:conditions": [
+    {
+      "type": "altered_aether:mod_enabled",
+      "modid": "create"
+    }
+  ],
+  "type": "create:splashing",
+  "ingredients": [
+    {
+      "item": "altered_aether:crushed_nadirite"
+    }
+  ],
+  "results": [
+    {
+      "id": "altered_aether:nadirite_grit"
+    },
+    {
+      "chance": 0.125,
+      "id": "minecraft:iron_nugget"
+    }
+  ]
+}

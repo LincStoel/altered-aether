@@ -150,8 +150,14 @@ public final class AABlockProvider extends JsonDataProvider {
     private static final List<String> GRAVITITE_ITEMS = List.of("raw_gravitite", "enchanted_gravitite_ingot",
             "enchanted_gravitite_nugget", "crushed_raw_gravitite", "gravitite_dust", "small_gravitite_dust");
     private static final String RAW_GRAVITITE_BLOCK = "raw_gravitite_block";
+    /** Nadirite's way to andesite with Create (see data/AAStoneProvider). */
+    private static final List<String> NADIRITE_ITEMS = List.of("crushed_nadirite", "nadirite_grit", "aether_crust_mix");
 
     private void gravitite() {
+        for (String item : NADIRITE_ITEMS) {
+            asset("models/item", AlteredAether.id(item), model("minecraft:item/generated",
+                    Map.of("layer0", AlteredAether.MOD_ID + ":item/" + item)));
+        }
         for (String item : GRAVITITE_ITEMS) {
             asset("models/item", AlteredAether.id(item), model("minecraft:item/generated",
                     Map.of("layer0", AlteredAether.MOD_ID + ":item/" + item)));
@@ -498,6 +504,9 @@ public final class AABlockProvider extends JsonDataProvider {
         lang.put("item." + AlteredAether.MOD_ID + ".rumour_map.flourishing_archwood_grove", "Rumour of a Flourishing Archwood Grove");
         lang.put("item." + AlteredAether.MOD_ID + ".rumour_map.vexing_archwood_grove", "Rumour of a Vexing Archwood Grove");
         // the gravitite rework (see compat/GravititeRework); the Aether's block is now the ingots' storage block
+        lang.put("item." + AlteredAether.MOD_ID + ".crushed_nadirite", "Crushed Nadirite");
+        lang.put("item." + AlteredAether.MOD_ID + ".nadirite_grit", "Nadirite Grit");
+        lang.put("item." + AlteredAether.MOD_ID + ".aether_crust_mix", "Aether Crust Mix");
         lang.put("item." + AlteredAether.MOD_ID + ".raw_gravitite", "Raw Gravitite");
         lang.put("item." + AlteredAether.MOD_ID + ".enchanted_gravitite_ingot", "Enchanted Gravitite Ingot");
         lang.put("item." + AlteredAether.MOD_ID + ".enchanted_gravitite_nugget", "Enchanted Gravitite Nugget");

@@ -1,0 +1,20 @@
+{
+  "neoforge:conditions": [
+    {
+      "type": "altered_aether:mod_enabled",
+      "modid": "create"
+    }
+  ],
+  "type": "create:milling",
+  "ingredients": [
+    {
+      "item": "altered_aether:nadirite"
+    }
+  ],
+  "processing_time": 250,
+  "results": [
+    {
+      "id": "altered_aether:crushed_nadirite"
+    }
+  ]
+}

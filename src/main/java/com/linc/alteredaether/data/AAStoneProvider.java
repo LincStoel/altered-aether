@@ -66,6 +66,7 @@ public final class AAStoneProvider extends JsonDataProvider {
             }
         }
         celeziteCrushing();
+        nadiriteProcessing();
         sable();
     }
 
@@ -452,6 +453,79 @@ public final class AAStoneProvider extends JsonDataProvider {
         json.addProperty("processing_time", 250);
         json.add("results", results);
         data("recipe", AlteredAether.id("create/crushing/celezite"), json, "create");
+    }
+
+    /**
+     * Nadirite into andesite, with no heat: Create's millstone (or crushing wheels, which run milling recipes too) grinds
+     * it to crushed nadirite; washing carries off the heavy iron, an iron nugget now and then as from gravel, and leaves
+     * nadirite grit; grit and quicksoil make Aether crust mix, which the altar (or Create's fan enchanting) sets into
+     * andesite. Only crushed nadirite starts it, so every step waits on Create.
+     */
+    private void nadiriteProcessing() {
+        String nadirite = NS + AARegistries.NADIRITE.natural.base();
+        String crushed = NS + "crushed_nadirite";
+        String grit = NS + "nadirite_grit";
+        String mix = NS + "aether_crust_mix";
+
+        JsonArray milled = new JsonArray();
+        milled.add(stack(crushed, 1, 1));
+        create("milling", nadirite, milled, 250);
+
+        JsonArray washed = new JsonArray();
+        washed.add(stack(grit, 1, 1));
+        washed.add(stack("minecraft:iron_nugget", 1, 0.125));
+        create("splashing", crushed, washed, 0);
+
+        JsonArray ingredients = new JsonArray();
+        ingredients.add(itemIngredient(grit));
+        ingredients.add(itemIngredient("aether:quicksoil"));
+        JsonObject crafting = new JsonObject();
+        crafting.addProperty("type", "minecraft:crafting_shapeless");
+        crafting.addProperty("category", "misc");
+        crafting.add("ingredients", ingredients);
+        crafting.add("result", stack(mix, 1, 1));
+        data("recipe", AlteredAether.id("nadirite/aether_crust_mix"), crafting, "create");
+
+        JsonObject enchanting = new JsonObject();
+        enchanting.addProperty("type", "aether:enchanting");
+        enchanting.addProperty("category", "enchanting_misc");
+        enchanting.addProperty("cookingtime", 200);
+        enchanting.addProperty("experience", 0.1);
+        enchanting.add("ingredient", itemIngredient(mix));
+        enchanting.add("result", stack("minecraft:andesite", 1, 1));
+        data("recipe", AlteredAether.id("nadirite/andesite_enchanting"), enchanting, "create");
+    }
+
+    private void create(String type, String input, JsonArray results, int time) {
+        JsonArray ingredients = new JsonArray();
+        ingredients.add(itemIngredient(input));
+        JsonObject json = new JsonObject();
+        json.addProperty("type", "create:" + type);
+        json.add("ingredients", ingredients);
+        if (time > 0) {
+            json.addProperty("processing_time", time);
+        }
+        json.add("results", results);
+        data("recipe", AlteredAether.id("nadirite/" + type), json, "create");
+    }
+
+    private static JsonObject itemIngredient(String id) {
+        JsonObject json = new JsonObject();
+        json.addProperty("item", id);
+        return json;
+    }
+
+    /** An item stack, with a Create {@code chance} when below 1. */
+    private static JsonObject stack(String id, int count, double chance) {
+        JsonObject json = new JsonObject();
+        json.addProperty("id", id);
+        if (count != 1) {
+            json.addProperty("count", count);
+        }
+        if (chance < 1) {
+            json.addProperty("chance", chance);
+        }
+        return json;
     }
 
     private static String title(String id) {

@@ -1,0 +1,21 @@
+{
+  "neoforge:conditions": [
+    {
+      "type": "altered_aether:mod_enabled",
+      "modid": "create"
+    }
+  ],
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    {
+      "item": "altered_aether:nadirite_grit"
+    },
+    {
+      "item": "aether:quicksoil"
+    }
+  ],
+  "result": {
+    "id": "altered_aether:aether_crust_mix"
+  }
+}

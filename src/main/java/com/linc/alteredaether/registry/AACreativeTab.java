@@ -14,6 +14,7 @@
  */
 package com.linc.alteredaether.registry;
 
+import com.linc.alteredaether.block.AABlockEvents;
 import com.linc.alteredaether.block.StoneSet;
 import com.linc.alteredaether.compat.GravititeRework;
 import net.minecraft.world.item.CreativeModeTab;
@@ -35,6 +36,8 @@ final class AACreativeTab {
                 output.accept(block.get());
             }
         }
+
+        AABlockEvents.nadiriteProcessing(output::accept);
 
         output.accept(AARegistries.AMBROSIUM_CAMPFIRE_ITEM.get());
         output.accept(AARegistries.GLEAMBERRIES.get());
