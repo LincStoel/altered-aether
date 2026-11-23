@@ -81,6 +81,8 @@ public final class Planner {
      * ends, with all its families.
      */
     public static final String CRATE_CATEGORY = "equipment";
+    /** The group of the {@link #CRATE_CATEGORY} (curios and totems) that takes the crates before the rest of it. */
+    public static final String CRATE_FIRST = "accessories";
 
     /**
      * Which inventories a plan moves items out of.
@@ -1338,7 +1340,8 @@ public final class Planner {
                 was[c] = equipment >= 0 && crate.claim() == equipment ? Grouping.Crates.EQUIPMENT
                         : crate.claim() == SortSnapshot.ROOT ? Grouping.Crates.ODDS_AND_ENDS : 0;
             }
-            Grouping.Result result = Grouping.compute(nodes, slots, manySlots, fill, items, crateable(), chests, size,
+            Grouping.Result result = Grouping.compute(nodes, slots, manySlots, fill, items, crateable(), crateFirst(),
+                    chests, size,
                     new Grouping.Crates(crateSlots, crateItems, was), minFill, SPARE_FILL * Grouping.STACK, forced,
                     claimed);
             equipmentCrates = new HashSet<>();
@@ -1377,6 +1380,21 @@ public final class Planner {
             int equipment = equipmentNode();
             for (int i = 1; i < nodes.size(); i++) {
                 out[i] = i == equipment || out[nodes.get(i).parent()];
+            }
+            return out;
+        }
+
+        /**
+         * The {@link #CRATE_FIRST} group under the {@link #CRATE_CATEGORY} and all under it: its groups take the
+         * crates' room before armour and the rest of the equipment.
+         */
+        boolean[] crateFirst() {
+            boolean[] out = new boolean[nodes.size()];
+            int equipment = equipmentNode();
+            for (int i = 1; i < nodes.size(); i++) {
+                SortSnapshot.Node node = nodes.get(i);
+                out[i] = equipment >= 0 && node.parent() == equipment && node.name().equals(CRATE_FIRST)
+                        || out[node.parent()];
             }
             return out;
         }

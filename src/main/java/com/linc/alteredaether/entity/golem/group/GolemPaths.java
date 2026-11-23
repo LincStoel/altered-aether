@@ -326,7 +326,7 @@ public final class GolemPaths {
         }
         Item item = stack.getItem();
         if (stack.is(TOOLS) || stack.is(ARMORS) || item instanceof TieredItem || item instanceof ArmorItem
-                || stack.getMaxStackSize() == 1 && stack.isDamageableItem()) {
+                || stack.getMaxStackSize() == 1 && stack.isDamageableItem() || accessory(stack)) {
             return "equipment";
         }
         if (stack.has(DataComponents.FOOD) || stack.is(SEEDS) || stack.is(CROPS) || stack.is(FERTILIZERS)
@@ -368,6 +368,9 @@ public final class GolemPaths {
 
     private static String equipmentGroup(ItemStack stack) {
         Item item = stack.getItem();
+        if (accessory(stack)) {
+            return "accessories";
+        }
         if (item instanceof ArmorItem || stack.is(ARMORS)) {
             return "armor";
         }
@@ -379,6 +382,24 @@ public final class GolemPaths {
             return "tools";
         }
         return "other";
+    }
+
+    /**
+     * Curios and totems: what an accessory slot takes (tagged by Accessories or Curios, or by the Aether's
+     * {@code accessories_*} tags), and totems of undying or any mod's {@code *totem*}. Crates take them before the
+     * rest of the equipment ({@code Planner.CRATE_FIRST}).
+     */
+    private static boolean accessory(ItemStack stack) {
+        Item item = stack.getItem();
+        if (item == Items.TOTEM_OF_UNDYING || !(item instanceof BlockItem) && path(item).contains("totem")) {
+            return true;
+        }
+        return stack.getTags().anyMatch(tag -> {
+            ResourceLocation location = tag.location();
+            String namespace = location.getNamespace();
+            return namespace.equals("accessories") || namespace.equals("curios")
+                    || location.getPath().startsWith("accessories");
+        });
     }
 
     private static String foodType(String path) {

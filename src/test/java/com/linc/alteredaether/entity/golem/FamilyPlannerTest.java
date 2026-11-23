@@ -578,4 +578,25 @@ class FamilyPlannerTest {
                 700, 200, Set.of(), Set.of());
         assertEquals(2, fresh.group()[2], "the heavier family didn't get the chest");
     }
+
+    @Test
+    void curiosAndTotemsTakeTheCrateBeforeArmour() {
+        // a crate with room for 12 items: the 10 armour or the 4 accessories, not both
+        List<SortSnapshot.Node> nodes = List.of(new SortSnapshot.Node(-1, "misc"),
+                new SortSnapshot.Node(0, Planner.CRATE_CATEGORY), new SortSnapshot.Node(1, "armor"),
+                new SortSnapshot.Node(1, Planner.CRATE_FIRST));
+        int[] slots = {0, 0, 10, 4}, fill = {0, 0, 1000, 400}, items = {0, 0, 10, 4};
+        boolean[] crateable = {false, true, true, true};
+        Grouping.Crates crate = new Grouping.Crates(new int[]{1}, new long[]{12}, new int[1]);
+        Grouping.Result first = Grouping.compute(nodes, slots, new int[4], fill, items, crateable,
+                new boolean[]{false, false, false, true}, 5, 27, crate, 100, 200, Set.of(), Set.of());
+        assertEquals(2, first.group()[2], "the armour isn't a group");
+        assertEquals(3, first.group()[3], "the accessories aren't a group");
+        assertTrue(first.crated(3), "the accessories aren't in the crate");
+        assertFalse(first.crated(2), "the armour took the crate");
+        // without the priority the bigger group, the armour, would have it
+        Grouping.Result bySize = Grouping.compute(nodes, slots, new int[4], fill, items, crateable, 5, 27, crate, 100,
+                200, Set.of(), Set.of());
+        assertTrue(bySize.crated(2), "the test doesn't test the priority");
+    }
 }

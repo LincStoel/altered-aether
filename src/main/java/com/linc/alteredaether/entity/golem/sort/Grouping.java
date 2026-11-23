@@ -42,7 +42,8 @@ import java.util.Set;
  *
  * <p>Each crate is for one thing: the equipment ({@code crateable}) or the odds and ends, never both. The equipment's
  * groups take crates first (those kept for them before, then those for nothing yet, then the odds and ends') until the crates have room for them all,
- * judged by items, as a crate counts them; they then fill those crates biggest first, and a group that doesn't fit
+ * judged by items, as a crate counts them; they then fill those crates (the curios and totems first, then biggest
+ * first), and a group that doesn't fit
  * needs a chest after all. The crates left over are the odds and ends'. A group in the crates needs no chest
  * ({@link Result#crated}).
  */
@@ -106,6 +107,17 @@ public final class Grouping {
     public static Result compute(List<SortSnapshot.Node> nodes, int[] slots, int[] many, int[] fill, int[] items,
                                  boolean[] crateable, int chests, int chestSize, Crates crates, int minFill,
                                  int spareFill, Set<Integer> forced, Set<Integer> claimed) {
+        return compute(nodes, slots, many, fill, items, crateable, new boolean[nodes.size()], chests, chestSize, crates,
+                minFill, spareFill, forced, claimed);
+    }
+
+    /**
+     * As {@link #compute(List, int[], int[], int[], int[], boolean[], int, int, Crates, int, int, Set, Set)}, with
+     * {@code crateFirst} the crateable nodes (the curios and totems) whose groups take the crates before the others.
+     */
+    public static Result compute(List<SortSnapshot.Node> nodes, int[] slots, int[] many, int[] fill, int[] items,
+                                 boolean[] crateable, boolean[] crateFirst, int chests, int chestSize, Crates crates,
+                                 int minFill, int spareFill, Set<Integer> forced, Set<Integer> claimed) {
         int n = nodes.size();
         int[] weight = fill.clone();
         boolean anyMany = false;
@@ -132,8 +144,8 @@ public final class Grouping {
                 in[f] = true;
             }
         }
-        Context ctx = new Context(nodes, slots, many, fill, items, crateable, depth, chestSize, crates, minFill, forced,
-                claimed);
+        Context ctx = new Context(nodes, slots, many, fill, items, crateable, crateFirst, depth, chestSize, crates,
+                minFill, forced, claimed);
         split(ctx, in, weight, children, chests);
         // chests still to spare: rather than leave them empty, the biggest groups left split further, down to
         // families of a couple of stacks (lone one-offs still share the odds and ends). Here, and only here, what is
@@ -229,7 +241,7 @@ public final class Grouping {
     private static final class Context {
         final List<SortSnapshot.Node> nodes;
         final int[] slots, many, fill, items, depth;
-        final boolean[] crateable;
+        final boolean[] crateable, crateFirst;
         final int chestSize;
         final Crates crates;
         int minFill;
@@ -245,8 +257,10 @@ public final class Grouping {
         final int[] parent;
 
         Context(List<SortSnapshot.Node> nodes, int[] slots, int[] many, int[] fill, int[] items, boolean[] crateable,
-                int[] depth, int chestSize, Crates crates, int minFill, Set<Integer> forced, Set<Integer> claimed) {
+                boolean[] crateFirst, int[] depth, int chestSize, Crates crates, int minFill, Set<Integer> forced,
+                Set<Integer> claimed) {
             this.nodes = nodes;
+            this.crateFirst = crateFirst;
             this.slots = slots;
             this.many = many;
             this.fill = fill;
@@ -362,7 +376,9 @@ public final class Grouping {
                     equipment[c] = true;
                     room += crates.items()[c];
                 }
-                candidates.sort((a, b) -> ownItems[a] != ownItems[b] ? Integer.compare(ownItems[b], ownItems[a])
+                // the curios and totems first, then the biggest
+                candidates.sort((a, b) -> crateFirst[a] != crateFirst[b] ? (crateFirst[a] ? -1 : 1)
+                        : ownItems[a] != ownItems[b] ? Integer.compare(ownItems[b], ownItems[a])
                         : Integer.compare(a, b));
                 boolean any = false;
                 for (int g : candidates) {
