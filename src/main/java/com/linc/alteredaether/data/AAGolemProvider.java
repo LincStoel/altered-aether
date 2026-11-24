@@ -214,6 +214,7 @@ public final class AAGolemProvider extends JsonDataProvider {
         lang.put(tips + "golem_frames", "An item frame on a chest tells a gravitite golem what that chest is for. A glow item frame keeps everything else out.");
 
         String jei = "jei." + AlteredAether.MOD_ID + ".golem.";
+        lang.put("jei." + AlteredAether.MOD_ID + ".golem_pebble", "Storage Pebble from a Golem");
         lang.put(jei + "guide.intro", "Gravitite golems sort storage by telekinesis. What they answer to:");
         lang.put(jei + "guide.build.title", "Build: ");
         lang.put(jei + "guide.build", "a carved pumpkin (or a Deep Aether carved squash) on a block of enchanted gravitite standing on holystone. It sits where it was built, and hands its builder a storage pebble.");
