@@ -105,7 +105,7 @@ public class GravititeGolem extends PathfinderMob {
             EntityDataSerializers.OPTIONAL_BLOCK_POS);
 
     /** How fast it rises when it levitates up a step or across a gap, and the fastest it falls. */
-    private static final double RISE_SPEED = 0.12, FLOAT_SPEED = 0.15, MAX_FALL = 0.12;
+    private static final double RISE_SPEED = 0.06, FLOAT_SPEED = 0.075, MAX_FALL = 0.12;
     /** How far above a step's top it rises before it lets go, so it clears the edge in one leap. */
     private static final double STEP_CLEARANCE = 0.5;
     /** Ticks it holds that height, crossing onto the step, before it lets go regardless. */
@@ -196,7 +196,7 @@ public class GravititeGolem extends PathfinderMob {
     public static AttributeSupplier.Builder createAttributes() {
         return Mob.createMobAttributes()
                 .add(Attributes.MAX_HEALTH, 12)
-                .add(Attributes.MOVEMENT_SPEED, 0.2)
+                .add(Attributes.MOVEMENT_SPEED, 0.1)
                 .add(Attributes.KNOCKBACK_RESISTANCE, 1.0)
                 .add(Attributes.FOLLOW_RANGE, 64)
                 .add(Attributes.STEP_HEIGHT, 0.6);
