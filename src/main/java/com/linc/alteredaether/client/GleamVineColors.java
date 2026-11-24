@@ -79,10 +79,28 @@ public final class GleamVineColors {
         }
     }
 
-    /** Rebuilds the chunks when the setting is flipped, so the vines in view change at once. */
+    /** The leaf tint setting as last drawn with, so other client settings saving don't rebuild the chunks. */
+    private static Boolean drawnTint;
+
+    @SubscribeEvent
+    public static void configLoaded(ModConfigEvent.Loading event) {
+        if (event.getConfig().getSpec() == AAClientConfig.SPEC) {
+            drawnTint = AAClientConfig.GLEAM_VINE_LEAF_TINT.get();
+        }
+    }
+
+    /**
+     * Rebuilds the chunks when the setting is flipped, so the vines in view change at once; only then, since a rebuild
+     * blinks the world (and other settings, such as the golem network screen's, are saved as its buttons are pressed).
+     */
     @SubscribeEvent
     public static void configChanged(ModConfigEvent.Reloading event) {
         if (event.getConfig().getSpec() == AAClientConfig.SPEC) {
+            boolean tint = AAClientConfig.GLEAM_VINE_LEAF_TINT.get();
+            if (drawnTint != null && drawnTint == tint) {
+                return;
+            }
+            drawnTint = tint;
             Minecraft minecraft = Minecraft.getInstance();
             minecraft.execute(() -> {
                 if (minecraft.levelRenderer != null && minecraft.level != null) {
