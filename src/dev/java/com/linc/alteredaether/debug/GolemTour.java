@@ -143,7 +143,27 @@ public final class GolemTour {
         return origin.offset(x, y, z);
     }
 
+    /**
+     * Every golem an earlier tour left, anywhere loaded, is gone, and no network keeps a member it no longer has: the
+     * tour's golems start out on their own.
+     */
+    private static void clearGolems(ServerLevel level) {
+        List<GravititeGolem> golems = new ArrayList<>();
+        level.getEntities(AARegistries.GRAVITITE_GOLEM.get(), golem -> true).forEach(golems::add);
+        golems.forEach(Entity::discard);
+        GolemNetworks networks = GolemNetworks.get(level);
+        int stale = 0;
+        for (GolemNetworks.Net net : new ArrayList<>(networks.all())) {
+            for (UUID member : new ArrayList<>(net.members().keySet())) {
+                networks.leave(member);
+                stale++;
+            }
+        }
+        AlteredAether.LOGGER.info("Golem tour: cleared {} golems and {} network members", golems.size(), stale);
+    }
+
     private static void stage(ServerLevel level, BlockPos o) {
+        clearGolems(level);
         // clear what an earlier tour left
         AABB area = new AABB(o.offset(-14, -3, -12).getCenter(), o.offset(38, 8, 34).getCenter());
         for (Entity entity : level.getEntitiesOfClass(Entity.class, area, e -> !(e instanceof ServerPlayer))) {

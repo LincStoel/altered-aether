@@ -20,6 +20,7 @@ import com.linc.alteredaether.config.AAClientConfig.NetworkSort;
 import com.linc.alteredaether.entity.golem.GolemNetworkMenu;
 import com.linc.alteredaether.entity.golem.GolemNetworkView;
 import com.linc.alteredaether.entity.golem.GolemSelections;
+import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
@@ -50,18 +51,23 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
+import java.util.function.IntSupplier;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 /**
  * The Golem Chest Network screen: everything a golem network's storage holds, as tiles with counts, nine to a row,
- * filtered by a search box and sorted by count, name or chest (with a divider before each chest). Nothing can be taken
- * out or put in. Drawn like Integrated UI's shulker box band: a vanilla-style window tinted towards the network's colour.
+ * filtered by a search box and sorted by count, name or container (with a divider before each container). Nothing can
+ * be taken out or put in. Picked items sit in a bar above the grid, framed in their colour. Drawn like Integrated UI's
+ * shulker box band: a vanilla-style window tinted towards the network's colour. It is as tall as what it lists, up to
+ * three quarters of the window.
  */
 public final class GolemNetworkScreen extends AbstractContainerScreen<GolemNetworkMenu> {
     private static final String KEY = "gui." + AlteredAether.MOD_ID + ".golem_network.";
     private static final ResourceLocation WINDOW = sprite("window");
     private static final ResourceLocation SLOT = sprite("slot");
+    private static final ResourceLocation BUTTON_BASE = sprite("button");
+    private static final ResourceLocation PICK_FRAME = sprite("pick_frame");
     private static final int COLUMNS = 9;
     private static final int TILE = 18;
     private static final int WIDTH = 182;
@@ -77,26 +83,31 @@ public final class GolemNetworkScreen extends AbstractContainerScreen<GolemNetwo
     private static final int BOTTOM = 7;
     private static final int SCROLLBAR_X = GRID_X + COLUMNS * TILE + 3;
     private static final int SCROLLBAR_WIDTH = 4;
-    /** The space the screen leaves above and below it. */
-    private static final int MARGIN = 20;
+    /** The most of the game window's height the screen takes. */
+    private static final float MAX_SHARE = 0.75F;
 
-    /** One line of the grid: a row of tiles, or (sorted by chest) the divider naming the chest below it. */
-    private record Line(@Nullable Component divider, List<Tile> tiles) {
+    /** One line of the grid: a row of tiles, or (sorted by container) the divider naming the container below it. */
+    private record Line(@Nullable GolemNetworkView.Chest divider, List<Tile> tiles) {
     }
 
-    /** A tile: an item kind, and how many to show (all of it, or what one chest holds). */
+    /** A tile: an item kind, and how many to show (all of it, or what one container holds). */
     record Tile(GolemNetworkView.Entry entry, long count, int chest) {
     }
 
+    /** A widget kept at a place in the window as the window moves. */
+    private record Placed(AbstractWidget widget, IntSupplier x, IntSupplier y) {
+    }
+
+    private final List<Placed> placed = new ArrayList<>();
     private EditBox search;
     private Button sortButton;
-    /** Rows of the window below the search box, shared by the selection bar and the grid. */
-    private int maxRows;
+    private Button clearButton;
     /** Rows the grid shows, and where it starts; the selection bar takes rows above it while anything is picked. */
-    private int rows;
+    private int rows = 1;
     private int gridY;
     private int barRows;
-    private Button clearButton;
+    /** The tallest the window has been since it opened, which keeps its top where it was as it shrinks. */
+    private int tallest;
     /** A tile flashed red: an item that couldn't be picked, every colour being taken. */
     @Nullable
     private ItemStack flashed;
@@ -125,43 +136,110 @@ public final class GolemNetworkScreen extends AbstractContainerScreen<GolemNetwo
 
     @Override
     protected void init() {
-        int fit = (height - MARGIN * 2 - barY() - SEPARATOR - BOTTOM) / TILE;
-        maxRows = Math.max(4, Math.min(AAClientConfig.GOLEM_NETWORK_ROWS.get(), fit));
         imageWidth = WIDTH;
-        imageHeight = barY() + maxRows * TILE + SEPARATOR + BOTTOM;
+        tallest = 0;
+        resize();
         super.init();
-        clearButton = addRenderableWidget(new SpriteButton(leftPos + GRID_X + BAR_COLUMNS * TILE + 3,
-                topPos + barY() + (TILE - BUTTON) / 2, BUTTON, BUTTON, () -> sprite("clear"), button -> {
-            menu.replacePicks(List.of());
-            layoutBar();
-        }));
-        label(clearButton, Component.translatable(KEY + "clear"));
-        layoutBar();
+        placed.clear();
         String text = search != null ? search.getValue() : "";
         boolean focused = search != null && search.isFocused();
         int right = GRID_X + COLUMNS * TILE;
-        sortButton = addRenderableWidget(new SpriteButton(leftPos + right - BUTTON, topPos + TOP_ROW_Y, BUTTON, BUTTON,
-                () -> sprite(sortSprite(sort())), button -> cycleSort()));
+        clearButton = place(new SpriteButton(BUTTON, BUTTON, () -> sprite("clear"), () -> style, button -> {
+            menu.replacePicks(List.of());
+            resize();
+        }), () -> GRID_X + BAR_COLUMNS * TILE + 3, () -> barY() + (TILE - BUTTON) / 2);
+        label(clearButton, Component.translatable(KEY + "clear"));
+        sortButton = place(new SpriteButton(BUTTON, BUTTON, () -> sprite(sortSprite(sort())), () -> style,
+                button -> cycleSort()), () -> right - BUTTON, () -> TOP_ROW_Y);
         label(sortButton, sortLabel(sort()));
         int searchRight = right - BUTTON - 2;
         if (jei != null) {
             searchRight -= BUTTON + 2;
-            syncButton = addRenderableWidget(new SpriteButton(leftPos + searchRight + 2, topPos + TOP_ROW_Y, BUTTON,
-                    BUTTON, () -> sprite(synced() ? "jei_sync" : "jei_sync_off"), button -> toggleSync()));
+            int x = searchRight + 2;
+            syncButton = place(new SpriteButton(BUTTON, BUTTON, () -> sprite(synced() ? "jei_sync" : "jei_sync_off"),
+                    () -> style, button -> toggleSync()), () -> x, () -> TOP_ROW_Y);
             label(syncButton, syncLabel());
         }
-        search = new EditBox(font, leftPos + GRID_X + 1, topPos + TOP_ROW_Y, searchRight - GRID_X - 3, BUTTON,
-                Component.translatable(KEY + "search"));
+        searchWidth = searchRight - GRID_X;
+        search = place(new EditBox(font, 0, 0, searchWidth - 5, BUTTON - 2, Component.translatable(KEY + "search")),
+                () -> GRID_X + 3, () -> TOP_ROW_Y + 2);
+        search.setBordered(false);
         search.setMaxLength(100);
         search.setTextColor(0xFFFFFF);
-        search.setHint(Component.translatable(KEY + "search").withStyle(ChatFormatting.DARK_GRAY));
+        search.setHint(Component.translatable(KEY + "search").withStyle(ChatFormatting.GRAY));
         search.setValue(text);
         search.setFocused(focused);
-        addRenderableWidget(search);
+        resize();
+    }
+
+    /** The search field's width, inset frame included. */
+    private int searchWidth;
+
+    private <T extends AbstractWidget> T place(T widget, IntSupplier x, IntSupplier y) {
+        placed.add(new Placed(widget, x, y));
+        widget.setPosition(leftPos + x.getAsInt(), topPos + y.getAsInt());
+        return addRenderableWidget(widget);
     }
 
     private static int barY() {
         return TOP_ROW_Y + BUTTON + GRID_GAP;
+    }
+
+    /**
+     * Sizes the window to what it shows: the selection bar's rows while anything is picked, then the grid's lines, up to
+     * three quarters of the game window. Its top stays put as it shrinks (so the search box doesn't move under the
+     * typing), and it is centred again when it grows past its tallest.
+     */
+    private void resize() {
+        int picks = menu.picks().size();
+        barRows = picks == 0 ? 0 : (picks + BAR_COLUMNS - 1) / BAR_COLUMNS;
+        gridY = barRows == 0 ? barY() : barY() + barRows * TILE + SEPARATOR;
+        int room = (int) (height * MAX_SHARE) - gridY - BOTTOM;
+        rows = Mth.clamp(lines.size(), 1, Math.max(1, room / TILE));
+        imageHeight = gridY + rows * TILE + BOTTOM;
+        leftPos = (width - imageWidth) / 2;
+        if (imageHeight > tallest) {
+            tallest = imageHeight;
+            topPos = (height - imageHeight) / 2;
+        }
+        for (Placed widget : placed) {
+            widget.widget().setPosition(leftPos + widget.x().getAsInt(), topPos + widget.y().getAsInt());
+        }
+        if (clearButton != null) {
+            clearButton.visible = barRows > 0;
+        }
+        scroll = Mth.clamp(scroll, 0, maxScroll());
+    }
+
+    private static void label(AbstractWidget widget, Component label) {
+        widget.setTooltip(Tooltip.create(label));
+        widget.setMessage(label);
+    }
+
+    private static NetworkSort sort() {
+        return AAClientConfig.GOLEM_NETWORK_SORT.get();
+    }
+
+    private void cycleSort() {
+        NetworkSort next = sort().next();
+        AAClientConfig.GOLEM_NETWORK_SORT.set(next);
+        AAClientConfig.GOLEM_NETWORK_SORT.save();
+        label(sortButton, sortLabel(next));
+        scroll = 0;
+    }
+
+    private static String sortSprite(NetworkSort sort) {
+        return switch (sort) {
+            case COUNT_DOWN -> "sort_count_down";
+            case COUNT_UP -> "sort_count_up";
+            case NAME -> "sort_name";
+            case NAME_REVERSED -> "sort_name_reversed";
+            case CHEST -> "sort_chest";
+        };
+    }
+
+    private static Component sortLabel(NetworkSort sort) {
+        return Component.translatable(KEY + "sort." + sort.name().toLowerCase(Locale.ROOT));
     }
 
     // ---------------------------------------------------------------------------------------------------------------
@@ -230,49 +308,6 @@ public final class GolemNetworkScreen extends AbstractContainerScreen<GolemNetwo
         }
     }
 
-    /** Makes room for the selection bar above the grid while anything is picked: a row for every eight. */
-    private void layoutBar() {
-        int picks = menu.picks().size();
-        barRows = picks == 0 ? 0 : (picks + BAR_COLUMNS - 1) / BAR_COLUMNS;
-        gridY = barRows == 0 ? barY() : barY() + barRows * TILE + SEPARATOR;
-        rows = barRows == 0 ? maxRows : maxRows - barRows;
-        if (clearButton != null) {
-            clearButton.visible = barRows > 0;
-        }
-        scroll = Mth.clamp(scroll, 0, maxScroll());
-    }
-
-    private static void label(AbstractWidget widget, Component label) {
-        widget.setTooltip(Tooltip.create(label));
-        widget.setMessage(label);
-    }
-
-    private static NetworkSort sort() {
-        return AAClientConfig.GOLEM_NETWORK_SORT.get();
-    }
-
-    private void cycleSort() {
-        NetworkSort next = sort().next();
-        AAClientConfig.GOLEM_NETWORK_SORT.set(next);
-        AAClientConfig.GOLEM_NETWORK_SORT.save();
-        label(sortButton, sortLabel(next));
-        scroll = 0;
-    }
-
-    private static String sortSprite(NetworkSort sort) {
-        return switch (sort) {
-            case COUNT_DOWN -> "sort_count_down";
-            case COUNT_UP -> "sort_count_up";
-            case NAME -> "sort_name";
-            case NAME_REVERSED -> "sort_name_reversed";
-            case CHEST -> "sort_chest";
-        };
-    }
-
-    private static Component sortLabel(NetworkSort sort) {
-        return Component.translatable(KEY + "sort", Component.translatable(KEY + "sort." + sort.name().toLowerCase(Locale.ROOT)));
-    }
-
     // ---------------------------------------------------------------------------------------------------------------
     // The list
 
@@ -289,7 +324,11 @@ public final class GolemNetworkScreen extends AbstractContainerScreen<GolemNetwo
         listedFilter = filter;
         listedSort = sort;
         listedSynced = synced;
-        style = Style.of(menu.color().getTextureDiffuseColor());
+        Style restyled = Style.of(menu.color().getTextureDiffuseColor());
+        if (!restyled.equals(style)) {
+            style = restyled;
+            search.setHint(Component.translatable(KEY + "search").withStyle(ChatFormatting.GRAY));
+        }
         lines = arrange(menu.contents(), filter(), sort);
         scroll = Mth.clamp(scroll, 0, maxScroll());
     }
@@ -351,7 +390,7 @@ public final class GolemNetworkScreen extends AbstractContainerScreen<GolemNetwo
                 continue;
             }
             tiles.sort(tileOrder);
-            lines.add(new Line(chestLabel(contents.chests().get(i)), List.of()));
+            lines.add(new Line(contents.chests().get(i), List.of()));
             addRows(lines, tiles);
         }
         return lines;
@@ -367,29 +406,68 @@ public final class GolemNetworkScreen extends AbstractContainerScreen<GolemNetwo
         return stack.getHoverName().getString().toLowerCase(Locale.ROOT);
     }
 
-    static Component chestLabel(GolemNetworkView.Chest chest) {
-        return Component.translatable(KEY + "chest", chest.name(), chest.pos().getX(), chest.pos().getY(),
-                chest.pos().getZ());
+    /** What a container is kept for, as its divider says it: its family's last word, the item pinned to it, or its name. */
+    private static Component keptFor(GolemNetworkView.Chest chest) {
+        if (!chest.family().isEmpty()) {
+            List<String> words = familyWords(chest.family());
+            return words.isEmpty() ? Component.translatable(KEY + "odds_and_ends") : Component.literal(words.getLast());
+        }
+        return chest.pinned().isEmpty() ? chest.name() : Component.literal(chest.pinned());
+    }
+
+    /** A family's saved path as words, as Jade shows it: {@code overworld/blocks/wood/spruce} reads Overworld, Blocks... */
+    private static List<String> familyWords(String path) {
+        List<String> words = new ArrayList<>();
+        if (path.equals("misc")) {
+            return words;
+        }
+        for (String part : path.split("/")) {
+            String spaced = part.replace('_', ' ').replace('.', ' ');
+            words.add(spaced.isEmpty() ? spaced : Character.toUpperCase(spaced.charAt(0)) + spaced.substring(1));
+        }
+        return words;
+    }
+
+    /** A divider's tooltip: the container's name, what it is kept for in full, and where it is. */
+    private static List<Component> dividerTooltip(GolemNetworkView.Chest chest) {
+        List<Component> tooltip = new ArrayList<>();
+        tooltip.add(chest.name());
+        if (!chest.family().isEmpty()) {
+            List<String> words = familyWords(chest.family());
+            tooltip.add((words.isEmpty() ? Component.translatable(KEY + "odds_and_ends")
+                    : Component.literal(String.join(" › ", words))).withStyle(ChatFormatting.GRAY));
+        } else if (!chest.pinned().isEmpty()) {
+            tooltip.add(Component.translatable(KEY + "pinned", chest.pinned()).withStyle(ChatFormatting.GRAY));
+        }
+        tooltip.add(Component.translatable(KEY + "at", chest.pos().getX(), chest.pos().getY(), chest.pos().getZ())
+                .withStyle(ChatFormatting.DARK_GRAY));
+        return tooltip;
     }
 
     private int maxScroll() {
         return Math.max(0, lines.size() - rows);
     }
 
-    /** The tile under the mouse, if any. */
-    @Nullable
-    Tile tileAt(double mouseX, double mouseY) {
+    /** The grid line under the mouse, or -1. */
+    private int lineAt(double mouseX, double mouseY) {
         int x = (int) Math.floor(mouseX) - leftPos - GRID_X;
         int y = (int) Math.floor(mouseY) - topPos - gridY;
         if (x < 0 || y < 0 || x >= COLUMNS * TILE || y >= rows * TILE) {
-            return null;
+            return -1;
         }
         int line = scroll + y / TILE;
-        if (line >= lines.size()) {
+        return line < lines.size() ? line : -1;
+    }
+
+    /** The tile under the mouse, if any. */
+    @Nullable
+    Tile tileAt(double mouseX, double mouseY) {
+        int line = lineAt(mouseX, mouseY);
+        if (line < 0) {
             return null;
         }
         List<Tile> tiles = lines.get(line).tiles();
-        int column = x / TILE;
+        int column = ((int) Math.floor(mouseX) - leftPos - GRID_X) / TILE;
         return column < tiles.size() ? tiles.get(column) : null;
     }
 
@@ -397,7 +475,11 @@ public final class GolemNetworkScreen extends AbstractContainerScreen<GolemNetwo
     @Nullable
     public ItemStack itemAt(double mouseX, double mouseY) {
         Tile tile = tileAt(mouseX, mouseY);
-        return tile == null ? null : tile.entry().item();
+        if (tile != null) {
+            return tile.entry().item();
+        }
+        int pick = pickAt(mouseX, mouseY);
+        return pick >= 0 ? menu.picks().get(pick).item() : null;
     }
 
     // ---------------------------------------------------------------------------------------------------------------
@@ -410,22 +492,22 @@ public final class GolemNetworkScreen extends AbstractContainerScreen<GolemNetwo
             setSearchText(asked);
         }
         relist();
-        layoutBar();
+        resize();
         super.render(graphics, mouseX, mouseY, partialTick);
         renderTiles(graphics, mouseX, mouseY);
-        renderTileTooltip(graphics, mouseX, mouseY);
+        renderHoverTooltip(graphics, mouseX, mouseY);
     }
 
     @Override
     protected void renderBg(GuiGraphics graphics, float partialTick, int mouseX, int mouseY) {
         style.blit(graphics, WINDOW, style.tint, leftPos, topPos, imageWidth, imageHeight);
+        renderSearchField(graphics);
         int left = leftPos + GRID_X;
         int top = topPos + gridY;
         for (int row = 0; row < rows && scroll + row < lines.size(); row++) {
             Line line = lines.get(scroll + row);
-            int y = top + row * TILE;
             if (line.divider() == null) {
-                style.blit(graphics, SLOT, style.slotTint, left, y, line.tiles().size() * TILE, TILE);
+                style.blit(graphics, SLOT, style.slotTint, left, top + row * TILE, line.tiles().size() * TILE, TILE);
             }
         }
         for (int i = 0; i < menu.picks().size(); i++) {
@@ -438,6 +520,17 @@ public final class GolemNetworkScreen extends AbstractContainerScreen<GolemNetwo
             graphics.fill(left, lineY + 1, left + COLUMNS * TILE, lineY + 2, style.engraveLight);
         }
         renderScrollbar(graphics);
+    }
+
+    /** The search box sunk into the window, as the creative tab's and Quark's filter are: shaded, in the window's tint. */
+    private void renderSearchField(GuiGraphics graphics) {
+        int x = leftPos + GRID_X, y = topPos + TOP_ROW_Y;
+        int x1 = x + searchWidth, y1 = y + BUTTON;
+        graphics.fill(x, y, x1, y1, style.field);
+        graphics.fill(x, y, x1 - 1, y + 1, style.engraveDark);
+        graphics.fill(x, y, x + 1, y1 - 1, style.engraveDark);
+        graphics.fill(x + 1, y1 - 1, x1, y1, style.engraveLight);
+        graphics.fill(x1 - 1, y + 1, x1, y1, style.engraveLight);
     }
 
     private void renderScrollbar(GuiGraphics graphics) {
@@ -474,8 +567,7 @@ public final class GolemNetworkScreen extends AbstractContainerScreen<GolemNetwo
             }
             for (int column = 0; column < line.tiles().size(); column++) {
                 Tile tile = line.tiles().get(column);
-                int x = left + column * TILE;
-                renderTile(graphics, tile.entry().item(), tile.count(), x, y, tile == hovered);
+                renderTile(graphics, tile.entry().item(), tile.count(), left + column * TILE, y, tile == hovered);
             }
         }
         List<GolemSelections.Pick> picks = menu.picks();
@@ -493,21 +585,25 @@ public final class GolemNetworkScreen extends AbstractContainerScreen<GolemNetwo
         }
     }
 
-    /** One tile: the item, its count, its pick's colour round it, and the hover or refusal wash over it. */
+    /**
+     * One tile: its pick's colour behind it (a soft frame, bright at the edge and faint in the middle, beating with the
+     * picked items' glow), then the item, its count, and the hover or refusal wash over it.
+     */
     private void renderTile(GuiGraphics graphics, ItemStack stack, long count, int x, int y, boolean hovered) {
+        GolemSelections.Pick pick = pickOf(stack);
+        if (pick != null) {
+            int color = GolemGlow.color(pick.color().getTextureDiffuseColor());
+            float alpha = 0.65F + 0.35F * GolemGlow.pulse();
+            RenderSystem.enableBlend();
+            graphics.setColor((color >> 16 & 0xFF) / 255F, (color >> 8 & 0xFF) / 255F, (color & 0xFF) / 255F, alpha);
+            graphics.blitSprite(PICK_FRAME, x, y, TILE, TILE);
+            graphics.setColor(1, 1, 1, 1);
+            RenderSystem.disableBlend();
+        }
         graphics.renderItem(stack, x + 1, y + 1);
         graphics.renderItemDecorations(font, stack, x + 1, y + 1, "");
         if (count != 1 && count != 0) {
             renderCount(graphics, count(count), x + 1, y + 1);
-        }
-        GolemSelections.Pick pick = pickOf(stack);
-        if (pick != null) {
-            int color = 0xFF000000 | GolemGlow.color(pick.color().getTextureDiffuseColor());
-            graphics.pose().pushPose();
-            graphics.pose().translate(0, 0, 250);
-            graphics.renderOutline(x, y, TILE, TILE, color);
-            graphics.renderOutline(x + 1, y + 1, TILE - 2, TILE - 2, color);
-            graphics.pose().popPose();
         }
         if (flashed != null && flashTicks > 0 && ItemStack.isSameItemSameComponents(flashed, stack)) {
             graphics.fill(RenderType.guiOverlay(), x + 1, y + 1, x + 17, y + 17, 0x90FF3030);
@@ -515,6 +611,65 @@ public final class GolemNetworkScreen extends AbstractContainerScreen<GolemNetwo
         if (hovered) {
             renderSlotHighlight(graphics, x + 1, y + 1, 0);
         }
+    }
+
+    /** A count in the slot's bottom right corner, small enough that four characters fit. */
+    private void renderCount(GuiGraphics graphics, String text, int x, int y) {
+        float scale = 0.75F;
+        graphics.pose().pushPose();
+        graphics.pose().translate(x + 16 - font.width(text) * scale, y + 16 - 7 * scale, 200);
+        graphics.pose().scale(scale, scale, 1);
+        graphics.drawString(font, text, 0, 0, 0xFFFFFF, true);
+        graphics.pose().popPose();
+    }
+
+    /** A container's divider: its block, what it is kept for, and an engraved line across the rest of the grid. */
+    private void renderDivider(GuiGraphics graphics, GolemNetworkView.Chest chest, int left, int y) {
+        int width = COLUMNS * TILE;
+        graphics.renderItem(chest.icon(), left + 1, y + 1);
+        int textX = left + TILE + 3;
+        FormattedCharSequence text = trimmed(font, keptFor(chest), width - TILE - 12);
+        int lineY = y + TILE / 2;
+        graphics.drawString(font, text, textX, lineY - 4, style.text, false);
+        int after = textX + font.width(text) + 4;
+        if (after < left + width) {
+            graphics.fill(after, lineY, left + width, lineY + 1, style.engraveDark);
+            graphics.fill(after, lineY + 1, left + width, lineY + 2, style.engraveLight);
+        }
+    }
+
+    private void renderHoverTooltip(GuiGraphics graphics, int mouseX, int mouseY) {
+        int line = lineAt(mouseX, mouseY);
+        if (line >= 0 && lines.get(line).divider() != null) {
+            graphics.renderComponentTooltip(font, dividerTooltip(lines.get(line).divider()), mouseX, mouseY);
+            return;
+        }
+        Tile tile = tileAt(mouseX, mouseY);
+        int pick = pickAt(mouseX, mouseY);
+        if (tile == null && pick >= 0) {
+            ItemStack item = menu.picks().get(pick).item();
+            GolemNetworkView.Entry entry = entry(item);
+            if (entry == null) {
+                List<Component> tooltip = new ArrayList<>(getTooltipFromContainerItem(item));
+                tooltip.add(Component.translatable(KEY + "none_stored").withStyle(ChatFormatting.GRAY));
+                graphics.renderComponentTooltip(font, tooltip, mouseX, mouseY, item);
+                return;
+            }
+            tile = new Tile(entry, entry.total(), -1);
+        }
+        if (tile == null) {
+            return;
+        }
+        ItemStack stack = tile.entry().item();
+        List<Component> tooltip = new ArrayList<>(getTooltipFromContainerItem(stack));
+        NumberFormat format = NumberFormat.getIntegerInstance();
+        if (tile.chest() >= 0) {
+            tooltip.add(Component.translatable(KEY + "in_this_chest", format.format(tile.count())).withStyle(ChatFormatting.GRAY));
+        }
+        int chests = tile.entry().chests().length;
+        tooltip.add(Component.translatable(KEY + (chests == 1 ? "total_one" : "total"), format.format(tile.entry().total()),
+                chests).withStyle(ChatFormatting.GRAY));
+        graphics.renderComponentTooltip(font, tooltip, mouseX, mouseY, stack);
     }
 
     @Nullable
@@ -549,80 +704,6 @@ public final class GolemNetworkScreen extends AbstractContainerScreen<GolemNetwo
         return index < menu.picks().size() ? index : -1;
     }
 
-    @Override
-    protected void containerTick() {
-        super.containerTick();
-        followJei();
-        if (flashTicks > 0) {
-            flashTicks--;
-        }
-    }
-
-    /** Picks {@code item} or drops it; with every colour taken, the tile flashes red and a dull click sounds. */
-    private void toggle(ItemStack item) {
-        if (menu.togglePick(item)) {
-            layoutBar();
-            minecraft.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK.value(), 1.4F, 0.4F));
-        } else {
-            flashed = item;
-            flashTicks = FLASH_TICKS;
-            minecraft.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK.value(), 0.5F, 0.6F));
-        }
-    }
-
-    /** A count in the slot's bottom right corner, small enough that four characters fit. */
-    private void renderCount(GuiGraphics graphics, String text, int x, int y) {
-        float scale = 0.75F;
-        graphics.pose().pushPose();
-        graphics.pose().translate(x + 16 - font.width(text) * scale, y + 16 - 7 * scale, 200);
-        graphics.pose().scale(scale, scale, 1);
-        graphics.drawString(font, text, 0, 0, 0xFFFFFF, true);
-        graphics.pose().popPose();
-    }
-
-    /** A chest's name on an engraved line across the grid. */
-    private void renderDivider(GuiGraphics graphics, Component label, int left, int y) {
-        int width = COLUMNS * TILE;
-        int lineY = y + TILE / 2 + 1;
-        FormattedCharSequence text = trimmed(font, label, width - 12);
-        int textWidth = font.width(text);
-        graphics.fill(left, lineY, left + 4, lineY + 1, style.engraveDark);
-        graphics.fill(left, lineY + 1, left + 4, lineY + 2, style.engraveLight);
-        int after = left + 6 + textWidth + 2;
-        graphics.fill(after, lineY, left + width, lineY + 1, style.engraveDark);
-        graphics.fill(after, lineY + 1, left + width, lineY + 2, style.engraveLight);
-        graphics.drawString(font, text, left + 6, lineY - 3, style.text, false);
-    }
-
-    private void renderTileTooltip(GuiGraphics graphics, int mouseX, int mouseY) {
-        Tile tile = tileAt(mouseX, mouseY);
-        int pick = pickAt(mouseX, mouseY);
-        if (tile == null && pick >= 0) {
-            ItemStack item = menu.picks().get(pick).item();
-            GolemNetworkView.Entry entry = entry(item);
-            if (entry == null) {
-                List<Component> lines = new ArrayList<>(getTooltipFromContainerItem(item));
-                lines.add(Component.translatable(KEY + "none_stored").withStyle(ChatFormatting.GRAY));
-                graphics.renderComponentTooltip(font, lines, mouseX, mouseY, item);
-                return;
-            }
-            tile = new Tile(entry, entry.total(), -1);
-        }
-        if (tile == null) {
-            return;
-        }
-        ItemStack stack = tile.entry().item();
-        List<Component> lines = new ArrayList<>(getTooltipFromContainerItem(stack));
-        NumberFormat format = NumberFormat.getIntegerInstance();
-        if (tile.chest() >= 0) {
-            lines.add(Component.translatable(KEY + "in_this_chest", format.format(tile.count())).withStyle(ChatFormatting.GRAY));
-        }
-        int chests = tile.entry().chests().length;
-        lines.add(Component.translatable(KEY + (chests == 1 ? "total_one" : "total"), format.format(tile.entry().total()),
-                chests).withStyle(ChatFormatting.GRAY));
-        graphics.renderComponentTooltip(font, lines, mouseX, mouseY, stack);
-    }
-
     /** A count as short as it reads: 64, 1.2k, 35k, 3.4M. */
     static String count(long count) {
         if (count < 1000) {
@@ -651,14 +732,42 @@ public final class GolemNetworkScreen extends AbstractContainerScreen<GolemNetwo
     // Input
 
     @Override
+    protected void containerTick() {
+        super.containerTick();
+        followJei();
+        if (flashTicks > 0) {
+            flashTicks--;
+        }
+    }
+
+    /** Picks {@code item} or drops it; with every colour taken, the tile flashes red and a dull click sounds. */
+    private void toggle(ItemStack item) {
+        if (menu.togglePick(item)) {
+            resize();
+            minecraft.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK.value(), 1.4F, 0.4F));
+        } else {
+            flashed = item;
+            flashTicks = FLASH_TICKS;
+            minecraft.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK.value(), 0.5F, 0.6F));
+        }
+    }
+
+    @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         if (overScrollbar(mouseX, mouseY) && maxScroll() > 0) {
             draggingScrollbar = true;
             scrollTo(mouseY);
             return true;
         }
-        if (search.isMouseOver(mouseX, mouseY) && button == GLFW.GLFW_MOUSE_BUTTON_RIGHT) {
-            search.setValue("");
+        boolean overSearch = mouseX >= leftPos + GRID_X && mouseX < leftPos + GRID_X + searchWidth
+                && mouseY >= topPos + TOP_ROW_Y && mouseY < topPos + TOP_ROW_Y + BUTTON;
+        if (overSearch) {
+            if (button == GLFW.GLFW_MOUSE_BUTTON_RIGHT) {
+                search.setValue("");
+            }
+            setFocused(search);
+            search.setFocused(true);
+            return true;
         }
         if (button == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
             Tile tile = tileAt(mouseX, mouseY);
@@ -742,29 +851,34 @@ public final class GolemNetworkScreen extends AbstractContainerScreen<GolemNetwo
     // Look
 
     /**
-     * The screen's colours from the network's (RGB), as Integrated UI tints a shulker box's band: the window and the
-     * slots lightened towards white so dark dyes stay readable, text dark or light to suit, and a scrollbar to match.
+     * The screen's colours from the network's (RGB), as Integrated UI tints a shulker box's band but quieter: the window
+     * and slots take the colour mixed well into a mid grey, so it reads as a hint rather than a wash; text is dark or
+     * light to suit, and the scrollbar, lines, search field and buttons match.
      */
     private record Style(int tint, int slotTint, int text, int track, int thumb, int shadow, int engraveDark,
-                         int engraveLight) {
+                         int engraveLight, int field) {
         /** The grey of the window sprite, which the tint multiplies. */
         private static final int WINDOW_GREY = 0xC6;
 
         static Style of(int color) {
-            int tint = lighten(color & 0xFFFFFF, 0.45F);
-            int slotTint = lighten(color & 0xFFFFFF, 0.6F);
+            int tint = mix(color & 0xFFFFFF, 0xB4B4B4, 0.62F);
+            int slotTint = mix(color & 0xFFFFFF, 0xC8C8C8, 0.55F);
             float luminance = (0.299F * (tint >> 16 & 0xFF) + 0.587F * (tint >> 8 & 0xFF) + 0.114F * (tint & 0xFF)) / 255.0F;
-            int text = luminance * WINDOW_GREY / 255.0F > 0.45F ? 0x404040 : 0xF0F0F0;
-            return new Style(tint, slotTint, text, 0xFF000000 | multiply(0x373737, tint),
-                    0xFF000000 | multiply(0xC6C6C6, tint), 0xFF000000 | multiply(0x555555, tint),
-                    0xFF000000 | multiply(0x555555, tint), 0xFF000000 | multiply(0xFFFFFF, tint));
+            int text = luminance * WINDOW_GREY / 255.0F > 0.4F ? 0x404040 : 0xF0F0F0;
+            return new Style(tint, slotTint, text, opaque(multiply(0x373737, tint)), opaque(multiply(0xC6C6C6, tint)),
+                    opaque(multiply(0x555555, tint)), opaque(multiply(0x555555, tint)), opaque(multiply(0xFFFFFF, tint)),
+                    opaque(multiply(0x6E6E6E, tint)));
         }
 
-        /** Mixes {@code color} with white by {@code amount}. */
-        private static int lighten(int color, float amount) {
-            int r = (int) Mth.lerp(amount, color >> 16 & 0xFF, 255);
-            int g = (int) Mth.lerp(amount, color >> 8 & 0xFF, 255);
-            int b = (int) Mth.lerp(amount, color & 0xFF, 255);
+        private static int opaque(int rgb) {
+            return 0xFF000000 | rgb;
+        }
+
+        /** {@code color} mixed into {@code grey} by {@code amount} of the grey. */
+        private static int mix(int color, int grey, float amount) {
+            int r = (int) Mth.lerp(amount, color >> 16 & 0xFF, grey >> 16 & 0xFF);
+            int g = (int) Mth.lerp(amount, color >> 8 & 0xFF, grey >> 8 & 0xFF);
+            int b = (int) Mth.lerp(amount, color & 0xFF, grey & 0xFF);
             return r << 16 | g << 8 | b;
         }
 
@@ -782,18 +896,26 @@ public final class GolemNetworkScreen extends AbstractContainerScreen<GolemNetwo
         }
     }
 
-    /** A small button drawn from a sprite that can change, with a white wash while hovered (as Integrated UI's). */
+    /**
+     * A small button: a base in the window's tint with an icon on it that can change, and a white wash while hovered
+     * (as Integrated UI's).
+     */
     static final class SpriteButton extends Button {
-        private final Supplier<ResourceLocation> sprite;
+        private final Supplier<ResourceLocation> icon;
+        private final Supplier<Style> style;
 
-        SpriteButton(int x, int y, int width, int height, Supplier<ResourceLocation> sprite, OnPress onPress) {
-            super(x, y, width, height, CommonComponents.EMPTY, onPress, DEFAULT_NARRATION);
-            this.sprite = sprite;
+        SpriteButton(int width, int height, Supplier<ResourceLocation> icon, Supplier<Style> style, OnPress onPress) {
+            super(0, 0, width, height, CommonComponents.EMPTY, onPress, DEFAULT_NARRATION);
+            this.icon = icon;
+            this.style = style;
         }
 
         @Override
         public void renderWidget(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-            graphics.blitSprite(sprite.get(), getX(), getY(), width, height);
+            style.get().blit(graphics, BUTTON_BASE, style.get().slotTint, getX(), getY(), width, height);
+            RenderSystem.enableBlend();
+            graphics.blitSprite(icon.get(), getX(), getY(), width, height);
+            RenderSystem.disableBlend();
             if (isHovered() && active) {
                 graphics.fill(getX(), getY(), getX() + width, getY() + height, 0x80FFFFFF);
             }

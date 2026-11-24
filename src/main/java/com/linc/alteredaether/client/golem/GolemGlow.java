@@ -18,10 +18,12 @@ import com.linc.alteredaether.config.AAClientConfig;
 import com.linc.alteredaether.entity.golem.GolemPayloads;
 import com.linc.alteredaether.entity.golem.GolemSelections;
 import com.linc.alteredaether.entity.golem.GravititeGolem;
+import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.DustParticleOptions;
+import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.phys.AABB;
@@ -75,13 +77,24 @@ public final class GolemGlow {
             this(kind, pos, entity, color, strength, startTick, endTick, fadeOut, 0, 1);
         }
 
-        boolean shownAt(float now) {
-            return phases <= 1 || Math.floorMod((long) now / PHASE_TICKS, phases) == phase;
+        /** Whether this colour's turn is now (see {@link #PULSE_MILLIS}). */
+        boolean shown() {
+            return phases <= 1 || Math.floorMod(Util.getMillis() / PULSE_MILLIS, phases) == phase;
         }
     }
 
-    /** How long each colour shows on a block glowing in several. */
-    static final int PHASE_TICKS = 20;
+    /**
+     * One pulse of a picked item's glow, and of its frame in the network screen, which keep time together: a block
+     * holding several picks shows each colour for a whole pulse in turn.
+     */
+    public static final long PULSE_MILLIS = 3000;
+
+    /** Where the shared pulse is: 0 at the start and end of each, 1 halfway. */
+    public static float pulse() {
+        float t = (Util.getMillis() % PULSE_MILLIS) / (float) PULSE_MILLIS;
+        float s = Mth.sin(t * Mth.PI);
+        return s * s;
+    }
     /** The glows of the picks in the Golem Chest Network screen, by network. */
     private static final Map<UUID, List<Glow>> SELECTED = new HashMap<>();
 
@@ -182,7 +195,7 @@ public final class GolemGlow {
     }
 
     static float fade(Glow glow, float now) {
-        if (!glow.shownAt(now)) {
+        if (!glow.shown()) {
             return 0;
         }
         float in = Math.clamp((now - glow.startTick()) / FADE_IN_TICKS, 0F, 1F);
@@ -206,7 +219,7 @@ public final class GolemGlow {
         for (Glow glow : GLOWS) {
             boolean golem = glow.entity() >= 0;
             if (!(golem ? golems : blocks) || !golem && (glow.strength() < 0.5F || glow.kind() == LOOK)
-                    || !glow.shownAt(ticks)) {
+                    || !glow.shown()) {
                 continue;
             }
             AABB box = box(mc.level, glow, 1);

@@ -16,6 +16,7 @@ package com.linc.alteredaether.client.golem;
 
 import com.linc.alteredaether.AlteredAether;
 import com.linc.alteredaether.config.AAClientConfig;
+import com.linc.alteredaether.entity.golem.GolemPayloads;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
@@ -33,14 +34,16 @@ import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
 import java.util.OptionalDouble;
 
 /**
- * Draws {@link GolemGlow}'s glows: a softly pulsing pane over each block with a brighter edge, in its network's
- * colour (gravitite pink undyed), hidden by walls unless the client config says otherwise; and the faint outline of a held pebble's links, edges
- * only and never through walls. Drawn as Spectral Enchantments draws its bookshelf glow: after particles, into the
+ * Draws {@link GolemGlow}'s glows: each face of a block bright at its edges and fading to faint in its middle, in its
+ * network's colour (gravitite pink undyed), breathing softly (a picked item's glow beats with the network screen), hidden
+ * by walls unless the client config says otherwise; and the faint outline of a held pebble's links, edges only and
+ * never through walls. Drawn as Spectral Enchantments draws its bookshelf glow: after particles, into the
  * item-entity target, without depth writes.
  */
 final class GolemGlowRenderer {
-    private static final float FILL_ALPHA = 0.35F;
-    private static final float EDGE_ALPHA = 0.9F;
+    /** How opaque a glowing face is at its edges, and in its middle. */
+    private static final float EDGE_ALPHA = 0.85F;
+    private static final float MIDDLE_ALPHA = 0.08F;
     /** The fill is drawn in gravitite's deeper tone, the edges in the configured (lighter) one; a dye's is deepened. */
     private static final int FILL_COLOR = 0xBD42B2;
     /** The fill under a strictly pinned chest's yellow edge. */
@@ -50,7 +53,6 @@ final class GolemGlowRenderer {
 
     private static final RenderType FILL_THROUGH = fill("golem_glow_fill_through", RenderStateShard.NO_DEPTH_TEST, ThroughWalls.SHARD);
     private static final RenderType FILL = fill("golem_glow_fill", RenderStateShard.LEQUAL_DEPTH_TEST, RenderStateShard.NO_LAYERING);
-    private static final RenderType EDGE_THROUGH = lines("golem_glow_edge_through", RenderStateShard.NO_DEPTH_TEST, ThroughWalls.SHARD);
     private static final RenderType EDGE = lines("golem_glow_edge", RenderStateShard.LEQUAL_DEPTH_TEST, RenderStateShard.NO_LAYERING);
 
     private GolemGlowRenderer() {
@@ -103,33 +105,24 @@ final class GolemGlowRenderer {
         MultiBufferSource.BufferSource buffers = mc.renderBuffers().bufferSource();
 
         int own = AAClientConfig.golemGlowColor();
+        float picked = GolemGlow.pulse();
         RenderType fillType = through ? FILL_THROUGH : FILL;
         VertexConsumer fill = buffers.getBuffer(fillType);
         for (GolemGlow.Glow glow : GolemGlow.GLOWS) {
-            float alpha = FILL_ALPHA * pulse * GolemGlow.fade(glow, now);
+            // a picked item's glow beats with the network screen's frames; the rest breathe
+            float beat = glow.kind() == GolemPayloads.SEARCH ? picked : pulse;
+            float alpha = beat * GolemGlow.fade(glow, now);
             // a golem has no pane: it gives off motes instead (see GolemGlow)
             AABB box = alpha > 0 && glow.entity() < 0 ? GolemGlow.box(mc.level, glow, partial) : null;
             if (box != null) {
-                int color = glow.color() == GolemGlow.STRICT_COLOR ? STRICT_FILL_COLOR
+                int edge = glow.color();
+                int middle = glow.color() == GolemGlow.STRICT_COLOR ? STRICT_FILL_COLOR
                         : glow.color() == GolemGlow.BLOCKED_COLOR ? BLOCKED_FILL_COLOR
                         : glow.color() == own ? FILL_COLOR : GolemGlow.deep(glow.color());
-                fillBox(poseStack.last(), fill, box.move(-cam.x, -cam.y, -cam.z), color, alpha);
+                softBox(poseStack.last(), fill, box.move(-cam.x, -cam.y, -cam.z), edge, middle, alpha);
             }
         }
         buffers.endBatch(fillType);
-
-        RenderType edgeType = through ? EDGE_THROUGH : EDGE;
-        VertexConsumer edge = buffers.getBuffer(edgeType);
-        for (GolemGlow.Glow glow : GolemGlow.GLOWS) {
-            float alpha = EDGE_ALPHA * GolemGlow.fade(glow, now);
-            AABB box = alpha > 0 && glow.entity() < 0 ? GolemGlow.box(mc.level, glow, partial) : null;
-            if (box != null) {
-                int color = glow.color();
-                edges(poseStack.last(), edge, box.move(-cam.x, -cam.y, -cam.z), FastColor.ARGB32.red(color) / 255F,
-                        FastColor.ARGB32.green(color) / 255F, FastColor.ARGB32.blue(color) / 255F, alpha);
-            }
-        }
-        buffers.endBatch(edgeType);
 
         // a held pebble's links: thin edges only, hidden by walls whatever the setting
         if (!GolemGlow.HELD.isEmpty()) {
@@ -146,25 +139,29 @@ final class GolemGlowRenderer {
         }
     }
 
-    private static void fillBox(PoseStack.Pose pose, VertexConsumer consumer, AABB box, int color, float alpha) {
+    /**
+     * The box's six faces, each bright at its edges and fading to faint in its middle: a soft glow rather than a
+     * wireframe. Each face is four triangles (quads with the middle twice) from an edge to the face's middle.
+     */
+    private static void softBox(PoseStack.Pose pose, VertexConsumer consumer, AABB box, int edge, int middle, float alpha) {
         float x0 = (float) box.minX, y0 = (float) box.minY, z0 = (float) box.minZ;
         float x1 = (float) box.maxX, y1 = (float) box.maxY, z1 = (float) box.maxZ;
-        int argb = FastColor.ARGB32.color(Mth.floor(alpha * 255F), color);
-        quad(pose, consumer, argb, x0, y0, z0, x1, y0, z0, x1, y1, z0, x0, y1, z0);
-        quad(pose, consumer, argb, x0, y0, z1, x1, y0, z1, x1, y1, z1, x0, y1, z1);
-        quad(pose, consumer, argb, x0, y0, z0, x0, y0, z1, x0, y1, z1, x0, y1, z0);
-        quad(pose, consumer, argb, x1, y0, z0, x1, y0, z1, x1, y1, z1, x1, y1, z0);
-        quad(pose, consumer, argb, x0, y0, z0, x1, y0, z0, x1, y0, z1, x0, y0, z1);
-        quad(pose, consumer, argb, x0, y1, z0, x1, y1, z0, x1, y1, z1, x0, y1, z1);
-    }
-
-    private static void quad(PoseStack.Pose pose, VertexConsumer consumer, int argb,
-                             float ax, float ay, float az, float bx, float by, float bz,
-                             float cx, float cy, float cz, float dx, float dy, float dz) {
-        consumer.addVertex(pose, ax, ay, az).setColor(argb);
-        consumer.addVertex(pose, bx, by, bz).setColor(argb);
-        consumer.addVertex(pose, cx, cy, cz).setColor(argb);
-        consumer.addVertex(pose, dx, dy, dz).setColor(argb);
+        int out = FastColor.ARGB32.color(Mth.floor(alpha * EDGE_ALPHA * 255F), edge);
+        int in = FastColor.ARGB32.color(Mth.floor(alpha * MIDDLE_ALPHA * 255F), middle);
+        float[][] faces = {
+                {x0, y0, z0, x1, y0, z0, x1, y1, z0, x0, y1, z0}, {x0, y0, z1, x1, y0, z1, x1, y1, z1, x0, y1, z1},
+                {x0, y0, z0, x0, y0, z1, x0, y1, z1, x0, y1, z0}, {x1, y0, z0, x1, y0, z1, x1, y1, z1, x1, y1, z0},
+                {x0, y0, z0, x1, y0, z0, x1, y0, z1, x0, y0, z1}, {x0, y1, z0, x1, y1, z0, x1, y1, z1, x0, y1, z1}};
+        for (float[] f : faces) {
+            float mx = (f[0] + f[6]) / 2, my = (f[1] + f[7]) / 2, mz = (f[2] + f[8]) / 2;
+            for (int i = 0; i < 4; i++) {
+                int a = i * 3, b = (i + 1) % 4 * 3;
+                consumer.addVertex(pose, f[a], f[a + 1], f[a + 2]).setColor(out);
+                consumer.addVertex(pose, f[b], f[b + 1], f[b + 2]).setColor(out);
+                consumer.addVertex(pose, mx, my, mz).setColor(in);
+                consumer.addVertex(pose, mx, my, mz).setColor(in);
+            }
+        }
     }
 
     /** The box's twelve edges as lines. */

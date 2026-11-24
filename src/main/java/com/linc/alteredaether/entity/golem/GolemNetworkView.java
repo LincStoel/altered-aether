@@ -42,8 +42,12 @@ public final class GolemNetworkView {
     private GolemNetworkView() {
     }
 
-    /** One inventory: where it is (one of its blocks) and what to call it. */
-    public record Chest(BlockPos pos, Component name) {
+    /**
+     * One inventory: where it is (one of its blocks), what to call it, its block as an item, and what it is kept for:
+     * the family tidy mode last gave it (a path such as {@code overworld/blocks/wood/spruce}, or empty), or the item
+     * pinned to it (or empty).
+     */
+    public record Chest(BlockPos pos, Component name, ItemStack icon, String family, String pinned) {
     }
 
     /**
@@ -63,7 +67,8 @@ public final class GolemNetworkView {
             int chestCount = buf.readVarInt();
             List<Chest> chests = new ArrayList<>(chestCount);
             for (int i = 0; i < chestCount; i++) {
-                chests.add(new Chest(buf.readBlockPos(), ComponentSerialization.TRUSTED_STREAM_CODEC.decode(buf)));
+                chests.add(new Chest(buf.readBlockPos(), ComponentSerialization.TRUSTED_STREAM_CODEC.decode(buf),
+                        ItemStack.OPTIONAL_STREAM_CODEC.decode(buf), buf.readUtf(), buf.readUtf()));
             }
             int entryCount = buf.readVarInt();
             List<Entry> entries = new ArrayList<>(entryCount);
@@ -87,6 +92,9 @@ public final class GolemNetworkView {
             for (Chest chest : chests) {
                 buf.writeBlockPos(chest.pos());
                 ComponentSerialization.TRUSTED_STREAM_CODEC.encode(buf, chest.name());
+                ItemStack.OPTIONAL_STREAM_CODEC.encode(buf, chest.icon());
+                buf.writeUtf(chest.family());
+                buf.writeUtf(chest.pinned());
             }
             buf.writeVarInt(entries.size());
             for (Entry entry : entries) {
@@ -122,8 +130,8 @@ public final class GolemNetworkView {
         }
     }
 
-    /** A loaded linked inventory, with one of its blocks and its handler. */
-    private record Found(BlockPos pos, long key, IItemHandler handler) {
+    /** A loaded linked inventory, with one of its blocks, its part, and its handler. */
+    private record Found(BlockPos pos, long key, GolemStorage.Role role, IItemHandler handler) {
     }
 
     /** {@code net}'s loaded linked storage, machines left out, a double chest once, nearest {@code from} first. */
@@ -144,7 +152,7 @@ public final class GolemNetworkView {
             }
             IItemHandler handler = GolemStorage.handler(level, pos);
             if (handler != null) {
-                found.add(new Found(pos.immutable(), key, handler));
+                found.add(new Found(pos.immutable(), key, role, handler));
             }
         }
         found.sort(Comparator.comparingDouble(f -> f.pos().distSqr(from)));
@@ -159,7 +167,7 @@ public final class GolemNetworkView {
         Map<StackKey, Long> here = new LinkedHashMap<>();
         for (int c = 0; c < storage.size(); c++) {
             Found found = storage.get(c);
-            chests.add(new Chest(found.pos(), name(level, found.pos())));
+            chests.add(chest(level, net, found));
             here.clear();
             IItemHandler handler = found.handler();
             for (int slot = 0; slot < handler.getSlots(); slot++) {
@@ -216,6 +224,21 @@ public final class GolemNetworkView {
             }
         }
         return where;
+    }
+
+    private static Chest chest(ServerLevel level, GolemNetworks.Net net, Found found) {
+        BlockPos pos = found.pos();
+        GolemStorage.Pins pins = GolemStorage.pins(level, pos);
+        String pinned = "";
+        if (!pins.isEmpty()) {
+            ItemStack first = pins.items().isEmpty() ? pins.filters().getFirst() : pins.items().getFirst();
+            pinned = first.getHoverName().getString();
+        }
+        // the family tidy mode keeps it for, as last planned (as Jade shows it)
+        String claim = net.claims().get(found.key());
+        String family = claim != null && pins.isEmpty()
+                && (found.role() == GolemStorage.Role.STORAGE || found.role() == GolemStorage.Role.MISC) ? claim : "";
+        return new Chest(pos, name(level, pos), new ItemStack(level.getBlockState(pos).getBlock().asItem()), family, pinned);
     }
 
     /** What to call the inventory at {@code pos}: its custom name, or its block's name. */

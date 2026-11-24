@@ -37,7 +37,6 @@ public final class AAClientConfig {
     public static final BooleanValue GOLEM_REDUCED_EFFECTS;
     public static final IntValue GOLEM_LINK_GLOW_SECONDS;
     public static final BooleanValue GOLEM_HELD_LINKS;
-    public static final IntValue GOLEM_NETWORK_ROWS;
     public static final EnumValue<NetworkSort> GOLEM_NETWORK_SORT;
     public static final BooleanValue GOLEM_NETWORK_JEI_SYNC;
 
@@ -89,9 +88,6 @@ public final class AAClientConfig {
                 .defineInRange("link_glow_seconds", 2, 1, 30);
         GOLEM_HELD_LINKS = b.comment("While a storage pebble is held, faintly outline the storage its network has linked.")
                 .define("held_pebble_links", true);
-        GOLEM_NETWORK_ROWS = b.comment("Rows of items the Golem Chest Network screen shows at once (fewer if the window",
-                        "is too short).")
-                .defineInRange("network_rows", 6, 4, 12);
         GOLEM_NETWORK_SORT = b.comment("How the Golem Chest Network screen orders items. Changes when you press its sort",
                         "button.")
                 .defineEnum("network_sort", NetworkSort.COUNT_DOWN);
