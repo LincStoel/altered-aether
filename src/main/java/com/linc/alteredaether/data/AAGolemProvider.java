@@ -215,6 +215,21 @@ public final class AAGolemProvider extends JsonDataProvider {
 
         String jei = "jei." + AlteredAether.MOD_ID + ".golem.";
         lang.put("jei." + AlteredAether.MOD_ID + ".golem_pebble", "Storage Pebble from a Golem");
+        lang.put("container." + AlteredAether.MOD_ID + ".golem_network", "Golem Chest Network");
+        String gui = "gui." + AlteredAether.MOD_ID + ".golem_network.";
+        lang.put(gui + "search", "Search...");
+        lang.put(gui + "sort", "Sort: %s");
+        lang.put(gui + "sort.count_down", "most first");
+        lang.put(gui + "sort.count_up", "fewest first");
+        lang.put(gui + "sort.name", "A to Z");
+        lang.put(gui + "sort.name_reversed", "Z to A");
+        lang.put(gui + "sort.chest", "chest by chest");
+        lang.put(gui + "chest", "%s (%s, %s, %s)");
+        lang.put(gui + "empty", "Nothing stored");
+        lang.put(gui + "no_match", "Nothing matches");
+        lang.put(gui + "in_this_chest", "%s in this chest");
+        lang.put(gui + "total", "%s in %s chests");
+        lang.put(gui + "total_one", "%s in %s chest");
         lang.put(jei + "guide.intro", "Gravitite golems sort storage by telekinesis. What they answer to:");
         lang.put(jei + "guide.build.title", "Build: ");
         lang.put(jei + "guide.build", "a carved pumpkin (or a Deep Aether carved squash) on a block of enchanted gravitite standing on holystone. It sits where it was built, and hands its builder a storage pebble.");

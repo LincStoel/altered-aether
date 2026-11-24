@@ -30,6 +30,7 @@ import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
 import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.event.RegisterColorHandlersEvent;
+import net.neoforged.neoforge.client.event.RegisterMenuScreensEvent;
 import net.neoforged.neoforge.client.event.EntityRenderersEvent;
 import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
 
@@ -52,6 +53,11 @@ public final class GolemClient {
         public static void registerRenderers(EntityRenderersEvent.RegisterRenderers event) {
             event.registerEntityRenderer(AARegistries.GRAVITITE_GOLEM.get(), GravititeGolemRenderer::new);
             event.registerEntityRenderer(AARegistries.THROWN_PEBBLE.get(), ThrownItemRenderer::new);
+        }
+
+        @SubscribeEvent
+        public static void registerScreens(RegisterMenuScreensEvent event) {
+            event.register(AARegistries.GOLEM_NETWORK_MENU.get(), GolemNetworkScreen::new);
         }
 
         @SubscribeEvent

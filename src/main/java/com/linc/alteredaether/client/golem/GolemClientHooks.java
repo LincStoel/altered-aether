@@ -14,8 +14,11 @@
  */
 package com.linc.alteredaether.client.golem;
 
+import com.linc.alteredaether.entity.golem.GolemNetworkMenu;
 import com.linc.alteredaether.entity.golem.GolemPayloads;
 import com.linc.alteredaether.entity.golem.PebbleInfo;
+import net.minecraft.client.Minecraft;
+import net.minecraft.world.entity.player.Player;
 
 /** Where the golem payloads land on a client (see GolemPayloads.Registration). */
 public final class GolemClientHooks {
@@ -36,5 +39,13 @@ public final class GolemClientHooks {
 
     public static void flightEnd(GolemPayloads.FlightEnd payload) {
         GolemFlights.end(payload);
+    }
+
+    public static void networkContents(GolemPayloads.NetworkContents payload) {
+        Player player = Minecraft.getInstance().player;
+        if (player != null && player.containerMenu instanceof GolemNetworkMenu menu
+                && menu.containerId == payload.containerId()) {
+            menu.receive(payload);
+        }
     }
 }

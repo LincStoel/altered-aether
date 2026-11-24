@@ -74,7 +74,7 @@ public final class GolemInteractions {
         } else if (stack.is(PEBBLE_PRICE) && buyPebble(golem, serverPlayer, level, stack)) {
             return InteractionResult.CONSUME;
         } else {
-            openNetwork(golem, serverPlayer, level);
+            GolemNetworkMenu.open(golem, serverPlayer, level);
         }
         return InteractionResult.CONSUME;
     }
@@ -218,16 +218,6 @@ public final class GolemInteractions {
             player.displayClientMessage(message(net.members().size() > 1 ? "dyed_joined" : "dyed",
                     golem.getName(), Component.translatable("color.minecraft." + dye.getDyeColor().getSerializedName()),
                     net.members().size()), true);
-        }
-    }
-
-    /**
-     * Shows {@code player} what {@code golem}'s network holds; a golem with nothing linked shakes its head.
-     */
-    private static void openNetwork(GravititeGolem golem, ServerPlayer player, ServerLevel level) {
-        GolemNetworks.Net net = GolemNetworks.get(level).netOf(golem.getUUID());
-        if (net == null || net.links().isEmpty()) {
-            golem.shakeHead();
         }
     }
 }

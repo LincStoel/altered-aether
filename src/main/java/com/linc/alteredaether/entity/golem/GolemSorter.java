@@ -161,6 +161,7 @@ public final class GolemSorter {
         runtime.triggers.spaceFreed(now, delay());
         runtime.triggers.requestFullSort(now, delay());
         runtime.contentsChanged = true;
+        runtime.contentsVersion++;
     }
 
     /** Storage unlinked from {@code net}: forgotten, and nothing is sorted on its account. */
@@ -177,6 +178,7 @@ public final class GolemSorter {
             runtime.cutOff.remove(key);
         }
         runtime.contentsChanged = true;
+        runtime.contentsVersion++;
     }
 
     /**
@@ -187,6 +189,21 @@ public final class GolemSorter {
         Runtime runtime = existing(level, net.id);
         return runtime != null && !runtime.cutOff.isEmpty() && level.isLoaded(pos)
                 && runtime.cutOff.containsKey(GolemStorage.inventoryKey(level, pos));
+    }
+
+    /**
+     * A number that changes whenever something in {@code net}'s storage is seen to change (by a scan, a player closing
+     * storage, the golems' own moves, or storage linked or unlinked); -1 before the network has run.
+     */
+    public static int contentsVersion(ServerLevel level, UUID net) {
+        Runtime runtime = existing(level, net);
+        return runtime == null ? -1 : runtime.contentsVersion;
+    }
+
+    /** Whether the storage with inventory key {@code key} was found shut off from {@code net}'s golems. */
+    static boolean cutOffKey(ServerLevel level, UUID net, long key) {
+        Runtime runtime = existing(level, net);
+        return runtime != null && runtime.cutOff.containsKey(key);
     }
 
     public static Report report(ServerLevel level, GolemNetworks.Net net) {
@@ -438,6 +455,8 @@ public final class GolemSorter {
         /** Every inventory this sort moved items into (every one, for a sort asked for), to tidy within once done. */
         final Set<Long> touched = new HashSet<>();
         boolean working, claimsLoaded, finishPending, contentsChanged;
+        /** Bumped whenever something in the network's storage is seen to change, for the network screen. */
+        int contentsVersion;
         /** A snapshot ranked shared pins while a filter was still being counted: sort again once it is. */
         boolean awaitingBreadth;
         int cursor;
@@ -618,6 +637,7 @@ public final class GolemSorter {
                 return;
             }
             contentsChanged = true;
+            contentsVersion++;
             // a sink that changed (its machine used something up) wants its items pulled in from anywhere
             InvCache.Entry entry = cache.get(key);
             boolean sink = entry != null && entry.inv.kind() == SortSnapshot.Kind.SINK;
@@ -658,6 +678,7 @@ public final class GolemSorter {
             if (level.isLoaded(pos)) {
                 cache.read(level, pos, GolemStorage.inventoryKey(level, pos), GolemStorage.role(level, pos));
                 contentsChanged = true;
+                contentsVersion++;
             }
         }
 

@@ -186,17 +186,44 @@ public final class GolemPayloads {
         }
     }
 
+    /**
+     * What a network's storage holds, for the Golem Chest Network screen open as container {@code containerId}: sent
+     * when it opens and again whenever the storage changes while it is open.
+     */
+    public record NetworkContents(int containerId, GolemNetworkView.Contents contents) implements CustomPacketPayload {
+        public static final Type<NetworkContents> TYPE = new Type<>(AlteredAether.id("golem_network_contents"));
+        public static final StreamCodec<RegistryFriendlyByteBuf, NetworkContents> STREAM_CODEC = new StreamCodec<>() {
+            @Override
+            public NetworkContents decode(RegistryFriendlyByteBuf buf) {
+                return new NetworkContents(buf.readVarInt(), GolemNetworkView.Contents.decode(buf));
+            }
+
+            @Override
+            public void encode(RegistryFriendlyByteBuf buf, NetworkContents payload) {
+                buf.writeVarInt(payload.containerId());
+                payload.contents().encode(buf);
+            }
+        };
+
+        @Override
+        public Type<? extends CustomPacketPayload> type() {
+            return TYPE;
+        }
+    }
+
     @EventBusSubscriber(modid = AlteredAether.MOD_ID, bus = EventBusSubscriber.Bus.MOD)
     public static final class Registration {
         @SubscribeEvent
         public static void register(RegisterPayloadHandlersEvent event) {
-            PayloadRegistrar registrar = event.registrar("3");
+            PayloadRegistrar registrar = event.registrar("4");
             // the handlers run only on clients; the client classes load only when one does
             registrar.playToClient(Glow.TYPE, Glow.STREAM_CODEC, (payload, context) -> GolemClientHooks.glow(payload));
             registrar.playToClient(Links.TYPE, Links.STREAM_CODEC, (payload, context) -> GolemClientHooks.links(payload));
             registrar.playToClient(Flight.TYPE, Flight.STREAM_CODEC, (payload, context) -> GolemClientHooks.flight(payload));
             registrar.playToClient(FlightEnd.TYPE, FlightEnd.STREAM_CODEC,
                     (payload, context) -> GolemClientHooks.flightEnd(payload));
+            registrar.playToClient(NetworkContents.TYPE, NetworkContents.STREAM_CODEC,
+                    (payload, context) -> GolemClientHooks.networkContents(payload));
         }
 
         private Registration() {

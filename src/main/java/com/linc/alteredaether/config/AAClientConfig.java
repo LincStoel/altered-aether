@@ -38,6 +38,18 @@ public final class AAClientConfig {
     public static final IntValue GOLEM_LINK_GLOW_SECONDS;
     public static final BooleanValue GOLEM_HELD_LINKS;
     public static final IntValue GOLEM_SEARCH_SECONDS;
+    public static final IntValue GOLEM_NETWORK_ROWS;
+    public static final EnumValue<NetworkSort> GOLEM_NETWORK_SORT;
+    public static final BooleanValue GOLEM_NETWORK_JEI_SYNC;
+
+    /** How the Golem Chest Network screen orders what it lists. */
+    public enum NetworkSort {
+        COUNT_DOWN, COUNT_UP, NAME, NAME_REVERSED, CHEST;
+
+        public NetworkSort next() {
+            return values()[(ordinal() + 1) % values().length];
+        }
+    }
 
     public enum ShaderMode {
         /** Detect an active Iris shaderpack. */
@@ -80,6 +92,15 @@ public final class AAClientConfig {
                 .define("held_pebble_links", true);
         GOLEM_SEARCH_SECONDS = b.comment("Seconds storage holding a searched item glows.")
                 .defineInRange("search_seconds", 15, 1, 120);
+        GOLEM_NETWORK_ROWS = b.comment("Rows of items the Golem Chest Network screen shows at once (fewer if the window",
+                        "is too short).")
+                .defineInRange("network_rows", 6, 4, 12);
+        GOLEM_NETWORK_SORT = b.comment("How the Golem Chest Network screen orders items. Changes when you press its sort",
+                        "button.")
+                .defineEnum("network_sort", NetworkSort.COUNT_DOWN);
+        GOLEM_NETWORK_JEI_SYNC = b.comment("Whether the Golem Chest Network screen's search box follows JEI's, and JEI's",
+                        "follows it. Changes when you press its JEI button.")
+                .define("network_jei_sync", false);
         b.pop();
         SPEC = b.build();
     }

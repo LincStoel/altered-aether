@@ -16,6 +16,8 @@ package com.linc.alteredaether.debug;
 
 import com.aetherteam.aether.block.AetherBlocks;
 import com.linc.alteredaether.AlteredAether;
+import com.linc.alteredaether.config.AAClientConfig;
+import com.linc.alteredaether.entity.golem.GolemNetworkMenu;
 import com.linc.alteredaether.entity.golem.GolemNetworks;
 import com.linc.alteredaether.entity.golem.GolemSorter;
 import com.linc.alteredaether.entity.golem.GravititeGolem;
@@ -287,17 +289,17 @@ public final class GolemTour {
         return (GravititeGolem) level.getEntity(id);
     }
 
-    /** Takes {@code golem}'s pebble with an empty hand, and holds it. */
+    /** Buys {@code golem}'s pebble with glowstone dust, and holds it. */
     private static void takePebble(ServerLevel level, UUID id) {
         ServerPlayer player = player(level);
         ItemStack held = player.getMainHandItem().copy();
-        player.setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY);
+        player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(Items.GLOWSTONE_DUST));
         player.setShiftKeyDown(false);
         int before = player.getInventory().countItem(AARegistries.STORAGE_PEBBLE.get());
         var result = golem(level, id).interact(player, InteractionHand.MAIN_HAND);
         AlteredAether.LOGGER.info("Golem tour: took a pebble from {}: {}, pebbles {} -> {}", id.toString().substring(0, 8),
                 result, before, player.getInventory().countItem(AARegistries.STORAGE_PEBBLE.get()));
-        // what was held goes away only now: into an empty hand, it would have been used on the golem instead
+        // what was held goes away only now: in hand, it would have been used on the golem instead
         holdCarried(level, id);
         if (!held.isEmpty()) {
             player.getInventory().add(held);
@@ -427,6 +429,9 @@ public final class GolemTour {
     // The script
 
     private static List<Step> script() {
+        if (LABEL.startsWith("network")) {
+            return networkScript();
+        }
         List<Step> steps = new ArrayList<>();
         Vec3 golemEye = new Vec3(0.5, 0.75, 0.5);
         steps.add(new Step("overview", level -> {
@@ -506,12 +511,7 @@ public final class GolemTour {
                 GolemTour::logClient));
         steps.add(new Step("hint_text_linked", level -> { }, new Vec3(-0.5, 2, -1.6), new Vec3(-0.5, 0.6, -3.5), 12, true));
         steps.add(new Step("hint_text_furnace", level -> { }, new Vec3(-0.5, 2, 7.6), new Vec3(-0.5, 0.6, 6.5), 12, true));
-        steps.add(new Step("search", level -> {
-            useOnGolem(level, golemA, new ItemStack(Items.OAK_LOG), false);
-        }, new Vec3(5, 4, 5), new Vec3(-2, 0, -3), 8, true));
-        steps.add(new Step("search_none", level -> {
-            useOnGolem(level, golemA, new ItemStack(Items.NETHER_STAR), false);
-        }, new Vec3(0.5, 1.8, 2.8), golemEye, 8, true));
+        networkSteps(steps, golemEye);
         steps.add(new Step("mode_compact", level -> useOnGolem(level, golemA, ItemStack.EMPTY, true),
                 new Vec3(0.5, 1.8, 2.9), golemEye, 6, true));
         steps.add(new Step("mode_tidy", level -> useOnGolem(level, golemA, ItemStack.EMPTY, true),
@@ -606,13 +606,86 @@ public final class GolemTour {
         return steps;
     }
 
+    /** Just the Golem Chest Network screen: golem A's storage linked, then the screen in each sort and a search. */
+    private static List<Step> networkScript() {
+        List<Step> steps = new ArrayList<>();
+        Vec3 golemEye = new Vec3(0.5, 0.75, 0.5);
+        steps.add(new Step("net_overview", level -> {
+            AABB area = new AABB(at(-14, -3, -12).getCenter(), at(38, 8, 34).getCenter());
+            for (Entity entity : level.getEntitiesOfClass(Entity.class, area,
+                    e -> e instanceof net.minecraft.world.entity.item.ItemEntity)) {
+                entity.discard();
+            }
+            unlinkStage(level, origin);
+        }, new Vec3(0.5, 7, 13), new Vec3(0.5, 0, -2), 40, false));
+        steps.add(new Step("net_unlinked", level -> useOnGolem(level, golemA, ItemStack.EMPTY, false),
+                new Vec3(0.5, 1.8, 2.8), golemEye, 10, true));
+        steps.add(new Step("net_link_all", level -> {
+            takePebble(level, golemA);
+            useOnGolem(level, golemA, null, false);
+            logNetwork(level, "linked");
+        }, new Vec3(0.5, 9, 14), new Vec3(0.5, 0, -1), 40, true));
+        networkSteps(steps, golemEye);
+        return steps;
+    }
+
+    /** The Golem Chest Network screen opened on golem A, shot in each sort and with a search. */
+    private static void networkSteps(List<Step> steps, Vec3 golemEye) {
+        Vec3 cam = new Vec3(0.5, 1.8, 2.8);
+        steps.add(new Step("network_open", level -> {
+            ServerPlayer player = player(level);
+            player.getInventory().add(player.getMainHandItem().copy());
+            // the screen closes beyond the golem's reach: be where the camera is before opening it
+            Vec3 feet = Vec3.atLowerCornerOf(origin).add(cam).subtract(0, player.getEyeHeight(), 0);
+            player.teleportTo(feet.x, feet.y, feet.z);
+            useOnGolem(level, golemA, ItemStack.EMPTY, false);
+            AlteredAether.LOGGER.info("Golem tour: network screen open: {}", player(level).containerMenu);
+        }, cam, golemEye, 20, true, () -> networkSort(AAClientConfig.NetworkSort.COUNT_DOWN)));
+        for (AAClientConfig.NetworkSort sort : new AAClientConfig.NetworkSort[]{AAClientConfig.NetworkSort.COUNT_UP,
+                AAClientConfig.NetworkSort.NAME, AAClientConfig.NetworkSort.NAME_REVERSED, AAClientConfig.NetworkSort.CHEST}) {
+            steps.add(new Step("network_" + sort.name().toLowerCase(java.util.Locale.ROOT), level -> { }, cam, golemEye, 4,
+                    true, () -> networkSort(sort)));
+        }
+        steps.add(new Step("network_search", level -> { }, cam, golemEye, 4, true, () -> {
+            networkSort(AAClientConfig.NetworkSort.COUNT_DOWN);
+            networkSearch("o");
+        }));
+        steps.add(new Step("network_search_syntax", level -> { }, cam, golemEye, 4, true, () -> networkSearch("@minecraft -dirt $ingots")));
+        steps.add(new Step("network_closed", level -> { }, cam, golemEye, 4, true, () -> {
+            networkSearch("");
+            Minecraft.getInstance().setScreen(null);
+        }));
+    }
+
+    private static void networkSort(AAClientConfig.NetworkSort sort) {
+        AAClientConfig.GOLEM_NETWORK_SORT.set(sort);
+        logScreen();
+    }
+
+    private static void networkSearch(String text) {
+        if (Minecraft.getInstance().screen instanceof com.linc.alteredaether.client.golem.GolemNetworkScreen screen) {
+            screen.setSearchText(text);
+        }
+        logScreen();
+    }
+
+    private static void logScreen() {
+        Minecraft mc = Minecraft.getInstance();
+        AlteredAether.LOGGER.info("Golem tour client: screen {} menu {}", mc.screen,
+                mc.player == null ? null : mc.player.containerMenu);
+        if (mc.player != null && mc.player.containerMenu instanceof GolemNetworkMenu menu) {
+            AlteredAether.LOGGER.info("Golem tour client: network holds {} kinds in {} chests",
+                    menu.contents().entries().size(), menu.contents().chests().size());
+        }
+    }
+
     // ---------------------------------------------------------------------------------------------------------------
     // Client: driving the camera and shooting
 
     @EventBusSubscriber(modid = AlteredAether.MOD_ID, value = Dist.CLIENT)
     public static final class Client {
         private static List<Step> steps;
-        private static int index = -1, waited, settled;
+        private static int index = -1, waited, settled, loadingTicks;
         /** Frames drawn from where the current shot wants the camera: a screenshot takes the last frame drawn. */
         private static int framesHere;
         private static Vec3 wanted;
@@ -639,7 +712,14 @@ public final class GolemTour {
             }
             if (index < 0) {
                 // wait for the stage to be drawn before anything
-                boolean ready = mc.levelRenderer.hasRenderedAllSections() && mc.level.getBlockState(o.below()).isSolid();
+                boolean ready = mc.levelRenderer.hasRenderedAllSections() && mc.level.getBlockState(o.below()).isSolid()
+                        && !(mc.screen instanceof net.minecraft.client.gui.screens.ReceivingLevelScreen)
+                        && golemA != null && clientGolem(golemA) != null;
+                if (mc.screen instanceof net.minecraft.client.gui.screens.ReceivingLevelScreen && ++loadingTicks > 600) {
+                    // the terrain screen can wait on the chunk the player logged in at, which the tour has left
+                    AlteredAether.LOGGER.warn("Golem tour: closing a stuck loading screen");
+                    mc.setScreen(null);
+                }
                 settled = ready ? settled + 1 : 0;
                 mc.player.moveTo(o.getX() + 0.5, o.getY() + 7, o.getZ() + 13, 180, 20);
                 if (settled < 80) {

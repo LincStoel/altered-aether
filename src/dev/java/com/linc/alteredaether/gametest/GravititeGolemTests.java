@@ -17,6 +17,7 @@ package com.linc.alteredaether.gametest;
 import com.aetherteam.aether.block.AetherBlocks;
 import com.linc.alteredaether.AlteredAether;
 import com.linc.alteredaether.entity.golem.GolemMode;
+import com.linc.alteredaether.entity.golem.GolemNetworkView;
 import com.linc.alteredaether.entity.golem.GolemNetworks;
 import com.linc.alteredaether.entity.golem.GolemSorter;
 import com.linc.alteredaether.entity.golem.GolemStorage;
@@ -595,6 +596,37 @@ public final class GravititeGolemTests {
             helper.assertTrue(pebbles(player) == 1, "a second pebble was sold for the same network");
             helper.assertTrue(player.getMainHandItem().getCount() == 3, "glowstone was taken for nothing");
             leave(helper, player);
+        }).thenSucceed();
+    }
+
+    /**
+     * The Golem Chest Network screen's contents: each kind of item once, with its total and the chests holding it,
+     * stacks that differ in damage apart. (A fake player can't open a menu, so opening is checked in the client.)
+     */
+    @GameTest(template = "arena", timeoutTicks = 100)
+    public static void theNetworkScreenListsWhatIsStored(GameTestHelper helper) {
+        floor(helper);
+        GravititeGolem golem = golem(helper, HOME);
+        BlockPos chestPos = HOME.offset(3, 0, 0);
+        BlockPos barrelPos = HOME.offset(-3, 0, 0);
+        ItemStack worn = new ItemStack(Items.DIAMOND_SWORD);
+        worn.setDamageValue(10);
+        chest(helper, chestPos, new ItemStack(Items.OAK_LOG, 10), new ItemStack(Items.OAK_LOG, 5),
+                new ItemStack(Items.DIAMOND_SWORD), worn);
+        helper.setBlock(barrelPos, Blocks.BARREL);
+        ((BaseContainerBlockEntity) helper.getBlockEntity(barrelPos)).setItem(0, new ItemStack(Items.OAK_LOG, 7));
+        helper.startSequence().thenIdle(5).thenExecute(() -> {
+            link(helper, golem, chestPos, barrelPos);
+            GolemNetworkView.Contents contents = GolemNetworkView.build(helper.getLevel(), net(helper, golem),
+                    helper.absolutePos(HOME));
+            helper.assertTrue(contents.chests().size() == 2, contents.chests().size() + " chests listed instead of 2");
+            GolemNetworkView.Entry logs = contents.entries().stream().filter(e -> e.item().is(Items.OAK_LOG)).findFirst()
+                    .orElseThrow(() -> new IllegalStateException("no oak logs listed"));
+            helper.assertTrue(logs.total() == 22 && logs.chests().length == 2,
+                    "oak logs: " + logs.total() + " in " + logs.chests().length + " chests");
+            long swords = contents.entries().stream().filter(e -> e.item().is(Items.DIAMOND_SWORD)).count();
+            helper.assertTrue(swords == 2, "a worn and a new sword made " + swords + " entries");
+            helper.assertTrue(contents.entries().size() == 3, contents.entries().size() + " entries instead of 3");
         }).thenSucceed();
     }
 

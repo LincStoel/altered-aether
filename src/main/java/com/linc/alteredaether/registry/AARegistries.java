@@ -27,6 +27,7 @@ import net.minecraft.world.level.block.state.properties.NoteBlockInstrument;
 import com.linc.alteredaether.compat.ModEnabled;
 import com.linc.alteredaether.entity.Squall;
 import com.linc.alteredaether.entity.TamedAerwhale;
+import com.linc.alteredaether.entity.golem.GolemNetworkMenu;
 import com.linc.alteredaether.entity.golem.GravititeGolem;
 import com.linc.alteredaether.entity.golem.ThrownPebble;
 import com.aetherteam.aether.block.miscellaneous.FloatingBlock;
@@ -284,6 +285,8 @@ public final class AARegistries {
     /** A tamed aerwhale's saddle and saddlebag; the client is sent which whale. */
     public static final DeferredHolder<MenuType<?>, MenuType<AerwhaleInventoryMenu>> AERWHALE_MENU =
             MENUS.register("aerwhale", () -> IMenuTypeExtension.create(AerwhaleInventoryMenu::fromNetwork));
+    public static final DeferredHolder<MenuType<?>, MenuType<GolemNetworkMenu>> GOLEM_NETWORK_MENU =
+            MENUS.register("golem_network", () -> IMenuTypeExtension.create(GolemNetworkMenu::fromNetwork));
 
     public static final DeferredRegister<MapCodec<? extends ICondition>> CONDITIONS =
             DeferredRegister.create(NeoForgeRegistries.Keys.CONDITION_CODECS, AlteredAether.MOD_ID);
