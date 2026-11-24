@@ -651,10 +651,61 @@ public final class GolemTour {
             networkSearch("o");
         }));
         steps.add(new Step("network_search_syntax", level -> { }, cam, golemEye, 4, true, () -> networkSearch("@minecraft -dirt $ingots")));
+        steps.add(new Step("network_picked", level -> { }, cam, golemEye, 4, true, () -> {
+            networkSearch("");
+            networkPick(Items.OAK_LOG, Items.COBBLESTONE, Items.DIAMOND);
+        }));
+        steps.add(new Step("network_picked_many", level -> { }, cam, golemEye, 4, true, () -> networkPick(Items.OAK_LOG,
+                Items.COBBLESTONE, Items.DIAMOND, Items.DIRT, Items.IRON_INGOT, Items.BONE, Items.STRING, Items.FEATHER,
+                Items.EMERALD, Items.APPLE)));
+        steps.add(new Step("network_picked_less", level -> { }, cam, golemEye, 4, true,
+                () -> networkPick(Items.OAK_LOG, Items.COBBLESTONE, Items.DIAMOND)));
+        // the chests behind golem A, seen from above: logs and cobblestone share chests, which cycle their colours
+        Vec3 glowCam = new Vec3(-1, 5, 3), glowLook = new Vec3(-1, 0, -4);
+        steps.add(new Step("network_glow", level -> { }, glowCam, glowLook, 6, true,
+                () -> Minecraft.getInstance().setScreen(null)));
+        steps.add(new Step("network_glow_cycle", level -> { }, glowCam, glowLook, 20, true));
+        steps.add(new Step("network_glow_taken", level -> {
+            // the logs taken out of the chests behind the golem: their glow leaves them
+            for (int x = -5; x <= 3; x += 2) {
+                if (level.getBlockEntity(at(x, 0, -4)) instanceof BaseContainerBlockEntity chest) {
+                    for (int slot = 0; slot < chest.getContainerSize(); slot++) {
+                        if (chest.getItem(slot).is(Items.OAK_LOG)) {
+                            chest.setItem(slot, ItemStack.EMPTY);
+                        }
+                    }
+                }
+            }
+        }, glowCam, glowLook, 50, true));
+        steps.add(new Step("network_glow_fading", level -> { }, glowCam, glowLook, 300, true));
+        steps.add(new Step("network_reopened", level -> {
+            ServerPlayer player = player(level);
+            Vec3 feet = Vec3.atLowerCornerOf(origin).add(cam).subtract(0, player.getEyeHeight(), 0);
+            player.teleportTo(feet.x, feet.y, feet.z);
+            useOnGolem(level, golemA, ItemStack.EMPTY, false);
+        }, cam, golemEye, 10, true));
+        steps.add(new Step("network_cleared", level -> { }, cam, golemEye, 4, true, () -> {
+            if (Minecraft.getInstance().player.containerMenu instanceof GolemNetworkMenu menu && !menu.picks().isEmpty()) {
+                menu.replacePicks(List.of());
+            }
+        }));
         steps.add(new Step("network_closed", level -> { }, cam, golemEye, 4, true, () -> {
             networkSearch("");
             Minecraft.getInstance().setScreen(null);
         }));
+    }
+
+    /** Makes {@code items} the picks in the open network screen (a step's client part runs every tick it waits). */
+    private static void networkPick(Item... items) {
+        if (Minecraft.getInstance().player.containerMenu instanceof GolemNetworkMenu menu
+                && menu.picks().size() != items.length) {
+            List<ItemStack> stacks = new ArrayList<>();
+            for (Item item : items) {
+                stacks.add(new ItemStack(item));
+            }
+            menu.replacePicks(stacks);
+            AlteredAether.LOGGER.info("Golem tour client: picking {}", stacks);
+        }
     }
 
     private static void networkSort(AAClientConfig.NetworkSort sort) {

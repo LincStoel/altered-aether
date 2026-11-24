@@ -18,6 +18,7 @@ import com.aetherteam.aether.block.AetherBlocks;
 import com.linc.alteredaether.AlteredAether;
 import com.linc.alteredaether.entity.golem.GolemMode;
 import com.linc.alteredaether.entity.golem.GolemNetworkView;
+import com.linc.alteredaether.entity.golem.GolemSelections;
 import com.linc.alteredaether.entity.golem.GolemNetworks;
 import com.linc.alteredaether.entity.golem.GolemSorter;
 import com.linc.alteredaether.entity.golem.GolemStorage;
@@ -627,6 +628,50 @@ public final class GravititeGolemTests {
             long swords = contents.entries().stream().filter(e -> e.item().is(Items.DIAMOND_SWORD)).count();
             helper.assertTrue(swords == 2, "a worn and a new sword made " + swords + " entries");
             helper.assertTrue(contents.entries().size() == 3, contents.entries().size() + " entries instead of 3");
+        }).thenSucceed();
+    }
+
+    /**
+     * Picks in the network screen: the first takes the network's colour, each after a colour of its own, 16 at most; a
+     * dropped pick's colour goes to the next. Each pick glows on the storage holding it, and stops once it is gone.
+     */
+    @GameTest(template = "arena", timeoutTicks = 100)
+    public static void networkPicksTakeColoursAndFollowTheirItems(GameTestHelper helper) {
+        floor(helper);
+        GravititeGolem golem = golem(helper, HOME);
+        BlockPos chestPos = HOME.offset(3, 0, 0);
+        BaseContainerBlockEntity chest = chest(helper, chestPos, new ItemStack(Items.OAK_LOG, 10));
+        FakePlayer player = player(helper, "golem-picker");
+        helper.startSequence().thenIdle(5).thenExecute(() -> {
+            link(helper, golem, chestPos);
+            GolemNetworks.Net net = net(helper, golem);
+            ServerLevel level = helper.getLevel();
+            Item[] items = {Items.OAK_LOG, Items.STONE, Items.DIRT, Items.SAND, Items.GRAVEL, Items.APPLE, Items.BONE,
+                    Items.STRING, Items.FEATHER, Items.EMERALD, Items.DIAMOND, Items.IRON_INGOT, Items.GOLD_INGOT,
+                    Items.COAL, Items.FLINT, Items.CLAY_BALL, Items.BRICK};
+            for (int i = 0; i < GolemSelections.MAX; i++) {
+                helper.assertTrue(GolemSelections.toggle(player, net, level, new ItemStack(items[i])), "pick " + i + " refused");
+            }
+            helper.assertTrue(!GolemSelections.toggle(player, net, level, new ItemStack(items[GolemSelections.MAX])),
+                    "a 17th pick was taken");
+            List<GolemSelections.Pick> picks = GolemSelections.picks(player, net.id);
+            helper.assertTrue(picks.getFirst().color() == net.color(), "the first pick isn't the network's colour");
+            helper.assertTrue(picks.stream().map(GolemSelections.Pick::color).distinct().count() == GolemSelections.MAX,
+                    "two picks share a colour");
+            GolemSelections.toggle(player, net, level, new ItemStack(Items.OAK_LOG));
+            GolemSelections.toggle(player, net, level, new ItemStack(items[GolemSelections.MAX]));
+            GolemSelections.Pick last = GolemSelections.picks(player, net.id).getLast();
+            helper.assertTrue(last.item().is(items[GolemSelections.MAX]) && last.color() == net.color(),
+                    "the dropped pick's colour wasn't reused");
+            List<List<BlockPos>> where = GolemNetworkView.holding(level, net,
+                    List.of(new ItemStack(Items.OAK_LOG), new ItemStack(Items.NETHER_STAR)));
+            helper.assertTrue(where.get(0).equals(List.of(helper.absolutePos(chestPos))), "oak logs glow at " + where.get(0));
+            helper.assertTrue(where.get(1).isEmpty(), "a nether star glows somewhere");
+            chest.clearContent();
+            helper.assertTrue(GolemNetworkView.holding(level, net, List.of(new ItemStack(Items.OAK_LOG))).getFirst().isEmpty(),
+                    "the glow stays on a chest the item left");
+            GolemSelections.replace(player, net, level, List.of());
+            leave(helper, player);
         }).thenSucceed();
     }
 

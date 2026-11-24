@@ -19,6 +19,7 @@ import com.linc.alteredaether.config.AAClientConfig;
 import com.linc.alteredaether.config.AAClientConfig.NetworkSort;
 import com.linc.alteredaether.entity.golem.GolemNetworkMenu;
 import com.linc.alteredaether.entity.golem.GolemNetworkView;
+import com.linc.alteredaether.entity.golem.GolemSelections;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
@@ -27,11 +28,14 @@ import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
+import net.minecraft.client.renderer.RenderType;
+import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.locale.Language;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.FormattedText;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.sounds.SoundEvents;
 import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.player.Inventory;
@@ -63,6 +67,11 @@ public final class GolemNetworkScreen extends AbstractContainerScreen<GolemNetwo
     private static final int TOP_ROW_Y = 18;
     private static final int BUTTON = 12;
     private static final int GRID_GAP = 4;
+    /** Picks shown in a row of the selection bar; the clear button takes the last column. */
+    private static final int BAR_COLUMNS = 8;
+    /** The engraved line between the selection bar and the grid. */
+    private static final int SEPARATOR = 4;
+    private static final int FLASH_TICKS = 6;
     private static final int BOTTOM = 7;
     private static final int SCROLLBAR_X = GRID_X + COLUMNS * TILE + 3;
     private static final int SCROLLBAR_WIDTH = 4;
@@ -79,8 +88,17 @@ public final class GolemNetworkScreen extends AbstractContainerScreen<GolemNetwo
 
     private EditBox search;
     private Button sortButton;
+    /** Rows of the window below the search box, shared by the selection bar and the grid. */
+    private int maxRows;
+    /** Rows the grid shows, and where it starts; the selection bar takes rows above it while anything is picked. */
     private int rows;
     private int gridY;
+    private int barRows;
+    private Button clearButton;
+    /** A tile flashed red: an item that couldn't be picked, every colour being taken. */
+    @Nullable
+    private ItemStack flashed;
+    private int flashTicks;
     private int scroll;
     private boolean draggingScrollbar;
     private List<Line> lines = List.of();
@@ -104,12 +122,18 @@ public final class GolemNetworkScreen extends AbstractContainerScreen<GolemNetwo
 
     @Override
     protected void init() {
-        gridY = TOP_ROW_Y + BUTTON + GRID_GAP;
-        int fit = (height - MARGIN * 2 - gridY - BOTTOM) / TILE;
-        rows = Math.max(2, Math.min(AAClientConfig.GOLEM_NETWORK_ROWS.get(), fit));
+        int fit = (height - MARGIN * 2 - barY() - SEPARATOR - BOTTOM) / TILE;
+        maxRows = Math.max(4, Math.min(AAClientConfig.GOLEM_NETWORK_ROWS.get(), fit));
         imageWidth = WIDTH;
-        imageHeight = gridY + rows * TILE + BOTTOM;
+        imageHeight = barY() + maxRows * TILE + SEPARATOR + BOTTOM;
         super.init();
+        clearButton = addRenderableWidget(new SpriteButton(leftPos + GRID_X + BAR_COLUMNS * TILE + 3,
+                topPos + barY() + (TILE - BUTTON) / 2, BUTTON, BUTTON, () -> sprite("clear"), button -> {
+            menu.replacePicks(List.of());
+            layoutBar();
+        }));
+        label(clearButton, Component.translatable(KEY + "clear"));
+        layoutBar();
         String text = search != null ? search.getValue() : "";
         boolean focused = search != null && search.isFocused();
         int right = GRID_X + COLUMNS * TILE;
@@ -125,6 +149,22 @@ public final class GolemNetworkScreen extends AbstractContainerScreen<GolemNetwo
         search.setValue(text);
         search.setFocused(focused);
         addRenderableWidget(search);
+    }
+
+    private static int barY() {
+        return TOP_ROW_Y + BUTTON + GRID_GAP;
+    }
+
+    /** Makes room for the selection bar above the grid while anything is picked: a row for every eight. */
+    private void layoutBar() {
+        int picks = menu.picks().size();
+        barRows = picks == 0 ? 0 : (picks + BAR_COLUMNS - 1) / BAR_COLUMNS;
+        gridY = barRows == 0 ? barY() : barY() + barRows * TILE + SEPARATOR;
+        rows = barRows == 0 ? maxRows : maxRows - barRows;
+        if (clearButton != null) {
+            clearButton.visible = barRows > 0;
+        }
+        scroll = Mth.clamp(scroll, 0, maxScroll());
     }
 
     private static void label(AbstractWidget widget, Component label) {
@@ -280,6 +320,7 @@ public final class GolemNetworkScreen extends AbstractContainerScreen<GolemNetwo
     @Override
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         relist();
+        layoutBar();
         super.render(graphics, mouseX, mouseY, partialTick);
         renderTiles(graphics, mouseX, mouseY);
         renderTileTooltip(graphics, mouseX, mouseY);
@@ -296,6 +337,15 @@ public final class GolemNetworkScreen extends AbstractContainerScreen<GolemNetwo
             if (line.divider() == null) {
                 style.blit(graphics, SLOT, style.slotTint, left, y, line.tiles().size() * TILE, TILE);
             }
+        }
+        for (int i = 0; i < menu.picks().size(); i++) {
+            style.blit(graphics, SLOT, style.slotTint, left + i % BAR_COLUMNS * TILE,
+                    topPos + barY() + i / BAR_COLUMNS * TILE, TILE, TILE);
+        }
+        if (barRows > 0) {
+            int lineY = topPos + gridY - SEPARATOR / 2 - 1;
+            graphics.fill(left, lineY, left + COLUMNS * TILE, lineY + 1, style.engraveDark);
+            graphics.fill(left, lineY + 1, left + COLUMNS * TILE, lineY + 2, style.engraveLight);
         }
         renderScrollbar(graphics);
     }
@@ -335,16 +385,97 @@ public final class GolemNetworkScreen extends AbstractContainerScreen<GolemNetwo
             for (int column = 0; column < line.tiles().size(); column++) {
                 Tile tile = line.tiles().get(column);
                 int x = left + column * TILE;
-                ItemStack stack = tile.entry().item();
-                graphics.renderItem(stack, x + 1, y + 1);
-                graphics.renderItemDecorations(font, stack, x + 1, y + 1, "");
-                if (tile.count() != 1) {
-                    renderCount(graphics, count(tile.count()), x + 1, y + 1);
-                }
-                if (tile == hovered) {
-                    renderSlotHighlight(graphics, x + 1, y + 1, 0);
-                }
+                renderTile(graphics, tile.entry().item(), tile.count(), x, y, tile == hovered);
             }
+        }
+        List<GolemSelections.Pick> picks = menu.picks();
+        int hoveredPick = pickAt(mouseX, mouseY);
+        for (int i = 0; i < picks.size(); i++) {
+            GolemSelections.Pick pick = picks.get(i);
+            int x = left + i % BAR_COLUMNS * TILE;
+            int y = topPos + barY() + i / BAR_COLUMNS * TILE;
+            GolemNetworkView.Entry entry = entry(pick.item());
+            renderTile(graphics, pick.item(), entry == null ? 0 : entry.total(), x, y, hoveredPick == i);
+            if (entry == null) {
+                // no longer stored anywhere: dimmed until it is again, or the pick is dropped
+                graphics.fill(RenderType.guiOverlay(), x + 1, y + 1, x + 17, y + 17, 0x80303030);
+            }
+        }
+    }
+
+    /** One tile: the item, its count, its pick's colour round it, and the hover or refusal wash over it. */
+    private void renderTile(GuiGraphics graphics, ItemStack stack, long count, int x, int y, boolean hovered) {
+        graphics.renderItem(stack, x + 1, y + 1);
+        graphics.renderItemDecorations(font, stack, x + 1, y + 1, "");
+        if (count != 1 && count != 0) {
+            renderCount(graphics, count(count), x + 1, y + 1);
+        }
+        GolemSelections.Pick pick = pickOf(stack);
+        if (pick != null) {
+            int color = 0xFF000000 | GolemGlow.color(pick.color().getTextureDiffuseColor());
+            graphics.pose().pushPose();
+            graphics.pose().translate(0, 0, 250);
+            graphics.renderOutline(x, y, TILE, TILE, color);
+            graphics.renderOutline(x + 1, y + 1, TILE - 2, TILE - 2, color);
+            graphics.pose().popPose();
+        }
+        if (flashed != null && flashTicks > 0 && ItemStack.isSameItemSameComponents(flashed, stack)) {
+            graphics.fill(RenderType.guiOverlay(), x + 1, y + 1, x + 17, y + 17, 0x90FF3030);
+        }
+        if (hovered) {
+            renderSlotHighlight(graphics, x + 1, y + 1, 0);
+        }
+    }
+
+    @Nullable
+    private GolemSelections.Pick pickOf(ItemStack stack) {
+        for (GolemSelections.Pick pick : menu.picks()) {
+            if (ItemStack.isSameItemSameComponents(pick.item(), stack)) {
+                return pick;
+            }
+        }
+        return null;
+    }
+
+    /** What the network holds of {@code stack}'s kind, or null if none. */
+    @Nullable
+    private GolemNetworkView.Entry entry(ItemStack stack) {
+        for (GolemNetworkView.Entry entry : menu.contents().entries()) {
+            if (ItemStack.isSameItemSameComponents(entry.item(), stack)) {
+                return entry;
+            }
+        }
+        return null;
+    }
+
+    /** The index of the pick in the selection bar under the mouse, or -1. */
+    private int pickAt(double mouseX, double mouseY) {
+        int x = (int) Math.floor(mouseX) - leftPos - GRID_X;
+        int y = (int) Math.floor(mouseY) - topPos - barY();
+        if (x < 0 || y < 0 || x >= BAR_COLUMNS * TILE || y >= barRows * TILE) {
+            return -1;
+        }
+        int index = y / TILE * BAR_COLUMNS + x / TILE;
+        return index < menu.picks().size() ? index : -1;
+    }
+
+    @Override
+    protected void containerTick() {
+        super.containerTick();
+        if (flashTicks > 0) {
+            flashTicks--;
+        }
+    }
+
+    /** Picks {@code item} or drops it; with every colour taken, the tile flashes red and a dull click sounds. */
+    private void toggle(ItemStack item) {
+        if (menu.togglePick(item)) {
+            layoutBar();
+            minecraft.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK.value(), 1.4F, 0.4F));
+        } else {
+            flashed = item;
+            flashTicks = FLASH_TICKS;
+            minecraft.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK.value(), 0.5F, 0.6F));
         }
     }
 
@@ -374,6 +505,18 @@ public final class GolemNetworkScreen extends AbstractContainerScreen<GolemNetwo
 
     private void renderTileTooltip(GuiGraphics graphics, int mouseX, int mouseY) {
         Tile tile = tileAt(mouseX, mouseY);
+        int pick = pickAt(mouseX, mouseY);
+        if (tile == null && pick >= 0) {
+            ItemStack item = menu.picks().get(pick).item();
+            GolemNetworkView.Entry entry = entry(item);
+            if (entry == null) {
+                List<Component> lines = new ArrayList<>(getTooltipFromContainerItem(item));
+                lines.add(Component.translatable(KEY + "none_stored").withStyle(ChatFormatting.GRAY));
+                graphics.renderComponentTooltip(font, lines, mouseX, mouseY, item);
+                return;
+            }
+            tile = new Tile(entry, entry.total(), -1);
+        }
         if (tile == null) {
             return;
         }
@@ -425,6 +568,15 @@ public final class GolemNetworkScreen extends AbstractContainerScreen<GolemNetwo
         }
         if (search.isMouseOver(mouseX, mouseY) && button == GLFW.GLFW_MOUSE_BUTTON_RIGHT) {
             search.setValue("");
+        }
+        if (button == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
+            Tile tile = tileAt(mouseX, mouseY);
+            int pick = pickAt(mouseX, mouseY);
+            if (tile != null || pick >= 0) {
+                search.setFocused(false);
+                toggle(tile != null ? tile.entry().item() : menu.picks().get(pick).item());
+                return true;
+            }
         }
         return super.mouseClicked(mouseX, mouseY, button);
     }

@@ -30,6 +30,10 @@ import net.minecraft.world.item.ItemStack;
 import net.neoforged.neoforge.network.PacketDistributor;
 
 import javax.annotation.Nullable;
+import java.util.ArrayList;
+import java.util.EnumSet;
+import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -60,6 +64,7 @@ public final class GolemNetworkMenu extends AbstractContainerMenu {
     // client
     private GolemNetworkView.Contents contents = GolemNetworkView.Contents.EMPTY;
     private int received;
+    private List<GolemSelections.Pick> picks = List.of();
 
     private GolemNetworkMenu(int id, int golemId, DyeColor color, @Nullable GravititeGolem golem,
                              @Nullable ServerPlayer player) {
@@ -88,6 +93,10 @@ public final class GolemNetworkMenu extends AbstractContainerMenu {
             buf.writeVarInt(golem.getId());
             buf.writeByte(color.getId());
         });
+        if (player.containerMenu instanceof GolemNetworkMenu menu && menu.golem == golem) {
+            GolemSelections.opened(player, net, level);
+            menu.sendPicks(net);
+        }
         golem.event(GolemTiming.EVENT_LINK_PULSE);
     }
 
@@ -120,6 +129,81 @@ public final class GolemNetworkMenu extends AbstractContainerMenu {
     public void receive(GolemPayloads.NetworkContents payload) {
         contents = payload.contents();
         received++;
+    }
+
+    /** Client: the items picked out, in order, with their colours. */
+    public List<GolemSelections.Pick> picks() {
+        return picks;
+    }
+
+    /** Client: the picks as the server has them. */
+    public void receive(GolemPayloads.Picks payload) {
+        List<GolemSelections.Pick> list = new ArrayList<>();
+        for (int i = 0; i < payload.items().size() && i < payload.colors().size(); i++) {
+            list.add(new GolemSelections.Pick(payload.items().get(i), payload.colors().get(i), 0));
+        }
+        picks = List.copyOf(list);
+    }
+
+    /**
+     * Client: picks {@code item}, or drops it if picked, before the server answers (which it does with the picks as
+     * they are). Returns false if every colour is taken.
+     */
+    public boolean togglePick(ItemStack item) {
+        List<GolemSelections.Pick> list = new ArrayList<>(picks);
+        if (list.removeIf(pick -> ItemStack.isSameItemSameComponents(pick.item(), item))) {
+            picks = List.copyOf(list);
+        } else if (list.size() >= GolemSelections.MAX) {
+            return false;
+        } else {
+            Set<DyeColor> taken = EnumSet.noneOf(DyeColor.class);
+            list.forEach(pick -> taken.add(pick.color()));
+            list.add(new GolemSelections.Pick(item.copyWithCount(1), GolemSelections.firstFree(color, taken), 0));
+            picks = List.copyOf(list);
+        }
+        PacketDistributor.sendToServer(new GolemPayloads.Pick(containerId, false, List.of(item.copyWithCount(1))));
+        return true;
+    }
+
+    /** Client: makes {@code items} the picks (none: clears them). */
+    public void replacePicks(List<ItemStack> items) {
+        List<ItemStack> sent = new ArrayList<>();
+        for (ItemStack item : items) {
+            if (sent.size() < GolemSelections.MAX) {
+                sent.add(item.copyWithCount(1));
+            }
+        }
+        PacketDistributor.sendToServer(new GolemPayloads.Pick(containerId, true, sent));
+    }
+
+    /** Server: what the screen asked to pick. */
+    void pick(boolean replace, List<ItemStack> items) {
+        if (player == null || golem == null || !(player.level() instanceof ServerLevel level)) {
+            return;
+        }
+        GolemNetworks.Net net = GolemNetworks.get(level).netOf(golem.getUUID());
+        if (net == null) {
+            return;
+        }
+        if (replace) {
+            GolemSelections.replace(player, net, level, items);
+        } else if (items.size() == 1) {
+            GolemSelections.toggle(player, net, level, items.getFirst());
+        }
+        sendPicks(net);
+    }
+
+    private void sendPicks(GolemNetworks.Net net) {
+        if (player == null) {
+            return;
+        }
+        List<ItemStack> items = new ArrayList<>();
+        List<DyeColor> colors = new ArrayList<>();
+        for (GolemSelections.Pick pick : GolemSelections.picks(player, net.id)) {
+            items.add(pick.item());
+            colors.add(pick.color());
+        }
+        PacketDistributor.sendToPlayer(player, new GolemPayloads.Picks(containerId, items, colors));
     }
 
     @Override

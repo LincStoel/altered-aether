@@ -23,6 +23,7 @@ import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.DyeColor;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.Vec3;
@@ -34,7 +35,10 @@ import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 import java.util.List;
 import java.util.UUID;
 
-/** What the server tells clients about gravitite golems: glows, link lists for pebble holders, and flying items. */
+/**
+ * What the server tells clients about gravitite golems: glows, link lists for pebble holders, flying items, and the
+ * Golem Chest Network screen's contents and picks; and what the screen tells the server.
+ */
 public final class GolemPayloads {
     private static final StreamCodec<ByteBuf, List<BlockPos>> POSITIONS = BlockPos.STREAM_CODEC.apply(ByteBufCodecs.list());
     private static final StreamCodec<ByteBuf, List<Integer>> INTS = ByteBufCodecs.VAR_INT.apply(ByteBufCodecs.list());
@@ -211,11 +215,63 @@ public final class GolemPayloads {
         }
     }
 
+    private static final StreamCodec<ByteBuf, DyeColor> DYE = ByteBufCodecs.BYTE.map(b -> DyeColor.byId(b), d -> (byte) d.getId());
+
+    /**
+     * Where a player's picks in network {@code net} are held, each in its colour, glowing for {@code ticks} more,
+     * fading: replaces whatever was sent before for that network.
+     */
+    public record SelectionGlow(UUID net, List<Lit> lit) implements CustomPacketPayload {
+        public record Lit(DyeColor color, int ticks, List<BlockPos> positions) {
+            static final StreamCodec<ByteBuf, Lit> STREAM_CODEC = StreamCodec.composite(DYE, Lit::color,
+                    ByteBufCodecs.VAR_INT, Lit::ticks, POSITIONS, Lit::positions, Lit::new);
+        }
+
+        public static final Type<SelectionGlow> TYPE = new Type<>(AlteredAether.id("golem_selection_glow"));
+        public static final StreamCodec<ByteBuf, SelectionGlow> STREAM_CODEC = StreamCodec.composite(
+                UUIDUtil.STREAM_CODEC, SelectionGlow::net, Lit.STREAM_CODEC.apply(ByteBufCodecs.list()), SelectionGlow::lit,
+                SelectionGlow::new);
+
+        @Override
+        public Type<? extends CustomPacketPayload> type() {
+            return TYPE;
+        }
+    }
+
+    /** The player's picks in the network the screen open as {@code containerId} shows, in order, with their colours. */
+    public record Picks(int containerId, List<ItemStack> items, List<DyeColor> colors) implements CustomPacketPayload {
+        public static final Type<Picks> TYPE = new Type<>(AlteredAether.id("golem_picks"));
+        public static final StreamCodec<RegistryFriendlyByteBuf, Picks> STREAM_CODEC = StreamCodec.composite(
+                ByteBufCodecs.VAR_INT, Picks::containerId, ItemStack.STREAM_CODEC.apply(ByteBufCodecs.list()), Picks::items,
+                DYE.apply(ByteBufCodecs.list()), Picks::colors, Picks::new);
+
+        @Override
+        public Type<? extends CustomPacketPayload> type() {
+            return TYPE;
+        }
+    }
+
+    /**
+     * From the screen open as {@code containerId}: pick {@code items} (one: toggle it) or, with {@code replace}, make
+     * them the picks (none: clear them).
+     */
+    public record Pick(int containerId, boolean replace, List<ItemStack> items) implements CustomPacketPayload {
+        public static final Type<Pick> TYPE = new Type<>(AlteredAether.id("golem_pick"));
+        public static final StreamCodec<RegistryFriendlyByteBuf, Pick> STREAM_CODEC = StreamCodec.composite(
+                ByteBufCodecs.VAR_INT, Pick::containerId, ByteBufCodecs.BOOL, Pick::replace,
+                ItemStack.STREAM_CODEC.apply(ByteBufCodecs.list(GolemSelections.MAX)), Pick::items, Pick::new);
+
+        @Override
+        public Type<? extends CustomPacketPayload> type() {
+            return TYPE;
+        }
+    }
+
     @EventBusSubscriber(modid = AlteredAether.MOD_ID, bus = EventBusSubscriber.Bus.MOD)
     public static final class Registration {
         @SubscribeEvent
         public static void register(RegisterPayloadHandlersEvent event) {
-            PayloadRegistrar registrar = event.registrar("4");
+            PayloadRegistrar registrar = event.registrar("5");
             // the handlers run only on clients; the client classes load only when one does
             registrar.playToClient(Glow.TYPE, Glow.STREAM_CODEC, (payload, context) -> GolemClientHooks.glow(payload));
             registrar.playToClient(Links.TYPE, Links.STREAM_CODEC, (payload, context) -> GolemClientHooks.links(payload));
@@ -224,6 +280,15 @@ public final class GolemPayloads {
                     (payload, context) -> GolemClientHooks.flightEnd(payload));
             registrar.playToClient(NetworkContents.TYPE, NetworkContents.STREAM_CODEC,
                     (payload, context) -> GolemClientHooks.networkContents(payload));
+            registrar.playToClient(SelectionGlow.TYPE, SelectionGlow.STREAM_CODEC,
+                    (payload, context) -> GolemClientHooks.selectionGlow(payload));
+            registrar.playToClient(Picks.TYPE, Picks.STREAM_CODEC, (payload, context) -> GolemClientHooks.picks(payload));
+            registrar.playToServer(Pick.TYPE, Pick.STREAM_CODEC, (payload, context) -> {
+                if (context.player() instanceof ServerPlayer player && player.containerMenu instanceof GolemNetworkMenu menu
+                        && menu.containerId == payload.containerId()) {
+                    menu.pick(payload.replace(), payload.items());
+                }
+            });
         }
 
         private Registration() {

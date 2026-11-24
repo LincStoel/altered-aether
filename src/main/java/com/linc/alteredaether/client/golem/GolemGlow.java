@@ -16,6 +16,7 @@ package com.linc.alteredaether.client.golem;
 
 import com.linc.alteredaether.config.AAClientConfig;
 import com.linc.alteredaether.entity.golem.GolemPayloads;
+import com.linc.alteredaether.entity.golem.GolemSelections;
 import com.linc.alteredaether.entity.golem.GravititeGolem;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
@@ -30,9 +31,15 @@ import org.joml.Vector3f;
 import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.IdentityHashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 
 /**
  * What glows for the gravitite golem's player: linked storage when it is linked, storage holding a searched item, a
@@ -57,11 +64,26 @@ public final class GolemGlow {
 
     /**
      * A block ({@code pos}) or golem ({@code entity}, else -1) glowing {@code color} at {@code strength} (1 bright,
-     * less for faint), from {@code startTick} to {@code endTick}, fading out over its last {@code fadeOut} ticks.
+     * less for faint), from {@code startTick} to {@code endTick}, fading out over its last {@code fadeOut} ticks. A
+     * block glowing in several colours at once has a glow for each, shown in turn: this one is turn {@code phase} of
+     * {@code phases}, each lasting {@link #PHASE_TICKS}.
      */
     record Glow(byte kind, @Nullable BlockPos pos, int entity, int color, float strength, long startTick, long endTick,
-                int fadeOut) {
+                int fadeOut, int phase, int phases) {
+        Glow(byte kind, @Nullable BlockPos pos, int entity, int color, float strength, long startTick, long endTick,
+             int fadeOut) {
+            this(kind, pos, entity, color, strength, startTick, endTick, fadeOut, 0, 1);
+        }
+
+        boolean shownAt(float now) {
+            return phases <= 1 || Math.floorMod((long) now / PHASE_TICKS, phases) == phase;
+        }
     }
+
+    /** How long each colour shows on a block glowing in several. */
+    static final int PHASE_TICKS = 20;
+    /** The glows of the picks in the Golem Chest Network screen, by network. */
+    private static final Map<UUID, List<Glow>> SELECTED = new HashMap<>();
 
     /** Two golems joined by a thread of motes of {@code color} until {@code endTick}. */
     record Thread(int a, int b, int color, long endTick) {
@@ -88,18 +110,9 @@ public final class GolemGlow {
         }
         syncLevel(mc.level);
         byte kind = payload.kind();
-        int seconds = switch (kind) {
-            case GolemPayloads.SEARCH -> AAClientConfig.GOLEM_SEARCH_SECONDS.get();
-            case GolemPayloads.UNLINK -> 1;
-            default -> AAClientConfig.GOLEM_LINK_GLOW_SECONDS.get();
-        };
+        int seconds = kind == GolemPayloads.UNLINK ? 1 : AAClientConfig.GOLEM_LINK_GLOW_SECONDS.get();
         long length = payload.ticks() > 0 ? payload.ticks() : seconds * 20L;
         long end = ticks + Math.max(length, FADE_IN_TICKS + FADE_OUT_TICKS);
-        if (kind == GolemPayloads.SEARCH) {
-            // a fresh search replaces the last one
-            GLOWS.removeIf(glow -> glow.kind() == GolemPayloads.SEARCH);
-            THREADS.clear();
-        }
         int color = color(payload.dye().getTextureDiffuseColor());
         Set<BlockPos> strict = new HashSet<>(payload.strict());
         float strength = kind == GolemPayloads.UNLINK ? 0.6F : 1.0F;
@@ -169,6 +182,9 @@ public final class GolemGlow {
     }
 
     static float fade(Glow glow, float now) {
+        if (!glow.shownAt(now)) {
+            return 0;
+        }
         float in = Math.clamp((now - glow.startTick()) / FADE_IN_TICKS, 0F, 1F);
         float out = Math.clamp((glow.endTick() - now) / glow.fadeOut(), 0F, 1F);
         return in * out * glow.strength();
@@ -189,7 +205,8 @@ public final class GolemGlow {
         boolean blocks = ticks % (reduced ? 16 : 6) == 0, golems = ticks % (reduced ? 6 : 2) == 0;
         for (Glow glow : GLOWS) {
             boolean golem = glow.entity() >= 0;
-            if (!(golem ? golems : blocks) || !golem && (glow.strength() < 0.5F || glow.kind() == LOOK)) {
+            if (!(golem ? golems : blocks) || !golem && (glow.strength() < 0.5F || glow.kind() == LOOK)
+                    || !glow.shownAt(ticks)) {
                 continue;
             }
             AABB box = box(mc.level, glow, 1);
@@ -254,7 +271,48 @@ public final class GolemGlow {
         return box.inflate(0.01);
     }
 
+    /**
+     * The storage holding the picks of a network's screen, each pick in its colour, fading over the time left; a block
+     * holding several picks shows their colours in turn. Replaces what was shown for that network: a block whose pick
+     * left it stops glowing, while one still glowing carries on without fading in again.
+     */
+    static void selection(GolemPayloads.SelectionGlow payload) {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.level == null) {
+            return;
+        }
+        syncLevel(mc.level);
+        List<Glow> old = SELECTED.remove(payload.net());
+        Set<BlockPos> shown = new HashSet<>();
+        if (old != null) {
+            Set<Glow> gone = Collections.newSetFromMap(new IdentityHashMap<>());
+            gone.addAll(old);
+            GLOWS.removeIf(gone::contains);
+            old.forEach(glow -> shown.add(glow.pos()));
+        }
+        Map<BlockPos, List<GolemPayloads.SelectionGlow.Lit>> byPos = new LinkedHashMap<>();
+        for (GolemPayloads.SelectionGlow.Lit lit : payload.lit()) {
+            for (BlockPos pos : lit.positions()) {
+                byPos.computeIfAbsent(pos, k -> new ArrayList<>()).add(lit);
+            }
+        }
+        List<Glow> added = new ArrayList<>();
+        byPos.forEach((pos, lits) -> {
+            long start = shown.contains(pos) ? ticks - FADE_IN_TICKS : ticks;
+            for (int i = 0; i < lits.size(); i++) {
+                GolemPayloads.SelectionGlow.Lit lit = lits.get(i);
+                added.add(new Glow(GolemPayloads.SEARCH, pos, -1, color(lit.color().getTextureDiffuseColor()), 1.0F,
+                        start, ticks + lit.ticks(), GolemSelections.GLOW_TICKS, i, lits.size()));
+            }
+        });
+        if (!added.isEmpty()) {
+            SELECTED.put(payload.net(), added);
+            GLOWS.addAll(added);
+        }
+    }
+
     static void clear() {
+        SELECTED.clear();
         GLOWS.clear();
         THREADS.clear();
         HELD.clear();
@@ -263,6 +321,7 @@ public final class GolemGlow {
 
     private static void syncLevel(ClientLevel current) {
         if (level != current) {
+            SELECTED.clear();
             GLOWS.clear();
             THREADS.clear();
             HELD.clear();

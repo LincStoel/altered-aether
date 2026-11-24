@@ -230,6 +230,8 @@ public final class AAGolemProvider extends JsonDataProvider {
         lang.put(gui + "in_this_chest", "%s in this chest");
         lang.put(gui + "total", "%s in %s chests");
         lang.put(gui + "total_one", "%s in %s chest");
+        lang.put(gui + "clear", "Clear picks");
+        lang.put(gui + "none_stored", "None stored now");
         lang.put(jei + "guide.intro", "Gravitite golems sort storage by telekinesis. What they answer to:");
         lang.put(jei + "guide.build.title", "Build: ");
         lang.put(jei + "guide.build", "a carved pumpkin (or a Deep Aether carved squash) on a block of enchanted gravitite standing on holystone. It sits where it was built, and hands its builder a storage pebble.");

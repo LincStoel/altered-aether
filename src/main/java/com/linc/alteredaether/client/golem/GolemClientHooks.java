@@ -48,4 +48,16 @@ public final class GolemClientHooks {
             menu.receive(payload);
         }
     }
+
+    public static void picks(GolemPayloads.Picks payload) {
+        Player player = Minecraft.getInstance().player;
+        if (player != null && player.containerMenu instanceof GolemNetworkMenu menu
+                && menu.containerId == payload.containerId()) {
+            menu.receive(payload);
+        }
+    }
+
+    public static void selectionGlow(GolemPayloads.SelectionGlow payload) {
+        GolemGlow.selection(payload);
+    }
 }
