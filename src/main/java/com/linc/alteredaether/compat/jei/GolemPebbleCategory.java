@@ -55,10 +55,10 @@ final class GolemPebbleCategory implements IRecipeCategory<GolemPebbleCategory.T
     }
 
     static final RecipeType<Trade> TYPE = RecipeType.create(AlteredAether.MOD_ID, "golem_pebble", Trade.class);
-    private static final int WIDTH = 120, HEIGHT = 56;
+    private static final int WIDTH = 130, HEIGHT = 56;
     private static final int SLOT_Y = (HEIGHT - 18) / 2;
-    private static final int GOLEM_X = WIDTH / 2, GOLEM_FEET = HEIGHT - 3;
-    private static final float GOLEM_SCALE = 25.0F;
+    private static final int GOLEM_X = WIDTH / 2, GOLEM_FEET = HEIGHT - 8;
+    private static final float GOLEM_SCALE = 20.0F;
 
     private final IDrawable icon;
     private final IDrawableStatic arrow;
@@ -129,7 +129,7 @@ final class GolemPebbleCategory implements IRecipeCategory<GolemPebbleCategory.T
         float time = (System.currentTimeMillis() % 8000L) / 8000.0F;
         float yaw = Mth.sin(time * Mth.TWO_PI) * 45.0F;
         Quaternionf pose = new Quaternionf().rotateZ(Mth.PI).rotateY(yaw * Mth.DEG_TO_RAD);
-        Quaternionf camera = new Quaternionf().rotateX(-10.0F * Mth.DEG_TO_RAD);
+        Quaternionf camera = new Quaternionf().rotateX(8.0F * Mth.DEG_TO_RAD);
         pose.mul(camera);
         shown.setYBodyRot(180.0F);
         shown.setYHeadRot(180.0F);

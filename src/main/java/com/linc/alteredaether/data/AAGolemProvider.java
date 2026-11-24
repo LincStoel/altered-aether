@@ -214,7 +214,7 @@ public final class AAGolemProvider extends JsonDataProvider {
         lang.put(tips + "golem_frames", "An item frame on a chest tells a gravitite golem what that chest is for. A glow item frame keeps everything else out.");
 
         String jei = "jei." + AlteredAether.MOD_ID + ".golem.";
-        lang.put("jei." + AlteredAether.MOD_ID + ".golem_pebble", "Storage Pebble from a Golem");
+        lang.put("jei." + AlteredAether.MOD_ID + ".golem_pebble", "Golem's Pebble");
         lang.put("container." + AlteredAether.MOD_ID + ".golem_network", "Golem Chest Network");
         String gui = "gui." + AlteredAether.MOD_ID + ".golem_network.";
         lang.put(gui + "search", "Search...");
