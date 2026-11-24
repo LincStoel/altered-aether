@@ -384,6 +384,20 @@ class FamilyPlannerTest {
     }
 
     @Test
+    void aSingleDrawerTakesTheItemWithTheMostInTheNetwork() {
+        for (SortMode mode : SortMode.values()) {
+            SortSnapshot.Inv quad = drawer(Kind.BULK, 4, 512);
+            SortSnapshot.Inv single = drawer(Kind.BULK, 2, 2048);
+            single.only()[1] = SortSnapshot.NONE; // a void upgrade's slot
+            SortSnapshot snapshot = snapshot(quad, single,
+                    chest(concat(stacks(PLANKS, 3), stacks(ANDESITE, 5))));
+            settle(snapshot, mode);
+            assertEquals(320, count(snapshot.invs().get(1), ANDESITE), mode + ": the andesite isn't in the 1x1 drawer");
+            assertEquals(192, count(snapshot.invs().get(0), PLANKS), mode + ": the planks aren't in the 2x2 drawer");
+        }
+    }
+
+    @Test
     void anEmptyDrawerTakesTheItemsFillingTheMostStacks() {
         for (SortMode mode : SortMode.values()) {
             SortSnapshot.Inv drawer = drawer(Kind.BULK, 3, 2048);
