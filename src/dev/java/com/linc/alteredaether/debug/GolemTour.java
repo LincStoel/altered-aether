@@ -689,10 +689,43 @@ public final class GolemTour {
                 menu.replacePicks(List.of());
             }
         }));
+        if (net.neoforged.fml.ModList.get().isLoaded("jei")) {
+            steps.add(new Step("network_jei_sync", level -> { }, cam, golemEye, 6, true, () -> {
+                if (!AAClientConfig.GOLEM_NETWORK_JEI_SYNC.get()) {
+                    AAClientConfig.GOLEM_NETWORK_JEI_SYNC.set(true);
+                    networkSearch("ingot");
+                }
+            }));
+            // a furnace's cobblestone is stored; a stone pickaxe's sticks aren't ("+" presses once per step)
+            steps.add(new Step("network_jei_plus", level -> { }, cam, golemEye, 6, true,
+                    () -> once("plus_furnace", () -> GolemTourJei.transfer(new ItemStack(Items.FURNACE)))));
+            steps.add(new Step("network_jei_plus_missing", level -> { }, cam, golemEye, 6, true,
+                    () -> once("plus_pickaxe", () -> GolemTourJei.transfer(new ItemStack(Items.STONE_PICKAXE)))));
+            steps.add(new Step("network_jei_recipe", level -> { }, cam, golemEye, 10, true, () -> {
+                if (!(Minecraft.getInstance().screen instanceof mezz.jei.api.runtime.IRecipesGui)) {
+                    GolemTourJei.show(new ItemStack(Items.FURNACE), true);
+                }
+            }));
+            steps.add(new Step("network_jei_off", level -> { }, cam, golemEye, 6, true, () -> {
+                AAClientConfig.GOLEM_NETWORK_JEI_SYNC.set(false);
+                if (GolemTourJei.runtime != null) {
+                    GolemTourJei.runtime.getIngredientFilter().setFilterText("");
+                }
+            }));
+        }
         steps.add(new Step("network_closed", level -> { }, cam, golemEye, 4, true, () -> {
             networkSearch("");
             Minecraft.getInstance().setScreen(null);
         }));
+    }
+
+    private static final java.util.Set<String> DONE = new java.util.HashSet<>();
+
+    /** Runs {@code action} the first time only: a step's client part runs every tick it waits. */
+    private static void once(String key, Runnable action) {
+        if (DONE.add(key)) {
+            action.run();
+        }
     }
 
     /** Makes {@code items} the picks in the open network screen (a step's client part runs every tick it waits). */

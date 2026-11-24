@@ -40,6 +40,42 @@ final class GolemTourJei {
         jei.getRecipesGui().show(focus);
     }
 
+    /**
+     * Presses "+" on the first crafting recipe for {@code output} with the open screen as JEI's parent, through JEI's own
+     * transfer manager (as the button does), and logs what it said.
+     */
+    static void transfer(ItemStack output) {
+        IJeiRuntime jei = runtime;
+        var mc = net.minecraft.client.Minecraft.getInstance();
+        if (jei == null || mc.player == null) {
+            AlteredAether.LOGGER.error("Golem tour: JEI isn't ready");
+            return;
+        }
+        var focus = jei.getJeiHelpers().getFocusFactory().createFocus(RecipeIngredientRole.OUTPUT, VanillaTypes.ITEM_STACK,
+                output);
+        var manager = jei.getRecipeManager();
+        var recipe = manager.createRecipeLookup(mezz.jei.api.constants.RecipeTypes.CRAFTING).limitFocus(java.util.List.of(focus))
+                .get().findFirst().orElse(null);
+        if (recipe == null) {
+            AlteredAether.LOGGER.error("Golem tour: no crafting recipe for {}", output);
+            return;
+        }
+        var category = manager.getRecipeCategory(mezz.jei.api.constants.RecipeTypes.CRAFTING);
+        var layout = manager.createRecipeLayoutDrawable(category, recipe,
+                jei.getJeiHelpers().getFocusFactory().getEmptyFocusGroup()).orElseThrow();
+        var menu = mc.player.containerMenu;
+        var handler = jei.getRecipeTransferManager().getRecipeTransferHandler(menu, category);
+        if (handler.isEmpty()) {
+            AlteredAether.LOGGER.error("Golem tour: no \"+\" for {} in {}", output, menu);
+            return;
+        }
+        var check = handler.get().transferRecipe(menu, recipe, layout.getRecipeSlotsView(), mc.player, false, false);
+        var done = handler.get().transferRecipe(menu, recipe, layout.getRecipeSlotsView(), mc.player, false, true);
+        AlteredAether.LOGGER.info("Golem tour client: \"+\" for {}: check {} {}, done {}", output,
+                check == null ? "ok" : check.getType(), check == null ? "" : check.getTooltip(),
+                done == null ? "ok" : done.getType());
+    }
+
     static void showPebble() {
         IJeiRuntime jei = runtime;
         if (jei == null) {

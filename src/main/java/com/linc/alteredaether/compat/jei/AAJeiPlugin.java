@@ -20,9 +20,12 @@ import com.linc.alteredaether.config.AACommonConfig;
 import mezz.jei.api.IModPlugin;
 import mezz.jei.api.JeiPlugin;
 import mezz.jei.api.recipe.category.IRecipeCategory;
+import mezz.jei.api.registration.IGuiHandlerRegistration;
 import mezz.jei.api.registration.IRecipeCatalystRegistration;
 import mezz.jei.api.registration.IRecipeCategoryRegistration;
 import mezz.jei.api.registration.IRecipeRegistration;
+import mezz.jei.api.registration.IRecipeTransferRegistration;
+import mezz.jei.api.runtime.IJeiRuntime;
 import com.linc.alteredaether.registry.AARegistries;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
@@ -37,7 +40,8 @@ import java.util.List;
 /**
  * JEI pages for what this mod adds to other mods' machines: so far Create's bulk enchanting through an ambrosium
  * campfire ({@link FanEnchantingCategory}). Nothing here names a Create type, so the plugin loads without Create. Also
- * the gravitite golem's guide, on its pebble and spawn egg, and how a pebble is bought ({@link GolemPebbleCategory}).
+ * the gravitite golem's guide, on its pebble and spawn egg, how a pebble is bought ({@link GolemPebbleCategory}), and
+ * the Golem Chest Network screen's search, lookups and "+" ({@link GolemNetworkJei}).
  */
 @JeiPlugin
 public final class AAJeiPlugin implements IModPlugin {
@@ -106,5 +110,25 @@ public final class AAJeiPlugin implements IModPlugin {
             FanEnchantingCategory.registerCatalysts(fanEnchanting, registration);
         }
         GolemPebbleCategory.registerCatalysts(registration);
+    }
+
+    @Override
+    public void registerGuiHandlers(IGuiHandlerRegistration registration) {
+        GolemNetworkJei.registerGuiHandlers(registration);
+    }
+
+    @Override
+    public void registerRecipeTransferHandlers(IRecipeTransferRegistration registration) {
+        GolemNetworkJei.registerTransfer(registration);
+    }
+
+    @Override
+    public void onRuntimeAvailable(IJeiRuntime runtime) {
+        GolemNetworkJei.runtimeAvailable(runtime);
+    }
+
+    @Override
+    public void onRuntimeUnavailable() {
+        GolemNetworkJei.runtimeUnavailable();
     }
 }

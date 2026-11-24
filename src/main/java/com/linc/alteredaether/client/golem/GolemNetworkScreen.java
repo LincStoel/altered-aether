@@ -39,6 +39,7 @@ import net.minecraft.sounds.SoundEvents;
 import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import org.lwjgl.glfw.GLFW;
 
@@ -48,6 +49,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
@@ -106,6 +108,7 @@ public final class GolemNetworkScreen extends AbstractContainerScreen<GolemNetwo
     private String listedFilter = "";
     @Nullable
     private NetworkSort listedSort;
+    private boolean listedSynced;
     private Style style;
 
     public GolemNetworkScreen(GolemNetworkMenu menu, Inventory inventory, Component title) {
@@ -141,6 +144,12 @@ public final class GolemNetworkScreen extends AbstractContainerScreen<GolemNetwo
                 () -> sprite(sortSprite(sort())), button -> cycleSort()));
         label(sortButton, sortLabel(sort()));
         int searchRight = right - BUTTON - 2;
+        if (jei != null) {
+            searchRight -= BUTTON + 2;
+            syncButton = addRenderableWidget(new SpriteButton(leftPos + searchRight + 2, topPos + TOP_ROW_Y, BUTTON,
+                    BUTTON, () -> sprite(synced() ? "jei_sync" : "jei_sync_off"), button -> toggleSync()));
+            label(syncButton, syncLabel());
+        }
         search = new EditBox(font, leftPos + GRID_X + 1, topPos + TOP_ROW_Y, searchRight - GRID_X - 3, BUTTON,
                 Component.translatable(KEY + "search"));
         search.setMaxLength(100);
@@ -153,6 +162,72 @@ public final class GolemNetworkScreen extends AbstractContainerScreen<GolemNetwo
 
     private static int barY() {
         return TOP_ROW_Y + BUTTON + GRID_GAP;
+    }
+
+    // ---------------------------------------------------------------------------------------------------------------
+    // JEI
+
+    /**
+     * JEI's search box, as the JEI plugin hands it over while JEI runs (null without JEI): its text, and the items it
+     * lets through.
+     */
+    public interface JeiSearch {
+        String text();
+
+        void setText(String text);
+
+        /** The items JEI's list shows for its current text. */
+        Set<Item> shown();
+    }
+
+    @Nullable
+    public static JeiSearch jei;
+    @Nullable
+    private Button syncButton;
+    /** The texts last seen in each box while they follow each other, to tell which one changed. */
+    private String syncedOurs = "", syncedJei = "";
+
+    /** Whether the search box follows JEI's, and JEI's follows it. */
+    private static boolean synced() {
+        return jei != null && AAClientConfig.GOLEM_NETWORK_JEI_SYNC.get();
+    }
+
+    private static Component syncLabel() {
+        return Component.translatable(KEY + (synced() ? "jei_sync" : "jei_sync_off"));
+    }
+
+    private void toggleSync() {
+        AAClientConfig.GOLEM_NETWORK_JEI_SYNC.set(!AAClientConfig.GOLEM_NETWORK_JEI_SYNC.get());
+        AAClientConfig.GOLEM_NETWORK_JEI_SYNC.save();
+        if (syncButton != null) {
+            label(syncButton, syncLabel());
+        }
+        if (synced() && jei != null) {
+            // our text goes to JEI; with none, JEI's comes here
+            if (search.getValue().isBlank()) {
+                search.setValue(jei.text());
+            } else {
+                jei.setText(search.getValue());
+            }
+            syncedOurs = syncedJei = search.getValue();
+        }
+    }
+
+    /** Keeps the two search boxes the same: whichever changed since last tick is copied to the other. */
+    private void followJei() {
+        if (!synced() || jei == null) {
+            return;
+        }
+        String ours = search.getValue();
+        String theirs = jei.text();
+        if (!ours.equals(syncedOurs)) {
+            jei.setText(ours);
+            syncedOurs = syncedJei = ours;
+        } else if (!theirs.equals(syncedJei)) {
+            search.setValue(theirs);
+            scroll = 0;
+            syncedOurs = syncedJei = theirs;
+        }
     }
 
     /** Makes room for the selection bar above the grid while anything is picked: a row for every eight. */
@@ -205,20 +280,31 @@ public final class GolemNetworkScreen extends AbstractContainerScreen<GolemNetwo
     private void relist() {
         String filter = search.getValue();
         NetworkSort sort = sort();
-        if (listedVersion == menu.received() && filter.equals(listedFilter) && sort == listedSort) {
+        boolean synced = synced();
+        if (listedVersion == menu.received() && filter.equals(listedFilter) && sort == listedSort
+                && synced == listedSynced) {
             return;
         }
         listedVersion = menu.received();
         listedFilter = filter;
         listedSort = sort;
+        listedSynced = synced;
         style = Style.of(menu.color().getTextureDiffuseColor());
         lines = arrange(menu.contents(), filter(), sort);
         scroll = Mth.clamp(scroll, 0, maxScroll());
     }
 
-    /** What the search lets through. */
+    /**
+     * What the search lets through: following JEI, what JEI's list shows for the same text (all its syntax, as JEI
+     * reads it); otherwise our own reading of that syntax.
+     */
     private Predicate<ItemStack> filter() {
-        return ItemSearch.parse(search.getValue());
+        String text = search.getValue();
+        if (synced() && jei != null && !text.isBlank() && text.equals(jei.text())) {
+            Set<Item> shown = jei.shown();
+            return stack -> shown.contains(stack.getItem());
+        }
+        return ItemSearch.parse(text);
     }
 
     private static List<Line> arrange(GolemNetworkView.Contents contents, Predicate<ItemStack> filter, NetworkSort sort) {
@@ -319,6 +405,10 @@ public final class GolemNetworkScreen extends AbstractContainerScreen<GolemNetwo
 
     @Override
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+        String asked = menu.takeAskedSearch();
+        if (asked != null) {
+            setSearchText(asked);
+        }
         relist();
         layoutBar();
         super.render(graphics, mouseX, mouseY, partialTick);
@@ -462,6 +552,7 @@ public final class GolemNetworkScreen extends AbstractContainerScreen<GolemNetwo
     @Override
     protected void containerTick() {
         super.containerTick();
+        followJei();
         if (flashTicks > 0) {
             flashTicks--;
         }

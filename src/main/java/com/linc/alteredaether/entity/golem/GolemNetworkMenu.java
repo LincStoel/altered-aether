@@ -131,6 +131,23 @@ public final class GolemNetworkMenu extends AbstractContainerMenu {
         received++;
     }
 
+    /** Client: text for the screen's search box, from a JEI recipe's "+" (see {@link #askSearch}). */
+    @Nullable
+    private String askedSearch;
+
+    /** Client: has the screen put {@code text} in its search box when it next draws. */
+    public void askSearch(String text) {
+        askedSearch = text;
+    }
+
+    /** Client: the text asked for the search box since the screen last looked, if any. */
+    @Nullable
+    public String takeAskedSearch() {
+        String text = askedSearch;
+        askedSearch = null;
+        return text;
+    }
+
     /** Client: the items picked out, in order, with their colours. */
     public List<GolemSelections.Pick> picks() {
         return picks;
