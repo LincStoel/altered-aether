@@ -147,7 +147,7 @@ public final class GolemNetworkScreen extends AbstractContainerScreen<GolemNetwo
         clearButton = place(new SpriteButton(BUTTON, BUTTON, () -> sprite("clear"), () -> style, button -> {
             menu.replacePicks(List.of());
             resize();
-        }), () -> GRID_X + BAR_COLUMNS * TILE + 3, () -> barY() + (TILE - BUTTON) / 2);
+        }), () -> right - BUTTON, () -> barY() + (TILE - BUTTON) / 2);
         label(clearButton, Component.translatable(KEY + "clear"));
         sortButton = place(new SpriteButton(BUTTON, BUTTON, () -> sprite(sortSprite(sort())), () -> style,
                 button -> cycleSort()), () -> right - BUTTON, () -> TOP_ROW_Y);
