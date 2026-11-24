@@ -44,7 +44,9 @@ import java.util.Set;
  * {@link Grouping}), and its chests give it up for them. Otherwise the family filling the most of a chest's slots is its <b>dominant</b> family. Each item goes to the
  * best home it has: pinned for it, its drawer, pinned for its family, then the dominant chest for its family holding
  * the most of it. A family no chest is for takes empty chests (the biggest first). An item with no home at all goes to
- * the crates, then the chests of miscellaneous items, and if none has room it is reported stuck.
+ * the crates, then the chests of miscellaneous items, and if none has room it is reported stuck. When the crates
+ * can't hold all the odds and ends, the unstackable ones have them first: stackable ones that don't fit beside those
+ * take the chests of miscellaneous items before the crates.
  *
  * <p>Only a few of an item ({@link #MISC_MAX_ITEMS} at most) are ever miscellaneous. Any more, and an item whose family
  * has no group counts towards the group nearest it in the family tree, so goes wherever that family does; and when its
@@ -246,6 +248,12 @@ public final class Planner {
         int[] type, dominant;
         List<Set<Integer>> pinGroups;
         List<Integer> crates, equipmentCrates, order;
+        /**
+         * The stackable odds and ends that take the odds and ends' crates only after the chests of miscellaneous
+         * items: those the crates have no room for once the unstackable ones are in (a crate counts items, not
+         * stacks, so it holds far more of what doesn't stack than a chest does).
+         */
+        Set<Integer> crateLast = Set.of();
         Map<Integer, List<Integer>> exclusive, newHome;
         final Map<Integer, List<Integer>> pinnedByKey = new HashMap<>(), pinnedByGroup = new HashMap<>(),
                 dominantByGroup = new HashMap<>();
@@ -337,10 +345,13 @@ public final class Planner {
                 claimed.add(dominant[i]);
             }
         }
+        long crateItems = 0;
         for (int i : crates) {
             SortSnapshot.Inv crate = w.invs.get(i);
             crateSlots += Math.min(crate.size(), crate.capacity() / 64L);
+            crateItems += Math.min(crate.capacity(), crate.size() * 64L);
         }
+        L.crateLast = crateLast(w, crates, crateItems);
         // the odds and ends' crates are for them, while they have room for them all
         if (crateSlots > 0 && crateSlots >= groupSlots.getOrDefault(SortSnapshot.ROOT, 0)) {
             claimed.add(SortSnapshot.ROOT);
@@ -516,7 +527,9 @@ public final class Planner {
         }
         addAll(homes, in, w.byHeld(tier, key));
         if (group == SortSnapshot.ROOT) {
-            addAll(homes, in, w.byHeld(L.crates, key));
+            if (!stackableLast(w, L, key)) {
+                addAll(homes, in, w.byHeld(L.crates, key));
+            }
         } else if (w.crated(group)) {
             addAll(homes, in, w.byHeld(L.equipmentCrates, key));
         }
@@ -527,6 +540,9 @@ public final class Planner {
                 homes.add(j);
                 in[j] = true;
             }
+        }
+        if (group == SortSnapshot.ROOT && stackableLast(w, L, key)) {
+            addAll(homes, in, w.byHeld(L.crates, key));
         }
         boolean lazy = false;
         int own = homes.size();
@@ -545,9 +561,15 @@ public final class Planner {
         }
         if (!lazy && homes.isEmpty()) {
             // nowhere for its family: in with the miscellaneous items
-            addAll(homes, in, w.byHeld(L.crates, key));
+            boolean last = stackableLast(w, L, key);
+            if (!last) {
+                addAll(homes, in, w.byHeld(L.crates, key));
+            }
             addAll(homes, in, w.byHeld(L.dominantByGroup.getOrDefault(SortSnapshot.ROOT, List.of()), key));
             addAll(homes, in, L.newHome.getOrDefault(SortSnapshot.ROOT, List.of()));
+            if (last) {
+                addAll(homes, in, w.byHeld(L.crates, key));
+            }
             own = homes.size();
         }
         // a strict chest never takes what isn't pinned to it, even as its family's dominant chest
@@ -564,8 +586,59 @@ public final class Planner {
         return out;
     }
 
+    /** Whether {@code key} takes the odds and ends' crates after their chests (see {@link Layout#crateLast}). */
+    private static boolean stackableLast(Work w, Layout L, int key) {
+        return L.crateLast.contains(key);
+    }
+
+    /**
+     * The stackable odds and ends left out of the odds and ends' {@code crates} (holding {@code room} items in all):
+     * none while no odds and ends are unstackable or the crates have room for them all. Otherwise the unstackable
+     * ones have the room first, then each stackable one that fits whole in what is left, those already in the
+     * crates first.
+     */
+    private static Set<Integer> crateLast(Work w, List<Integer> crates, long room) {
+        Map<Integer, Long> misc = w.miscTotals();
+        long unstackable = 0, all = 0;
+        for (Map.Entry<Integer, Long> entry : misc.entrySet()) {
+            all += entry.getValue();
+            if (w.keys.get(entry.getKey()).maxStack() <= 1) {
+                unstackable += entry.getValue();
+            }
+        }
+        if (crates.isEmpty() || unstackable == 0 || all <= room) {
+            return Set.of();
+        }
+        Map<Integer, Integer> inCrates = new HashMap<>();
+        for (int c : crates) {
+            w.held.get(c).forEach((key, count) -> inCrates.merge(key, count, Integer::sum));
+        }
+        List<Integer> stackable = new ArrayList<>();
+        for (int key : misc.keySet()) {
+            if (w.keys.get(key).maxStack() > 1) {
+                stackable.add(key);
+            }
+        }
+        stackable.sort(Comparator.<Integer>comparingInt(k -> inCrates.containsKey(k) ? 0 : 1)
+                .thenComparingInt(k -> k));
+        long left = room - unstackable;
+        Set<Integer> last = new HashSet<>();
+        for (int key : stackable) {
+            long count = misc.get(key);
+            if (count <= left) {
+                left -= count;
+            } else {
+                last.add(key);
+            }
+        }
+        return last;
+    }
+
     private static void addAll(List<Integer> homes, boolean[] in, List<Integer> add) {
         for (int j : add) {
+            if (in[j]) {
+                continue;
+            }
             homes.add(j);
             in[j] = true;
         }
@@ -1151,6 +1224,7 @@ public final class Planner {
         /**
          * Each drawer slot is the home of what it holds, and each empty one is given the item filling the most stacks
          * outside drawers that has none (preferring the families the drawer already holds); what is left takes nothing.
+         * Single drawers (1x1, the most room for one item) choose first, and take the items with the highest total count.
          */
         void assignBulk() {
             List<Integer> drawers = new ArrayList<>();
@@ -1205,6 +1279,27 @@ public final class Planner {
                         stacks.put(k, need);
                     }
                 });
+                // single drawers first, each taking the item with the most in the network
+                List<Integer> singles = new ArrayList<>();
+                for (int i : drawers) {
+                    if (single(invs.get(i))) {
+                        singles.add(i);
+                    }
+                }
+                List<Integer> byCount = new ArrayList<>(candidates);
+                byCount.sort(Comparator.<Integer>comparingLong(k -> -outside.get(k)).thenComparingInt(k -> k));
+                for (int i : singles) {
+                    SortSnapshot.Inv inv = invs.get(i);
+                    for (int slot = 0; slot < inv.size() && !byCount.isEmpty(); slot++) {
+                        if (inv.key()[slot] < 0 && inv.only()[slot] == SortSnapshot.ANY) {
+                            int pick = byCount.remove(0);
+                            candidates.remove(Integer.valueOf(pick));
+                            inv.only()[slot] = pick;
+                            bulkHomes.computeIfAbsent(pick, x -> new ArrayList<>()).add(i);
+                        }
+                    }
+                }
+                drawers.removeAll(singles);
                 candidates.sort(Comparator.<Integer>comparingInt(k -> -stacks.get(k)).thenComparingInt(k -> k));
                 for (int i : drawers) {
                     SortSnapshot.Inv inv = invs.get(i);
@@ -1241,6 +1336,17 @@ public final class Planner {
                     }
                 }
             }
+        }
+
+        /** Whether {@code inv} is a single (1x1) drawer: one slot that takes items, void and locked slots aside. */
+        static boolean single(SortSnapshot.Inv inv) {
+            int usable = 0;
+            for (int slot = 0; slot < inv.size(); slot++) {
+                if (inv.key()[slot] >= 0 || inv.only()[slot] != SortSnapshot.NONE) {
+                    usable++;
+                }
+            }
+            return usable == 1;
         }
 
         /** How many more of {@code key} its drawers take. */
@@ -1495,6 +1601,30 @@ public final class Planner {
             Map<Integer, Integer> slots = new HashMap<>();
             totals.forEach((key, count) -> slots.merge(groupOf(key), need(key, count), Integer::sum));
             return slots;
+        }
+
+        /** How many of each odd and end (an item of the root group, not pinned anywhere) storage holds in all. */
+        Map<Integer, Long> miscTotals() {
+            Set<Integer> pinned = new HashSet<>();
+            for (SortSnapshot.Inv inv : invs) {
+                if (inv.kind() != Kind.SOURCE && inv.kind() != Kind.SINK && inv.kind() != Kind.POOLED) {
+                    pinned.addAll(inv.pins());
+                }
+            }
+            Map<Integer, Long> totals = new HashMap<>();
+            for (int i = 0; i < invs.size(); i++) {
+                Kind kind = invs.get(i).kind();
+                if (kind == Kind.BULK || kind == Kind.POOLED || kind == Kind.SINK) {
+                    continue;
+                }
+                for (Map.Entry<Integer, Integer> entry : held.get(i).entrySet()) {
+                    int key = entry.getKey();
+                    if (!pinned.contains(key) && !bulkHomes.containsKey(key) && groupOf(key) == SortSnapshot.ROOT) {
+                        totals.merge(key, (long) entry.getValue(), Long::sum);
+                    }
+                }
+            }
+            return totals;
         }
 
         /**

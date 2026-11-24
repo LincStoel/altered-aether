@@ -66,10 +66,11 @@ class FamilyPlannerTest {
             new SortSnapshot.Node(17, "iron"));         // 18
 
     private static final int PLANKS = 0, STAIRS = 1, STRIPPED = 2, HOLLOW = 3, GRAVITITE = 4, OAK = 5, ANDESITE = 6,
-            IRON = 7, COAL = 8, PICKAXE = 9, HELMET = 10;
+            IRON = 7, COAL = 8, PICKAXE = 9, HELMET = 10, SADDLE = 11;
     private static final List<SortSnapshot.Key> KEYS = List.of(
             key(4, 0), key(4, 1), key(4, 2), key(4, 3), key(13, 4), key(5, 5), key(7, 6), key(9, 7), key(9, 8),
-            new SortSnapshot.Key(1, 16, (16L << 20) | 9), new SortSnapshot.Key(1, 18, (18L << 20) | 10));
+            new SortSnapshot.Key(1, 16, (16L << 20) | 9), new SortSnapshot.Key(1, 18, (18L << 20) | 10),
+            new SortSnapshot.Key(1, 0, 11));
 
     /** As the config has it by default: a family needs a quarter of a chest to get one. */
     private static final Planner.Settings SETTINGS = new Planner.Settings(3, 0.25, 2);
@@ -598,5 +599,21 @@ class FamilyPlannerTest {
         Grouping.Result bySize = Grouping.compute(nodes, slots, new int[4], fill, items, crateable, 5, 27, crate, 100,
                 200, Set.of(), Set.of());
         assertTrue(bySize.crated(2), "the test doesn't test the priority");
+    }
+
+    @Test
+    void unstackableOddsAndEndsTakeTheCrateBeforeStackableOnes() {
+        // a crate with room for five items, holding five iron; three saddles wait in a chest
+        SortSnapshot snapshot = snapshot(crate(5, IRON, 5), chest(ones(SADDLE, 3)), chest());
+        assertTrue(settle(snapshot, SortMode.TIDY) <= 4, "didn't settle");
+        assertEquals(3, count(snapshot.invs().get(0), SADDLE), "the saddles aren't in the crate: " + dump(snapshot));
+        assertEquals(0, count(snapshot.invs().get(0), IRON), "the iron kept the crate: " + dump(snapshot));
+    }
+
+    @Test
+    void stackableOddsAndEndsStayInTheCrateWhileItHasRoomForAll() {
+        SortSnapshot snapshot = snapshot(crate(640, IRON, 5), chest(ones(SADDLE, 3)), chest());
+        assertTrue(settle(snapshot, SortMode.TIDY) <= 4, "didn't settle");
+        assertEquals(Set.of(IRON, SADDLE), keysIn(snapshot.invs().get(0)), dump(snapshot));
     }
 }
