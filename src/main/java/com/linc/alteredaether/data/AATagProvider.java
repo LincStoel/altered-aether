@@ -107,6 +107,12 @@ public final class AATagProvider extends JsonDataProvider {
                 "deep_aether:carved_green_squash", "deep_aether:carved_purple_squash");
         tag("block", AlteredAether.id("golem_empty_only"), "minecraft:hopper", "create:depot");
         tag("block", AlteredAether.id("golem_linkable"));
+        // Aether stones (ours, the Aether's and Deep Aether's) and glowstone dust buy a storage pebble from a golem
+        tag("item", AlteredAether.id("aether_stones"), concat(new String[]{"#aether:holystone", "aether:icestone",
+                "deep_aether:aseterite", "deep_aether:clorite", "deep_aether:highstone"}, AAStoneProvider.naturalIds()));
+        tag("item", AlteredAether.id("aether_cobblestones"), "deep_aether:cobbled_aseterite");
+        tag("item", AlteredAether.id("golem_pebble_price"), "#altered_aether:aether_stones",
+                "#altered_aether:aether_cobblestones", "minecraft:glowstone_dust");
         // the odds and ends go into crates first; drawers are found by their slots, compacting ones named
         tag("block", AlteredAether.id("golem_misc_storage"), "quark:crate");
         tag("block", AlteredAether.id("golem_bulk"));

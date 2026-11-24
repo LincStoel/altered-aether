@@ -74,7 +74,7 @@ public final class AAJeiPlugin implements IModPlugin {
         List<Component> lines = new ArrayList<>();
         lines.add(Component.translatable(GUIDE + "intro"));
         boolean create = ModList.get().isLoaded(CreateCompat.MOD);
-        List<String> keys = new ArrayList<>(List.of("build", "hand", "tidy", "pebble.storage", "pebble.golem",
+        List<String> keys = new ArrayList<>(List.of("build", "hand", "pebble.take", "tidy", "pebble.storage", "pebble.golem",
                 "pebble.send", "search", "sorting", "dye", "frames"));
         if (ModList.get().isLoaded("supplementaries")) {
             keys.add("frames.shelf");

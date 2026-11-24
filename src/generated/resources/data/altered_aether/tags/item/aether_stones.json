@@ -1,0 +1,22 @@
+{
+  "replace": false,
+  "values": [
+    "#aether:holystone",
+    "aether:icestone",
+    {
+      "id": "deep_aether:aseterite",
+      "required": false
+    },
+    {
+      "id": "deep_aether:clorite",
+      "required": false
+    },
+    {
+      "id": "deep_aether:highstone",
+      "required": false
+    },
+    "altered_aether:nadirite",
+    "altered_aether:celezite",
+    "altered_aether:sylicite"
+  ]
+}

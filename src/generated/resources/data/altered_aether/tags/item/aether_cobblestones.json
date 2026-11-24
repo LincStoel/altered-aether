@@ -1,0 +1,9 @@
+{
+  "replace": false,
+  "values": [
+    {
+      "id": "deep_aether:cobbled_aseterite",
+      "required": false
+    }
+  ]
+}

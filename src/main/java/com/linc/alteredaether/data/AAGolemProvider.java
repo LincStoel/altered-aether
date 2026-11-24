@@ -163,9 +163,6 @@ public final class AAGolemProvider extends JsonDataProvider {
         lang.put(M + "dyed", "%s is %s now");
         lang.put(M + "dyed_joined", "%s is %s now, and works with its network of %s");
         lang.put(M + "network_full", "%s rests: its network already has %s golems");
-        lang.put(M + "none_stored", "No %s in linked storage");
-        lang.put(M + "found", "%s: %s in %s chests");
-        lang.put(M + "found_one", "%s: %s in %s chest");
         lang.put(M + "no_space", "%s has no room for %s items");
         lang.put(M + "hint.linked", "Linked to %s");
         lang.put(M + "hint.linked_blocked", "Linked to %s, but walled in");
@@ -221,7 +218,9 @@ public final class AAGolemProvider extends JsonDataProvider {
         lang.put(jei + "guide.build.title", "Build: ");
         lang.put(jei + "guide.build", "a carved pumpkin (or a Deep Aether carved squash) on a block of enchanted gravitite standing on holystone. It sits where it was built, and hands its builder a storage pebble.");
         lang.put(jei + "guide.hand.title", "Empty hand on the golem: ");
-        lang.put(jei + "guide.hand", "take a pebble. Sneak to switch between Tidy (families of items kept together) and Compact (everything in as few chests as it fits).");
+        lang.put(jei + "guide.hand", "see everything its network holds. Sneak to switch between Tidy (families of items kept together) and Compact (everything in as few chests as it fits).");
+        lang.put(jei + "guide.pebble.take.title", "Aether stone or glowstone dust on the golem: ");
+        lang.put(jei + "guide.pebble.take", "trade one for a storage pebble, unless you already carry one for its network.");
         lang.put(jei + "guide.tidy.title", "Tidy: ");
         lang.put(jei + "guide.tidy", "items are filed by where they come from (the Aether, the overworld...), what they are (blocks, resources, food...) and what they're made of: spruce stairs, planks and logs are all spruce. Armour, tools and weapons are kept together as equipment wherever they come from. A family that fills a quarter of a chest gets a chest of its own, and chests to spare go to smaller families of two stacks or more, though one is kept free for whatever comes next; the rest share with their kin (spruce with the other wood), and what fits nowhere finer goes with the odds and ends. A new family takes the free chest nearest its kin, and a full chest spills into the free chest beside it.");
         lang.put(jei + "guide.drawers.title", "Drawers: ");
@@ -236,8 +235,8 @@ public final class AAGolemProvider extends JsonDataProvider {
         lang.put(jei + "guide.pebble.golem", "link all the storage within its reach. Sneak to unlink it all.");
         lang.put(jei + "guide.pebble.send.title", "Sneak, pebble on the top of a block: ");
         lang.put(jei + "guide.pebble.send", "send the golem to sit there.");
-        lang.put(jei + "guide.search.title", "Any other item on the golem: ");
-        lang.put(jei + "guide.search", "shows which chests hold it, and how many there are.");
+        lang.put(jei + "guide.search.title", "Golem Chest Network: ");
+        lang.put(jei + "guide.search", "lists what the linked storage holds and how many. Click items to make the chests holding them glow, each in its own colour, for half a minute.");
         lang.put(jei + "guide.sorting.title", "Sorting: ");
         lang.put(jei + "guide.sorting", "a chest is sorted a few seconds after it changes, never while someone has it open. Items fly out of an open side of one chest and into the next.");
         lang.put(jei + "guide.dye.title", "Dye on the golem: ");

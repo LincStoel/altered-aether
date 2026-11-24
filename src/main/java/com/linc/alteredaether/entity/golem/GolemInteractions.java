@@ -18,37 +18,36 @@ import com.linc.alteredaether.AlteredAether;
 import com.linc.alteredaether.item.PebbleLink;
 import com.linc.alteredaether.item.StoragePebbleItem;
 import com.linc.alteredaether.registry.AARegistries;
-import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
+import net.minecraft.tags.TagKey;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.DyeItem;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.LeadItem;
 import net.minecraft.world.item.NameTagItem;
 import net.minecraft.world.item.SpawnEggItem;
-import net.neoforged.neoforge.items.IItemHandler;
 import net.neoforged.neoforge.items.ItemHandlerHelper;
-import net.neoforged.neoforge.network.PacketDistributor;
 
-import java.text.NumberFormat;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
 import java.util.UUID;
 
 /**
- * Using a gravitite golem. An empty hand takes a pebble (crouching switches its network's mode); the network's pebble
- * links everything within its reach (crouching, unlinks it all); a dye of another colour recolours it; anything else
- * asks where that item is stored.
+ * Using a gravitite golem. The network's pebble links everything within its reach (crouching, unlinks it all); a dye
+ * of another colour recolours it; an enchanted gravitite ingot or nugget mends it; crouching with an empty hand
+ * switches its network's mode; an Aether stone or glowstone dust buys a pebble; anything else, an empty hand most of
+ * all, shows what the network holds.
  */
 public final class GolemInteractions {
+    /** What a golem takes for a storage pebble: an Aether stone, or glowstone dust. */
+    public static final TagKey<Item> PEBBLE_PRICE = TagKey.create(Registries.ITEM, AlteredAether.id("golem_pebble_price"));
+
     private GolemInteractions() {
     }
 
@@ -66,20 +65,42 @@ public final class GolemInteractions {
         }
         if (stack.is(AARegistries.STORAGE_PEBBLE.get())) {
             usePebble(golem, serverPlayer, level, stack);
-        } else if (stack.isEmpty()) {
-            if (player.isShiftKeyDown()) {
-                switchMode(golem, serverPlayer, level);
-            } else {
-                givePebble(golem, serverPlayer, level, true);
-            }
         } else if (stack.getItem() instanceof DyeItem dye && dye.getDyeColor() != golem.color()) {
             dye(golem, serverPlayer, level, stack, dye);
         } else if (heals(stack) > 0 && golem.getHealth() < golem.getMaxHealth()) {
             heal(golem, serverPlayer, level, stack);
+        } else if (stack.isEmpty() && player.isShiftKeyDown()) {
+            switchMode(golem, serverPlayer, level);
+        } else if (stack.is(PEBBLE_PRICE) && buyPebble(golem, serverPlayer, level, stack)) {
+            return InteractionResult.CONSUME;
         } else {
-            search(golem, serverPlayer, level, stack);
+            openNetwork(golem, serverPlayer, level);
         }
         return InteractionResult.CONSUME;
+    }
+
+    /**
+     * Trades one of {@code stack} for a pebble, unless the player already carries one for this golem's network (they
+     * see the network instead). Returns whether a pebble was given.
+     */
+    private static boolean buyPebble(GravititeGolem golem, ServerPlayer player, ServerLevel level, ItemStack stack) {
+        GolemNetworks.Net net = GolemNetworks.get(level).netOf(golem.getUUID());
+        if (net == null || carriesPebble(player, net)) {
+            return false;
+        }
+        stack.consume(1, player);
+        return givePebble(golem, player, level, true);
+    }
+
+    /** Whether {@code player} carries a live pebble for {@code net}. */
+    static boolean carriesPebble(Player player, GolemNetworks.Net net) {
+        for (ItemStack carried : player.getInventory().items) {
+            PebbleLink link = carried.get(AARegistries.PEBBLE_LINK.get());
+            if (link != null && !link.dead() && net.id.equals(link.network())) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /** How much an enchanted gravitite ingot or nugget mends a golem, as iron mends an iron golem: half its health, or a ninth of that. */
@@ -110,14 +131,11 @@ public final class GolemInteractions {
         if (net == null) {
             return false;
         }
-        for (ItemStack carried : player.getInventory().items) {
-            PebbleLink link = carried.get(AARegistries.PEBBLE_LINK.get());
-            if (link != null && !link.dead() && net.id.equals(link.network())) {
-                if (tell) {
-                    player.displayClientMessage(message("already_carry", net.name()), true);
-                }
-                return false;
+        if (carriesPebble(player, net)) {
+            if (tell) {
+                player.displayClientMessage(message("already_carry", net.name()), true);
             }
+            return false;
         }
         ItemStack pebble = new ItemStack(AARegistries.STORAGE_PEBBLE.get());
         pebble.set(AARegistries.PEBBLE_LINK.get(), new PebbleLink(golem.getUUID(), net.id, level.dimension(), net.name(),
@@ -203,49 +221,13 @@ public final class GolemInteractions {
         }
     }
 
-    /** Glows every linked inventory holding {@code wanted}, and says how many there are in all. */
-    private static void search(GravititeGolem golem, ServerPlayer player, ServerLevel level, ItemStack wanted) {
+    /**
+     * Shows {@code player} what {@code golem}'s network holds; a golem with nothing linked shakes its head.
+     */
+    private static void openNetwork(GravititeGolem golem, ServerPlayer player, ServerLevel level) {
         GolemNetworks.Net net = GolemNetworks.get(level).netOf(golem.getUUID());
-        if (net == null) {
-            return;
-        }
-        List<BlockPos> found = new ArrayList<>();
-        Set<Long> seen = new HashSet<>();
-        long total = 0;
-        for (BlockPos pos : net.links()) {
-            if (!level.isLoaded(pos) || !seen.add(GolemStorage.inventoryKey(level, pos))) {
-                continue;
-            }
-            IItemHandler handler = GolemStorage.handler(level, pos);
-            if (handler == null) {
-                continue;
-            }
-            long here = 0;
-            for (int slot = 0; slot < handler.getSlots(); slot++) {
-                ItemStack stack = handler.getStackInSlot(slot);
-                if (stack.is(wanted.getItem())) {
-                    here += stack.getCount();
-                }
-            }
-            if (here > 0) {
-                found.add(pos);
-                BlockPos other = GolemStorage.partner(level, pos);
-                if (other != null) {
-                    found.add(other);
-                }
-                total += here;
-            }
-        }
-        golem.event(GolemTiming.EVENT_LINK_PULSE);
-        if (found.isEmpty()) {
+        if (net == null || net.links().isEmpty()) {
             golem.shakeHead();
-            player.displayClientMessage(message("none_stored", wanted.getHoverName()), true);
-            return;
         }
-        PacketDistributor.sendToPlayer(player, GolemPayloads.Glow.blocks(GolemPayloads.SEARCH, -1, found,
-                GolemStorage.strict(level, found)).in(golem.color()));
-        int chests = (int) found.stream().map(pos -> GolemStorage.inventoryKey(level, pos)).distinct().count();
-        player.displayClientMessage(message(chests == 1 ? "found_one" : "found", wanted.getHoverName(),
-                NumberFormat.getIntegerInstance().format(total), chests), true);
     }
 }

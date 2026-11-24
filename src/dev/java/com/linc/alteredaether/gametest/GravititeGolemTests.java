@@ -152,9 +152,9 @@ public final class GravititeGolemTests {
         return n;
     }
 
-    /** Takes the golem's pebble with an empty hand and holds it. */
+    /** Buys the golem's pebble with glowstone dust and holds it. */
     private static ItemStack takePebble(GravititeGolem golem, FakePlayer player) {
-        player.setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY);
+        player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(Items.GLOWSTONE_DUST));
         golem.interact(player, InteractionHand.MAIN_HAND);
         for (int slot = 0; slot < player.getInventory().getContainerSize(); slot++) {
             ItemStack stack = player.getInventory().getItem(slot);
@@ -568,6 +568,34 @@ public final class GravititeGolemTests {
                             "the broader filter kept cobblestone or lost its andesite");
                     helper.assertTrue(count(other, Items.OAK_LOG) == 192, "the logs moved");
                 }).thenSucceed();
+    }
+
+    /**
+     * Glowstone dust or an Aether stone buys a pebble, one at a time; an empty hand or anything else buys nothing, and a
+     * second pebble for the same network isn't sold.
+     */
+    @GameTest(template = "arena", timeoutTicks = 100)
+    public static void aPebbleCostsAnAetherStone(GameTestHelper helper) {
+        floor(helper);
+        GravititeGolem golem = golem(helper, HOME);
+        FakePlayer player = player(helper, "golem-buyer");
+        helper.startSequence().thenIdle(5).thenExecute(() -> {
+            player.setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY);
+            golem.interact(player, InteractionHand.MAIN_HAND);
+            player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(Items.COBBLESTONE, 4));
+            golem.interact(player, InteractionHand.MAIN_HAND);
+            helper.assertTrue(pebbles(player) == 0, "a pebble was given for nothing, or for overworld stone");
+            helper.assertTrue(player.getMainHandItem().getCount() == 4, "overworld stone was taken");
+            player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(AARegistries.NADIRITE.natural.block().get(), 3));
+            golem.interact(player, InteractionHand.MAIN_HAND);
+            helper.assertTrue(pebbles(player) == 1, "nadirite bought " + pebbles(player) + " pebbles");
+            helper.assertTrue(player.getMainHandItem().getCount() == 2, "the stone wasn't taken");
+            player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(Items.GLOWSTONE_DUST, 3));
+            golem.interact(player, InteractionHand.MAIN_HAND);
+            helper.assertTrue(pebbles(player) == 1, "a second pebble was sold for the same network");
+            helper.assertTrue(player.getMainHandItem().getCount() == 3, "glowstone was taken for nothing");
+            leave(helper, player);
+        }).thenSucceed();
     }
 
     /** Its pebble used on the golem links the storage around it (not bookshelves or furnaces); crouching unlinks it. */

@@ -144,7 +144,8 @@ rider it throws calms it a little more. A wild calf can't be ridden, so swets al
 **Gravitite golems.** A storage sorter that works by telekinesis. Place a carved pumpkin (or a Deep Aether carved
 squash) on a block of enchanted gravitite standing on holystone, and a thin, big-headed golem sits down there in
 meditation. That spot is its home.
-- **Linking storage.** Use the golem with an empty hand to take its storage pebble. Use the pebble on chests, barrels
+- **Linking storage.** Use an Aether stone (holystone, icestone and the like) or glowstone dust on the golem to trade
+  it for a storage pebble; you can carry one per network. Use the pebble on chests, barrels
   and other storage to link them (the chest doesn't open, and briefly glows), and again to unlink. Hoppers and
   Create's depots are only ever emptied, never filled. Machines can't be linked. A golem reaches 16 blocks out and
   half that up and down.
@@ -166,8 +167,11 @@ meditation. That spot is its home.
   odds and ends first. With Create, a brass funnel putting items into a machine can be linked: the golem keeps the
   machine fed with what the funnel's filter lets through (nothing without one), and a Create filter in an item frame
   or on a placard pins everything it lets through.
-- **Finding things.** Use the golem with any item to see which linked chests hold it, with the total above the
-  hotbar. Use its own pebble on it to see everything linked for 15 seconds. While you hold its pebble you see the
+- **Finding things.** Use the golem with an empty hand to open the Golem Chest Network: everything its linked
+  storage holds and how many, sorted by count, by name or chest by chest, with a search box (JEI's search syntax
+  works, and it can follow JEI's own search box). Click up to 16 items to make the chests holding them glow, each in
+  its own colour, for 30 seconds; with JEI, the "+" on a recipe picks out its ingredients. Use its own pebble on it
+  to see everything linked for 15 seconds. While you hold its pebble you see the
   edge of its reach and motes over linked storage, and the tooltip shows its mode and links.
 - **Moving it.** Sneak and use the pebble on the top of a block to send the golem there; it walks, levitates up
   steps, floats across gaps, and sits down there as its new home. Anything else that moves it, it walks back from.
