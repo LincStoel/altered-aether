@@ -25,9 +25,9 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 
 /**
- * Supplementaries' item shelves as golem pins: a shelf on a chest pins the item it shows, like an item frame (see
- * GolemStorage.pins). Read through vanilla types (its block entity is a one-slot Container, its facing the vanilla
- * horizontal one, pointing away from the wall), so Supplementaries needn't be on the compile classpath.
+ * Supplementaries' item shelves as golem pins: a shelf on a chest pins the item it shows, like an item frame or
+ * placard (see GolemStorage.pins). Read through vanilla types (its block entity is a one-slot Container, its facing
+ * the vanilla horizontal one, pointing away from the wall), so Supplementaries needn't be on the compile classpath.
  */
 public final class SupplementariesShelves {
     public static final String MOD = "supplementaries";

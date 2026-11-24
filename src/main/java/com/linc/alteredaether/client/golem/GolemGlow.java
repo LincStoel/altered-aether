@@ -39,7 +39,7 @@ import java.util.Set;
  * spot a golem was sent to, a golem a full network turned away (red), and what the player looks at while holding a
  * pebble. Each glow fades in, holds, and fades out, with gravitite motes drifting off it so it still reads under a
  * shaderpack. Blocks get a pane; a golem gets no box, only motes streaming off its body. All of it is the colour its
- * network is dyed; storage no golem can get at glows red, storage pinned strictly yellow.
+ * network is dyed; storage no golem can get at glows red, pinned storage yellow.
  *
  * <p>Apart from those, {@link #HELD} is the faint outline of a held pebble's linked storage, drawn while it is held.
  */
@@ -50,7 +50,7 @@ public final class GolemGlow {
     static final int LOOK_LINGER = 10;
     /** A kind of glow of the client's own: what a pebble's holder is looking at. */
     static final byte LOOK = 100;
-    /** The edge colour of storage pinned strictly (by a glow item frame or placard): glow-ink yellow. */
+    /** The edge colour of pinned storage (by an item frame, item shelf or placard): glow-ink yellow. */
     static final int STRICT_COLOR = 0xFFE14A;
     /** The edge colour of storage no golem can get at, and of a golem a full network turned away. */
     static final int BLOCKED_COLOR = 0xFF4A4A;

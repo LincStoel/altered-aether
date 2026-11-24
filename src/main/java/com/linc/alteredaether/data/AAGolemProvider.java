@@ -208,7 +208,6 @@ public final class AAGolemProvider extends JsonDataProvider {
         lang.put(status + "sink_unfiltered", "Fed nothing: it has no filter");
         lang.put(status + "holds", "Kept for: %s");
         lang.put(status + "odds_and_ends", "odds and ends");
-        lang.put(status + "pinned", "Pinned: %s");
         lang.put(status + "pinned_only", "Only for: %s");
 
         String tips = "aether.pro_tips.line." + AlteredAether.MOD_ID + ".";
@@ -244,11 +243,11 @@ public final class AAGolemProvider extends JsonDataProvider {
         lang.put(jei + "guide.dye.title", "Dye on the golem: ");
         lang.put(jei + "guide.dye", "recolours it. Golems of one colour sitting within reach of each other work as one network, up to %s; one more rests until there is room.");
         lang.put(jei + "guide.frames.title", "Item frame on a chest: ");
-        lang.put(jei + "guide.frames", "makes it the home for that item and its family.");
-        lang.put(jei + "guide.frames.strict.title", "Glow item frame on a chest: ");
-        lang.put(jei + "guide.frames.strict", "it holds only that item, and everything else is moved out.");
-        lang.put(jei + "guide.frames.strict_create.title", "Glow item frame or Create placard on a chest: ");
-        lang.put(jei + "guide.frames.strict_create", "it holds only that item, and everything else is moved out. A Create filter there (or in any frame) stands for everything it lets through.");
+        lang.put(jei + "guide.frames", "it holds only that item, and everything else is moved out. A glow item frame does the same.");
+        lang.put(jei + "guide.frames.shelf.title", "Item shelf on a chest: ");
+        lang.put(jei + "guide.frames.shelf", "the same, for the item on the shelf.");
+        lang.put(jei + "guide.frames.create.title", "Create placard on a chest: ");
+        lang.put(jei + "guide.frames.create", "the same, for the item on the placard. A Create filter on one, in a frame or on a shelf stands for everything it lets through.");
         lang.put(jei + "guide.redstone.title", "Redstone: ");
         lang.put(jei + "guide.redstone", "power makes the golem rest; a pulse has it sort everything again.");
         lang.put(jei + "guide.comparator.title", "Comparator facing the block under a golem: ");

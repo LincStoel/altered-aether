@@ -998,13 +998,15 @@ public final class GravititeGolemTests {
         BaseContainerBlockEntity mixed = chest(helper, a, new ItemStack(Items.COBBLESTONE, 64), new ItemStack(Items.COBBLESTONE, 64),
                 new ItemStack(Items.OAK_LOG, 64), new ItemStack(Items.OAK_LOG, 64));
         BaseContainerBlockEntity first = chest(helper, b);
-        BaseContainerBlockEntity pinned = chest(helper, c);
+        // a plain item frame pins strictly: the birch logs already in the chest are sent out
+        BaseContainerBlockEntity pinned = chest(helper, c, new ItemStack(Items.BIRCH_LOG, 16));
         ItemFrame frame = new ItemFrame(helper.getLevel(), helper.absolutePos(c.north()), Direction.NORTH);
         frame.setItem(new ItemStack(Items.OAK_LOG), false);
         helper.getLevel().addFreshEntity(frame);
         helper.startSequence().thenIdle(5).thenExecute(() -> link(helper, golem, a, b, c)).thenWaitUntil(() -> {
             helper.assertTrue(count(pinned, Items.OAK_LOG) == 128, "the logs didn't go to the pinned chest");
             helper.assertTrue(count(first, Items.OAK_LOG) == 0 && count(mixed, Items.OAK_LOG) == 0, "logs left elsewhere");
+            helper.assertTrue(count(pinned, Items.BIRCH_LOG) == 0, "the pinned chest kept what isn't pinned to it");
         }).thenSucceed();
     }
 

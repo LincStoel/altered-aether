@@ -215,7 +215,6 @@ public final class AAJadePlugin implements IWailaPlugin {
             if (!pins.isEmpty() && role != GolemStorage.Role.SINK) {
                 ItemStack first = pins.items().isEmpty() ? pins.filters().get(0) : pins.items().get(0);
                 tag.putString("pin", first.getHoverName().getString());
-                tag.putBoolean("strict", pins.strict());
             }
             // the family tidy mode keeps it for, as last planned
             String claim = net.claims().get(GolemStorage.inventoryKey(level, pos));
@@ -248,7 +247,7 @@ public final class AAJadePlugin implements IWailaPlugin {
                 tooltip.add(line("encased"));
             }
             if (tag.contains("pin")) {
-                tooltip.add(line(tag.getBoolean("strict") ? "pinned_only" : "pinned", tag.getString("pin")));
+                tooltip.add(line("pinned_only", tag.getString("pin")));
             }
         }
 
