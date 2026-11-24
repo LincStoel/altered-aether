@@ -282,15 +282,16 @@ class FamilyPlannerTest {
 
     @Test
     void cratesTakeTheOddsAndEndsFirstUpToTheirCapacity() {
+        // five saddles, a crate with room for three: the rest go in with the stackable odds and ends
         SortSnapshot snapshot = snapshot(
-                chest(concat(stacks(PLANKS, 10), new int[]{OAK, 5, ANDESITE, 9, IRON, 7})),
-                crate(15),
+                chest(concat(stacks(PLANKS, 10), new int[]{OAK, 5, IRON, 7}, ones(SADDLE, 5))),
+                crate(3),
                 chest());
         settle(snapshot, SortMode.TIDY);
         SortSnapshot.Inv crate = snapshot.invs().get(1);
-        assertTrue(crate.total() <= 15, "over the crate's capacity");
-        assertTrue(keysIn(crate).size() >= 2, "the odds and ends didn't go to the crate: " + dump(snapshot));
-        assertFalse(keysIn(crate).contains(PLANKS), "spruce in the crate");
+        assertTrue(crate.total() <= 3, "over the crate's capacity");
+        assertEquals(3, count(crate, SADDLE), "the saddles didn't fill the crate: " + dump(snapshot));
+        assertEquals(Set.of(SADDLE), keysIn(crate), "stackable odds and ends in the crate: " + dump(snapshot));
     }
 
     /** {@code n} of an unstackable {@code key}, one to a slot, as key/count pairs. */
@@ -329,7 +330,9 @@ class FamilyPlannerTest {
                     crates.add(keysIn(inv));
                 }
             }
-            assertEquals(Set.of(Set.of(PICKAXE, HELMET), Set.of(IRON)), crates, dump(snapshot));
+            // the iron stacks: it takes the spare chest, not the odds and ends' crate
+            assertEquals(Set.of(Set.of(PICKAXE, HELMET), Set.of()), crates, dump(snapshot));
+            assertTrue(chestWith(snapshot, Set.of(IRON)) >= 0, dump(snapshot));
         }
     }
 
@@ -338,7 +341,7 @@ class FamilyPlannerTest {
         // a crate holding two items: none of the equipment's groups fits
         SortSnapshot tiny = snapshot(chest(MIXED), crate(2), chest(), chest());
         assertTrue(settle(tiny, SortMode.TIDY) <= 4, "didn't settle");
-        assertTrue(keysIn(tiny.invs().get(1)).equals(Set.of(IRON)), "the crate: " + dump(tiny));
+        assertTrue(keysIn(tiny.invs().get(1)).isEmpty(), "the crate: " + dump(tiny));
         assertTrue(chestWith(tiny, Set.of(PICKAXE, HELMET)) >= 0, "the equipment has no chest: " + dump(tiny));
     }
 
@@ -360,8 +363,10 @@ class FamilyPlannerTest {
         SortSnapshot snapshot = snapshot(crate(640, IRON, 7), crate(640).with(false, 14),
                 chest(concat(stacks(PLANKS, 10), ones(PICKAXE, 5), ones(HELMET, 3))), chest());
         assertTrue(settle(snapshot, SortMode.TIDY) <= 4, "didn't settle");
-        assertEquals(Set.of(IRON), keysIn(snapshot.invs().get(0)), dump(snapshot));
+        // the iron stacks, so it takes the spare chest rather than the first crate
+        assertEquals(Set.of(), keysIn(snapshot.invs().get(0)), dump(snapshot));
         assertEquals(Set.of(PICKAXE, HELMET), keysIn(snapshot.invs().get(1)), dump(snapshot));
+        assertTrue(chestWith(snapshot, Set.of(IRON)) >= 0, dump(snapshot));
     }
 
     @Test
@@ -625,9 +630,19 @@ class FamilyPlannerTest {
     }
 
     @Test
-    void stackableOddsAndEndsStayInTheCrateWhileItHasRoomForAll() {
+    void stackableOddsAndEndsTakeAChestBeforeTheCrate() {
+        // the crate has room for all, but the iron stacks: it takes the free chest
         SortSnapshot snapshot = snapshot(crate(640, IRON, 5), chest(ones(SADDLE, 3)), chest());
         assertTrue(settle(snapshot, SortMode.TIDY) <= 4, "didn't settle");
-        assertEquals(Set.of(IRON, SADDLE), keysIn(snapshot.invs().get(0)), dump(snapshot));
+        assertEquals(Set.of(SADDLE), keysIn(snapshot.invs().get(0)), dump(snapshot));
+        assertTrue(chestWith(snapshot, Set.of(IRON)) >= 0, "the iron has no chest: " + dump(snapshot));
+    }
+
+    @Test
+    void stackableOddsAndEndsWithNoOtherHomeTakeTheCrate() {
+        // the only chest is the spruce's: the iron has nowhere but the crate
+        SortSnapshot snapshot = snapshot(chest(stacks(PLANKS, 27)), crate(640, IRON, 7));
+        assertTrue(settle(snapshot, SortMode.TIDY) <= 4, "didn't settle");
+        assertEquals(7, count(snapshot.invs().get(1), IRON), dump(snapshot));
     }
 }

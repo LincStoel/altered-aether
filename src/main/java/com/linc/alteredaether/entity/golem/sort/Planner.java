@@ -44,9 +44,9 @@ import java.util.Set;
  * {@link Grouping}), and its chests give it up for them. Otherwise the family filling the most of a chest's slots is its <b>dominant</b> family. Each item goes to the
  * best home it has: pinned for it, its drawer, pinned for its family, then the dominant chest for its family holding
  * the most of it. A family no chest is for takes empty chests (the biggest first). An item with no home at all goes to
- * the crates, then the chests of miscellaneous items, and if none has room it is reported stuck. When the crates
- * can't hold all the odds and ends, the unstackable ones have them first: stackable ones that don't fit beside those
- * take the chests of miscellaneous items before the crates.
+ * the crates, then the chests of miscellaneous items, and if none has room it is reported stuck.
+ * Only unstackable odds and ends (and the equipment) are kept in crates: a stackable odd and end goes to the chests
+ * of miscellaneous items, and to a crate only when it has no other home.
  *
  * <p>Only a few of an item ({@link #MISC_MAX_ITEMS} at most) are ever miscellaneous. Any more, and an item whose family
  * has no group counts towards the group nearest it in the family tree, so goes wherever that family does; and when its
@@ -248,12 +248,6 @@ public final class Planner {
         int[] type, dominant;
         List<Set<Integer>> pinGroups;
         List<Integer> crates, equipmentCrates, order;
-        /**
-         * The stackable odds and ends that take the odds and ends' crates only after the chests of miscellaneous
-         * items: those the crates have no room for once the unstackable ones are in (a crate counts items, not
-         * stacks, so it holds far more of what doesn't stack than a chest does).
-         */
-        Set<Integer> crateLast = Set.of();
         Map<Integer, List<Integer>> exclusive, newHome;
         final Map<Integer, List<Integer>> pinnedByKey = new HashMap<>(), pinnedByGroup = new HashMap<>(),
                 dominantByGroup = new HashMap<>();
@@ -345,15 +339,21 @@ public final class Planner {
                 claimed.add(dominant[i]);
             }
         }
-        long crateItems = 0;
         for (int i : crates) {
             SortSnapshot.Inv crate = w.invs.get(i);
             crateSlots += Math.min(crate.size(), crate.capacity() / 64L);
-            crateItems += Math.min(crate.capacity(), crate.size() * 64L);
         }
-        L.crateLast = crateLast(w, crates, crateItems);
-        // the odds and ends' crates are for them, while they have room for them all
-        if (crateSlots > 0 && crateSlots >= groupSlots.getOrDefault(SortSnapshot.ROOT, 0)) {
+        // the stackable odds and ends want a chest even beside crates; the slots they fill
+        int stackableSlots = 0;
+        if (!crates.isEmpty()) {
+            for (Map.Entry<Integer, Long> entry : w.miscTotals().entrySet()) {
+                if (w.keys.get(entry.getKey()).maxStack() > 1) {
+                    stackableSlots += w.need(entry.getKey(), entry.getValue());
+                }
+            }
+        }
+        // the odds and ends' crates are for them, while they have room for them all and none of them stacks
+        if (crateSlots > 0 && crateSlots >= groupSlots.getOrDefault(SortSnapshot.ROOT, 0) && stackableSlots == 0) {
             claimed.add(SortSnapshot.ROOT);
         }
         // and the equipment's for the equipment groups they have room for
@@ -368,7 +368,10 @@ public final class Planner {
                 unclaimed.add(group);
             }
         }
-        unclaimed.sort(Comparator.<Integer>comparingInt(g -> -groupSlots.get(g)).thenComparingInt(g -> g));
+        // beside crates, the odds and ends take a chest last: the crates are always there for them
+        boolean cratesBehind = !crates.isEmpty();
+        unclaimed.sort(Comparator.<Integer>comparingInt(g -> cratesBehind && g == SortSnapshot.ROOT ? 1 : 0)
+                .thenComparingInt(g -> -groupSlots.get(g)).thenComparingInt(g -> g));
         // families that have chests but fill more than those hold: room for the rest, before anything new is placed,
         // so a full chest's overflow lands beside it rather than in some other family's chest
         Map<Integer, Integer> overflow = new HashMap<>();
@@ -405,7 +408,9 @@ public final class Planner {
         for (int k = 0; k < wanting.size() && !free.isEmpty(); k++) {
             int group = wanting.get(k);
             boolean more = k < overflowing.size();
-            int left = more ? overflow.get(group) : groupSlots.get(group);
+            // beside crates, the odds and ends want a chest only for what stacks
+            int left = more ? overflow.get(group)
+                    : group == SortSnapshot.ROOT && !crates.isEmpty() ? stackableSlots : groupSlots.get(group);
             Map<Integer, Integer> slotsHere = new HashMap<>();
             for (int i : free) {
                 slotsHere.put(i, w.groupSlotsIn(i, group));
@@ -586,52 +591,13 @@ public final class Planner {
         return out;
     }
 
-    /** Whether {@code key} takes the odds and ends' crates after their chests (see {@link Layout#crateLast}). */
-    private static boolean stackableLast(Work w, Layout L, int key) {
-        return L.crateLast.contains(key);
-    }
-
     /**
-     * The stackable odds and ends left out of the odds and ends' {@code crates} (holding {@code room} items in all):
-     * none while no odds and ends are unstackable or the crates have room for them all. Otherwise the unstackable
-     * ones have the room first, then each stackable one that fits whole in what is left, those already in the
-     * crates first.
+     * Whether {@code key}, outside the equipment's crates, takes the odds and ends' crates only when it has no other
+     * home: it stacks. A crate counts items, not stacks, so it holds far more of what doesn't stack than a chest does,
+     * and is kept for that.
      */
-    private static Set<Integer> crateLast(Work w, List<Integer> crates, long room) {
-        Map<Integer, Long> misc = w.miscTotals();
-        long unstackable = 0, all = 0;
-        for (Map.Entry<Integer, Long> entry : misc.entrySet()) {
-            all += entry.getValue();
-            if (w.keys.get(entry.getKey()).maxStack() <= 1) {
-                unstackable += entry.getValue();
-            }
-        }
-        if (crates.isEmpty() || unstackable == 0 || all <= room) {
-            return Set.of();
-        }
-        Map<Integer, Integer> inCrates = new HashMap<>();
-        for (int c : crates) {
-            w.held.get(c).forEach((key, count) -> inCrates.merge(key, count, Integer::sum));
-        }
-        List<Integer> stackable = new ArrayList<>();
-        for (int key : misc.keySet()) {
-            if (w.keys.get(key).maxStack() > 1) {
-                stackable.add(key);
-            }
-        }
-        stackable.sort(Comparator.<Integer>comparingInt(k -> inCrates.containsKey(k) ? 0 : 1)
-                .thenComparingInt(k -> k));
-        long left = room - unstackable;
-        Set<Integer> last = new HashSet<>();
-        for (int key : stackable) {
-            long count = misc.get(key);
-            if (count <= left) {
-                left -= count;
-            } else {
-                last.add(key);
-            }
-        }
-        return last;
+    private static boolean stackableLast(Work w, Layout L, int key) {
+        return !L.crates.isEmpty() && w.keys.get(key).maxStack() > 1;
     }
 
     private static void addAll(List<Integer> homes, boolean[] in, List<Integer> add) {
@@ -689,7 +655,8 @@ public final class Planner {
                 boolean evicting = inv.refuses(key);
                 if (inv.source() || evicting) {
                     // anywhere else will do: the crates for it and misc chests, then unpinned chests, then ones
-                    // pinned for something else (never a crate for something else)
+                    // pinned for something else (never a crate for something else); a stackable odd and end takes
+                    // the crates only after the unpinned chests
                     boolean[] mark = new boolean[n];
                     int[] wider = new int[length + n + L.crates.size() + L.equipmentCrates.size()];
                     int size = 0;
@@ -697,13 +664,16 @@ public final class Planner {
                         wider[size++] = homes[x];
                         mark[homes[x]] = true;
                     }
-                    for (int c : w.crated(group) ? L.equipmentCrates : L.crates) {
-                        if (c != i && !mark[c]) {
-                            wider[size++] = c;
-                            mark[c] = true;
-                        }
-                    }
+                    boolean late = !w.crated(group) && stackableLast(w, L, key);
                     for (int pass = 0; pass < 2; pass++) {
+                        if (pass == (late ? 1 : 0)) {
+                            for (int c : w.crated(group) ? L.equipmentCrates : L.crates) {
+                                if (c != i && !mark[c]) {
+                                    wider[size++] = c;
+                                    mark[c] = true;
+                                }
+                            }
+                        }
                         for (int j = 0; j < n; j++) {
                             if (j == i || type[j] == SOURCE || type[j] == SINK || type[j] == BULK || type[j] == CRATE
                                     || mark[j] || w.invs.get(j).refuses(key)
