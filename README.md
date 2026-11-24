@@ -1,9 +1,8 @@
 # Altered Aether
 
-A NeoForge addon for [The Aether](https://www.curseforge.com/minecraft/mc-mods/aether) that reshapes the Aether's
-worldgen, built to inspire awe and make the Aether worth exploring. It adds a region of new biomes with their own
-landforms, lakes and waterfalls, rare landmarks you find by exploring, lightning storms over the peaks, and a
-taller Aether.
+A NeoForge addon for [The Aether](https://www.curseforge.com/minecraft/mc-mods/aether): Altered Aether expands the Aether to reach new heights. With a taller Aether to match the Overworld, new biomes with striking landforms, rare landmarks to hunt down, lightning storms over the peaks and rideable aerwhales, you'll have more reasons than ever to journey to the Aether.
+
+The mod is best enjoyed with the optional mods below installed, but it works on its own as a standalone expansion to the Aether.
 
 ![The frozen spire, under BSL shaders](docs/screenshots/frozen_spire_0.png)
 
