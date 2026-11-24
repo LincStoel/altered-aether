@@ -63,8 +63,10 @@ import java.util.Set;
  * every chest is for is still judged on the whole network. An item that moves out of the focus is followed, though:
  * the rest of it, wherever it is on the network, is moved home with it (but not the rest of its family, and not for
  * topping up a sink). A <b>frozen</b> inventory (one in use, say) keeps what it is
- * for but nothing moves into or out of it. An item pinned strictly to two or more chests is shared out between them:
- * new ones go to the chest holding fewest, and the chests are kept within a stack of each other.
+ * for but nothing moves into or out of it. An item pinned strictly to two or more chests goes to those whose pins are
+ * narrowest (an item pinned outright, then the filter letting through the fewest items) and is shared out between
+ * them: new ones go to the chest holding fewest, and the chests are kept within a stack of each other. The chests
+ * pinning it more broadly take only what overflows them, and give it back once the narrowest have room.
  */
 public final class Planner {
     /** Moves planned at most at once; the rest wait for the next plan. */
@@ -628,15 +630,25 @@ public final class Planner {
                 int at, own;
                 List<Integer> shared = L.exclusive.get(key);
                 if (shared != null) {
-                    // pinned strictly to several chests: it stays in any of them (they are evened out below), and
-                    // from anywhere else it goes to the one holding fewest
-                    if (shared.contains(i)) {
+                    // pinned strictly to several chests: it stays in any of the narrowest (they are evened out
+                    // below), and from anywhere else it goes to the one of those holding fewest; the broader chests
+                    // take what overflows them, and what is in one of those waits there for room in the narrowest
+                    List<Integer> narrow = w.narrowest(shared, key);
+                    if (narrow.contains(i)) {
                         continue;
                     }
-                    homes = w.byFewest(shared, key).stream().filter(j -> !w.invs.get(j).refuses(key))
-                            .mapToInt(Integer::intValue).toArray();
+                    List<Integer> order = w.byFewest(narrow, key);
+                    if (shared.contains(i)) {
+                        order.add(i);
+                    } else {
+                        List<Integer> broader = new ArrayList<>(shared);
+                        broader.removeAll(narrow);
+                        order.addAll(w.byHeld(broader, key));
+                    }
+                    homes = order.stream().filter(j -> !w.invs.get(j).refuses(key)).mapToInt(Integer::intValue)
+                            .toArray();
                     at = indexOf(homes, i);
-                    own = homes.length;
+                    own = shared.contains(i) ? narrow.size() : homes.length;
                 } else {
                     // the nearest families' homes are only needed when it isn't already in one of its own
                     homes = homes(w, L, key, group, false);
@@ -802,7 +814,15 @@ public final class Planner {
                     continue;
                 }
                 List<Integer> pinned = w.pinnedFor(storage, key);
-                if (pinned.isEmpty() || pinned.contains(i)) {
+                List<Integer> shared = exclusive.get(key);
+                if (shared != null && shared.contains(i)) {
+                    // in a chest pinning it more broadly than others: it goes to the narrowest when they have room
+                    List<Integer> narrow = w.narrowest(shared, key);
+                    if (narrow.contains(i)) {
+                        continue;
+                    }
+                    pinned = w.byFewest(narrow, key);
+                } else if (pinned.isEmpty() || pinned.contains(i)) {
                     continue;
                 }
                 for (int j : pinned) {
@@ -862,11 +882,12 @@ public final class Planner {
             if (w.full()) {
                 break;
             }
-            List<Integer> shared = exclusive.getOrDefault(key, List.of());
+            List<Integer> shared = exclusive.containsKey(key) ? w.narrowest(exclusive.get(key), key) : List.of();
             List<int[]> partials = new ArrayList<>();
             for (int i : storage) {
                 SortSnapshot.Inv inv = w.invs.get(i);
-                // the chests one item is shared between are evened out instead (see balance)
+                // the chests one item is shared between are evened out instead (see balance); the broader ones
+                // give their partial stacks to them
                 if (inv.frozen() || shared.contains(i) || inv.kind() == Kind.POOLED) {
                     continue;
                 }
@@ -995,7 +1016,7 @@ public final class Planner {
             return null;
         }
         return new SortSnapshot.Inv(inv.kind(), inv.plain(), inv.limit(), key, count, inv.only(), inv.capacity(),
-                inv.pins(), inv.strict(), inv.frozen(), inv.claim());
+                inv.pins(), inv.strict(), inv.frozen(), inv.claim(), inv.ranks());
     }
 
     /** Applies {@code move} to {@code snapshot}'s slots, as the network does; false if it doesn't fit what is there. */
@@ -1722,8 +1743,31 @@ public final class Planner {
         }
 
         /**
-         * Evens out each item shared between strict chests, when one of them is in the focus: from the fullest into
-         * the emptiest until every one is within a stack of the average.
+         * Of the strict inventories {@code shared} that pin {@code key}, those whose pins of it are narrowest: they
+         * share it, and the rest only take what overflows them. All of them while a filter's breadth is still being
+         * counted.
+         */
+        List<Integer> narrowest(List<Integer> shared, int key) {
+            int best = Integer.MAX_VALUE;
+            for (int i : shared) {
+                int rank = invs.get(i).rank(key);
+                if (rank == SortSnapshot.Inv.COUNTING) {
+                    return shared;
+                }
+                best = Math.min(best, rank);
+            }
+            List<Integer> out = new ArrayList<>(shared.size());
+            for (int i : shared) {
+                if (invs.get(i).rank(key) == best) {
+                    out.add(i);
+                }
+            }
+            return out;
+        }
+
+        /**
+         * Evens out each item shared between the narrowest strict chests pinning it, when one of them is in the
+         * focus: from the fullest into the emptiest until every one is within a stack of the average.
          */
         void balance(Map<Integer, List<Integer>> exclusive) {
             List<Integer> shared = new ArrayList<>(exclusive.keySet());
@@ -1731,7 +1775,7 @@ public final class Planner {
             for (int key : shared) {
                 List<Integer> homes = new ArrayList<>();
                 boolean inFocus = false;
-                for (int i : exclusive.get(key)) {
+                for (int i : narrowest(exclusive.get(key), key)) {
                     if (!invs.get(i).frozen()) {
                         homes.add(i);
                         inFocus |= focus.has(i) || received.contains(i);
@@ -1847,9 +1891,19 @@ public final class Planner {
                 }
             }
             if (strict >= 2) {
-                // shared strictly between chests: the one holding fewest first
-                pinned.sort(Comparator.<Integer>comparingInt(i -> invs.get(i).strict() ? 0 : 1)
-                        .thenComparingLong(i -> invs.get(i).strict() ? amount(i, key) : 0).thenComparingInt(i -> i));
+                // shared strictly between chests: the narrowest pins first, the one holding fewest first; then the
+                // broader ones, the one holding most first, for what overflows
+                List<Integer> strictOnes = new ArrayList<>();
+                for (int i : pinned) {
+                    if (invs.get(i).strict()) {
+                        strictOnes.add(i);
+                    }
+                }
+                Set<Integer> narrow = new HashSet<>(narrowest(strictOnes, key));
+                pinned.sort(Comparator.<Integer>comparingInt(i -> !invs.get(i).strict() ? 2 : narrow.contains(i) ? 0 : 1)
+                        .thenComparingLong(i -> !invs.get(i).strict() ? 0 : narrow.contains(i) ? amount(i, key)
+                                : -amount(i, key))
+                        .thenComparingInt(i -> i));
             }
             for (int i : bulkHomes.getOrDefault(key, List.of())) {
                 if (!pinned.contains(i) && storage.contains(i)) {

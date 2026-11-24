@@ -500,4 +500,64 @@ class PlannerTest {
             }
         }
     }
+
+    /** A strict chest of {@code size} slots whose pin of stone (key 0) lets through {@code breadth} items. */
+    private static SortSnapshot.Inv ranked(int size, int breadth, int... keyCount) {
+        SortSnapshot.Inv inv = inv(size, false, Set.of(0), keyCount);
+        return new SortSnapshot.Inv(false, true, inv.limit(), inv.key(), inv.count(), Set.of(0), true)
+                .withRanks(breadth == 1 ? Map.of() : Map.of(0, breadth));
+    }
+
+    @Test
+    void theNarrowestPinWinsASharedItem() {
+        for (SortMode mode : SortMode.values()) {
+            SortSnapshot snapshot = new SortSnapshot(KEYS, List.of(
+                    ranked(27, 200, 0, 64, 0, 64, 0, 64),
+                    ranked(27, 12),
+                    chest(0, 64)));
+            assertTrue(settle(snapshot, mode) <= 3, mode + " didn't settle");
+            assertEquals(0, count(snapshot.invs().get(0), 0), mode + ": the broad chest kept stone");
+            assertEquals(4 * 64, count(snapshot.invs().get(1), 0), mode + ": the narrow chest didn't take it all");
+        }
+    }
+
+    @Test
+    void theBroaderChestTakesOnlyWhatOverflows() {
+        for (SortMode mode : SortMode.values()) {
+            SortSnapshot snapshot = new SortSnapshot(KEYS, List.of(
+                    ranked(27, 200),
+                    ranked(2, 1),
+                    chest(0, 64, 0, 64, 0, 64, 0, 64)));
+            assertTrue(settle(snapshot, mode) <= 3, mode + " didn't settle");
+            assertEquals(2 * 64, count(snapshot.invs().get(1), 0), mode + ": the narrow chest isn't full");
+            assertEquals(2 * 64, count(snapshot.invs().get(0), 0), mode + ": the broad chest didn't take the rest");
+            assertEquals(0, count(snapshot.invs().get(2), 0), mode + ": stone left behind");
+        }
+    }
+
+    @Test
+    void overflowGoesBackOnceTheNarrowestHasRoom() {
+        for (SortMode mode : SortMode.values()) {
+            SortSnapshot snapshot = new SortSnapshot(KEYS, List.of(
+                    ranked(27, 200, 0, 64, 0, 64),
+                    ranked(3, 1, 0, 64)));
+            assertTrue(settle(snapshot, mode) <= 3, mode + " didn't settle");
+            assertEquals(3 * 64, count(snapshot.invs().get(1), 0), mode + ": the narrow chest wasn't refilled");
+            assertEquals(0, count(snapshot.invs().get(0), 0), mode + ": the broad chest kept stone");
+        }
+    }
+
+    @Test
+    void stillCountingSharesAsBefore() {
+        for (SortMode mode : SortMode.values()) {
+            SortSnapshot snapshot = new SortSnapshot(KEYS, List.of(
+                    ranked(27, SortSnapshot.Inv.COUNTING, 0, 64, 0, 64, 0, 64, 0, 64, 0, 64, 0, 64),
+                    ranked(27, 1)));
+            assertTrue(settle(snapshot, mode) <= 3, mode + " didn't settle");
+            for (SortSnapshot.Inv inv : snapshot.invs()) {
+                long here = count(inv, 0);
+                assertTrue(Math.abs(here - 3 * 64) <= 64, mode + ": not shared while counting: " + here);
+            }
+        }
+    }
 }

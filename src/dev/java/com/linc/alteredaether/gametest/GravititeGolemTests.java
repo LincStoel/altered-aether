@@ -533,6 +533,43 @@ public final class GravititeGolemTests {
         }).thenSucceed();
     }
 
+    /**
+     * With Create: two chests whose filters both let cobblestone through. Once the golem has counted how many items
+     * each filter lets through, the narrower one gets all the cobblestone, even what started in the broader one.
+     * Passes trivially without Create.
+     */
+    @GameTest(template = "arena", timeoutTicks = 1200)
+    public static void theNarrowerFilterWinsAnItemBothLetThrough(GameTestHelper helper) {
+        if (!net.neoforged.fml.ModList.get().isLoaded("create")) {
+            helper.succeed();
+            return;
+        }
+        floor(helper);
+        GravititeGolem golem = golem(helper, HOME);
+        BlockPos broadPos = new BlockPos(12, 2, 12), narrowPos = new BlockPos(20, 2, 12), mixed = new BlockPos(12, 2, 20);
+        BaseContainerBlockEntity broad = chest(helper, broadPos, stacks(Items.COBBLESTONE, 1));
+        BaseContainerBlockEntity narrow = chest(helper, narrowPos);
+        BaseContainerBlockEntity other = chest(helper, mixed, join(stacks(Items.COBBLESTONE, 2), stacks(Items.ANDESITE, 1),
+                stacks(Items.OAK_LOG, 3)));
+        ItemFrame broadFrame = new ItemFrame(helper.getLevel(), helper.absolutePos(broadPos.north()), Direction.NORTH);
+        broadFrame.setItem(CreateGolemChecks.listFilter(new ItemStack(Items.COBBLESTONE), new ItemStack(Items.ANDESITE),
+                new ItemStack(Items.DIORITE), new ItemStack(Items.GRANITE)), false);
+        helper.getLevel().addFreshEntity(broadFrame);
+        ItemFrame narrowFrame = new ItemFrame(helper.getLevel(), helper.absolutePos(narrowPos.north()), Direction.NORTH);
+        narrowFrame.setItem(CreateGolemChecks.listFilter(new ItemStack(Items.COBBLESTONE), new ItemStack(Items.TUFF)),
+                false);
+        helper.getLevel().addFreshEntity(narrowFrame);
+        helper.startSequence().thenIdle(5).thenExecute(() -> link(helper, golem, broadPos, narrowPos, mixed))
+                .thenWaitUntil(() -> {
+                    assertSettled(helper, golem);
+                    helper.assertTrue(count(narrow, Items.COBBLESTONE) == 192,
+                            "the narrower filter didn't win the cobblestone: " + count(narrow, Items.COBBLESTONE));
+                    helper.assertTrue(count(broad, Items.COBBLESTONE) == 0 && count(broad, Items.ANDESITE) == 64,
+                            "the broader filter kept cobblestone or lost its andesite");
+                    helper.assertTrue(count(other, Items.OAK_LOG) == 192, "the logs moved");
+                }).thenSucceed();
+    }
+
     /** Its pebble used on the golem links the storage around it (not bookshelves or furnaces); crouching unlinks it. */
     @GameTest(template = "arena", timeoutTicks = 200)
     public static void aPebbleUsedOnItsGolemLinksAllAround(GameTestHelper helper) {

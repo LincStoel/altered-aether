@@ -138,6 +138,67 @@ final class InvCache {
         return entry.inv;
     }
 
+    /**
+     * Ranks the pins of each key two or more strict inventories share by how narrow they are, so the narrowest win it
+     * (see {@link SortSnapshot.Inv#ranks}): a key pinned outright ranks 1, one pinned by Create filters ranks as the
+     * fewest items any of those filters lets through. Only filters that share a key are counted.
+     *
+     * @param invs    the snapshot's inventories, replaced in place by ranked copies
+     * @param invKeys each inventory's key, as {@link #get} takes it
+     * @return true while a filter's breadth is still being counted: those keys are shared by all their chests for now
+     */
+    boolean rankShared(List<SortSnapshot.Inv> invs, List<Long> invKeys) {
+        Map<Integer, List<Integer>> homes = new HashMap<>();
+        boolean filtered = false;
+        for (int i = 0; i < invs.size(); i++) {
+            SortSnapshot.Inv inv = invs.get(i);
+            if (!inv.strict() || inv.source() || inv.kind() == SortSnapshot.Kind.SINK) {
+                continue;
+            }
+            Entry entry = entries.get(invKeys.get(i));
+            filtered |= entry != null && !entry.filters.isEmpty();
+            for (int pin : inv.pins()) {
+                homes.computeIfAbsent(pin, k -> new ArrayList<>(2)).add(i);
+            }
+        }
+        if (!filtered) {
+            return false;
+        }
+        boolean counting = false;
+        Map<Integer, Map<Integer, Integer>> ranks = new HashMap<>();
+        for (Map.Entry<Integer, List<Integer>> shared : homes.entrySet()) {
+            if (shared.getValue().size() < 2) {
+                continue;
+            }
+            int key = shared.getKey();
+            for (int i : shared.getValue()) {
+                Entry entry = entries.get(invKeys.get(i));
+                if (entry == null || entry.filters.isEmpty() || entry.basePins.contains(key)) {
+                    continue;
+                }
+                int best = Integer.MAX_VALUE;
+                for (ItemStack filter : entry.filters) {
+                    FilterMatch match = filterMatches.get(ItemStack.hashItemAndComponents(filter));
+                    if (match == null || !match.keys.contains(key)) {
+                        continue;
+                    }
+                    int breadth = FilterBreadth.breadth(filter);
+                    if (breadth < 0) {
+                        best = SortSnapshot.Inv.COUNTING;
+                        counting = true;
+                        break;
+                    }
+                    best = Math.min(best, breadth);
+                }
+                if (best != Integer.MAX_VALUE && best != 1) {
+                    ranks.computeIfAbsent(i, k -> new HashMap<>()).put(key, best);
+                }
+            }
+        }
+        ranks.forEach((i, ranked) -> invs.set(i, invs.get(i).withRanks(Map.copyOf(ranked))));
+        return counting;
+    }
+
     /** The keys {@code filters} let through: those they name, and every key numbered so far that passes them. */
     private Set<Integer> filterKeys(ServerLevel level, List<ItemStack> filters) {
         Set<Integer> out = new HashSet<>();

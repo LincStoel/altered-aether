@@ -33,6 +33,7 @@ import net.neoforged.neoforge.items.ItemHandlerHelper;
 import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Predicate;
 
 /**
  * Create's brass funnels as golem sinks: a brass funnel set to put items into the block behind it (a machine, say) is
@@ -75,6 +76,15 @@ public final class CreateFunnels {
     /** Whether {@code filter} lets {@code stack} through; an empty filter lets nothing through. */
     public static boolean accepts(Level level, ItemStack filter, ItemStack stack) {
         return !filter.isEmpty() && FilterItemStack.of(filter).test(level, stack);
+    }
+
+    /** A test for what {@code filter} lets through, read from it once: for testing many items against one filter. */
+    public static Predicate<ItemStack> matcher(Level level, ItemStack filter) {
+        if (filter.isEmpty()) {
+            return stack -> false;
+        }
+        FilterItemStack parsed = FilterItemStack.of(filter);
+        return stack -> parsed.test(level, stack);
     }
 
     /** The items {@code filter} names outright: itself if it is a plain item, a list filter's list if it isn't a blacklist. */

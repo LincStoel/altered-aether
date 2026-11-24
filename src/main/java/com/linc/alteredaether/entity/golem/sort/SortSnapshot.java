@@ -18,6 +18,7 @@ import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 
@@ -109,9 +110,21 @@ public record SortSnapshot(List<Key> keys, List<Inv> invs, List<Node> nodes, @Nu
      *                 it): it still says what it is for, but nothing moves into or out of it
      * @param claim    the family it was for last time it was planned, or -1; it keeps that family until another fills
      *                 clearly more of it (see {@link Planner#plan(SortSnapshot, SortMode, Planner.Focus, Planner.Settings)})
+     * @param ranks    how narrow the pin is of each pinned key another strict inventory also pins: how many items the
+     *                 filter pinning it lets through, or {@link #COUNTING} while that is being counted. A key left out
+     *                 is pinned outright (rank 1). Of the strict inventories sharing a key, the narrowest pins share
+     *                 it and the broader ones only take what overflows them.
      */
     public record Inv(Kind kind, boolean plain, int[] limit, int[] key, int[] count, int[] only, int capacity,
-                      Set<Integer> pins, boolean strict, boolean frozen, int claim) {
+                      Set<Integer> pins, boolean strict, boolean frozen, int claim, Map<Integer, Integer> ranks) {
+        /** A pin's rank while its filter's breadth is still being counted: every chest sharing the key shares it. */
+        public static final int COUNTING = -1;
+
+        public Inv(Kind kind, boolean plain, int[] limit, int[] key, int[] count, int[] only, int capacity,
+                   Set<Integer> pins, boolean strict, boolean frozen, int claim) {
+            this(kind, plain, limit, key, count, only, capacity, pins, strict, frozen, claim, Map.of());
+        }
+
         /** An inventory whose pins, if any, take their families too. */
         public Inv(boolean source, boolean plain, int[] limit, int[] key, int[] count, Set<Integer> pins) {
             this(source, plain, limit, key, count, pins, false);
@@ -137,6 +150,11 @@ public record SortSnapshot(List<Key> keys, List<Inv> invs, List<Node> nodes, @Nu
             return strict && !pins.contains(key);
         }
 
+        /** How narrow its pin of {@code key} is: 1 when pinned outright (see {@link #ranks}). */
+        public int rank(int key) {
+            return ranks.getOrDefault(key, 1);
+        }
+
         public int size() {
             return key.length;
         }
@@ -154,22 +172,27 @@ public record SortSnapshot(List<Key> keys, List<Inv> invs, List<Node> nodes, @Nu
 
         public Inv copy() {
             return new Inv(kind, plain, limit.clone(), key.clone(), count.clone(), only.clone(), capacity, pins, strict,
-                    frozen, claim);
+                    frozen, claim, ranks);
         }
 
         /** The same inventory, frozen or not, claiming {@code claim}. */
         public Inv with(boolean frozen, int claim) {
-            return new Inv(kind, plain, limit, key, count, only, capacity, pins, strict, frozen, claim);
+            return new Inv(kind, plain, limit, key, count, only, capacity, pins, strict, frozen, claim, ranks);
         }
 
         /** The same inventory with other pins. */
         public Inv withPins(Set<Integer> pins) {
-            return new Inv(kind, plain, limit, key, count, only, capacity, pins, strict, frozen, claim);
+            return new Inv(kind, plain, limit, key, count, only, capacity, pins, strict, frozen, claim, ranks);
+        }
+
+        /** The same inventory with its shared pins ranked (see {@link #ranks}). */
+        public Inv withRanks(Map<Integer, Integer> ranks) {
+            return new Inv(kind, plain, limit, key, count, only, capacity, pins, strict, frozen, claim, ranks);
         }
 
         /** The same inventory playing another part, with each empty slot taking {@code only} and a total cap. */
         public Inv as(Kind kind, int[] only, int capacity) {
-            return new Inv(kind, plain, limit, key, count, only, capacity, pins, strict, frozen, claim);
+            return new Inv(kind, plain, limit, key, count, only, capacity, pins, strict, frozen, claim, ranks);
         }
 
         public boolean isEmpty() {
@@ -187,7 +210,7 @@ public record SortSnapshot(List<Key> keys, List<Inv> invs, List<Node> nodes, @Nu
                     && Arrays.equals(limit, other.limit) && Arrays.equals(key, other.key)
                     && Arrays.equals(count, other.count) && Arrays.equals(only, other.only)
                     && capacity == other.capacity && pins.equals(other.pins) && strict == other.strict
-                    && frozen == other.frozen && claim == other.claim;
+                    && frozen == other.frozen && claim == other.claim && ranks.equals(other.ranks);
         }
 
         @Override

@@ -438,6 +438,8 @@ public final class GolemSorter {
         /** Every inventory this sort moved items into (every one, for a sort asked for), to tidy within once done. */
         final Set<Long> touched = new HashSet<>();
         boolean working, claimsLoaded, finishPending, contentsChanged;
+        /** A snapshot ranked shared pins while a filter was still being counted: sort again once it is. */
+        boolean awaitingBreadth;
         int cursor;
         Status status = Status.IDLE;
         int unplaced, outOfReach, inUse, blocked;
@@ -459,6 +461,11 @@ public final class GolemSorter {
                         claims.put(key, name);
                     }
                 });
+            }
+            if (awaitingBreadth && FilterBreadth.idle()) {
+                // the filters that share an item have been counted: the narrowest of them now win it
+                awaitingBreadth = false;
+                triggers.requestFullSort(now, delay());
             }
             boolean idle = flights.isEmpty() && queue.isEmpty() && !finishPending && !triggers.pending();
             int interval = AACommonConfig.GOLEM_SCAN_INTERVAL.get();
@@ -834,6 +841,9 @@ public final class GolemSorter {
             }
             for (BlockPos pos : gone) {
                 networks.prune(net, pos);
+            }
+            if (cache.rankShared(invs, invKeys)) {
+                awaitingBreadth = true;
             }
             List<SortSnapshot.Pos> where = new ArrayList<>(positions.size());
             for (BlockPos pos : positions) {
