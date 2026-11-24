@@ -72,23 +72,40 @@ public final class GolemClient {
             };
         }
 
-        /** A live pebble takes its network's colour; a dull one stays grey. */
+        /**
+         * A live pebble takes its network's colour, its body a deep, saturated shade and its sparkle a light one; a dull
+         * one stays grey.
+         */
         @SubscribeEvent
         public static void itemColors(RegisterColorHandlersEvent.Item event) {
             event.register((stack, tint) -> {
+                if (tint != 0 && tint != 1) {
+                    return -1;
+                }
                 PebbleLink link = stack.get(AARegistries.PEBBLE_LINK.get());
-                if (tint != 0) {
-                    return -1;
-                }
+                int rgb;
                 if (link == null) {
-                    return 0xFF000000 | GravititeGolemRenderer.tint(GravititeGolem.DEFAULT_COLOR.getTextureDiffuseColor());
-                }
-                if (!PebbleInfo.bright(link, null)) {
+                    rgb = GravititeGolemRenderer.tint(GravititeGolem.DEFAULT_COLOR.getTextureDiffuseColor());
+                } else if (!PebbleInfo.bright(link, null)) {
                     return -1;
+                } else {
+                    PebbleInfo.Info info = PebbleInfo.get(link.network());
+                    rgb = GravititeGolemRenderer.tint(info != null ? info.color() : link.color().getTextureDiffuseColor());
                 }
-                PebbleInfo.Info info = PebbleInfo.get(link.network());
-                return 0xFF000000 | GravititeGolemRenderer.tint(info != null ? info.color() : link.color().getTextureDiffuseColor());
+                return 0xFF000000 | (tint == 0 ? saturated(rgb) : light(rgb));
             }, AARegistries.STORAGE_PEBBLE.get());
+        }
+
+        /** {@code rgb} with its colour strengthened, so the pebble's light grey body reads clearly as it. */
+        private static int saturated(int rgb) {
+            float[] hsb = java.awt.Color.RGBtoHSB(rgb >> 16 & 0xFF, rgb >> 8 & 0xFF, rgb & 0xFF, null);
+            return java.awt.Color.HSBtoRGB(hsb[0], Math.min(1, hsb[1] * 1.35F + 0.1F), hsb[2]) & 0xFFFFFF;
+        }
+
+        /** {@code rgb} halfway to white, for the sparkle. */
+        private static int light(int rgb) {
+            int r = (rgb >> 16 & 0xFF) + 255 >> 1, g = (rgb >> 8 & 0xFF) + 255 >> 1, b = (rgb & 0xFF) + 255 >> 1;
+            return r << 16 | g << 8 | b;
         }
 
         private Registration() {
