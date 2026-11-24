@@ -18,6 +18,7 @@ import com.linc.alteredaether.AlteredAether;
 import com.linc.alteredaether.compat.CreateCompat;
 import com.linc.alteredaether.compat.CreateFunnels;
 import com.linc.alteredaether.compat.CreatePlacards;
+import com.linc.alteredaether.compat.SupplementariesShelves;
 import com.linc.alteredaether.config.AACommonConfig;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -353,6 +354,10 @@ public final class GolemStorage {
         return ModList.get().isLoaded(CreateCompat.MOD) && AACommonConfig.compat(CreateCompat.MOD);
     }
 
+    private static boolean supplementaries() {
+        return ModList.get().isLoaded(SupplementariesShelves.MOD) && AACommonConfig.compat(SupplementariesShelves.MOD);
+    }
+
     /** Those of {@code positions} that are storage pinned strictly, for their glow. */
     public static List<BlockPos> strict(ServerLevel level, Collection<BlockPos> positions) {
         List<BlockPos> strict = new ArrayList<>();
@@ -373,6 +378,15 @@ public final class GolemStorage {
             if (attached.equals(pos) && !frame.getItem().isEmpty()) {
                 (create && CreateFunnels.isFilter(frame.getItem()) ? filters : pins).add(frame.getItem());
                 strict |= frame instanceof GlowItemFrame;
+            }
+        }
+        if (supplementaries()) {
+            // an item shelf pins like a plain item frame: the item and its family
+            for (Direction side : Direction.Plane.HORIZONTAL) {
+                ItemStack held = SupplementariesShelves.heldOn(level, pos, side);
+                if (!held.isEmpty()) {
+                    (create && CreateFunnels.isFilter(held) ? filters : pins).add(held);
+                }
             }
         }
         if (create) {
