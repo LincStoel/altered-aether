@@ -197,10 +197,12 @@ public final class ElectricTour {
                 false, null));
         steps.add(new Step("jar_rod", level -> { }, new Vec3(-3.5, 1.6, -5.4), new Vec3(-3.5, 1.0, -6.5), 20, false,
                 null));
-        // the squall turns to face the camera (the player), so it should look a different way in each
-        steps.add(new Step("squall_west", level -> { }, new Vec3(1.0, 1.5, -2.6), new Vec3(2.5, 0.5, -3.5), 40, false,
+        // from standing eye height: the squall turns to face the camera, so it should look a different way in each
+        steps.add(new Step("squall_west", level -> { }, new Vec3(0.5, 1.62, -3.5), new Vec3(2.5, 0.6, -3.5), 40, false,
                 null));
-        steps.add(new Step("squall_northeast", level -> { }, new Vec3(3.7, 1.5, -4.9), new Vec3(2.5, 0.5, -3.5), 40,
+        steps.add(new Step("squall_south", level -> { }, new Vec3(2.5, 1.62, -1.5), new Vec3(2.5, 0.6, -3.5), 40, false,
+                null));
+        steps.add(new Step("squall_northeast", level -> { }, new Vec3(4.0, 1.62, -5.0), new Vec3(2.5, 0.6, -3.5), 40,
                 false, null));
         steps.add(new Step("storm_cloud", level -> {
             drop(level, -0.6, ElectricRegistries.STATIC_BOOTS.get());

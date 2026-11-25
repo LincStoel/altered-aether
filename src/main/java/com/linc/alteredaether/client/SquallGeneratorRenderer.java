@@ -47,15 +47,19 @@ import java.util.Map;
 import java.util.WeakHashMap;
 
 /**
- * The squall caught in a Squall Generator: the zephyr's model, half size, in the squall's texture, bobbing in the bowl
- * with its tail curled up out of it, its open top whichever way the block faces. Like the blaze in Create's blaze
- * burner, it turns to look at the player, about the bowl's own up. Lit, it glows at full brightness and bobs faster.
+ * The squall caught in a Squall Generator: the zephyr's model, a bit under half size, in the squall's texture, resting
+ * in the bowl's mouth with its face looking out over the rim and its tail curled up behind, its open top whichever way
+ * the block faces. Like the blaze in Create's blaze burner, it turns to look at the player, about the bowl's own up.
+ * Lit, it glows at full brightness and bobs faster.
  */
 public class SquallGeneratorRenderer implements BlockEntityRenderer<BlockEntity> {
     private static final ResourceLocation TEXTURE = AlteredAether.id("textures/entity/mobs/squall/squall.png");
-    private static final float SCALE = 0.5F;
-    /** The bowl's floor, below the block's centre (with its open top up). */
-    private static final double FLOOR = -6 / 16.0;
+    private static final float SCALE = 0.45F;
+    /**
+     * Where the squall's underside rests, from the block's centre (with the bowl's open top up): level with the top of
+     * the bowl's walls, under the rim, so its face (the lower part of it) shows over the rim.
+     */
+    private static final double UNDERSIDE = 8.6 / 16 - 0.5;
     /** How far the model's lowest point (its body's underside) sits above its feet, in model pixels. */
     private static final float BODY_LIFT = 11;
     /** The share of the way to the player the squall turns each tick, as the blaze burner's head chases. */
@@ -70,9 +74,9 @@ public class SquallGeneratorRenderer implements BlockEntityRenderer<BlockEntity>
         model = new ZephyrModel(context.bakeLayer(AetherModelLayers.ZEPHYR));
         // the tail tucked into the cloud's back and curled up, so a squall this size stays in its block
         model.tailBase.z = 6;
-        model.tailBase.xRot = 1.2F;
+        model.tailBase.xRot = 0.7F;
         model.tailMiddle.xRot = 0.5F;
-        model.tailEnd.xRot = 0.3F;
+        model.tailEnd.xRot = 0.4F;
     }
 
     @Override
@@ -91,9 +95,9 @@ public class SquallGeneratorRenderer implements BlockEntityRenderer<BlockEntity>
         pose.pushPose();
         pose.translate(0.5, 0.5, 0.5);
         pose.mulPose(facing);
-        // its underside just off the bowl's floor, bobbing faster while it works
+        // resting in the bowl's mouth, bobbing faster while it works
         float bob = (1 + Mth.sin(time * (lit ? 0.25F : 0.08F))) * 0.02F;
-        pose.translate(0, FLOOR + 0.03 - BODY_LIFT / 16 * SCALE + bob, 0);
+        pose.translate(0, UNDERSIDE - BODY_LIFT / 16 * SCALE + bob, 0);
         pose.mulPose(Axis.YP.rotation(Mth.lerp(partialTick, look.yawO, look.yaw)));
         // entity models are drawn upside down from their feet, as LivingEntityRenderer sets them up
         pose.scale(-SCALE, -SCALE, SCALE);
