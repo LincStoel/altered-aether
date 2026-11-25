@@ -53,6 +53,13 @@ public final class CreateElectricTests {
     }
 
     @GameTest(template = "arena", timeoutTicks = 200)
+    public static void theWheelTakesJarsTurnedAnyWayOnItsRods(GameTestHelper helper) {
+        if (create(helper)) {
+            CreateElectricCheck.wheelTurnedJars(helper);
+        }
+    }
+
+    @GameTest(template = "arena", timeoutTicks = 200)
     public static void theWheelStopsWhenAJarRunsDry(GameTestHelper helper) {
         if (create(helper)) {
             CreateElectricCheck.wheelDrained(helper);

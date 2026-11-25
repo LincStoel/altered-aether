@@ -31,7 +31,7 @@ public final class ElectricCapabilities {
         event.registerBlockEntity(Capabilities.EnergyStorage.BLOCK, ElectricRegistries.AETHER_JAR_BLOCK_ENTITY.get(),
                 (jar, side) -> side == null ? jar.port() : side == jar.facing() ? jar.output()
                         : side == jar.facing().getOpposite() ? jar.input() : null);
-        // a generator takes FE on any side but its front and back, and fuel on any
+        // a generator takes FE on any side but its front, and fuel on any
         event.registerBlockEntity(Capabilities.EnergyStorage.BLOCK, ElectricRegistries.SQUALL_GENERATOR_BLOCK_ENTITY.get(),
                 (entity, side) -> entity instanceof SquallGeneratorHost host
                         ? host.core().energy(side, entity.getBlockState().getValue(SquallGeneratorBlock.FACING)) : null);

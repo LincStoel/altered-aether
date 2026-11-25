@@ -82,6 +82,22 @@ public class AetherJarBlock extends BaseEntityBlock {
         return creative;
     }
 
+    /**
+     * The jar, either kind, whose top touches {@code rod} (a lightning rod there is "on top of" it, whichever way the
+     * jar is turned); null if none. With more than one, the first found.
+     */
+    @Nullable
+    public static BlockPos jarUnder(BlockGetter level, BlockPos rod) {
+        for (Direction side : Direction.values()) {
+            BlockPos at = rod.relative(side);
+            BlockState state = level.getBlockState(at);
+            if (state.getBlock() instanceof AetherJarBlock && state.getValue(FACING) == side.getOpposite()) {
+                return at;
+            }
+        }
+        return null;
+    }
+
     /** An upright box (pixels) turned so its top points {@code facing}. */
     private static VoxelShape box(Direction facing, double x0, double y0, double z0, double x1, double y1, double z1) {
         return switch (facing) {

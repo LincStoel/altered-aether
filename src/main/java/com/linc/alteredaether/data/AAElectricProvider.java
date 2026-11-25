@@ -87,9 +87,9 @@ public final class AAElectricProvider extends JsonDataProvider {
         lang.put("item." + AlteredAether.MOD_ID + ".static_boots", "Static Boots");
         lang.put(tip + "energy", "%s / %s FE");
         lang.put(tip + "squall_insulator", "Catch a squall: let its lightning strike the bowl, or wear it down and use this on it");
-        lang.put(tip + "squall_generator", "Burns ambrosium or takes FE; charges the jar behind it and shocks what it faces");
+        lang.put(tip + "squall_generator", "Burns ambrosium or takes FE; shocks what it faces, and charges a jar through a lightning rod on its top");
         lang.put(tip + "static_boots", "Grounded: resists knockback, sinks faster, jumps no higher than plain");
-        lang.put(tip + "aerogel_wheel", "Spun by two charged Aether Jars with lightning rods, two blocks either side");
+        lang.put(tip + "aerogel_wheel", "Spun by two charged Aether Jars through lightning rods on their tops, two blocks either side");
         lang.put("death.attack." + AlteredAether.MOD_ID + "_electrocution", "%1$s was electrocuted");
         lang.put("death.attack." + AlteredAether.MOD_ID + "_electrocution.player",
                 "%1$s was electrocuted while fighting %2$s");
@@ -98,7 +98,7 @@ public final class AAElectricProvider extends JsonDataProvider {
         lang.put(jade + "generator.fuel", "Ambrosium: %s s left");
         lang.put(jade + "generator.superheated", "Superheated: %s s left");
         lang.put(jade + "generator.idle", "Needs ambrosium or FE");
-        lang.put(jade + "wheel.incomplete", "Needs an Aether Jar and a lightning rod two blocks out on each side");
+        lang.put(jade + "wheel.incomplete", "Needs a lightning rod two blocks out on each side, on top of an Aether Jar");
         lang.put(jade + "wheel.drained", "A jar is out of charge");
         lang.put("jei." + AlteredAether.MOD_ID + ".flash_blasting", "Flash Blasting");
         lang.put("message." + AlteredAether.MOD_ID + ".squall_caught", "The squall is caught in the bowl");

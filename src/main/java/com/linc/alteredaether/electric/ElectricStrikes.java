@@ -16,7 +16,6 @@ package com.linc.alteredaether.electric;
 
 import com.linc.alteredaether.advancement.AAAdvancements;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.LightningBolt;
@@ -52,15 +51,7 @@ public final class ElectricStrikes {
         if (state.getBlock() instanceof AetherJarBlock) {
             return at;
         }
-        if (state.is(Blocks.LIGHTNING_ROD)) {
-            for (Direction side : Direction.values()) {
-                BlockState jar = level.getBlockState(at.relative(side));
-                if (jar.getBlock() instanceof AetherJarBlock && jar.getValue(AetherJarBlock.FACING) == side.getOpposite()) {
-                    return at.relative(side);
-                }
-            }
-        }
-        return null;
+        return state.is(Blocks.LIGHTNING_ROD) ? AetherJarBlock.jarUnder(level, at) : null;
     }
 
     private ElectricStrikes() {

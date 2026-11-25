@@ -37,6 +37,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.Mth;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.LightningRodBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
@@ -44,9 +45,9 @@ import org.jetbrains.annotations.Nullable;
 import java.util.List;
 
 /**
- * Franklin's electric wheel. Two Aether Jars stand two blocks out to either side of it, one level down, each with a
- * lightning rod on top whose tip is level with the wheel; the blocks between are air, and under the wheel is air or a
- * shaft. Set up so, the jars' charge spins it, as a Create Crafts & Additions electric motor would be spun: its speed
+ * Franklin's electric wheel. Two lightning rods stand level with it, two blocks out to either side, each on top of an
+ * Aether Jar: the jar may be on any side of its rod and turned any way, so long as its top touches the rod. The blocks
+ * between the rods and the wheel are air, and under the wheel is air or a shaft. Set up so, the jars' charge spins it, as a Create Crafts & Additions electric motor would be spun: its speed
  * is set like a motor's, 1 to 256 RPM either way; it gives {@code wheel_stress_per_rpm} stress units per RPM; and it
  * draws {@code wheel_fe_at_max_rpm} FE a tick at 256 RPM, less in step with its speed but never under
  * {@code wheel_min_consumption}, half from each jar. Out of charge in either jar, or given a redstone signal, it stops.
@@ -138,7 +139,11 @@ public class AerogelWheelBlockEntity extends GeneratingKineticBlockEntity {
         if (running && level.getGameTime() % 10 == 0 && frame != null) {
             // sparks from each rod's tip to the disc
             for (int side : new int[]{-1, 1}) {
-                Vec3 tip = Vec3.atCenterOf(worldPosition.relative(frame, 2 * side)).add(0, 0.4, 0);
+                BlockPos rodPos = worldPosition.relative(frame, 2 * side);
+                BlockState rod = level.getBlockState(rodPos);
+                Direction pointing = rod.hasProperty(LightningRodBlock.FACING) ? rod.getValue(LightningRodBlock.FACING)
+                        : Direction.UP;
+                Vec3 tip = Vec3.atCenterOf(rodPos).add(Vec3.atLowerCornerOf(pointing.getNormal()).scale(0.4));
                 SquallGeneratorCore.arc((ServerLevel) level, tip, Vec3.atCenterOf(worldPosition).add(frame == Direction.Axis.X
                         ? side * 0.9 : 0, 0, frame == Direction.Axis.Z ? side * 0.9 : 0));
             }
@@ -166,8 +171,8 @@ public class AerogelWheelBlockEntity extends GeneratingKineticBlockEntity {
 
     @Nullable
     private AetherJarBlockEntity jar(Direction.Axis axis, int side) {
-        return level.getBlockEntity(worldPosition.relative(axis, 2 * side).below()) instanceof AetherJarBlockEntity jar
-                ? jar : null;
+        BlockPos at = AetherJarBlock.jarUnder(level, worldPosition.relative(axis, 2 * side));
+        return at != null && level.getBlockEntity(at) instanceof AetherJarBlockEntity jar ? jar : null;
     }
 
     /** The line, X or Z, a wheel at {@code pos} has a full frame along; null if neither. */
@@ -188,14 +193,8 @@ public class AerogelWheelBlockEntity extends GeneratingKineticBlockEntity {
 
     private static boolean side(Level level, BlockPos pos, Direction.Axis axis, int sign) {
         BlockPos near = pos.relative(axis, sign), rod = pos.relative(axis, 2 * sign);
-        return level.getBlockState(near).isAir() && level.getBlockState(near.below()).isAir()
-                && level.getBlockState(rod).is(Blocks.LIGHTNING_ROD)
-                && upright(level.getBlockState(rod.below()));
-    }
-
-    /** An Aether Jar, either kind, standing upright so the rod is on its top. */
-    private static boolean upright(BlockState jar) {
-        return jar.getBlock() instanceof AetherJarBlock && jar.getValue(AetherJarBlock.FACING) == Direction.UP;
+        return level.getBlockState(near).isAir() && level.getBlockState(rod).is(Blocks.LIGHTNING_ROD)
+                && AetherJarBlock.jarUnder(level, rod) != null;
     }
 
     @Override

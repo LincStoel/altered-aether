@@ -28,9 +28,9 @@ public final class WheelPonderText {
     public static final String HEADER = "Spinning the Aerogel Wheel";
     public static final List<String> LINES = List.of(
             "The Aerogel Wheel is turned by the charge of two Aether Jars",
-            "Stand a jar two blocks out on each side, one level down, with a lightning rod on top",
-            "The rods' tips are level with the wheel; leave the blocks between them empty",
-            "Lightning striking the rods charges the jars, as do Squall Generators and cables from below",
+            "Set a lightning rod level with it two blocks out on each side, each on top of a jar",
+            "A jar may sit on any side of its rod, turned any way, so long as its top touches the rod; leave the blocks between the rods and the wheel empty",
+            "Lightning striking the rods charges the jars, as do Squall Generators sparking at them and cables into the jars' bottoms",
             "Set its speed on the panel at its side, up to 256 RPM either way",
             "The faster it turns, the more stress it gives, and the faster it drains the jars",
             "When either jar runs dry, or it has a redstone signal, it stops");

@@ -18,6 +18,7 @@ import com.aetherteam.aether.item.AetherItems;
 import com.linc.alteredaether.compat.CreateElectric;
 import com.linc.alteredaether.compat.create.AerogelWheelBlockEntity;
 import com.linc.alteredaether.config.AACommonConfig;
+import com.linc.alteredaether.electric.AetherJarBlock;
 import com.linc.alteredaether.electric.AetherJarBlockEntity;
 import com.linc.alteredaether.electric.ElectricRegistries;
 import com.linc.alteredaether.electric.SquallGeneratorBlock;
@@ -135,6 +136,36 @@ final class CreateElectricCheck {
                     "a wheel missing a rod");
             helper.succeed();
         });
+    }
+
+    /**
+     * The rods alone, two out either side, with their jars turned: the west one hanging over its rod, top down, the east
+     * one beside its rod on the far side, top west. Both drain as the wheel turns.
+     */
+    static void wheelTurnedJars(GameTestHelper helper) {
+        BlockPos wheelPos = new BlockPos(6, 3, 6);
+        BlockPos westRod = wheelPos.west(2), eastRod = wheelPos.east(2);
+        helper.setBlock(westRod.below(), Blocks.STONE);
+        helper.setBlock(eastRod.below(), Blocks.STONE);
+        helper.setBlock(westRod, Blocks.LIGHTNING_ROD);
+        helper.setBlock(eastRod, Blocks.LIGHTNING_ROD);
+        AetherJarBlockEntity west = turnedJar(helper, westRod.above(), Direction.DOWN);
+        AetherJarBlockEntity east = turnedJar(helper, eastRod.east(), Direction.WEST);
+        helper.setBlock(wheelPos, CreateElectric.AEROGEL_WHEEL.get());
+        helper.runAfterDelay(60, () -> {
+            AerogelWheelBlockEntity wheel = wheel(helper, wheelPos);
+            helper.assertTrue(wheel.running(), "the wheel isn't turning: " + wheel.stop());
+            helper.assertTrue(west.energy() < AetherJarBlockEntity.capacity(), "the hanging jar wasn't drawn on");
+            helper.assertTrue(east.energy() < AetherJarBlockEntity.capacity(), "the sideways jar wasn't drawn on");
+            helper.succeed();
+        });
+    }
+
+    private static AetherJarBlockEntity turnedJar(GameTestHelper helper, BlockPos pos, Direction facing) {
+        helper.setBlock(pos, ElectricRegistries.AETHER_JAR.get().defaultBlockState().setValue(AetherJarBlock.FACING, facing));
+        AetherJarBlockEntity jar = (AetherJarBlockEntity) helper.getBlockEntity(pos);
+        jar.charge(AetherJarBlockEntity.capacity());
+        return jar;
     }
 
     /** Charged jars on stone two out either side along X, rods on them, the wheel between the tips. */

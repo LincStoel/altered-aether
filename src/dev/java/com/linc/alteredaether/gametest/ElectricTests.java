@@ -216,14 +216,25 @@ public final class ElectricTests {
     // -- the generator --
 
     @GameTest(template = "arena", timeoutTicks = 200)
-    public static void aGeneratorChargesTheJarBehindIt(GameTestHelper helper) {
-        BlockPos jarPos = floor(helper, new BlockPos(5, 2, 5));
-        AetherJarBlockEntity jar = jar(helper, jarPos);
-        BlockPos generatorPos = generator(helper, jarPos.above(), Direction.UP);
+    public static void aGeneratorChargesAJarThroughARodOnItsTop(GameTestHelper helper) {
+        // facing north at a rod four out, the rod on the top of a jar lying on its side beyond it
+        BlockPos generatorPos = generator(helper, floor(helper, new BlockPos(5, 2, 10)), Direction.NORTH);
+        BlockPos rod = generatorPos.north(4);
+        floor(helper, rod.below());
+        helper.setBlock(rod, Blocks.LIGHTNING_ROD);
+        floor(helper, rod.north().below());
+        AetherJarBlockEntity jar = jar(helper, rod.north(), Direction.SOUTH);
+        // a jar behind the generator, as it used to be charged, now gets nothing
+        floor(helper, generatorPos.south().below());
+        AetherJarBlockEntity behind = jar(helper, generatorPos.south(), Direction.NORTH);
         host(helper, generatorPos).core().insert(new ItemStack(com.aetherteam.aether.item.AetherItems.AMBROSIUM_SHARD.get()));
-        int rate = AACommonConfig.GENERATOR_CHARGE_RATE.get();
+        int perShock = com.linc.alteredaether.electric.SquallGeneratorCore.chargePerShock();
+        helper.assertValueEqual(perShock, (int) Math.round(AACommonConfig.GENERATOR_ZAP_INTERVAL.get()
+                * AACommonConfig.GENERATOR_FE_COST.get() * 0.75), "FE a shock puts in");
         helper.runAfterDelay(101, () -> {
-            helper.assertTrue(Math.abs(jar.energy() - 100 * rate) <= 2 * rate, "the jar's charge: " + jar.energy());
+            helper.assertTrue(jar.energy() >= 4 * perShock && jar.energy() <= 5 * perShock
+                    && jar.energy() % perShock == 0, "the jar's charge: " + jar.energy());
+            helper.assertValueEqual(behind.energy(), 0, "the charge of the jar behind it");
             int burn = host(helper, generatorPos).core().burnTime();
             helper.assertTrue(burn >= 1600 - 103 && burn <= 1600 - 98, "ambrosium left: " + burn);
             helper.assertTrue(helper.getBlockState(generatorPos).getValue(SquallGeneratorBlock.LIT), "it isn't lit");

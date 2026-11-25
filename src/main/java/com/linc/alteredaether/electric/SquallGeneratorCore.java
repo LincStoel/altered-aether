@@ -56,13 +56,14 @@ import java.util.Optional;
  * same burn time), or else on FE, {@code generator_fe_cost} a tick, taken in on any side but its front and back. Like a
  * blaze burner, once lit it burns whether or not anything uses it. While running it
  * <ul>
- * <li>charges an Aether Jar standing behind it by {@code generator_charge_rate} FE a tick;</li>
  * <li>counts as heated for a Create basin above it, or superheated while a storm or sterling aercloud fed to it lasts;</li>
  * <li>every {@code generator_zap_interval} ticks shocks what it faces, {@link #REACH} blocks out through open space, or
  * as far as {@link #ROD_REACH} to a lightning rod in line with it, which the arc then makes for: the block it ends on,
  * if oxidised copper, loses a stage (as a lightning rod does), mobs along the way are hurt and thrown back
  * ({@link Zaps}), dropped items there flash blast ({@link FlashBlasting}), a rod it reaches is powered as if struck,
- * and the block in front gets a short redstone pulse.</li>
+ * and the block in front gets a short redstone pulse. If that rod is on top of an Aether Jar, the shock charges the jar
+ * with {@code generator_charge_efficiency} of the FE the generator burnt since its last shock (ambrosium counted at
+ * {@code generator_fe_cost} a tick, as if it ran on FE).</li>
  * </ul>
  */
 public final class SquallGeneratorCore {
@@ -149,10 +150,10 @@ public final class SquallGeneratorCore {
         return items;
     }
 
-    /** Its energy face on {@code side}: every side but the front and the back, where the jar goes. */
+    /** Its energy face on {@code side}: every side but the front, where it shocks. */
     @Nullable
     public IEnergyStorage energy(@Nullable Direction side, Direction facing) {
-        return side == facing || side == facing.getOpposite() ? null : energyPort;
+        return side == facing ? null : energyPort;
     }
 
     public int burnTime() {
@@ -185,9 +186,6 @@ public final class SquallGeneratorCore {
                 if (!cloud.isEmpty()) {
                     superheat = AACommonConfig.GENERATOR_SUPERHEAT_TICKS.get();
                 }
-            }
-            if (level.getBlockEntity(pos.relative(facing.getOpposite())) instanceof AetherJarBlockEntity jar) {
-                jar.charge(AACommonConfig.GENERATOR_CHARGE_RATE.get());
             }
             if (++zapTimer >= AACommonConfig.GENERATOR_ZAP_INTERVAL.get()) {
                 zapTimer = 0;
@@ -253,6 +251,10 @@ public final class SquallGeneratorCore {
         }
         if (rod != null && level.getBlockState(rod).getBlock() instanceof LightningRodBlock struck) {
             struck.onLightningStrike(level.getBlockState(rod), level, rod);
+            BlockPos jarPos = AetherJarBlock.jarUnder(level, rod);
+            if (jarPos != null && level.getBlockEntity(jarPos) instanceof AetherJarBlockEntity jar) {
+                jar.charge(chargePerShock());
+            }
         }
         AABB space = new AABB(pos.relative(facing)).minmax(new AABB(end));
         float damage = AACommonConfig.ZAP_DAMAGE.get().floatValue();
@@ -265,6 +267,12 @@ public final class SquallGeneratorCore {
         pulse = PULSE_TICKS;
         SquallGeneratorBlock.setPowered(level, pos, level.getBlockState(pos), true);
         arc(level, from, rod != null ? Vec3.atCenterOf(rod) : Vec3.atCenterOf(end));
+    }
+
+    /** FE one shock puts into a jar: what the generator burnt over a shock's interval, less the loss. */
+    public static int chargePerShock() {
+        return (int) Math.round(AACommonConfig.GENERATOR_ZAP_INTERVAL.get() * AACommonConfig.GENERATOR_FE_COST.get()
+                * AACommonConfig.GENERATOR_CHARGE_EFFICIENCY.get());
     }
 
     /** A lightning rod within {@link #ROD_REACH} straight out from the face, with open space up to it; else null. */

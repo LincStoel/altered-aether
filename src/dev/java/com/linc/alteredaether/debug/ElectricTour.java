@@ -165,10 +165,11 @@ public final class ElectricTour {
         level.setBlockAndUpdate(o.offset(INSULATOR), ElectricRegistries.SQUALL_INSULATOR.get().defaultBlockState()
                 .setValue(SquallInsulatorBlock.FACING, Direction.UP));
         generator(level, o.offset(GENERATOR_UP), Direction.UP);
-        // facing north, a jar behind it charging, oxidised copper in front
+        // facing north, arcing to a rod three out that sits on the top of a jar lying on its side
         generator(level, o.offset(GENERATOR_NORTH), Direction.NORTH);
-        level.setBlockAndUpdate(o.offset(GENERATOR_NORTH).south(), ElectricRegistries.AETHER_JAR.get().defaultBlockState());
-        level.setBlockAndUpdate(o.offset(GENERATOR_NORTH).north(), Blocks.OXIDIZED_COPPER.defaultBlockState());
+        level.setBlockAndUpdate(o.offset(GENERATOR_NORTH).north(3), Blocks.LIGHTNING_ROD.defaultBlockState());
+        level.setBlockAndUpdate(o.offset(GENERATOR_NORTH).north(4), ElectricRegistries.AETHER_JAR.get().defaultBlockState()
+                .setValue(AetherJarBlock.FACING, Direction.SOUTH));
         level.setBlockAndUpdate(o.offset(CLOUD), ElectricRegistries.STORM_AERCLOUD.get().defaultBlockState());
         // the creative jar upright, then charged jars turned toward the camera, east and upside down
         level.setBlockAndUpdate(o.offset(TURNED_JARS), ElectricRegistries.CREATIVE_AETHER_JAR.get().defaultBlockState());

@@ -161,7 +161,7 @@ public final class AACommonConfig {
     public static final DoubleValue COPPER_DRAIN;
     public static final DoubleValue ZAP_DAMAGE;
     public static final DoubleValue STORM_AERCLOUD_DAMAGE;
-    public static final IntValue GENERATOR_CHARGE_RATE;
+    public static final DoubleValue GENERATOR_CHARGE_EFFICIENCY;
     public static final IntValue GENERATOR_FE_COST;
     public static final IntValue GENERATOR_ZAP_INTERVAL;
     public static final IntValue GENERATOR_SUPERHEAT_TICKS;
@@ -536,8 +536,10 @@ public final class AACommonConfig {
                 .defineInRange("zap_damage", 2.0, 0.0, 100.0);
         STORM_AERCLOUD_DAMAGE = b.comment("Damage a storm aercloud's shock does to what is inside it.")
                 .defineInRange("storm_aercloud_damage", 1.0, 0.0, 100.0);
-        GENERATOR_CHARGE_RATE = b.comment("FE per tick a running Squall Generator puts into the jar behind it.")
-                .defineInRange("generator_charge_rate", 60, 0, 1_000_000);
+        GENERATOR_CHARGE_EFFICIENCY = b.comment("Share of the FE a Squall Generator burns (ambrosium counted at",
+                        "generator_fe_cost a tick) that its shocks put into an Aether Jar through a lightning rod on the",
+                        "jar's top.")
+                .defineInRange("generator_charge_efficiency", 0.75, 0.0, 1.0);
         GENERATOR_FE_COST = b.comment("FE per tick a Squall Generator runs on when it has no ambrosium burning.")
                 .defineInRange("generator_fe_cost", 60, 0, 1_000_000);
         GENERATOR_ZAP_INTERVAL = b.comment("Ticks between a running Squall Generator's shocks.")

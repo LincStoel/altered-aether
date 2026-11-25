@@ -128,12 +128,13 @@ out anyone riding a ship: no strike is drawn by their copper or metal or aimed a
 - **Squall Insulator and Generator.** A bowl of aerogel on a skyroot base and rim. Catch a squall in it, either by
   standing on or beside it until the squall's own bolt lands there, or by wearing a squall down until it sinks,
   spent, and using the bowl on it. The Squall Generator that makes burns ambrosium (a shard lasts as long as coal) or
-  takes FE from its sides, and while running:
-  - charges an Aether Jar behind it, full in 10 minutes;
+  takes FE on any side but its front, and while running:
   - every second shocks what its open top faces, up to two blocks out, or up to eight to a lightning rod in line with
     it (the rod is powered as if struck): mobs along the arc are hurt and thrown back, copper where it ends loses a
     stage of oxidation, the block in front gets a redstone pulse, and dropped items are flash blasted: anything a blast
-    furnace smelts, plus sand and red sand into glass and quicksoil into quicksoil glass, a whole stack at once.
+    furnace smelts, plus sand and red sand into glass and quicksoil into quicksoil glass, a whole stack at once;
+  - if the rod it arcs to is on top of an Aether Jar, charges the jar with 75% of what it burns (60 FE a tick, an
+    ambrosium shard counting the same), so a shard puts in 72,000 FE and a jar takes 10 shards.
 - **Storm aercloud.** Squalls drop it now and then. It catches a fall like a cold aercloud, but shocks whatever is
   inside it.
 - **Static Boots.** Leather boots and a storm aercloud, worn in the Accessories shoes slot. Knockback resistance, you
@@ -141,8 +142,9 @@ out anyone riding a ship: no strike is drawn by their copper or metal or aimed a
   blue aerclouds don't bounce you.
 - **With Create.** A basin over a running generator is heated, and superheated for a while after a storm aercloud (or
   Deep Aether's sterling aercloud) is fed in. A generator facing down two blocks over a belt or depot holds each stack
-  under it and flash blasts it, as a press does. The **Aerogel Wheel** is Franklin's electric wheel: stand an Aether
-  Jar two blocks out on each side of it, one level down, each with a lightning rod whose tip is level with the wheel.
+  under it and flash blasts it, as a press does. The **Aerogel Wheel** is Franklin's electric wheel: set a lightning
+  rod level with it two blocks out on each side, each on top of an Aether Jar. The jar can be on any side of its rod,
+  turned any way, so long as its top touches the rod.
   It works like a Crafts & Additions electric motor: set its speed on the side panel (up to 256 RPM either way), 64
   stress units per RPM, drawing 480 FE a tick at full speed (15 at 8 RPM), half from each jar. It stops when a jar
   runs dry or it gets a redstone signal. Ponder shows how to build it.
