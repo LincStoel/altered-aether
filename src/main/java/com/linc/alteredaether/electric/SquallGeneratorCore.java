@@ -33,7 +33,9 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.RecipeType;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.LevelEvent;
+import net.minecraft.world.level.block.LightningRodBlock;
 import net.minecraft.world.level.block.WeatheringCopper;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
@@ -56,9 +58,11 @@ import java.util.Optional;
  * <ul>
  * <li>charges an Aether Jar standing behind it by {@code generator_charge_rate} FE a tick;</li>
  * <li>counts as heated for a Create basin above it, or superheated while a storm or sterling aercloud fed to it lasts;</li>
- * <li>every {@code generator_zap_interval} ticks shocks what it faces: oxidised copper loses a stage (as a lightning rod
- * does), a mob there is hurt and thrown back ({@link Zaps}), dropped items flash blast ({@link FlashBlasting}), and the
- * block there gets a short redstone pulse.</li>
+ * <li>every {@code generator_zap_interval} ticks shocks what it faces, {@link #REACH} blocks out through open space, or
+ * as far as {@link #ROD_REACH} to a lightning rod in line with it, which the arc then makes for: the block it ends on,
+ * if oxidised copper, loses a stage (as a lightning rod does), mobs along the way are hurt and thrown back
+ * ({@link Zaps}), dropped items there flash blast ({@link FlashBlasting}), a rod it reaches is powered as if struck,
+ * and the block in front gets a short redstone pulse.</li>
  * </ul>
  */
 public final class SquallGeneratorCore {
@@ -70,6 +74,10 @@ public final class SquallGeneratorCore {
     private static final int PULSE_TICKS = 2;
     /** Ticks of running the FE buffer holds. */
     private static final int BUFFER_TICKS = 100;
+    /** How far a shock reaches through open space. */
+    public static final int REACH = 2;
+    /** How far it reaches to a lightning rod in line with the generator's face. */
+    public static final int ROD_REACH = 8;
 
     private final BlockEntity owner;
     private int burnTime, burnTotal, superheat, zapTimer, pulse, energy;
@@ -224,17 +232,29 @@ public final class SquallGeneratorCore {
         return false;
     }
 
-    /** One shock into the block it faces. */
+    /** One shock out along the way the generator faces. */
     private void zap(ServerLevel level, BlockPos pos, Direction facing) {
-        BlockPos front = pos.relative(facing);
         Vec3 from = Vec3.atCenterOf(pos);
-        Optional<BlockState> scraped = WeatheringCopper.getPrevious(level.getBlockState(front));
-        if (scraped.isPresent()) {
-            level.setBlockAndUpdate(front, scraped.get());
-            // the spark a struck rod gives the copper round it
-            level.levelEvent(LevelEvent.PARTICLES_ELECTRIC_SPARK, front, -1);
+        BlockPos rod = rodInReach(level, pos, facing);
+        int reach = rod != null ? pos.distManhattan(rod) : REACH;
+        // the arc runs through open space and ends on the first block in its way (or the rod)
+        BlockPos end = pos;
+        for (int i = 1; i <= reach; i++) {
+            end = pos.relative(facing, i);
+            if (rod == null && !open(level, end)) {
+                break;
+            }
         }
-        AABB space = new AABB(front);
+        Optional<BlockState> scraped = WeatheringCopper.getPrevious(level.getBlockState(end));
+        if (scraped.isPresent()) {
+            level.setBlockAndUpdate(end, scraped.get());
+            // the spark a struck rod gives the copper round it
+            level.levelEvent(LevelEvent.PARTICLES_ELECTRIC_SPARK, end, -1);
+        }
+        if (rod != null && level.getBlockState(rod).getBlock() instanceof LightningRodBlock struck) {
+            struck.onLightningStrike(level.getBlockState(rod), level, rod);
+        }
+        AABB space = new AABB(pos.relative(facing)).minmax(new AABB(end));
         float damage = AACommonConfig.ZAP_DAMAGE.get().floatValue();
         for (LivingEntity entity : level.getEntitiesOfClass(LivingEntity.class, space, e -> !(e instanceof Squall))) {
             Zaps.zap(level, entity, from, damage);
@@ -244,7 +264,27 @@ public final class SquallGeneratorCore {
         }
         pulse = PULSE_TICKS;
         SquallGeneratorBlock.setPowered(level, pos, level.getBlockState(pos), true);
-        arc(level, from, Vec3.atCenterOf(front));
+        arc(level, from, rod != null ? Vec3.atCenterOf(rod) : Vec3.atCenterOf(end));
+    }
+
+    /** A lightning rod within {@link #ROD_REACH} straight out from the face, with open space up to it; else null. */
+    @Nullable
+    private static BlockPos rodInReach(ServerLevel level, BlockPos pos, Direction facing) {
+        for (int i = 1; i <= ROD_REACH; i++) {
+            BlockPos at = pos.relative(facing, i);
+            if (level.getBlockState(at).is(Blocks.LIGHTNING_ROD)) {
+                return at;
+            }
+            if (!open(level, at)) {
+                return null;
+            }
+        }
+        return null;
+    }
+
+    /** Whether a shock passes through {@code at}: nothing solid there to stop it. */
+    private static boolean open(ServerLevel level, BlockPos at) {
+        return level.isLoaded(at) && level.getBlockState(at).getCollisionShape(level, at).isEmpty();
     }
 
     /** Flash blasts a dropped item where it lies. */
@@ -276,8 +316,9 @@ public final class SquallGeneratorCore {
 
     /** Sparks along the line from {@code from} to {@code to}, and a crackle. */
     public static void arc(ServerLevel level, Vec3 from, Vec3 to) {
-        Vec3 step = to.subtract(from).scale(1 / 6.0);
-        for (int i = 1; i <= 6; i++) {
+        int steps = Math.max(6, (int) Math.ceil(from.distanceTo(to) * 4));
+        Vec3 step = to.subtract(from).scale(1.0 / steps);
+        for (int i = 1; i <= steps; i++) {
             Vec3 at = from.add(step.scale(i));
             level.sendParticles(ParticleTypes.ELECTRIC_SPARK, at.x, at.y, at.z, 2, 0.08, 0.08, 0.08, 0.02);
         }

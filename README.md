@@ -118,8 +118,10 @@ out anyone riding a ship: no strike is drawn by their copper or metal or aimed a
 
 **Storm electricity.** The storms' lightning can be caught and put to work.
 - **Aether Jar.** A Leyden jar of aerogel, stoppered with a skyroot slab round a lightning rod. A bolt on it, or on a
-  lightning rod stood on top of it, fills a quarter of it (720,000 FE in all). Cables reach it from below only: it
-  gives out 30 FE a tick (a full jar lasts 20 minutes) and takes in up to 1,000. A broken jar keeps its charge.
+  lightning rod stood on its top, fills a quarter of it (720,000 FE in all). It can be placed facing any way, like a
+  lightning rod; power always goes in at its bottom (up to 1,000 FE a tick) and out at its top (30 FE a tick, so a
+  full jar lasts 20 minutes). A broken jar keeps its charge. A lightning rod on a charged jar's top is live: whatever
+  touches it is shocked, as in a storm aercloud. The **Creative Aether Jar**, purple-banded, gives out endless FE.
 - **Live copper.** Stand a charged jar on copper and up to 64 joined copper blocks come alive: whatever stands on
   them takes a heart of damage and is thrown back the way it came. Leather and gem boots insulate, as they do against
   the storms. A full 64-block floor drains a jar in about 20 minutes, a single block in about 20 hours.
@@ -128,9 +130,10 @@ out anyone riding a ship: no strike is drawn by their copper or metal or aimed a
   spent, and using the bowl on it. The Squall Generator that makes burns ambrosium (a shard lasts as long as coal) or
   takes FE from its sides, and while running:
   - charges an Aether Jar behind it, full in 10 minutes;
-  - every second shocks what its open top faces: copper loses a stage of oxidation, mobs are hurt and thrown back,
-    the block there gets a redstone pulse, and dropped items are flash blasted: anything a blast furnace smelts,
-    plus sand and red sand into glass and quicksoil into quicksoil glass, a whole stack at once.
+  - every second shocks what its open top faces, up to two blocks out, or up to eight to a lightning rod in line with
+    it (the rod is powered as if struck): mobs along the arc are hurt and thrown back, copper where it ends loses a
+    stage of oxidation, the block in front gets a redstone pulse, and dropped items are flash blasted: anything a blast
+    furnace smelts, plus sand and red sand into glass and quicksoil into quicksoil glass, a whole stack at once.
 - **Storm aercloud.** Squalls drop it now and then. It catches a fall like a cold aercloud, but shocks whatever is
   inside it.
 - **Static Boots.** Leather boots and a storm aercloud, worn in the Accessories shoes slot. Knockback resistance, you

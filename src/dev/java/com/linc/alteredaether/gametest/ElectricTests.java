@@ -17,6 +17,7 @@ package com.linc.alteredaether.gametest;
 import com.aetherteam.aether.block.AetherBlocks;
 import com.linc.alteredaether.AlteredAether;
 import com.linc.alteredaether.config.AACommonConfig;
+import com.linc.alteredaether.electric.AetherJarBlock;
 import com.linc.alteredaether.electric.AetherJarBlockEntity;
 import com.linc.alteredaether.electric.AetherJarItem;
 import com.linc.alteredaether.electric.ElectricRegistries;
@@ -43,6 +44,7 @@ import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.LightningRodBlock;
 import net.minecraft.world.level.block.RedstoneLampBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
@@ -93,22 +95,68 @@ public final class ElectricTests {
     }
 
     @GameTest(template = "arena")
-    public static void cablesReachAJarOnlyFromBelowAtItsRate(GameTestHelper helper) {
+    public static void cablesPutPowerInAtTheBottomAndTakeItOutAtTheTop(GameTestHelper helper) {
         BlockPos jarPos = floor(helper, new BlockPos(5, 2, 5));
-        AetherJarBlockEntity jar = jar(helper, jarPos);
+        AetherJarBlockEntity jar = jar(helper, jarPos, Direction.EAST);
         jar.charge(10_000);
         BlockPos at = helper.absolutePos(jarPos);
-        for (Direction side : new Direction[]{Direction.UP, Direction.NORTH, Direction.EAST}) {
+        for (Direction side : new Direction[]{Direction.UP, Direction.DOWN, Direction.NORTH}) {
             helper.assertTrue(helper.getLevel().getCapability(Capabilities.EnergyStorage.BLOCK, at, side) == null,
-                    "a jar's " + side + " face has energy");
+                    "a jar on its side has energy on its " + side + " face");
         }
-        IEnergyStorage bottom = helper.getLevel().getCapability(Capabilities.EnergyStorage.BLOCK, at, Direction.DOWN);
-        helper.assertTrue(bottom != null, "no energy on the jar's bottom");
-        int first = bottom.extractEnergy(1_000, false);
-        int second = bottom.extractEnergy(1_000, false);
-        helper.assertValueEqual(first, AACommonConfig.JAR_OUTPUT.get(), "FE out in one go");
+        IEnergyStorage top = helper.getLevel().getCapability(Capabilities.EnergyStorage.BLOCK, at, Direction.EAST);
+        IEnergyStorage bottom = helper.getLevel().getCapability(Capabilities.EnergyStorage.BLOCK, at, Direction.WEST);
+        helper.assertTrue(top != null && bottom != null, "no energy on the jar's top or bottom");
+        helper.assertValueEqual(top.receiveEnergy(1_000, false), 0, "FE in at the top");
+        helper.assertValueEqual(bottom.extractEnergy(1_000, false), 0, "FE out at the bottom");
+        int first = top.extractEnergy(1_000_000, false);
+        int second = top.extractEnergy(1_000, false);
+        helper.assertValueEqual(first, Math.min(10_000, AACommonConfig.JAR_OUTPUT.get()), "FE out in one go");
         helper.assertValueEqual(second, 0, "FE out a second time in the same tick");
+        helper.assertTrue(bottom.receiveEnergy(1_000, false) > 0, "the bottom took no FE in");
         helper.succeed();
+    }
+
+    @GameTest(template = "arena", timeoutTicks = 100)
+    public static void aJarPushesOutOfItsTopIntoTheNextJarsBottom(GameTestHelper helper) {
+        BlockPos first = floor(helper, new BlockPos(5, 2, 5));
+        floor(helper, new BlockPos(6, 2, 5));
+        AetherJarBlockEntity from = jar(helper, first, Direction.EAST);
+        AetherJarBlockEntity to = jar(helper, first.east(), Direction.EAST);
+        from.charge(AetherJarBlockEntity.capacity());
+        helper.succeedWhen(() -> helper.assertTrue(to.energy() > 0, "the second jar got nothing"));
+    }
+
+    @GameTest(template = "arena", timeoutTicks = 100)
+    public static void theCreativeJarIsEndless(GameTestHelper helper) {
+        BlockPos jarPos = floor(helper, new BlockPos(5, 2, 5));
+        helper.setBlock(jarPos, ElectricRegistries.CREATIVE_AETHER_JAR.get());
+        AetherJarBlockEntity creative = (AetherJarBlockEntity) helper.getBlockEntity(jarPos);
+        AetherJarBlockEntity above = jar(helper, jarPos.above(), Direction.UP);
+        IEnergyStorage top = helper.getLevel().getCapability(Capabilities.EnergyStorage.BLOCK,
+                helper.absolutePos(jarPos), Direction.UP);
+        helper.assertValueEqual(top.extractEnergy(5_000_000, false), 5_000_000, "FE out of a creative jar");
+        helper.assertValueEqual(top.extractEnergy(5_000_000, false), 5_000_000, "FE out of it again");
+        helper.assertValueEqual(creative.draw(1_000_000, false), 1_000_000, "FE drawn directly");
+        helper.assertValueEqual(creative.energy(), AetherJarBlockEntity.capacity(), "the creative jar's charge");
+        helper.succeedWhen(() -> helper.assertTrue(above.energy() > 0, "the jar on it got nothing"));
+    }
+
+    @GameTest(template = "arena", timeoutTicks = 400)
+    public static void aLiveRodOnAJarShocksWhatTouchesIt(GameTestHelper helper) {
+        BlockPos jarPos = floor(helper, new BlockPos(5, 2, 5));
+        jar(helper, jarPos, Direction.UP).charge(AetherJarBlockEntity.capacity());
+        BlockPos rod = jarPos.above();
+        helper.setBlock(rod, Blocks.LIGHTNING_ROD);
+        // a pen round the rod's top, so the pig stays on it
+        for (Direction side : Direction.Plane.HORIZONTAL) {
+            helper.setBlock(rod.above().relative(side), Blocks.GLASS);
+            helper.setBlock(rod.above(2).relative(side), Blocks.GLASS);
+        }
+        Pig pig = helper.spawn(EntityType.PIG, Vec3.atBottomCenterOf(rod.above()));
+        pig.setPersistenceRequired();
+        float health = pig.getHealth();
+        helper.succeedWhen(() -> helper.assertTrue(pig.getHealth() < health, "the pig on the live rod wasn't shocked"));
     }
 
     @GameTest(template = "arena", timeoutTicks = 40)
@@ -223,6 +271,40 @@ public final class ElectricTests {
         });
     }
 
+    @GameTest(template = "arena", timeoutTicks = 100)
+    public static void aGeneratorShocksTwoBlocksOutButNoFurther(GameTestHelper helper) {
+        BlockPos near = generator(helper, floor(helper, new BlockPos(3, 2, 8)), Direction.NORTH);
+        BlockPos far = generator(helper, floor(helper, new BlockPos(7, 2, 8)), Direction.NORTH);
+        helper.setBlock(near.north(2), Blocks.OXIDIZED_COPPER);
+        helper.setBlock(far.north(3), Blocks.OXIDIZED_COPPER);
+        fuel(helper, near);
+        fuel(helper, far);
+        // both shock on the same tick, so once the near copper is scraped the far one has been shocked at too
+        helper.succeedWhen(() -> {
+            helper.assertFalse(helper.getBlockState(near.north(2)).is(Blocks.OXIDIZED_COPPER), "copper two out unscraped");
+            helper.assertBlockPresent(Blocks.OXIDIZED_COPPER, far.north(3));
+        });
+    }
+
+    @GameTest(template = "arena", timeoutTicks = 100)
+    public static void aGeneratorArcsToALightningRodEightBlocksOut(GameTestHelper helper) {
+        BlockPos generatorPos = generator(helper, floor(helper, new BlockPos(5, 2, 10)), Direction.NORTH);
+        BlockPos rod = generatorPos.north(8);
+        helper.setBlock(rod, Blocks.LIGHTNING_ROD);
+        Pig pig = helper.spawn(EntityType.PIG, Vec3.atBottomCenterOf(generatorPos.north(6)));
+        pig.setPersistenceRequired();
+        pig.setNoAi(true);
+        pig.setNoGravity(true);
+        float health = pig.getHealth();
+        fuel(helper, generatorPos);
+        boolean[] powered = {false};
+        helper.onEachTick(() -> powered[0] |= helper.getBlockState(rod).getValue(LightningRodBlock.POWERED));
+        helper.succeedWhen(() -> {
+            helper.assertTrue(pig.getHealth() < health, "the pig between the generator and the rod wasn't shocked");
+            helper.assertTrue(powered[0], "the rod was never powered");
+        });
+    }
+
     // -- catching a squall --
 
     @GameTest(template = "arena", timeoutTicks = 100)
@@ -321,6 +403,11 @@ public final class ElectricTests {
     private static BlockPos floor(GameTestHelper helper, BlockPos pos) {
         helper.setBlock(pos, Blocks.STONE);
         return pos.above();
+    }
+
+    private static AetherJarBlockEntity jar(GameTestHelper helper, BlockPos pos, Direction facing) {
+        helper.setBlock(pos, ElectricRegistries.AETHER_JAR.get().defaultBlockState().setValue(AetherJarBlock.FACING, facing));
+        return (AetherJarBlockEntity) helper.getBlockEntity(pos);
     }
 
     private static AetherJarBlockEntity jar(GameTestHelper helper, BlockPos pos) {

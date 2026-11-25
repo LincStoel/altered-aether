@@ -17,6 +17,7 @@ aerogel, skyroot and the vanilla lightning rod for most of their look; these are
 
 - block/aether_jar_foil_0..4: the copper foil round the jar's lower half, as on a real Leyden jar: plain copper when
   empty, then blending toward a glowing blue-white with more sparks at each quarter of charge (drawn full bright).
+- block/creative_aether_jar_foil: the full foil, its band purple, for the creative jar.
 - block/storm_aercloud: a dark slate aercloud with forks of light running through it, 4 animated frames.
 - block/squall_generator_spark: the crackle on a lit generator's bowl floor, 4 animated frames.
 - item/static_boots: vanilla's leather boots in storm grey, a yellow zig-zag up each side.
@@ -65,6 +66,20 @@ def jar_foil(step):
         x, y = rnd.randrange(16), rnd.randrange(16)
         px[x, y] = SPARK + (255,)
     return copper
+
+
+def creative_foil():
+    """The full jar's foil with its hue turned purple, the creative jar's band."""
+    import colorsys
+    img = jar_foil(4)
+    px = img.load()
+    for y in range(16):
+        for x in range(16):
+            r, g, b, a = px[x, y]
+            h, l, sat = colorsys.rgb_to_hls(r / 255, g / 255, b / 255)
+            r2, g2, b2 = colorsys.hls_to_rgb(0.78, min(l * 0.9, 0.85), max(sat, 0.55))
+            px[x, y] = (int(r2 * 255), int(g2 * 255), int(b2 * 255), a)
+    return img
 
 
 def fork(px, rnd, colour, w, h, x0=None):
@@ -143,6 +158,7 @@ def main():
             old.unlink()
     for step in range(0, 5):
         save(jar_foil(step), ROOT / f"block/aether_jar_foil_{step}.png")
+    save(creative_foil(), ROOT / "block/creative_aether_jar_foil.png")
     save(storm_aercloud(), ROOT / "block/storm_aercloud.png", frames=3)
     save(generator_spark(), ROOT / "block/squall_generator_spark.png", frames=2)
     save(static_boots(), ROOT / "item/static_boots.png")

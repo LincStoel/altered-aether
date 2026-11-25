@@ -16,6 +16,7 @@ package com.linc.alteredaether.electric;
 
 import com.linc.alteredaether.advancement.AAAdvancements;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.LightningBolt;
@@ -44,15 +45,20 @@ public final class ElectricStrikes {
         SquallCapture.onBolt(bolt, level, at);
     }
 
-    /** The jar a bolt landing at {@code at} charges: one there, or one under a lightning rod there. */
+    /** The jar a bolt landing at {@code at} charges: one there, or one with a lightning rod there on its top. */
     @Nullable
     private static BlockPos jarAt(ServerLevel level, BlockPos at) {
         BlockState state = level.getBlockState(at);
-        if (state.is(ElectricRegistries.AETHER_JAR.get())) {
+        if (state.getBlock() instanceof AetherJarBlock) {
             return at;
         }
-        if (state.is(Blocks.LIGHTNING_ROD) && level.getBlockState(at.below()).is(ElectricRegistries.AETHER_JAR.get())) {
-            return at.below();
+        if (state.is(Blocks.LIGHTNING_ROD)) {
+            for (Direction side : Direction.values()) {
+                BlockState jar = level.getBlockState(at.relative(side));
+                if (jar.getBlock() instanceof AetherJarBlock && jar.getValue(AetherJarBlock.FACING) == side.getOpposite()) {
+                    return at.relative(side);
+                }
+            }
         }
         return null;
     }

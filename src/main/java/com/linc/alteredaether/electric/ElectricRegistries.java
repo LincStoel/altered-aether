@@ -26,6 +26,7 @@ import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Rarity;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.item.crafting.RecipeSerializer;
 import net.minecraft.world.item.crafting.RecipeType;
@@ -75,6 +76,15 @@ public final class ElectricRegistries {
                     .isViewBlocking((state, level, pos) -> false));
     public static final DeferredItem<AetherJarItem> AETHER_JAR_ITEM = ITEMS.register("aether_jar",
             () -> new AetherJarItem(AETHER_JAR.get(), new Item.Properties().stacksTo(16)));
+    /** Endless power, like Create's creative motor; its foil band is purple and always lit. */
+    public static final DeferredBlock<AetherJarBlock> CREATIVE_AETHER_JAR = BLOCKS.registerBlock("creative_aether_jar",
+            properties -> new AetherJarBlock(properties, true), BlockBehaviour.Properties.of().mapColor(MapColor.ICE)
+                    .strength(-1.0F, 3_600_000.0F).noLootTable().sound(SoundType.GLASS).noOcclusion().lightLevel(state -> 8)
+                    .isRedstoneConductor((state, level, pos) -> false)
+                    .isViewBlocking((state, level, pos) -> false));
+    public static final DeferredItem<AetherJarItem> CREATIVE_AETHER_JAR_ITEM = ITEMS.register("creative_aether_jar",
+            () -> new AetherJarItem(CREATIVE_AETHER_JAR.get(), new Item.Properties().stacksTo(1)
+                    .rarity(Rarity.EPIC)));
 
     /** A squall's cloud, made like the Aether's (see block/PhasedAercloudBlock's properties). */
     public static final DeferredBlock<StormAercloudBlock> STORM_AERCLOUD = BLOCKS.registerBlock("storm_aercloud",
@@ -105,7 +115,8 @@ public final class ElectricRegistries {
     @SuppressWarnings("DataFlowIssue")
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<AetherJarBlockEntity>> AETHER_JAR_BLOCK_ENTITY =
             BLOCK_ENTITY_TYPES.register("aether_jar",
-                    () -> BlockEntityType.Builder.of(AetherJarBlockEntity::new, AETHER_JAR.get()).build(null));
+                    () -> BlockEntityType.Builder.of(AetherJarBlockEntity::new, AETHER_JAR.get(), CREATIVE_AETHER_JAR.get())
+                            .build(null));
 
     /** A Squall Generator's block entity: Create's kind when Create is loaded (see {@link SquallGeneratorHost}). */
     @SuppressWarnings("DataFlowIssue")
@@ -134,6 +145,7 @@ public final class ElectricRegistries {
     /** Lists the set in the mod's creative tab (see registry/AACreativeTab). */
     public static void creativeTab(CreativeModeTab.Output output) {
         output.accept(AETHER_JAR_ITEM.get());
+        output.accept(CREATIVE_AETHER_JAR_ITEM.get());
         output.accept(SQUALL_INSULATOR_ITEM.get());
         output.accept(SQUALL_GENERATOR_ITEM.get());
         output.accept(STORM_AERCLOUD_ITEM.get());

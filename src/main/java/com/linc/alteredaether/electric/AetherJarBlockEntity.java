@@ -25,9 +25,11 @@ import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.Mth;
+import com.linc.alteredaether.entity.Squall;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
@@ -41,20 +43,30 @@ import java.util.ArrayDeque;
 
 /**
  * An Aether Jar's charge. Lightning fills it a quarter at a time ({@link #strike}), a Squall Generator behind it tops
- * it up ({@link #charge}), and cables reach it through its bottom face alone ({@link #port}), which gives out at most
- * {@code jar_output} FE a tick and takes in at most {@code jar_input}. It also pushes its output into whatever below
- * takes energy.
+ * it up ({@link #charge}). Cables put power in at its bottom ({@link #input}, at most {@code jar_input} FE a tick) and
+ * take it out at its top ({@link #output}, at most {@code jar_output}), whichever way the jar is turned; it also pushes
+ * its output into whatever at its top takes energy.
  *
  * <p>Stood on copper, it electrifies the copper instead: every block of {@code #altered_aether:charged_copper} joined to
- * the one under it, up to {@code copper_max_blocks}, shocks whatever stands on it, and each one drains the jar a
+ * the one at its bottom, up to {@code copper_max_blocks}, shocks whatever stands on it, and each one drains the jar a
  * little ({@code copper_drain} FE a tick). The live set is found again every couple of seconds, so copper laid or
  * broken joins or leaves it without the jar being told.
+ *
+ * <p>A lightning rod on a charged jar's top is live too: what touches it is shocked as in a storm aercloud.
+ *
+ * <p>The creative jar is always full, gives out whatever is asked of it, and nothing it powers drains it.
  */
 public class AetherJarBlockEntity extends BlockEntity {
     /** Ticks between searches of the copper under the jar. */
     private static final int COPPER_RESCAN = 40;
     /** Ticks between shocks from live copper. */
     private static final int COPPER_ZAP = 10;
+    /** Ticks between looks for bodies touching a live rod; each one found is shocked one time in {@link #ROD_CHANCE}. */
+    private static final int ROD_CHECK = 2;
+    /** With {@link #ROD_CHECK}, the storm aercloud's one time in forty a tick. */
+    private static final int ROD_CHANCE = 20;
+    /** How near a body must come to a rod to touch it. */
+    private static final double ROD_TOUCH = 0.05;
 
     private int energy;
     /** FE the cables have taken out and put in this tick, as of {@link #budgetTick}. */
@@ -68,8 +80,11 @@ public class AetherJarBlockEntity extends BlockEntity {
     private AABB copperBounds;
     private int lastCharge = -1;
     @Nullable
-    private BlockCapabilityCache<IEnergyStorage, Direction> below;
+    private BlockCapabilityCache<IEnergyStorage, Direction> above;
+    @Nullable
+    private Direction aboveFacing;
     private final Port port = new Port();
+    private final IEnergyStorage input = new OneWay(true), output = new OneWay(false);
 
     public AetherJarBlockEntity(BlockPos pos, BlockState state) {
         super(ElectricRegistries.AETHER_JAR_BLOCK_ENTITY.get(), pos, state);
@@ -79,17 +94,41 @@ public class AetherJarBlockEntity extends BlockEntity {
         return AACommonConfig.JAR_CAPACITY.get();
     }
 
-    public int energy() {
-        return energy;
+    /** Whether this is the creative jar. */
+    public boolean creative() {
+        return getBlockState().getBlock() instanceof AetherJarBlock block && block.creative();
     }
 
-    /** The jar's charge seen from its bottom face, for cables and machines. */
+    public int energy() {
+        return creative() ? capacity() : energy;
+    }
+
+    /** The way the jar's top points. */
+    public Direction facing() {
+        BlockState state = getBlockState();
+        return state.hasProperty(AetherJarBlock.FACING) ? state.getValue(AetherJarBlock.FACING) : Direction.UP;
+    }
+
+    /** Both ways at once, for a side-less query (a probe, a tooltip). */
     public IEnergyStorage port() {
         return port;
     }
 
+    /** The bottom face: takes power in. */
+    public IEnergyStorage input() {
+        return input;
+    }
+
+    /** The top face: gives power out. */
+    public IEnergyStorage output() {
+        return output;
+    }
+
     /** Adds up to {@code amount} FE from a squall or a strike, past the cable limits; returns how much went in. */
     public int charge(int amount) {
+        if (creative()) {
+            return 0;
+        }
         int added = Math.min(amount, capacity() - energy);
         if (added > 0) {
             energy += added;
@@ -100,6 +139,9 @@ public class AetherJarBlockEntity extends BlockEntity {
 
     /** Takes up to {@code amount} FE to drive something, past the cable limits; returns how much came out. */
     public int draw(int amount, boolean simulate) {
+        if (creative()) {
+            return Math.max(amount, 0);
+        }
         int taken = Math.min(amount, energy);
         if (taken > 0 && !simulate) {
             energy -= taken;
@@ -131,7 +173,8 @@ public class AetherJarBlockEntity extends BlockEntity {
     }
 
     public int comparatorSignal() {
-        return energy <= 0 ? 0 : Mth.clamp(Mth.ceil(energy * 15.0 / capacity()), 1, 15);
+        int stored = energy();
+        return stored <= 0 ? 0 : Mth.clamp(Mth.ceil(stored * 15.0 / capacity()), 1, 15);
     }
 
     public static void serverTick(Level level, BlockPos pos, BlockState state, AetherJarBlockEntity jar) {
@@ -142,15 +185,20 @@ public class AetherJarBlockEntity extends BlockEntity {
 
     private void tick(ServerLevel level, BlockPos pos, BlockState state) {
         long time = level.getGameTime();
-        if (energy > 0 && level.getBlockState(pos.below()).is(AATags.CHARGED_COPPER)) {
-            electrify(level, pos, time);
+        Direction facing = facing();
+        BlockPos bottom = pos.relative(facing.getOpposite());
+        if (energy() > 0 && level.getBlockState(bottom).is(AATags.CHARGED_COPPER)) {
+            electrify(level, pos, bottom, time);
         } else {
             if (!copper.isEmpty()) {
                 clearCopper();
             }
-            push(level, pos);
+            push(level, pos, facing);
         }
-        int charge = chargeLevel(energy);
+        if (energy() > 0 && (time + pos.asLong()) % ROD_CHECK == 0) {
+            liveRod(level, pos.relative(facing));
+        }
+        int charge = chargeLevel(energy());
         if (charge != lastCharge) {
             lastCharge = charge;
             if (state.getValue(AetherJarBlock.CHARGE) != charge) {
@@ -160,29 +208,47 @@ public class AetherJarBlockEntity extends BlockEntity {
         }
     }
 
-    /** Gives this tick's output to whatever below takes energy. */
-    private void push(ServerLevel level, BlockPos pos) {
-        if (energy <= 0) {
+    /** Gives this tick's output to whatever at the jar's top takes energy. */
+    private void push(ServerLevel level, BlockPos pos, Direction facing) {
+        if (energy() <= 0) {
             return;
         }
-        if (below == null) {
-            below = BlockCapabilityCache.create(Capabilities.EnergyStorage.BLOCK, level, pos.below(), Direction.UP);
+        if (above == null || aboveFacing != facing) {
+            aboveFacing = facing;
+            above = BlockCapabilityCache.create(Capabilities.EnergyStorage.BLOCK, level, pos.relative(facing),
+                    facing.getOpposite());
         }
-        IEnergyStorage target = below.getCapability();
+        IEnergyStorage target = above.getCapability();
         if (target != null && target.canReceive()) {
-            int offer = port.extractEnergy(Integer.MAX_VALUE, true);
+            int offer = output.extractEnergy(Integer.MAX_VALUE, true);
             if (offer > 0) {
                 int accepted = target.receiveEnergy(offer, false);
                 if (accepted > 0) {
-                    port.extractEnergy(accepted, false);
+                    output.extractEnergy(accepted, false);
                 }
             }
         }
     }
 
-    private void electrify(ServerLevel level, BlockPos pos, long time) {
+    /** Shocks, now and then, whatever touches a lightning rod at {@code rod}, the jar's top. */
+    private void liveRod(ServerLevel level, BlockPos rod) {
+        BlockState state = level.getBlockState(rod);
+        if (!state.is(Blocks.LIGHTNING_ROD)) {
+            return;
+        }
+        AABB touch = state.getShape(level, rod).bounds().move(rod).inflate(ROD_TOUCH);
+        float damage = AACommonConfig.STORM_AERCLOUD_DAMAGE.get().floatValue();
+        Vec3 from = Vec3.atCenterOf(rod);
+        for (LivingEntity entity : level.getEntitiesOfClass(LivingEntity.class, touch, e -> !(e instanceof Squall))) {
+            if (level.random.nextInt(ROD_CHANCE) == 0) {
+                Zaps.zap(level, entity, from, damage);
+            }
+        }
+    }
+
+    private void electrify(ServerLevel level, BlockPos pos, BlockPos bottom, long time) {
         if (copper.isEmpty() || (time + pos.asLong()) % COPPER_RESCAN == 0) {
-            scanCopper(level, pos.below());
+            scanCopper(level, bottom);
         }
         copperOwed += AACommonConfig.COPPER_DRAIN.get() * copper.size();
         int owed = (int) copperOwed;
@@ -256,7 +322,7 @@ public class AetherJarBlockEntity extends BlockEntity {
     @Override
     public void setRemoved() {
         super.setRemoved();
-        below = null;
+        above = null;
     }
 
     @Override
@@ -280,7 +346,7 @@ public class AetherJarBlockEntity extends BlockEntity {
     @Override
     protected void collectImplicitComponents(DataComponentMap.Builder builder) {
         super.collectImplicitComponents(builder);
-        if (energy > 0) {
+        if (energy > 0 && !creative()) {
             builder.set(ElectricRegistries.STORED_ENERGY.get(), energy);
         }
     }
@@ -300,35 +366,51 @@ public class AetherJarBlockEntity extends BlockEntity {
         }
     }
 
-    /** The bottom face, held to the configured rates per tick however many times it is asked. */
-    private final class Port implements IEnergyStorage {
+    /** Takes up to {@code toReceive} through the cables, held to {@code jar_input} a tick. */
+    private int receive(int toReceive, boolean simulate) {
+        if (creative()) {
+            return 0;
+        }
+        budget();
+        int room = Math.min(capacity() - energy, AACommonConfig.JAR_INPUT.get() - inThisTick);
+        int accepted = Math.max(0, Math.min(toReceive, room));
+        if (!simulate && accepted > 0) {
+            inThisTick += accepted;
+            charge(accepted);
+        }
+        return accepted;
+    }
+
+    /** Gives up to {@code toExtract} to the cables, held to {@code jar_output} a tick (the creative jar is not held). */
+    private int extract(int toExtract, boolean simulate) {
+        if (creative()) {
+            return Math.max(toExtract, 0);
+        }
+        budget();
+        int available = Math.min(energy, AACommonConfig.JAR_OUTPUT.get() - outThisTick);
+        int given = Math.max(0, Math.min(toExtract, available));
+        if (!simulate && given > 0) {
+            outThisTick += given;
+            draw(given, false);
+        }
+        return given;
+    }
+
+    /** The jar both ways, for a side-less query. */
+    private class Port implements IEnergyStorage {
         @Override
         public int receiveEnergy(int toReceive, boolean simulate) {
-            budget();
-            int room = Math.min(capacity() - energy, AACommonConfig.JAR_INPUT.get() - inThisTick);
-            int accepted = Math.max(0, Math.min(toReceive, room));
-            if (!simulate && accepted > 0) {
-                inThisTick += accepted;
-                charge(accepted);
-            }
-            return accepted;
+            return receive(toReceive, simulate);
         }
 
         @Override
         public int extractEnergy(int toExtract, boolean simulate) {
-            budget();
-            int available = Math.min(energy, AACommonConfig.JAR_OUTPUT.get() - outThisTick);
-            int given = Math.max(0, Math.min(toExtract, available));
-            if (!simulate && given > 0) {
-                outThisTick += given;
-                draw(given, false);
-            }
-            return given;
+            return extract(toExtract, simulate);
         }
 
         @Override
         public int getEnergyStored() {
-            return energy;
+            return energy();
         }
 
         @Override
@@ -338,12 +420,41 @@ public class AetherJarBlockEntity extends BlockEntity {
 
         @Override
         public boolean canExtract() {
-            return AACommonConfig.JAR_OUTPUT.get() > 0;
+            return creative() || AACommonConfig.JAR_OUTPUT.get() > 0;
         }
 
         @Override
         public boolean canReceive() {
-            return AACommonConfig.JAR_INPUT.get() > 0;
+            return !creative() && AACommonConfig.JAR_INPUT.get() > 0;
+        }
+    }
+
+    /** One face: the bottom only takes power in, the top only gives it out. */
+    private final class OneWay extends Port {
+        private final boolean in;
+
+        OneWay(boolean in) {
+            this.in = in;
+        }
+
+        @Override
+        public int receiveEnergy(int toReceive, boolean simulate) {
+            return in ? super.receiveEnergy(toReceive, simulate) : 0;
+        }
+
+        @Override
+        public int extractEnergy(int toExtract, boolean simulate) {
+            return in ? 0 : super.extractEnergy(toExtract, simulate);
+        }
+
+        @Override
+        public boolean canExtract() {
+            return !in && super.canExtract();
+        }
+
+        @Override
+        public boolean canReceive() {
+            return in && super.canReceive();
         }
     }
 }

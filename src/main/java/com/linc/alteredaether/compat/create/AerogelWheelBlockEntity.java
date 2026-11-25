@@ -17,6 +17,7 @@ package com.linc.alteredaether.compat.create;
 import com.linc.alteredaether.AlteredAether;
 import com.linc.alteredaether.compat.CreateElectric;
 import com.linc.alteredaether.config.AACommonConfig;
+import com.linc.alteredaether.electric.AetherJarBlock;
 import com.linc.alteredaether.electric.AetherJarBlockEntity;
 import com.linc.alteredaether.electric.ElectricRegistries;
 import com.linc.alteredaether.electric.SquallGeneratorCore;
@@ -189,7 +190,12 @@ public class AerogelWheelBlockEntity extends GeneratingKineticBlockEntity {
         BlockPos near = pos.relative(axis, sign), rod = pos.relative(axis, 2 * sign);
         return level.getBlockState(near).isAir() && level.getBlockState(near.below()).isAir()
                 && level.getBlockState(rod).is(Blocks.LIGHTNING_ROD)
-                && level.getBlockState(rod.below()).is(ElectricRegistries.AETHER_JAR.get());
+                && upright(level.getBlockState(rod.below()));
+    }
+
+    /** An Aether Jar, either kind, standing upright so the rod is on its top. */
+    private static boolean upright(BlockState jar) {
+        return jar.getBlock() instanceof AetherJarBlock && jar.getValue(AetherJarBlock.FACING) == Direction.UP;
     }
 
     @Override

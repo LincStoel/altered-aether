@@ -26,9 +26,11 @@ import net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent;
 public final class ElectricCapabilities {
     @SubscribeEvent
     public static void register(RegisterCapabilitiesEvent event) {
-        // a jar's cables go on its bottom alone; a side-less query (a probe, a tooltip) sees the same
+        // power goes into a jar at its bottom and out at its top, whichever way it is turned; a side-less query (a
+        // probe, a tooltip) sees both
         event.registerBlockEntity(Capabilities.EnergyStorage.BLOCK, ElectricRegistries.AETHER_JAR_BLOCK_ENTITY.get(),
-                (jar, side) -> side == null || side == Direction.DOWN ? jar.port() : null);
+                (jar, side) -> side == null ? jar.port() : side == jar.facing() ? jar.output()
+                        : side == jar.facing().getOpposite() ? jar.input() : null);
         // a generator takes FE on any side but its front and back, and fuel on any
         event.registerBlockEntity(Capabilities.EnergyStorage.BLOCK, ElectricRegistries.SQUALL_GENERATOR_BLOCK_ENTITY.get(),
                 (entity, side) -> entity instanceof SquallGeneratorHost host

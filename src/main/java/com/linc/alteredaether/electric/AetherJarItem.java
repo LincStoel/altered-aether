@@ -36,12 +36,19 @@ public class AetherJarItem extends BlockItem {
     }
 
     public static int energy(ItemStack stack) {
+        if (creative(stack)) {
+            return AetherJarBlockEntity.capacity();
+        }
         return stack.getOrDefault(ElectricRegistries.STORED_ENERGY.get(), 0);
+    }
+
+    public static boolean creative(ItemStack stack) {
+        return stack.getItem() instanceof BlockItem item && item.getBlock() instanceof AetherJarBlock jar && jar.creative();
     }
 
     @Override
     public boolean isBarVisible(ItemStack stack) {
-        return energy(stack) > 0;
+        return !creative(stack) && energy(stack) > 0;
     }
 
     @Override
@@ -56,6 +63,11 @@ public class AetherJarItem extends BlockItem {
 
     @Override
     public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltip, TooltipFlag flag) {
+        if (creative(stack)) {
+            tooltip.add(Component.translatable("tooltip." + AlteredAether.MOD_ID + ".creative_aether_jar")
+                    .withStyle(ChatFormatting.GRAY));
+            return;
+        }
         tooltip.add(Component.translatable("tooltip." + AlteredAether.MOD_ID + ".energy", fe(energy(stack)),
                 fe(AetherJarBlockEntity.capacity())).withStyle(ChatFormatting.GRAY));
     }

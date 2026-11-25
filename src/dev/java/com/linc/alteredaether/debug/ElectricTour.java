@@ -17,6 +17,7 @@ package com.linc.alteredaether.debug;
 import com.aetherteam.aether.block.AetherBlocks;
 import com.aetherteam.aether.item.AetherItems;
 import com.linc.alteredaether.AlteredAether;
+import com.linc.alteredaether.electric.AetherJarBlock;
 import com.linc.alteredaether.electric.AetherJarBlockEntity;
 import com.linc.alteredaether.electric.ElectricRegistries;
 import com.linc.alteredaether.electric.SquallGeneratorBlock;
@@ -85,6 +86,7 @@ public final class ElectricTour {
     private static final BlockPos GENERATOR_UP = new BlockPos(2, 0, -4);
     private static final BlockPos GENERATOR_NORTH = new BlockPos(4, 0, -3);
     private static final BlockPos CLOUD = new BlockPos(-4, 0, 2);
+    private static final BlockPos TURNED_JARS = new BlockPos(-7, 0, -1);
     static final BlockPos WHEEL = new BlockPos(4, 1, 3);
     static final BlockPos DEPOT = new BlockPos(-1, 0, 4);
 
@@ -168,6 +170,17 @@ public final class ElectricTour {
         level.setBlockAndUpdate(o.offset(GENERATOR_NORTH).south(), ElectricRegistries.AETHER_JAR.get().defaultBlockState());
         level.setBlockAndUpdate(o.offset(GENERATOR_NORTH).north(), Blocks.OXIDIZED_COPPER.defaultBlockState());
         level.setBlockAndUpdate(o.offset(CLOUD), ElectricRegistries.STORM_AERCLOUD.get().defaultBlockState());
+        // the creative jar upright, then charged jars turned toward the camera, east and upside down
+        level.setBlockAndUpdate(o.offset(TURNED_JARS), ElectricRegistries.CREATIVE_AETHER_JAR.get().defaultBlockState());
+        Direction[] turns = {Direction.SOUTH, Direction.EAST, Direction.DOWN};
+        for (int i = 0; i < turns.length; i++) {
+            BlockPos at = o.offset(TURNED_JARS).east(2 + i * 2);
+            level.setBlockAndUpdate(at, ElectricRegistries.AETHER_JAR.get().defaultBlockState()
+                    .setValue(AetherJarBlock.FACING, turns[i]));
+            if (level.getBlockEntity(at) instanceof AetherJarBlockEntity jar) {
+                jar.charge(AetherJarBlockEntity.capacity() / 2);
+            }
+        }
         if (CREATE) {
             ElectricTourCreate.stage(level, o);
         }
@@ -192,6 +205,8 @@ public final class ElectricTour {
     private static List<Step> script() {
         List<Step> steps = new ArrayList<>();
         steps.add(new Step("jars", level -> { }, new Vec3(-3.5, 1.3, -1.3), new Vec3(-3.5, 0.5, -3.5), 20, false, null));
+        steps.add(new Step("turned_jars", level -> { }, new Vec3(-3.5, 1.8, 1.8), new Vec3(-3.5, 0.5, -0.5), 20,
+                false, null));
         steps.add(new Step("bowls", level -> { }, new Vec3(2.5, 2.2, -0.2), new Vec3(2.5, 0.4, -3.5), 30, false, null));
         steps.add(new Step("jar_tip", level -> { }, new Vec3(-1.5, 1.35, -2.75), new Vec3(-1.5, 0.95, -3.5), 20,
                 false, null));

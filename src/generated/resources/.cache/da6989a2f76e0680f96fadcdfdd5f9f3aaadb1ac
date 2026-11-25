@@ -1,10 +1,10 @@
-// 1.21.1	2026-11-25T00:27:51.5016385	Altered Aether blocks and language
+// 1.21.1	2026-11-25T16:17:28.6242765	Altered Aether blocks and language
 cc4a268c9d003718a9458f1257ad3d879abd35d6 assets/altered_aether/blockstates/ambrosium_campfire.json
 9279ad634d42135691b2587520af886dfe5ee4b5 assets/altered_aether/blockstates/gleam_vines.json
 7109808a35c46e4977768327eb3866d2740067cc assets/altered_aether/blockstates/gleam_vines_plant.json
 6e0548ae9978aa70cf2e1b8e127cf1f7cfe21bdb assets/altered_aether/blockstates/phased_aercloud.json
 7e26e3a1b0de3a0ff7afee51b5739dc2682b4b89 assets/altered_aether/blockstates/raw_gravitite_block.json
-da755bcc1ffb595f01de73b6ef720f0e9a8e22c5 assets/altered_aether/lang/en_us.json
+f7b956bba4ca8d30bd45d5a206de74aaf6827ae3 assets/altered_aether/lang/en_us.json
 d9ba4bf337d6633fefcee7a328069e422cf6437f assets/altered_aether/models/block/ambrosium_campfire.json
 755e85dd5983a1e575c7421ae51c5c5af233d89c assets/altered_aether/models/block/ambrosium_campfire_off.json
 6ca26b286266763bc972dabc5128e2c663523f28 assets/altered_aether/models/block/gleam_vines.json

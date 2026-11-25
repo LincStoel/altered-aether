@@ -63,6 +63,7 @@ final class ElectricJade {
         public void appendServerData(CompoundTag data, BlockAccessor accessor) {
             if (accessor.getBlockEntity() instanceof AetherJarBlockEntity jar) {
                 data.putInt("aa_energy", jar.energy());
+                data.putBoolean("aa_creative", jar.creative());
                 data.putInt("aa_copper", jar.liveCopper());
             }
         }
@@ -71,6 +72,10 @@ final class ElectricJade {
         public void appendTooltip(ITooltip tooltip, BlockAccessor accessor, IPluginConfig config) {
             CompoundTag data = accessor.getServerData();
             if (!data.contains("aa_energy")) {
+                return;
+            }
+            if (data.getBoolean("aa_creative")) {
+                tooltip.add(line("creative_energy"));
                 return;
             }
             tooltip.add(line("energy", AetherJarItem.fe(data.getInt("aa_energy")),

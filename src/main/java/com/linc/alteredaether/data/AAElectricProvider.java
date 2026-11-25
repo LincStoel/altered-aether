@@ -77,6 +77,9 @@ public final class AAElectricProvider extends JsonDataProvider {
         String tip = "tooltip." + AlteredAether.MOD_ID + ".";
         String jade = "jade." + AlteredAether.MOD_ID + ".";
         lang.put(block + "aether_jar", "Aether Jar");
+        lang.put(block + "creative_aether_jar", "Creative Aether Jar");
+        lang.put(tip + "creative_aether_jar", "Endless FE out of its top");
+        lang.put(jade + "creative_energy", "Charge: endless");
         lang.put(block + "squall_insulator", "Squall Insulator");
         lang.put(block + "squall_generator", "Squall Generator");
         lang.put(block + "storm_aercloud", "Storm Aercloud");
@@ -110,37 +113,26 @@ public final class AAElectricProvider extends JsonDataProvider {
     private void jar() {
         JsonObject variants = new JsonObject();
         for (int charge = 0; charge <= 4; charge++) {
-            JsonArray elements = new JsonArray();
-            elements.add(element(new double[]{7.5, 1, 7.5}, new double[]{8.5, 13, 8.5}, "#rod", new double[]{0, 4, 2, 16}));
-            JsonObject tip = element(new double[]{7, 13, 7}, new double[]{9, 16, 9}, "#rod", new double[]{0, 4, 2, 7});
-            for (String end : new String[]{"up", "down"}) {
-                tip.getAsJsonObject("faces").getAsJsonObject(end).add("uv", numbers(0, 4, 2, 6));
+            asset("models/block", AlteredAether.id("aether_jar_" + charge),
+                    jarModel(M + "block/aether_jar_foil_" + charge, charge > 0));
+            for (Map.Entry<String, int[]> facing : FACINGS.entrySet()) {
+                variants.add("charge=" + charge + ",facing=" + facing.getKey(),
+                        modelRef("aether_jar_" + charge, facing.getValue()[0], facing.getValue()[1]));
             }
-            elements.add(tip);
-            JsonObject foil = element(new double[]{2.75, 0.25, 2.75}, new double[]{13.25, 6, 13.25}, "#foil", null);
-            foil.getAsJsonObject("faces").remove("up");
-            if (charge > 0) {
-                JsonObject lit = new JsonObject();
-                lit.addProperty("block_light", 15);
-                lit.addProperty("sky_light", 15);
-                foil.add("neoforge_data", lit);
-            }
-            elements.add(foil);
-            elements.add(element(new double[]{3, 0, 3}, new double[]{13, 11, 13}, "#glass", null));
-            elements.add(element(new double[]{4, 11, 4}, new double[]{12, 12, 12}, "#glass", null));
-            elements.add(element(new double[]{6, 12, 6}, new double[]{10, 13, 10}, "#glass", null));
-            elements.add(element(new double[]{5, 13, 5}, new double[]{11, 15, 11}, "#stopper", null));
-            Map<String, String> textures = new LinkedHashMap<>();
-            textures.put("glass", AEROGEL);
-            textures.put("stopper", PLANKS);
-            textures.put("rod", ROD);
-            textures.put("particle", AEROGEL);
-            textures.put("foil", M + "block/aether_jar_foil_" + charge);
-            asset("models/block", AlteredAether.id("aether_jar_" + charge), elementModel(elements, textures, true));
-            variants.add("charge=" + charge, modelRef("aether_jar_" + charge, 0, 0));
         }
         blockstate("aether_jar", variants);
         itemFromBlock("aether_jar", "aether_jar_0");
+        // the creative jar: the same, its band purple and always lit; it is always at charge 4
+        asset("models/block", AlteredAether.id("creative_aether_jar"), jarModel(M + "block/creative_aether_jar_foil", true));
+        JsonObject creative = new JsonObject();
+        for (int charge = 0; charge <= 4; charge++) {
+            for (Map.Entry<String, int[]> facing : FACINGS.entrySet()) {
+                creative.add("charge=" + charge + ",facing=" + facing.getKey(),
+                        modelRef("creative_aether_jar", facing.getValue()[0], facing.getValue()[1]));
+            }
+        }
+        blockstate("creative_aether_jar", creative);
+        itemFromBlock("creative_aether_jar", "creative_aether_jar");
         // a broken jar keeps its charge
         JsonObject copy = new JsonObject();
         copy.addProperty("function", "minecraft:copy_components");
@@ -152,6 +144,37 @@ public final class AAElectricProvider extends JsonDataProvider {
         key.add("S", item("aether:skyroot_slab"));
         key.add("L", item("minecraft:lightning_rod"));
         shaped("aether_jar", "redstone", key, 1, " S ", "ALA", "AAA");
+    }
+
+    /** A jar's model, its foil band drawn with {@code foilTexture}, full bright if {@code lit}. */
+    private static JsonObject jarModel(String foilTexture, boolean lit) {
+        JsonArray elements = new JsonArray();
+        elements.add(element(new double[]{7.5, 1, 7.5}, new double[]{8.5, 13, 8.5}, "#rod", new double[]{0, 4, 2, 16}));
+        JsonObject tip = element(new double[]{7, 13, 7}, new double[]{9, 16, 9}, "#rod", new double[]{0, 4, 2, 7});
+        for (String end : new String[]{"up", "down"}) {
+            tip.getAsJsonObject("faces").getAsJsonObject(end).add("uv", numbers(0, 4, 2, 6));
+        }
+        elements.add(tip);
+        JsonObject foil = element(new double[]{2.75, 0.25, 2.75}, new double[]{13.25, 6, 13.25}, "#foil", null);
+        foil.getAsJsonObject("faces").remove("up");
+        if (lit) {
+            JsonObject bright = new JsonObject();
+            bright.addProperty("block_light", 15);
+            bright.addProperty("sky_light", 15);
+            foil.add("neoforge_data", bright);
+        }
+        elements.add(foil);
+        elements.add(element(new double[]{3, 0, 3}, new double[]{13, 11, 13}, "#glass", null));
+        elements.add(element(new double[]{4, 11, 4}, new double[]{12, 12, 12}, "#glass", null));
+        elements.add(element(new double[]{6, 12, 6}, new double[]{10, 13, 10}, "#glass", null));
+        elements.add(element(new double[]{5, 13, 5}, new double[]{11, 15, 11}, "#stopper", null));
+        Map<String, String> textures = new LinkedHashMap<>();
+        textures.put("glass", AEROGEL);
+        textures.put("stopper", PLANKS);
+        textures.put("rod", ROD);
+        textures.put("particle", AEROGEL);
+        textures.put("foil", foilTexture);
+        return elementModel(elements, textures, true);
     }
 
     /**
@@ -215,18 +238,29 @@ public final class AAElectricProvider extends JsonDataProvider {
         elements.add(element(new double[]{1, 9, 3}, new double[]{3, 10, 13}, "#wood", null));
         elements.add(element(new double[]{13, 9, 3}, new double[]{15, 10, 13}, "#wood", null));
         if (lit) {
-            JsonObject spark = new JsonObject();
-            spark.add("from", numbers(3, 2.05, 3));
-            spark.add("to", numbers(13, 2.1, 13));
-            JsonObject faces = new JsonObject();
-            JsonObject up = new JsonObject();
-            up.addProperty("texture", "#spark");
-            faces.add("up", up);
-            spark.add("faces", faces);
-            spark.addProperty("shade", false);
-            elements.add(spark);
+            // the crackle runs over the inside of the four walls, just off the glass
+            double in = 3.05, out = 12.95;
+            elements.add(spark(new double[]{3, 2, in}, new double[]{13, 9, in}, "south"));
+            elements.add(spark(new double[]{3, 2, out}, new double[]{13, 9, out}, "north"));
+            elements.add(spark(new double[]{in, 2, 3}, new double[]{in, 9, 13}, "east"));
+            elements.add(spark(new double[]{out, 2, 3}, new double[]{out, 9, 13}, "west"));
         }
         return elements;
+    }
+
+    /** One flat sheet of the generator's crackle, showing toward {@code face}. */
+    private static JsonObject spark(double[] from, double[] to, String face) {
+        JsonObject spark = new JsonObject();
+        spark.add("from", numbers(from[0], from[1], from[2]));
+        spark.add("to", numbers(to[0], to[1], to[2]));
+        JsonObject faces = new JsonObject();
+        JsonObject side = new JsonObject();
+        side.addProperty("texture", "#spark");
+        side.add("uv", numbers(3, 4, 13, 11));
+        faces.add(face, side);
+        spark.add("faces", faces);
+        spark.addProperty("shade", false);
+        return spark;
     }
 
     /** A cold aercloud's shape, and its drop, in storm grey; a squall drops it (see AALootProvider). */

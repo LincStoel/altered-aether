@@ -1,19 +1,134 @@
 {
   "variants": {
-    "charge=0": {
+    "charge=0,facing=down": {
+      "model": "altered_aether:block/aether_jar_0",
+      "x": 180
+    },
+    "charge=0,facing=east": {
+      "model": "altered_aether:block/aether_jar_0",
+      "x": 90,
+      "y": 90
+    },
+    "charge=0,facing=north": {
+      "model": "altered_aether:block/aether_jar_0",
+      "x": 90
+    },
+    "charge=0,facing=south": {
+      "model": "altered_aether:block/aether_jar_0",
+      "x": 90,
+      "y": 180
+    },
+    "charge=0,facing=up": {
       "model": "altered_aether:block/aether_jar_0"
     },
-    "charge=1": {
+    "charge=0,facing=west": {
+      "model": "altered_aether:block/aether_jar_0",
+      "x": 90,
+      "y": 270
+    },
+    "charge=1,facing=down": {
+      "model": "altered_aether:block/aether_jar_1",
+      "x": 180
+    },
+    "charge=1,facing=east": {
+      "model": "altered_aether:block/aether_jar_1",
+      "x": 90,
+      "y": 90
+    },
+    "charge=1,facing=north": {
+      "model": "altered_aether:block/aether_jar_1",
+      "x": 90
+    },
+    "charge=1,facing=south": {
+      "model": "altered_aether:block/aether_jar_1",
+      "x": 90,
+      "y": 180
+    },
+    "charge=1,facing=up": {
       "model": "altered_aether:block/aether_jar_1"
     },
-    "charge=2": {
+    "charge=1,facing=west": {
+      "model": "altered_aether:block/aether_jar_1",
+      "x": 90,
+      "y": 270
+    },
+    "charge=2,facing=down": {
+      "model": "altered_aether:block/aether_jar_2",
+      "x": 180
+    },
+    "charge=2,facing=east": {
+      "model": "altered_aether:block/aether_jar_2",
+      "x": 90,
+      "y": 90
+    },
+    "charge=2,facing=north": {
+      "model": "altered_aether:block/aether_jar_2",
+      "x": 90
+    },
+    "charge=2,facing=south": {
+      "model": "altered_aether:block/aether_jar_2",
+      "x": 90,
+      "y": 180
+    },
+    "charge=2,facing=up": {
       "model": "altered_aether:block/aether_jar_2"
     },
-    "charge=3": {
+    "charge=2,facing=west": {
+      "model": "altered_aether:block/aether_jar_2",
+      "x": 90,
+      "y": 270
+    },
+    "charge=3,facing=down": {
+      "model": "altered_aether:block/aether_jar_3",
+      "x": 180
+    },
+    "charge=3,facing=east": {
+      "model": "altered_aether:block/aether_jar_3",
+      "x": 90,
+      "y": 90
+    },
+    "charge=3,facing=north": {
+      "model": "altered_aether:block/aether_jar_3",
+      "x": 90
+    },
+    "charge=3,facing=south": {
+      "model": "altered_aether:block/aether_jar_3",
+      "x": 90,
+      "y": 180
+    },
+    "charge=3,facing=up": {
       "model": "altered_aether:block/aether_jar_3"
     },
-    "charge=4": {
+    "charge=3,facing=west": {
+      "model": "altered_aether:block/aether_jar_3",
+      "x": 90,
+      "y": 270
+    },
+    "charge=4,facing=down": {
+      "model": "altered_aether:block/aether_jar_4",
+      "x": 180
+    },
+    "charge=4,facing=east": {
+      "model": "altered_aether:block/aether_jar_4",
+      "x": 90,
+      "y": 90
+    },
+    "charge=4,facing=north": {
+      "model": "altered_aether:block/aether_jar_4",
+      "x": 90
+    },
+    "charge=4,facing=south": {
+      "model": "altered_aether:block/aether_jar_4",
+      "x": 90,
+      "y": 180
+    },
+    "charge=4,facing=up": {
       "model": "altered_aether:block/aether_jar_4"
+    },
+    "charge=4,facing=west": {
+      "model": "altered_aether:block/aether_jar_4",
+      "x": 90,
+      "y": 270
     }
   }
 }
