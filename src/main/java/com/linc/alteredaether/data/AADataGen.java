@@ -42,6 +42,7 @@ public final class AADataGen {
         generator.addProvider(event.includeServer(), new AAFeatureProvider(output));
         generator.addProvider(event.includeServer(), new AATagProvider(output));
         generator.addProvider(event.includeServer(), new AAGolemProvider(output));
+        generator.addProvider(event.includeServer(), new AAElectricProvider(output));
         generator.addProvider(event.includeServer(), new AABoulderProvider(output));
         generator.addProvider(event.includeServer(), new AASurfaceRuleProvider(output));
         generator.addProvider(event.includeServer(), new AAGravititeProvider(

@@ -39,6 +39,12 @@
     "altered_aether:sylicite_bricks",
     "altered_aether:sylicite_brick_stairs",
     "altered_aether:sylicite_brick_slab",
-    "altered_aether:sylicite_brick_wall"
+    "altered_aether:sylicite_brick_wall",
+    "altered_aether:squall_insulator",
+    "altered_aether:squall_generator",
+    {
+      "id": "altered_aether:aerogel_wheel",
+      "required": false
+    }
   ]
 }

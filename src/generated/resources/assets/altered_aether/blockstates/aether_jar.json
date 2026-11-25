@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "charge=0": {
+      "model": "altered_aether:block/aether_jar_0"
+    },
+    "charge=1": {
+      "model": "altered_aether:block/aether_jar_1"
+    },
+    "charge=2": {
+      "model": "altered_aether:block/aether_jar_2"
+    },
+    "charge=3": {
+      "model": "altered_aether:block/aether_jar_3"
+    },
+    "charge=4": {
+      "model": "altered_aether:block/aether_jar_4"
+    }
+  }
+}

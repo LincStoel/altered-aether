@@ -1,0 +1,29 @@
+{
+  "parent": "altered_aether:bottled_lightning",
+  "criteria": {
+    "caught": {
+      "conditions": {},
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "display": {
+    "description": {
+      "translate": "advancements.altered_aether.caught_in_a_bowl.description"
+    },
+    "frame": "goal",
+    "icon": {
+      "id": "altered_aether:squall_generator"
+    },
+    "title": {
+      "translate": "advancements.altered_aether.caught_in_a_bowl.title"
+    }
+  },
+  "requirements": [
+    [
+      "caught"
+    ]
+  ],
+  "rewards": {
+    "experience": 50
+  }
+}

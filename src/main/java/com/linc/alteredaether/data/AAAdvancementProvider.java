@@ -83,6 +83,13 @@ public final class AAAdvancementProvider extends JsonDataProvider {
         advancement(all, "thunderstruck", "living_lightning_rod", "minecraft:iron_chestplate", "task", 0, "Thunderstruck!",
                 "Attract lightning with your overworld metal equipment",
                 Map.of("struck", criterion("minecraft:impossible")));
+        // Awarded in code by electric/ElectricStrikes and electric/SquallCapture.
+        advancement(all, "bottled_lightning", "tempest_peaks", AlteredAether.MOD_ID + ":aether_jar", "task", 0,
+                "Bottled Lightning", "Be near an Aether Jar as lightning charges it",
+                Map.of("struck", criterion("minecraft:impossible")));
+        advancement(all, "caught_in_a_bowl", "bottled_lightning", AlteredAether.MOD_ID + ":squall_generator", "goal",
+                50, "Caught in a Bowl", "Catch a squall in a Squall Insulator",
+                Map.of("caught", criterion("minecraft:impossible")));
         landmark(all, "tempest_crown", "tempest_peaks", LandmarkType.TEMPEST_SPIRES.id(), "minecraft:lightning_rod",
                 "The Storm's Crown", "Stand among the black needles of a tempest crown");
         biome(all, "shattered_rift", AABiomes.SHATTERED_RIFT, "aether:holystone", "Mind the Gap",

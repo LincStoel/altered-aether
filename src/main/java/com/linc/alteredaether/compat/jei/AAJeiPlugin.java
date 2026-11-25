@@ -41,7 +41,8 @@ import java.util.List;
  * JEI pages for what this mod adds to other mods' machines: so far Create's bulk enchanting through an ambrosium
  * campfire ({@link FanEnchantingCategory}). Nothing here names a Create type, so the plugin loads without Create. Also
  * the gravitite golem's guide, on its pebble and spawn egg, how a pebble is bought ({@link GolemPebbleCategory}), and
- * the Golem Chest Network screen's search, lookups and "+" ({@link GolemNetworkJei}).
+ * the Golem Chest Network screen's search, lookups and "+" ({@link GolemNetworkJei}), and the Squall Generator's flash
+ * blasting ({@link FlashBlastingCategory}).
  */
 @JeiPlugin
 public final class AAJeiPlugin implements IModPlugin {
@@ -57,6 +58,7 @@ public final class AAJeiPlugin implements IModPlugin {
     @Override
     public void registerCategories(IRecipeCategoryRegistration registration) {
         GolemPebbleCategory.register(registration);
+        FlashBlastingCategory.register(registration);
         fanEnchanting = null;
         if (ModList.get().isLoaded(CreateCompat.MOD)) {
             fanEnchanting = FanEnchantingCategory.create();
@@ -70,6 +72,7 @@ public final class AAJeiPlugin implements IModPlugin {
             FanEnchantingCategory.registerRecipes(fanEnchanting, registration);
         }
         GolemPebbleCategory.registerRecipes(registration);
+        FlashBlastingCategory.registerRecipes(registration);
         // the gravitite golem guide, on its pebble and spawn egg: everything a golem answers to
         registration.addItemStackInfo(List.of(new ItemStack(AARegistries.STORAGE_PEBBLE.get()),
                 new ItemStack(AARegistries.GRAVITITE_GOLEM_SPAWN_EGG.get())), golemGuide());
@@ -110,6 +113,7 @@ public final class AAJeiPlugin implements IModPlugin {
             FanEnchantingCategory.registerCatalysts(fanEnchanting, registration);
         }
         GolemPebbleCategory.registerCatalysts(registration);
+        FlashBlastingCategory.registerCatalysts(registration);
     }
 
     @Override

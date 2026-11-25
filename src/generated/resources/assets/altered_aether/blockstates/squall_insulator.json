@@ -1,0 +1,30 @@
+{
+  "variants": {
+    "facing=down": {
+      "model": "altered_aether:block/squall_insulator",
+      "x": 180
+    },
+    "facing=east": {
+      "model": "altered_aether:block/squall_insulator",
+      "x": 90,
+      "y": 90
+    },
+    "facing=north": {
+      "model": "altered_aether:block/squall_insulator",
+      "x": 90
+    },
+    "facing=south": {
+      "model": "altered_aether:block/squall_insulator",
+      "x": 90,
+      "y": 180
+    },
+    "facing=up": {
+      "model": "altered_aether:block/squall_insulator"
+    },
+    "facing=west": {
+      "model": "altered_aether:block/squall_insulator",
+      "x": 90,
+      "y": 270
+    }
+  }
+}

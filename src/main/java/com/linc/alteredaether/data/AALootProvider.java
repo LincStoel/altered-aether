@@ -91,10 +91,31 @@ public final class AALootProvider extends JsonDataProvider {
         data("loot_table/chests", AlteredAether.id("double_atoll"), table);
     }
 
-    /** The zephyr's drop: a cold aercloud or two, one more with looting. */
+    /**
+     * The zephyr's drop, a cold aercloud or two, and a storm aercloud of its own now and then (see electric/); each one
+     * more with looting.
+     */
     private void squall() {
-        JsonObject entry = entry("aether:cold_aercloud", 1, 0, 2);
+        JsonObject table = new JsonObject();
+        table.addProperty("type", "minecraft:entity");
+        table.add("pools", entries(squallPool("aether:cold_aercloud", 2),
+                squallPool(AlteredAether.MOD_ID + ":storm_aercloud", 1)));
+        table.addProperty("random_sequence", AlteredAether.MOD_ID + ":entities/squall");
+        data("loot_table/entities", AlteredAether.id("squall"), table);
+    }
+
+    private static JsonObject squallPool(String item, int max) {
+        JsonObject entry = entry(item, 1, 0, max);
         entry.remove("weight");
+        if (!entry.has("functions")) {
+            // entry() leaves a count of one alone; this one may drop none
+            JsonObject count = new JsonObject();
+            count.addProperty("function", "minecraft:set_count");
+            count.add("count", uniform(0, max));
+            JsonArray functions = new JsonArray();
+            functions.add(count);
+            entry.add("functions", functions);
+        }
         JsonObject looting = new JsonObject();
         looting.addProperty("function", "minecraft:enchanted_count_increase");
         looting.addProperty("enchantment", "minecraft:looting");
@@ -104,11 +125,7 @@ public final class AALootProvider extends JsonDataProvider {
         pool.addProperty("rolls", 1.0);
         pool.addProperty("bonus_rolls", 0.0);
         pool.add("entries", entries(entry));
-        JsonObject table = new JsonObject();
-        table.addProperty("type", "minecraft:entity");
-        table.add("pools", entries(pool));
-        table.addProperty("random_sequence", AlteredAether.MOD_ID + ":entities/squall");
-        data("loot_table/entities", AlteredAether.id("squall"), table);
+        return pool;
     }
 
     /**

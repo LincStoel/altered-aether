@@ -1,0 +1,26 @@
+{
+  "neoforge:conditions": [
+    {
+      "type": "altered_aether:mod_enabled",
+      "modid": "create"
+    }
+  ],
+  "type": "minecraft:block",
+  "pools": [
+    {
+      "conditions": [
+        {
+          "condition": "minecraft:survives_explosion"
+        }
+      ],
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "name": "altered_aether:aerogel_wheel"
+        }
+      ],
+      "rolls": 1
+    }
+  ],
+  "random_sequence": "altered_aether:blocks/aerogel_wheel"
+}

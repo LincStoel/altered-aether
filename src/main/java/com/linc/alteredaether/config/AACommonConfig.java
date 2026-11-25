@@ -152,6 +152,26 @@ public final class AACommonConfig {
     // [gravitite]
     public static final BooleanValue GRAVITITE_REWORK;
 
+    // [electricity]
+    public static final IntValue JAR_CAPACITY;
+    public static final IntValue JAR_STRIKE_CHARGE;
+    public static final IntValue JAR_OUTPUT;
+    public static final IntValue JAR_INPUT;
+    public static final IntValue COPPER_MAX_BLOCKS;
+    public static final DoubleValue COPPER_DRAIN;
+    public static final DoubleValue ZAP_DAMAGE;
+    public static final DoubleValue STORM_AERCLOUD_DAMAGE;
+    public static final IntValue GENERATOR_CHARGE_RATE;
+    public static final IntValue GENERATOR_FE_COST;
+    public static final IntValue GENERATOR_ZAP_INTERVAL;
+    public static final IntValue GENERATOR_SUPERHEAT_TICKS;
+    public static final IntValue WHEEL_FE_AT_MAX_RPM;
+    public static final IntValue WHEEL_MIN_CONSUMPTION;
+    public static final IntValue WHEEL_STRESS_PER_RPM;
+    public static final DoubleValue STATIC_BOOTS_FALL;
+    public static final DoubleValue STATIC_BOOTS_JUMP;
+    public static final DoubleValue STATIC_BOOTS_KNOCKBACK;
+
     // [compat]
     public static final Map<String, BooleanValue> COMPAT_ENABLED = new LinkedHashMap<>();
     public static final BooleanValue DISABLE_BEYOND_PARITY_CAMPFIRE;
@@ -494,6 +514,51 @@ public final class AACommonConfig {
         PHASED_AERCLOUD_SECONDS = b.comment("Seconds a cloud takes to fade back in and become solid again after a body last",
                         "touched it.")
                 .defineInRange("fade_seconds", 15.0, 1.0, 600.0);
+        b.pop();
+
+        b.comment("Tempest Peaks electricity: the Aether Jar, the Squall Generator, the Aerogel Wheel and the Static Boots.",
+                        "Energy is in FE; t is a game tick.")
+                .push("electricity");
+        JAR_CAPACITY = b.comment("FE an Aether Jar holds.")
+                .defineInRange("jar_capacity", 720_000, 1_000, Integer.MAX_VALUE);
+        JAR_STRIKE_CHARGE = b.comment("FE one lightning strike puts into a jar, on it or on a lightning rod on top of it.")
+                .defineInRange("jar_strike_charge", 180_000, 0, Integer.MAX_VALUE);
+        JAR_OUTPUT = b.comment("Most FE per tick a jar gives out through its bottom face.")
+                .defineInRange("jar_output", 30, 0, 1_000_000);
+        JAR_INPUT = b.comment("Most FE per tick a jar takes in through its bottom face.")
+                .defineInRange("jar_input", 1_000, 0, 1_000_000);
+        COPPER_MAX_BLOCKS = b.comment("Most connected copper blocks a charged jar standing on copper electrifies.")
+                .defineInRange("copper_max_blocks", 64, 1, 1024);
+        COPPER_DRAIN = b.comment("FE per tick each electrified copper block drains from the jar.")
+                .defineInRange("copper_drain", 0.5, 0.0, 1000.0);
+        ZAP_DAMAGE = b.comment("Damage a shock from live copper or a Squall Generator does. Leather and gem boots",
+                        "(#altered_aether:insulating_boots) protect from every shock.")
+                .defineInRange("zap_damage", 2.0, 0.0, 100.0);
+        STORM_AERCLOUD_DAMAGE = b.comment("Damage a storm aercloud's shock does to what is inside it.")
+                .defineInRange("storm_aercloud_damage", 1.0, 0.0, 100.0);
+        GENERATOR_CHARGE_RATE = b.comment("FE per tick a running Squall Generator puts into the jar behind it.")
+                .defineInRange("generator_charge_rate", 60, 0, 1_000_000);
+        GENERATOR_FE_COST = b.comment("FE per tick a Squall Generator runs on when it has no ambrosium burning.")
+                .defineInRange("generator_fe_cost", 60, 0, 1_000_000);
+        GENERATOR_ZAP_INTERVAL = b.comment("Ticks between a running Squall Generator's shocks.")
+                .defineInRange("generator_zap_interval", 20, 1, 1200);
+        GENERATOR_SUPERHEAT_TICKS = b.comment("Ticks a storm or sterling aercloud keeps a Squall Generator superheated; the",
+                        "default is a Create blaze cake's.")
+                .defineInRange("generator_superheat_ticks", 3_200, 1, 1_000_000);
+        WHEEL_FE_AT_MAX_RPM = b.comment("FE per tick the Aerogel Wheel draws at 256 RPM, falling in step with its speed.",
+                        "The defaults match Create Crafts & Additions' electric motor.")
+                .defineInRange("wheel_fe_at_max_rpm", 480, 0, 1_000_000);
+        WHEEL_MIN_CONSUMPTION = b.comment("Least FE per tick a turning Aerogel Wheel draws.")
+                .defineInRange("wheel_min_consumption", 8, 0, 1_000_000);
+        WHEEL_STRESS_PER_RPM = b.comment("Stress units the Aerogel Wheel provides per RPM. Takes effect after a restart.")
+                .gameRestart()
+                .defineInRange("wheel_stress_per_rpm", 64, 1, 100_000);
+        STATIC_BOOTS_FALL = b.comment("How much faster a wearer of Static Boots sinks through the air, gliders included.")
+                .defineInRange("static_boots_fall", 1.25, 1.0, 10.0);
+        STATIC_BOOTS_JUMP = b.comment("Share of a boosted jump's height Static Boots allow; never below a plain jump.")
+                .defineInRange("static_boots_jump", 0.5, 0.0, 1.0);
+        STATIC_BOOTS_KNOCKBACK = b.comment("Knockback resistance Static Boots give.")
+                .defineInRange("static_boots_knockback", 0.5, 0.0, 1.0);
         b.pop();
 
         b.comment("Optional mod integrations. Each only takes effect when that mod is loaded.").push("compat");

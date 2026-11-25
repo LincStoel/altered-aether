@@ -1,0 +1,29 @@
+{
+  "type": "minecraft:block",
+  "pools": [
+    {
+      "conditions": [
+        {
+          "condition": "minecraft:survives_explosion"
+        }
+      ],
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "functions": [
+            {
+              "function": "minecraft:copy_components",
+              "include": [
+                "altered_aether:stored_energy"
+              ],
+              "source": "block_entity"
+            }
+          ],
+          "name": "altered_aether:aether_jar"
+        }
+      ],
+      "rolls": 1
+    }
+  ],
+  "random_sequence": "altered_aether:blocks/aether_jar"
+}

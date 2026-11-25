@@ -1,0 +1,24 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "redstone",
+  "key": {
+    "A": {
+      "item": "aether:aerogel"
+    },
+    "L": {
+      "item": "minecraft:lightning_rod"
+    },
+    "S": {
+      "item": "aether:skyroot_slab"
+    }
+  },
+  "pattern": [
+    " S ",
+    "ALA",
+    "AAA"
+  ],
+  "result": {
+    "count": 1,
+    "id": "altered_aether:aether_jar"
+  }
+}

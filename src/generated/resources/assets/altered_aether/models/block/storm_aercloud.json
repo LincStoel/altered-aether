@@ -1,0 +1,7 @@
+{
+  "parent": "altered_aether:block/phased_aercloud",
+  "textures": {
+    "cloud": "altered_aether:block/storm_aercloud",
+    "particle": "altered_aether:block/storm_aercloud"
+  }
+}

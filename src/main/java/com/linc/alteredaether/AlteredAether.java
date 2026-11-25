@@ -20,6 +20,7 @@ import com.linc.alteredaether.compat.boulder.FallingBoulders;
 import com.linc.alteredaether.compat.cloud.AercloudPhasing;
 import com.linc.alteredaether.config.AAClientConfig;
 import com.linc.alteredaether.config.AACommonConfig;
+import com.linc.alteredaether.electric.ElectricRegistries;
 import com.linc.alteredaether.registry.AARegistries;
 import com.linc.alteredaether.worldgen.region.AlteredRegion;
 import com.linc.alteredaether.worldgen.surface.AASurfaceRules;
@@ -43,6 +44,7 @@ public final class AlteredAether {
         container.registerConfig(ModConfig.Type.COMMON, AACommonConfig.SPEC);
         container.registerConfig(ModConfig.Type.CLIENT, AAClientConfig.SPEC);
         AARegistries.register(modBus);
+        ElectricRegistries.register(modBus);
         if (ModList.get().isLoaded(CreateCompat.MOD)) {
             CreateCompat.register(modBus);
         }
