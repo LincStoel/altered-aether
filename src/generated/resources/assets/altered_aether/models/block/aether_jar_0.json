@@ -72,6 +72,65 @@
     {
       "faces": {
         "down": {
+          "texture": "#foil",
+          "uv": [
+            2.75,
+            2.75,
+            13.25,
+            13.25
+          ]
+        },
+        "east": {
+          "texture": "#foil",
+          "uv": [
+            2.75,
+            10.0,
+            13.25,
+            15.75
+          ]
+        },
+        "north": {
+          "texture": "#foil",
+          "uv": [
+            2.75,
+            10.0,
+            13.25,
+            15.75
+          ]
+        },
+        "south": {
+          "texture": "#foil",
+          "uv": [
+            2.75,
+            10.0,
+            13.25,
+            15.75
+          ]
+        },
+        "west": {
+          "texture": "#foil",
+          "uv": [
+            2.75,
+            10.0,
+            13.25,
+            15.75
+          ]
+        }
+      },
+      "from": [
+        2.75,
+        0.25,
+        2.75
+      ],
+      "to": [
+        13.25,
+        6.0,
+        13.25
+      ]
+    },
+    {
+      "faces": {
+        "down": {
           "texture": "#glass",
           "uv": [
             3.0,
@@ -344,6 +403,7 @@
   ],
   "render_type": "minecraft:translucent",
   "textures": {
+    "foil": "altered_aether:block/aether_jar_foil_0",
     "glass": "aether:block/construction/aerogel",
     "particle": "aether:block/construction/aerogel",
     "rod": "minecraft:block/lightning_rod",

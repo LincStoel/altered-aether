@@ -102,15 +102,24 @@ public final class AAElectricProvider extends JsonDataProvider {
         WheelPonderText.language(lang);
     }
 
-    /** The jar: aerogel, a skyroot stopper, the lightning rod's copper down its middle, and a glow inside when charged. */
+    /**
+     * The jar: aerogel, a skyroot stopper, the lightning rod's copper down its middle, and copper foil round its lower
+     * half, as on a real Leyden jar, glowing brighter (at full brightness) the fuller the jar is.
+     */
     private void jar() {
         JsonObject variants = new JsonObject();
         for (int charge = 0; charge <= 4; charge++) {
             JsonArray elements = new JsonArray();
             elements.add(element(new double[]{7.5, 1, 7.5}, new double[]{8.5, 16, 8.5}, "#rod", new double[]{0, 0, 2, 15}));
+            JsonObject foil = element(new double[]{2.75, 0.25, 2.75}, new double[]{13.25, 6, 13.25}, "#foil", null);
+            foil.getAsJsonObject("faces").remove("up");
             if (charge > 0) {
-                elements.add(element(new double[]{4.5, 1, 4.5}, new double[]{11.5, 10.5, 11.5}, "#charge", null));
+                JsonObject lit = new JsonObject();
+                lit.addProperty("block_light", 15);
+                lit.addProperty("sky_light", 15);
+                foil.add("neoforge_data", lit);
             }
+            elements.add(foil);
             elements.add(element(new double[]{3, 0, 3}, new double[]{13, 11, 13}, "#glass", null));
             elements.add(element(new double[]{4, 11, 4}, new double[]{12, 12, 12}, "#glass", null));
             elements.add(element(new double[]{6, 12, 6}, new double[]{10, 13, 10}, "#glass", null));
@@ -120,9 +129,7 @@ public final class AAElectricProvider extends JsonDataProvider {
             textures.put("stopper", PLANKS);
             textures.put("rod", ROD);
             textures.put("particle", AEROGEL);
-            if (charge > 0) {
-                textures.put("charge", M + "block/aether_jar_charge_" + charge);
-            }
+            textures.put("foil", M + "block/aether_jar_foil_" + charge);
             asset("models/block", AlteredAether.id("aether_jar_" + charge), elementModel(elements, textures, true));
             variants.add("charge=" + charge, modelRef("aether_jar_" + charge, 0, 0));
         }

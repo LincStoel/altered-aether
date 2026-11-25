@@ -72,69 +72,64 @@
     {
       "faces": {
         "down": {
-          "texture": "#charge",
+          "texture": "#foil",
           "uv": [
-            4.5,
-            4.5,
-            11.5,
-            11.5
+            2.75,
+            2.75,
+            13.25,
+            13.25
           ]
         },
         "east": {
-          "texture": "#charge",
+          "texture": "#foil",
           "uv": [
-            4.5,
-            5.5,
-            11.5,
-            15.0
+            2.75,
+            10.0,
+            13.25,
+            15.75
           ]
         },
         "north": {
-          "texture": "#charge",
+          "texture": "#foil",
           "uv": [
-            4.5,
-            5.5,
-            11.5,
-            15.0
+            2.75,
+            10.0,
+            13.25,
+            15.75
           ]
         },
         "south": {
-          "texture": "#charge",
+          "texture": "#foil",
           "uv": [
-            4.5,
-            5.5,
-            11.5,
-            15.0
-          ]
-        },
-        "up": {
-          "texture": "#charge",
-          "uv": [
-            4.5,
-            4.5,
-            11.5,
-            11.5
+            2.75,
+            10.0,
+            13.25,
+            15.75
           ]
         },
         "west": {
-          "texture": "#charge",
+          "texture": "#foil",
           "uv": [
-            4.5,
-            5.5,
-            11.5,
-            15.0
+            2.75,
+            10.0,
+            13.25,
+            15.75
           ]
         }
       },
       "from": [
-        4.5,
-        1.0,
-        4.5
+        2.75,
+        0.25,
+        2.75
       ],
+      "neoforge_data": {
+        "block_light": 15,
+        "sky_light": 15
+      },
       "to": [
-        11.5,
-        10.5,
-        11.5
+        13.25,
+        6.0,
+        13.25
       ]
     },
     {
@@ -412,7 +407,7 @@
   ],
   "render_type": "minecraft:translucent",
   "textures": {
-    "charge": "altered_aether:block/aether_jar_charge_3",
+    "foil": "altered_aether:block/aether_jar_foil_3",
     "glass": "aether:block/construction/aerogel",
     "particle": "aether:block/construction/aerogel",
     "rod": "minecraft:block/lightning_rod",

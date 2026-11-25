@@ -34,6 +34,7 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.state.BlockState;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -41,7 +42,7 @@ import java.util.List;
 /**
  * A Squall Generator with Create there: the same {@link SquallGeneratorCore}, and while it hangs face down two blocks
  * over a belt or depot (where Create looks for a processor, as for a press), it holds each stack it can flash blast
- * under it for a shock's interval, zaps it, and lets it go on.
+ * under it for a shock's interval, zaps it, and lets it go on; each shock it also zaps what already sits there.
  */
 public class CreateSquallGeneratorBlockEntity extends SmartBlockEntity implements SquallGeneratorHost {
     private final SquallGeneratorCore core = new SquallGeneratorCore(this);
@@ -67,7 +68,50 @@ public class CreateSquallGeneratorBlockEntity extends SmartBlockEntity implement
         super.tick();
         if (level instanceof ServerLevel server) {
             core.tick(server, worldPosition, getBlockState());
+            if (server.getGameTime() % AACommonConfig.GENERATOR_ZAP_INTERVAL.get() == 0) {
+                sweep(server);
+            }
         }
+    }
+
+    /**
+     * Flash blasts whatever sits centred on the belt or depot below that it can. A depot asks its processor only as an
+     * item arrives, so one put there before the generator was lit would otherwise wait forever.
+     */
+    private void sweep(ServerLevel server) {
+        if (!working()) {
+            return;
+        }
+        TransportedItemStackHandlerBehaviour below = BlockEntityBehaviour.get(server, worldPosition.below(2),
+                TransportedItemStackHandlerBehaviour.TYPE);
+        if (below == null) {
+            return;
+        }
+        below.handleCenteredProcessingOnAllItems(0.5F, item -> {
+            if (item.locked) {
+                return TransportedResult.doNothing();
+            }
+            List<TransportedItemStack> made = convert(server, item, below);
+            return made == null ? TransportedResult.doNothing()
+                    : TransportedResult.convertTo(made);
+        });
+    }
+
+    /** {@code item} flash blasted, as stacks for the belt; null if nothing comes of it. */
+    @Nullable
+    private List<TransportedItemStack> convert(ServerLevel server, TransportedItemStack item,
+                                               TransportedItemStackHandlerBehaviour handler) {
+        List<ItemStack> out = core.flash(server, item.stack, handler.getWorldPositionOf(item));
+        if (out == null) {
+            return null;
+        }
+        List<TransportedItemStack> made = new ArrayList<>();
+        for (ItemStack stack : out) {
+            TransportedItemStack copy = item.copy();
+            copy.stack = stack;
+            made.add(copy);
+        }
+        return made;
     }
 
     @Override
@@ -100,15 +144,9 @@ public class CreateSquallGeneratorBlockEntity extends SmartBlockEntity implement
         if (--holding > 0) {
             return ProcessingResult.HOLD;
         }
-        List<ItemStack> out = core.flash(server, item.stack, handler.getWorldPositionOf(item));
-        if (out == null) {
+        List<TransportedItemStack> made = convert(server, item, handler);
+        if (made == null) {
             return ProcessingResult.PASS;
-        }
-        List<TransportedItemStack> made = new ArrayList<>();
-        for (ItemStack stack : out) {
-            TransportedItemStack copy = item.copy();
-            copy.stack = stack;
-            made.add(copy);
         }
         handler.handleProcessingOnItem(item, TransportedResult.convertTo(made));
         holding = AACommonConfig.GENERATOR_ZAP_INTERVAL.get();

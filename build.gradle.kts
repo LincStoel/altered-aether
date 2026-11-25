@@ -60,7 +60,11 @@ neoForge {
             // -PaaCloudTour=<label> quick-plays it too and runs the scripted phased aercloud check in debug/CloudTour.
             val cloudTour = findProperty("aaCloudTour") as String?
             systemProperty("altered_aether.cloud_tour", cloudTour ?: "")
-            if (tour != null || jeiShot != null || golemTour != null || gravititeTour != null || cloudTour != null) {
+            // -PaaElectricTour=<label> quick-plays it too and runs the scripted electricity check in debug/ElectricTour.
+            val electricTour = findProperty("aaElectricTour") as String?
+            systemProperty("altered_aether.electric_tour", electricTour ?: "")
+            if (tour != null || jeiShot != null || golemTour != null || gravititeTour != null || cloudTour != null
+                    || electricTour != null) {
                 programArguments.addAll("--quickPlaySingleplayer", "tour")
             }
             // -PaaJoin=host:port joins that server on start, to check a dedicated server end to end.

@@ -43,7 +43,9 @@ import net.neoforged.neoforge.client.event.EntityRenderersEvent;
  */
 public class SquallGeneratorRenderer implements BlockEntityRenderer<BlockEntity> {
     private static final ResourceLocation TEXTURE = AlteredAether.id("textures/entity/mobs/squall/squall.png");
-    private static final float SCALE = 0.2F;
+    private static final float SCALE = 0.33F;
+    /** The bowl's floor, below the block's centre (with its open top up). */
+    private static final double FLOOR = -6 / 16.0;
     private final ZephyrModel model;
 
     public SquallGeneratorRenderer(BlockEntityRendererProvider.Context context) {
@@ -62,12 +64,12 @@ public class SquallGeneratorRenderer implements BlockEntityRenderer<BlockEntity>
         pose.pushPose();
         pose.translate(0.5, 0.5, 0.5);
         turnTo(pose, state.getValue(SquallGeneratorBlock.FACING));
-        // down into the bowl, bobbing faster while it works
-        pose.translate(0, -0.12 + Mth.sin(time * (lit ? 0.25F : 0.08F)) * 0.025, 0);
+        // standing on the bowl's floor, bobbing faster while it works
+        pose.translate(0, FLOOR + 0.02 + (1 + Mth.sin(time * (lit ? 0.25F : 0.08F))) * 0.02, 0);
         pose.mulPose(Axis.YP.rotationDegrees(time * (lit ? 3 : 1)));
         // entity models are drawn upside down from their feet, as LivingEntityRenderer sets them up
         pose.scale(-SCALE, -SCALE, SCALE);
-        pose.translate(0, -1.0, 0);
+        pose.translate(0, -1.501, 0);
         model.renderToBuffer(pose, buffers.getBuffer(RenderType.entityTranslucent(TEXTURE)),
                 lit ? LightTexture.FULL_BRIGHT : light, OverlayTexture.NO_OVERLAY, lit ? 0xFFFFFFFF : 0xFFB0B0C0);
         pose.popPose();

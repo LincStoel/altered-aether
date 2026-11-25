@@ -15,7 +15,8 @@
 PLACEHOLDER textures for the Tempest Peaks electricity, to be redrawn by hand. The models lean on the Aether's own
 aerogel, skyroot and the vanilla lightning rod for most of their look; these are only the new parts:
 
-- block/aether_jar_charge_1..4: the glow inside a charged jar, a pale blue haze with a few sparks, brighter per step.
+- block/aether_jar_foil_0..4: the copper foil round the jar's lower half, as on a real Leyden jar: plain copper when
+  empty, then blending toward a glowing blue-white with more sparks at each quarter of charge (drawn full bright).
 - block/storm_aercloud: a dark slate aercloud with forks of light running through it, 4 animated frames.
 - block/squall_generator_spark: the crackle on a lit generator's bowl floor, 4 animated frames.
 - item/static_boots: vanilla's leather boots in storm grey, a yellow zig-zag up each side.
@@ -48,22 +49,22 @@ def save(img, path, frames=None):
         meta.unlink()
 
 
-def jar_charge(step):
-    """A haze filling more of the jar's middle the fuller it is, with sparks."""
+def jar_foil(step):
+    """Vanilla's copper block, blended toward a blue-white glow by a quarter per step, with sparks."""
+    with zipfile.ZipFile(VANILLA) as jar:
+        copper = Image.open(io.BytesIO(jar.read("assets/minecraft/textures/block/copper_block.png"))).convert("RGBA")
     rnd = random.Random(100 + step)
-    img = Image.new("RGBA", (16, 16), (0, 0, 0, 0))
-    px = img.load()
-    alpha = 60 + 40 * step
+    px = copper.load()
+    share = 0.22 * step
     for y in range(16):
         for x in range(16):
-            # brighter in the middle column, where the rod runs
-            d = abs(x - 7.5) / 7.5
-            a = int(alpha * (1 - 0.6 * d) * (0.85 + 0.15 * rnd.random()))
-            px[x, y] = HAZE + (max(0, min(255, a)),)
-    for _ in range(2 + 2 * step):
+            r, g, b, a = px[x, y]
+            glow = (int(HAZE[0] * 0.9 + 25), HAZE[1], HAZE[2])
+            px[x, y] = (int(r + (glow[0] - r) * share), int(g + (glow[1] - g) * share), int(b + (glow[2] - b) * share), 255)
+    for _ in range(3 * step):
         x, y = rnd.randrange(16), rnd.randrange(16)
         px[x, y] = SPARK + (255,)
-    return img
+    return copper
 
 
 def fork(px, rnd, colour, w, h, x0=None):
@@ -137,7 +138,11 @@ def static_boots():
 
 def main():
     for step in range(1, 5):
-        save(jar_charge(step), ROOT / f"block/aether_jar_charge_{step}.png")
+        old = ROOT / f"block/aether_jar_charge_{step}.png"
+        if old.exists():
+            old.unlink()
+    for step in range(0, 5):
+        save(jar_foil(step), ROOT / f"block/aether_jar_foil_{step}.png")
     save(storm_aercloud(), ROOT / "block/storm_aercloud.png", frames=3)
     save(generator_spark(), ROOT / "block/squall_generator_spark.png", frames=2)
     save(static_boots(), ROOT / "item/static_boots.png")

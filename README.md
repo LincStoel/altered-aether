@@ -116,6 +116,36 @@ of sparks and thunder first. Lightning rods take strikes as in vanilla. Explosio
 `mobGriefing`. Clients see flashes in the distance, rain, sparks and storm fog. With Sable, the storms never single
 out anyone riding a ship: no strike is drawn by their copper or metal or aimed at the ground under them.
 
+**Storm electricity.** The storms' lightning can be caught and put to work.
+- **Aether Jar.** A Leyden jar of aerogel, stoppered with a skyroot slab round a lightning rod. A bolt on it, or on a
+  lightning rod stood on top of it, fills a quarter of it (720,000 FE in all). Cables reach it from below only: it
+  gives out 30 FE a tick (a full jar lasts 20 minutes) and takes in up to 1,000. A broken jar keeps its charge.
+- **Live copper.** Stand a charged jar on copper and up to 64 joined copper blocks come alive: whatever stands on
+  them takes a heart of damage and is thrown back the way it came. Leather and gem boots insulate, as they do against
+  the storms. A full 64-block floor drains a jar in about 20 minutes, a single block in about 20 hours.
+- **Squall Insulator and Generator.** A bowl of aerogel on a skyroot base and rim. Catch a squall in it, either by
+  standing on or beside it until the squall's own bolt lands there, or by wearing a squall down until it sinks,
+  spent, and using the bowl on it. The Squall Generator that makes burns ambrosium (a shard lasts as long as coal) or
+  takes FE from its sides, and while running:
+  - charges an Aether Jar behind it, full in 10 minutes;
+  - every second shocks what its open top faces: copper loses a stage of oxidation, mobs are hurt and thrown back,
+    the block there gets a redstone pulse, and dropped items are flash blasted: anything a blast furnace smelts,
+    plus sand and red sand into glass and quicksoil into quicksoil glass, a whole stack at once.
+- **Storm aercloud.** Squalls drop it now and then. It catches a fall like a cold aercloud, but shocks whatever is
+  inside it.
+- **Static Boots.** Leather boots and a storm aercloud, worn in the Accessories shoes slot. Knockback resistance, you
+  sink a quarter faster (gliders too), boosted jumps lose half their height but never drop below a plain jump, and
+  blue aerclouds don't bounce you.
+- **With Create.** A basin over a running generator is heated, and superheated for a while after a storm aercloud (or
+  Deep Aether's sterling aercloud) is fed in. A generator facing down two blocks over a belt or depot holds each stack
+  under it and flash blasts it, as a press does. The **Aerogel Wheel** is Franklin's electric wheel: stand an Aether
+  Jar two blocks out on each side of it, one level down, each with a lightning rod whose tip is level with the wheel.
+  It works like a Crafts & Additions electric motor: set its speed on the side panel (up to 256 RPM either way), 64
+  stress units per RPM, drawing 480 FE a tick at full speed (15 at 8 RPM), half from each jar. It stops when a jar
+  runs dry or it gets a redstone signal. Ponder shows how to build it.
+- JEI has a flash blasting page; Jade shows a jar's charge and a generator's fuel. All the numbers are in the
+  `[electricity]` config section.
+
 **Ambrosium campfire**: a campfire of skyroot and ambrosium that burns in the Aether. Aether: Beyond Parity's
 campfire is replaced by it when that mod is installed.
 

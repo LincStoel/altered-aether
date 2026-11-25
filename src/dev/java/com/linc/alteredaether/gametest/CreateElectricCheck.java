@@ -50,21 +50,34 @@ final class CreateElectricCheck {
     }
 
     static void depot(GameTestHelper helper) {
-        BlockPos depot = new BlockPos(5, 2, 5);
+        // one depot gets its item with the generator already lit, the other before it is fuelled
+        IItemHandler lit = depot(helper, new BlockPos(3, 2, 5), true);
+        IItemHandler late = depot(helper, new BlockPos(7, 2, 5), false);
+        lit.insertItem(0, new ItemStack(Items.RAW_GOLD, 2), false);
+        late.insertItem(0, new ItemStack(Items.RAW_IRON, 3), false);
+        helper.runAfterDelay(30, () -> ((SquallGeneratorHost) helper.getBlockEntity(new BlockPos(7, 4, 5))).core()
+                .insert(new ItemStack(AetherItems.AMBROSIUM_SHARD.get(), 4)));
+        helper.succeedWhen(() -> {
+            ItemStack first = lit.getStackInSlot(0), second = late.getStackInSlot(0);
+            helper.assertTrue(first.is(Items.GOLD_INGOT) && first.getCount() == 2, "on the first depot: " + first);
+            helper.assertTrue(second.is(Items.IRON_INGOT) && second.getCount() == 3, "on the second depot: " + second);
+        });
+    }
+
+    /** A depot with a generator face down two blocks over it, fuelled now or not; its item handler. */
+    private static IItemHandler depot(GameTestHelper helper, BlockPos depot, boolean fuelled) {
         helper.setBlock(depot, BuiltInRegistries.BLOCK.get(ResourceLocation.fromNamespaceAndPath("create", "depot")));
         BlockPos generator = depot.above(2);
         helper.setBlock(generator, ElectricRegistries.SQUALL_GENERATOR.get().defaultBlockState()
                 .setValue(SquallGeneratorBlock.FACING, Direction.DOWN));
-        ((SquallGeneratorHost) helper.getBlockEntity(generator)).core()
-                .insert(new ItemStack(AetherItems.AMBROSIUM_SHARD.get(), 4));
+        if (fuelled) {
+            ((SquallGeneratorHost) helper.getBlockEntity(generator)).core()
+                    .insert(new ItemStack(AetherItems.AMBROSIUM_SHARD.get(), 4));
+        }
         IItemHandler held = helper.getLevel().getCapability(Capabilities.ItemHandler.BLOCK, helper.absolutePos(depot),
                 Direction.UP);
         helper.assertTrue(held != null, "the depot has no item handler");
-        held.insertItem(0, new ItemStack(Items.RAW_GOLD, 2), false);
-        helper.succeedWhen(() -> {
-            ItemStack now = held.getStackInSlot(0);
-            helper.assertTrue(now.is(Items.GOLD_INGOT) && now.getCount() == 2, "on the depot: " + now);
-        });
+        return held;
     }
 
     static void wheel(GameTestHelper helper) {
