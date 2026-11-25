@@ -34,7 +34,7 @@ import net.minecraft.world.phys.shapes.VoxelShape;
  * draws nothing.
  */
 public class AerogelWheelBlock extends KineticBlock implements IBE<AerogelWheelBlockEntity> {
-    private static final VoxelShape SHAPE = Shapes.or(box(0, 6, 0, 16, 10, 16), box(6, 0, 6, 10, 16, 10));
+    private static final VoxelShape SHAPE = Shapes.or(box(0, 2, 0, 16, 14, 16), box(6, 0, 6, 10, 16, 10));
 
     public AerogelWheelBlock(Properties properties) {
         super(properties);

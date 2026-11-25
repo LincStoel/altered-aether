@@ -104,13 +104,19 @@ public final class AAElectricProvider extends JsonDataProvider {
 
     /**
      * The jar: aerogel, a skyroot stopper, the lightning rod's copper down its middle, and copper foil round its lower
-     * half, as on a real Leyden jar, glowing brighter (at full brightness) the fuller the jar is.
+     * half, as on a real Leyden jar, glowing brighter (at full brightness) the fuller the jar is. The rod is thin
+     * inside; the tip through the stopper is a lightning rod's 2x2, so a rod set on top meets it flush.
      */
     private void jar() {
         JsonObject variants = new JsonObject();
         for (int charge = 0; charge <= 4; charge++) {
             JsonArray elements = new JsonArray();
-            elements.add(element(new double[]{7.5, 1, 7.5}, new double[]{8.5, 16, 8.5}, "#rod", new double[]{0, 0, 2, 15}));
+            elements.add(element(new double[]{7.5, 1, 7.5}, new double[]{8.5, 13, 8.5}, "#rod", new double[]{0, 4, 2, 16}));
+            JsonObject tip = element(new double[]{7, 13, 7}, new double[]{9, 16, 9}, "#rod", new double[]{0, 4, 2, 7});
+            for (String end : new String[]{"up", "down"}) {
+                tip.getAsJsonObject("faces").getAsJsonObject(end).add("uv", numbers(0, 4, 2, 6));
+            }
+            elements.add(tip);
             JsonObject foil = element(new double[]{2.75, 0.25, 2.75}, new double[]{13.25, 6, 13.25}, "#foil", null);
             foil.getAsJsonObject("faces").remove("up");
             if (charge > 0) {
@@ -258,21 +264,22 @@ public final class AAElectricProvider extends JsonDataProvider {
     }
 
     /**
-     * The Aerogel Wheel, Create only: a flat aerogel disc on a skyroot hub, turning on a vertical axle. The block draws
-     * nothing itself; its renderer spins this model.
+     * The Aerogel Wheel, Create only: an aerogel disc on a skyroot hub, turning on a vertical axle, as thick as Create's
+     * crushing wheel (12 px) with the hub standing a pixel proud of each face. The block draws nothing itself; its
+     * renderer spins this model.
      */
     private void wheel() {
         JsonArray elements = new JsonArray();
         elements.add(element(new double[]{6, 0, 6}, new double[]{10, 16, 10}, "#hub", null));
-        elements.add(element(new double[]{-4, 6, -4}, new double[]{20, 10, 20}, "#glass", null));
-        JsonObject diagonal = element(new double[]{-4, 6.01, -4}, new double[]{20, 9.99, 20}, "#glass", null);
+        elements.add(element(new double[]{-4, 2, -4}, new double[]{20, 14, 20}, "#glass", null));
+        JsonObject diagonal = element(new double[]{-4, 2.01, -4}, new double[]{20, 13.99, 20}, "#glass", null);
         JsonObject rotation = new JsonObject();
         rotation.addProperty("angle", 45);
         rotation.addProperty("axis", "y");
         rotation.add("origin", numbers(8, 8, 8));
         diagonal.add("rotation", rotation);
         elements.add(diagonal);
-        elements.add(element(new double[]{4, 5, 4}, new double[]{12, 11, 12}, "#hub", null));
+        elements.add(element(new double[]{4, 1, 4}, new double[]{12, 15, 12}, "#hub", null));
         Map<String, String> textures = new LinkedHashMap<>();
         textures.put("glass", AEROGEL);
         textures.put("hub", LOG);

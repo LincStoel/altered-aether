@@ -81,6 +81,7 @@ public final class ElectricTour {
 
     private static final BlockPos JARS = new BlockPos(-6, 0, -4);
     private static final BlockPos INSULATOR = new BlockPos(0, 0, -4);
+    private static final BlockPos ROD_JAR = new BlockPos(-4, 0, -7);
     private static final BlockPos GENERATOR_UP = new BlockPos(2, 0, -4);
     private static final BlockPos GENERATOR_NORTH = new BlockPos(4, 0, -3);
     private static final BlockPos CLOUD = new BlockPos(-4, 0, 2);
@@ -156,6 +157,9 @@ public final class ElectricTour {
                 jar.charge(AetherJarBlockEntity.capacity() * i / 4);
             }
         }
+        // a jar with a lightning rod set on its tip
+        level.setBlockAndUpdate(o.offset(ROD_JAR), ElectricRegistries.AETHER_JAR.get().defaultBlockState());
+        level.setBlockAndUpdate(o.offset(ROD_JAR).above(), Blocks.LIGHTNING_ROD.defaultBlockState());
         level.setBlockAndUpdate(o.offset(INSULATOR), ElectricRegistries.SQUALL_INSULATOR.get().defaultBlockState()
                 .setValue(SquallInsulatorBlock.FACING, Direction.UP));
         generator(level, o.offset(GENERATOR_UP), Direction.UP);
@@ -189,6 +193,15 @@ public final class ElectricTour {
         List<Step> steps = new ArrayList<>();
         steps.add(new Step("jars", level -> { }, new Vec3(-3.5, 1.3, -1.3), new Vec3(-3.5, 0.5, -3.5), 20, false, null));
         steps.add(new Step("bowls", level -> { }, new Vec3(2.5, 2.2, -0.2), new Vec3(2.5, 0.4, -3.5), 30, false, null));
+        steps.add(new Step("jar_tip", level -> { }, new Vec3(-1.5, 1.35, -2.75), new Vec3(-1.5, 0.95, -3.5), 20,
+                false, null));
+        steps.add(new Step("jar_rod", level -> { }, new Vec3(-3.5, 1.6, -5.4), new Vec3(-3.5, 1.0, -6.5), 20, false,
+                null));
+        // the squall turns to face the camera (the player), so it should look a different way in each
+        steps.add(new Step("squall_west", level -> { }, new Vec3(1.0, 1.5, -2.6), new Vec3(2.5, 0.5, -3.5), 40, false,
+                null));
+        steps.add(new Step("squall_northeast", level -> { }, new Vec3(3.7, 1.5, -4.9), new Vec3(2.5, 0.5, -3.5), 40,
+                false, null));
         steps.add(new Step("storm_cloud", level -> {
             drop(level, -0.6, ElectricRegistries.STATIC_BOOTS.get());
             drop(level, 0.0, ElectricRegistries.AETHER_JAR_ITEM.get());
