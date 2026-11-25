@@ -7,6 +7,7 @@
   "mixins": [
     "ArsArchwoodRegionMixins$ArsElemental",
     "ArsArchwoodRegionMixins$ArsNouveau",
+    "BasinHeatMixin",
     "AercloudDragMixin",
     "AerwhaleDeckCollisionMixin",
     "AerwhaleDeckFloatingMixin",

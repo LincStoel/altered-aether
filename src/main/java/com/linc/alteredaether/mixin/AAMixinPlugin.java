@@ -44,6 +44,10 @@ public final class AAMixinPlugin implements IMixinConfigPlugin {
         if (mixinClassName.endsWith(".DeepAetherWhaleCargoMixin")) {
             return AerwhaleMode.deepAetherCancelled();
         }
+        if (mixinClassName.endsWith(".BasinHeatMixin")) {
+            // a Squall Generator heats a basin, only with Create there to have one
+            return LoadingModList.get().getModFileById("create") != null;
+        }
         if (mixinClassName.endsWith(".CreateThresholdSwitchMixin")) {
             // the golem network as a threshold switch's inventory, only with Create there to have one
             return LoadingModList.get().getModFileById("create") != null;

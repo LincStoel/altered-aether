@@ -17,6 +17,7 @@ package com.linc.alteredaether.data;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.linc.alteredaether.AlteredAether;
+import com.linc.alteredaether.electric.WheelPonderText;
 import net.minecraft.data.PackOutput;
 import net.minecraft.resources.ResourceLocation;
 
@@ -98,6 +99,7 @@ public final class AAElectricProvider extends JsonDataProvider {
         lang.put(jade + "wheel.drained", "A jar is out of charge");
         lang.put("jei." + AlteredAether.MOD_ID + ".flash_blasting", "Flash Blasting");
         lang.put("message." + AlteredAether.MOD_ID + ".squall_caught", "The squall is caught in the bowl");
+        WheelPonderText.language(lang);
     }
 
     /** The jar: aerogel, a skyroot stopper, the lightning rod's copper down its middle, and a glow inside when charged. */

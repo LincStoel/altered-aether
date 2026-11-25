@@ -15,6 +15,7 @@
 package com.linc.alteredaether;
 
 import com.linc.alteredaether.compat.CreateCompat;
+import com.linc.alteredaether.compat.CreateElectric;
 import com.linc.alteredaether.compat.SableLift;
 import com.linc.alteredaether.compat.boulder.FallingBoulders;
 import com.linc.alteredaether.compat.cloud.AercloudPhasing;
@@ -47,6 +48,7 @@ public final class AlteredAether {
         ElectricRegistries.register(modBus);
         if (ModList.get().isLoaded(CreateCompat.MOD)) {
             CreateCompat.register(modBus);
+            CreateElectric.register(modBus);
         }
         if (ModList.get().isLoaded(SableLift.MOD)) {
             SableLift.register();

@@ -15,6 +15,7 @@
 package com.linc.alteredaether.electric;
 
 import com.linc.alteredaether.AlteredAether;
+import com.linc.alteredaether.compat.CreateElectric;
 import com.mojang.serialization.Codec;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.component.DataComponentType;
@@ -137,6 +138,9 @@ public final class ElectricRegistries {
         output.accept(SQUALL_GENERATOR_ITEM.get());
         output.accept(STORM_AERCLOUD_ITEM.get());
         output.accept(STATIC_BOOTS.get());
+        if (SquallGeneratorHost.createKind()) {
+            CreateElectric.creativeTab(output);
+        }
     }
 
     public static void register(IEventBus modBus) {
