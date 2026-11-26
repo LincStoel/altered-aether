@@ -139,16 +139,15 @@ final class CreateElectricCheck {
     }
 
     /**
-     * The rods alone, two out either side, with their jars turned: the west one hanging over its rod, top down, the east
-     * one beside its rod on the far side, top west. Both drain as the wheel turns.
+     * The rods alone, two out either side, with their jars turned: the west one hanging over its rod, top down, the rod
+     * hung from it point down; the east one beside its rod on the far side, top west, the rod lying point west. Both
+     * drain as the wheel turns.
      */
     static void wheelTurnedJars(GameTestHelper helper) {
         BlockPos wheelPos = new BlockPos(6, 3, 6);
         BlockPos westRod = wheelPos.west(2), eastRod = wheelPos.east(2);
-        helper.setBlock(westRod.below(), Blocks.STONE);
-        helper.setBlock(eastRod.below(), Blocks.STONE);
-        helper.setBlock(westRod, Blocks.LIGHTNING_ROD);
-        helper.setBlock(eastRod, Blocks.LIGHTNING_ROD);
+        helper.setBlock(westRod, rod(Direction.DOWN));
+        helper.setBlock(eastRod, rod(Direction.WEST));
         AetherJarBlockEntity west = turnedJar(helper, westRod.above(), Direction.DOWN);
         AetherJarBlockEntity east = turnedJar(helper, eastRod.east(), Direction.WEST);
         helper.setBlock(wheelPos, CreateElectric.AEROGEL_WHEEL.get());
@@ -159,6 +158,11 @@ final class CreateElectricCheck {
             helper.assertTrue(east.energy() < AetherJarBlockEntity.capacity(), "the sideways jar wasn't drawn on");
             helper.succeed();
         });
+    }
+
+    private static net.minecraft.world.level.block.state.BlockState rod(Direction pointing) {
+        return Blocks.LIGHTNING_ROD.defaultBlockState()
+                .setValue(net.minecraft.world.level.block.LightningRodBlock.FACING, pointing);
     }
 
     private static AetherJarBlockEntity turnedJar(GameTestHelper helper, BlockPos pos, Direction facing) {

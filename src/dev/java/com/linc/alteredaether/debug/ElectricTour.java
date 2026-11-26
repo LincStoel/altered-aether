@@ -167,7 +167,8 @@ public final class ElectricTour {
         generator(level, o.offset(GENERATOR_UP), Direction.UP);
         // facing north, arcing to a rod three out that sits on the top of a jar lying on its side
         generator(level, o.offset(GENERATOR_NORTH), Direction.NORTH);
-        level.setBlockAndUpdate(o.offset(GENERATOR_NORTH).north(3), Blocks.LIGHTNING_ROD.defaultBlockState());
+        level.setBlockAndUpdate(o.offset(GENERATOR_NORTH).north(3), Blocks.LIGHTNING_ROD.defaultBlockState()
+                .setValue(net.minecraft.world.level.block.LightningRodBlock.FACING, Direction.SOUTH));
         level.setBlockAndUpdate(o.offset(GENERATOR_NORTH).north(4), ElectricRegistries.AETHER_JAR.get().defaultBlockState()
                 .setValue(AetherJarBlock.FACING, Direction.SOUTH));
         level.setBlockAndUpdate(o.offset(CLOUD), ElectricRegistries.STORM_AERCLOUD.get().defaultBlockState());

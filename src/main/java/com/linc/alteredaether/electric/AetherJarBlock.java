@@ -24,6 +24,8 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.block.BaseEntityBlock;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.LightningRodBlock;
 import net.minecraft.world.level.block.DirectionalBlock;
 import net.minecraft.world.level.block.Mirror;
 import net.minecraft.world.level.block.Rotation;
@@ -83,19 +85,23 @@ public class AetherJarBlock extends BaseEntityBlock {
     }
 
     /**
-     * The jar, either kind, whose top touches {@code rod} (a lightning rod there is "on top of" it, whichever way the
-     * jar is turned); null if none. With more than one, the first found.
+     * The jar, either kind, a lightning rod at {@code rod} stands on: the jar's top against the rod's foot, whichever
+     * way the two are turned (so the rod points the way the jar does); null if none.
      */
     @Nullable
     public static BlockPos jarUnder(BlockGetter level, BlockPos rod) {
-        for (Direction side : Direction.values()) {
-            BlockPos at = rod.relative(side);
-            BlockState state = level.getBlockState(at);
-            if (state.getBlock() instanceof AetherJarBlock && state.getValue(FACING) == side.getOpposite()) {
-                return at;
-            }
+        BlockState state = level.getBlockState(rod);
+        if (!state.is(Blocks.LIGHTNING_ROD)) {
+            return null;
         }
-        return null;
+        BlockPos at = rod.relative(state.getValue(LightningRodBlock.FACING).getOpposite());
+        return rodOn(level.getBlockState(at), state) ? at : null;
+    }
+
+    /** Whether {@code rod}, set against the top of {@code jar}, stands on it foot first. */
+    public static boolean rodOn(BlockState jar, BlockState rod) {
+        return jar.getBlock() instanceof AetherJarBlock && rod.is(Blocks.LIGHTNING_ROD)
+                && rod.getValue(LightningRodBlock.FACING) == jar.getValue(FACING);
     }
 
     /** An upright box (pixels) turned so its top points {@code facing}. */

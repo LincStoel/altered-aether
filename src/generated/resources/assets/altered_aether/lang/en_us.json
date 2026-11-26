@@ -84,7 +84,7 @@
   "altered_aether.ponder.aerogel_wheel.header": "Spinning the Aerogel Wheel",
   "altered_aether.ponder.aerogel_wheel.text_1": "The Aerogel Wheel is turned by the charge of two Aether Jars",
   "altered_aether.ponder.aerogel_wheel.text_2": "Set a lightning rod level with it two blocks out on each side, each on top of a jar",
-  "altered_aether.ponder.aerogel_wheel.text_3": "A jar may sit on any side of its rod, turned any way, so long as its top touches the rod; leave the blocks between the rods and the wheel empty",
+  "altered_aether.ponder.aerogel_wheel.text_3": "A jar may sit on any side of its rod, turned any way, so long as the rod's foot sits on the jar's top; leave the blocks between the rods and the wheel empty",
   "altered_aether.ponder.aerogel_wheel.text_4": "Lightning striking the rods charges the jars, as do Squall Generators sparking at them and cables into the jars' bottoms",
   "altered_aether.ponder.aerogel_wheel.text_5": "Set its speed on the panel at its side, up to 256 RPM either way",
   "altered_aether.ponder.aerogel_wheel.text_6": "The faster it turns, the more stress it gives, and the faster it drains the jars",

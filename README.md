@@ -144,7 +144,7 @@ out anyone riding a ship: no strike is drawn by their copper or metal or aimed a
   Deep Aether's sterling aercloud) is fed in. A generator facing down two blocks over a belt or depot holds each stack
   under it and flash blasts it, as a press does. The **Aerogel Wheel** is Franklin's electric wheel: set a lightning
   rod level with it two blocks out on each side, each on top of an Aether Jar. The jar can be on any side of its rod,
-  turned any way, so long as its top touches the rod.
+  turned any way, so long as the rod's foot sits on the jar's top.
   It works like a Crafts & Additions electric motor: set its speed on the side panel (up to 256 RPM either way), 64
   stress units per RPM, drawing 480 FE a tick at full speed (15 at 8 RPM), half from each jar. It stops when a jar
   runs dry or it gets a redstone signal. Ponder shows how to build it.

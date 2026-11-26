@@ -142,6 +142,20 @@ public final class ElectricTests {
         helper.succeedWhen(() -> helper.assertTrue(above.energy() > 0, "the jar on it got nothing"));
     }
 
+    @GameTest(template = "arena")
+    public static void aRodIsOnAJarOnlyFootToTop(GameTestHelper helper) {
+        BlockPos jarPos = floor(helper, new BlockPos(5, 2, 5));
+        jar(helper, jarPos, Direction.EAST);
+        BlockPos rod = jarPos.east();
+        for (Direction pointing : Direction.values()) {
+            helper.setBlock(rod, Blocks.LIGHTNING_ROD.defaultBlockState().setValue(LightningRodBlock.FACING, pointing));
+            BlockPos found = AetherJarBlock.jarUnder(helper.getLevel(), helper.absolutePos(rod));
+            helper.assertTrue(pointing == Direction.EAST ? helper.absolutePos(jarPos).equals(found) : found == null,
+                    "a rod pointing " + pointing + " against the jar's top: " + found);
+        }
+        helper.succeed();
+    }
+
     @GameTest(template = "arena", timeoutTicks = 400)
     public static void aLiveRodOnAJarShocksWhatTouchesIt(GameTestHelper helper) {
         BlockPos jarPos = floor(helper, new BlockPos(5, 2, 5));
@@ -221,7 +235,7 @@ public final class ElectricTests {
         BlockPos generatorPos = generator(helper, floor(helper, new BlockPos(5, 2, 10)), Direction.NORTH);
         BlockPos rod = generatorPos.north(4);
         floor(helper, rod.below());
-        helper.setBlock(rod, Blocks.LIGHTNING_ROD);
+        helper.setBlock(rod, Blocks.LIGHTNING_ROD.defaultBlockState().setValue(LightningRodBlock.FACING, Direction.SOUTH));
         floor(helper, rod.north().below());
         AetherJarBlockEntity jar = jar(helper, rod.north(), Direction.SOUTH);
         // a jar behind the generator, as it used to be charged, now gets nothing

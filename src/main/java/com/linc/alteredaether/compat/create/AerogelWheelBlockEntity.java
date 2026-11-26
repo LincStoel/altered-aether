@@ -46,7 +46,7 @@ import java.util.List;
 
 /**
  * Franklin's electric wheel. Two lightning rods stand level with it, two blocks out to either side, each on top of an
- * Aether Jar: the jar may be on any side of its rod and turned any way, so long as its top touches the rod. The blocks
+ * Aether Jar: the jar may be on any side of its rod and turned any way, so long as the rod's foot sits on the jar's top. The blocks
  * between the rods and the wheel are air, and under the wheel is air or a shaft. Set up so, the jars' charge spins it, as a Create Crafts & Additions electric motor would be spun: its speed
  * is set like a motor's, 1 to 256 RPM either way; it gives {@code wheel_stress_per_rpm} stress units per RPM; and it
  * draws {@code wheel_fe_at_max_rpm} FE a tick at 256 RPM, less in step with its speed but never under

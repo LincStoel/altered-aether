@@ -29,7 +29,6 @@ import com.linc.alteredaether.entity.Squall;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
@@ -230,10 +229,10 @@ public class AetherJarBlockEntity extends BlockEntity {
         }
     }
 
-    /** Shocks, now and then, whatever touches a lightning rod at {@code rod}, the jar's top. */
+    /** Shocks, now and then, whatever touches a lightning rod at {@code rod} standing on the jar's top. */
     private void liveRod(ServerLevel level, BlockPos rod) {
         BlockState state = level.getBlockState(rod);
-        if (!state.is(Blocks.LIGHTNING_ROD)) {
+        if (!AetherJarBlock.rodOn(getBlockState(), state)) {
             return;
         }
         AABB touch = state.getShape(level, rod).bounds().move(rod).inflate(ROD_TOUCH);
