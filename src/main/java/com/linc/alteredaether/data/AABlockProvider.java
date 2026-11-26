@@ -524,6 +524,7 @@ public final class AABlockProvider extends JsonDataProvider {
         AAStoneProvider.language(lang);
         AAGolemProvider.language(lang);
         AAElectricProvider.language(lang);
+        AAEssenceProvider.language(lang);
         JsonObject json = new JsonObject();
         lang.forEach(json::addProperty);
         asset("lang", AlteredAether.id("en_us"), json);

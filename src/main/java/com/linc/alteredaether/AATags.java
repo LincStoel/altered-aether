@@ -61,6 +61,12 @@ public final class AATags {
     public static final TagKey<Item> INSULATING_BOOTS =
             TagKey.create(Registries.ITEM, AlteredAether.id("insulating_boots"));
 
+    /** Gems an essence capstone takes; any one switches it on. */
+    public static final TagKey<Item> CAPSTONE_GEMS = TagKey.create(Registries.ITEM, AlteredAether.id("capstone_gems"));
+    /** Crops and saplings an essence circle quickens with extra random ticks. */
+    public static final TagKey<Block> ESSENCE_QUICKENED =
+            TagKey.create(Registries.BLOCK, AlteredAether.id("essence_quickened"));
+
     /** Food that tames a wild aerwhale. */
     public static final TagKey<Item> AERWHALE_TAMING_FOOD =
             TagKey.create(Registries.ITEM, AlteredAether.id("aerwhale_taming_food"));

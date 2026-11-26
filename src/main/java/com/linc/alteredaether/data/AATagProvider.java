@@ -70,7 +70,7 @@ public final class AATagProvider extends JsonDataProvider {
         // the raw gravitite block mines like the ore it comes from
         tag("block", ResourceLocation.withDefaultNamespace("mineable/pickaxe"),
                 concat(concat(new String[]{"altered_aether:raw_gravitite_block"}, AAStoneProvider.ids(null)),
-                        AAElectricProvider.PICKAXE));
+                        concat(AAElectricProvider.PICKAXE, AAEssenceProvider.PICKAXE)));
         tag("block", ResourceLocation.withDefaultNamespace("needs_iron_tool"), "altered_aether:raw_gravitite_block");
         // dead bushes may stand on the dunes' quicksoil
         tag("block", ResourceLocation.withDefaultNamespace("dead_bush_may_place_on"), "aether:quicksoil");
