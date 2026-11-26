@@ -63,8 +63,11 @@ neoForge {
             // -PaaElectricTour=<label> quick-plays it too and runs the scripted electricity check in debug/ElectricTour.
             val electricTour = findProperty("aaElectricTour") as String?
             systemProperty("altered_aether.electric_tour", electricTour ?: "")
+            // -PaaEssenceTour=<label> quick-plays it too and runs the scripted essence source check in debug/EssenceTour.
+            val essenceTour = findProperty("aaEssenceTour") as String?
+            systemProperty("altered_aether.essence_tour", essenceTour ?: "")
             if (tour != null || jeiShot != null || golemTour != null || gravititeTour != null || cloudTour != null
-                    || electricTour != null) {
+                    || electricTour != null || essenceTour != null) {
                 programArguments.addAll("--quickPlaySingleplayer", "tour")
             }
             // -PaaJoin=host:port joins that server on start, to check a dedicated server end to end.
