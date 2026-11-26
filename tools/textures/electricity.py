@@ -1,0 +1,168 @@
+#!/usr/bin/env python
+# Altered Aether
+# Copyright (C) 2026 Linc Stoel
+#
+# This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public
+# License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later
+# version.
+#
+# This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied
+# warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along with this program. If not, see
+# <https://www.gnu.org/licenses/>.
+"""
+PLACEHOLDER textures for the Tempest Peaks electricity, to be redrawn by hand. The models lean on the Aether's own
+aerogel, skyroot and the vanilla lightning rod for most of their look; these are only the new parts:
+
+- block/aether_jar_foil_0..4: the copper foil round the jar's lower half, as on a real Leyden jar: plain copper when
+  empty, then blending toward a glowing blue-white with more sparks at each quarter of charge (drawn full bright).
+- block/creative_aether_jar_foil: the full foil, its band purple, for the creative jar.
+- block/storm_aercloud: a dark slate aercloud with forks of light running through it, 4 animated frames.
+- block/squall_generator_spark: the crackle on a lit generator's bowl floor, 4 animated frames.
+- item/static_boots: vanilla's leather boots in storm grey, a yellow zig-zag up each side.
+
+Usage:  python tools/textures/electricity.py   (overwrites all of them)
+"""
+import io
+import json
+import pathlib
+import random
+import zipfile
+
+from PIL import Image
+
+REPO = pathlib.Path(__file__).resolve().parents[2]
+ROOT = REPO / "src/main/resources/assets/altered_aether/textures"
+VANILLA = REPO / "build/moddev/artifacts/neoforge-21.1.264-client-extra-aka-minecraft-resources.jar"
+
+SPARK = (255, 244, 170)
+HAZE = (150, 215, 255)
+
+
+def save(img, path, frames=None):
+    path.parent.mkdir(parents=True, exist_ok=True)
+    img.save(path)
+    meta = path.with_suffix(".png.mcmeta")
+    if frames:
+        meta.write_text(json.dumps({"animation": {"frametime": frames}}, indent=2) + "\n")
+    elif meta.exists():
+        meta.unlink()
+
+
+def jar_foil(step):
+    """Vanilla's copper block, blended toward a blue-white glow by a quarter per step, with sparks."""
+    with zipfile.ZipFile(VANILLA) as jar:
+        copper = Image.open(io.BytesIO(jar.read("assets/minecraft/textures/block/copper_block.png"))).convert("RGBA")
+    rnd = random.Random(100 + step)
+    px = copper.load()
+    share = 0.22 * step
+    for y in range(16):
+        for x in range(16):
+            r, g, b, a = px[x, y]
+            glow = (int(HAZE[0] * 0.9 + 25), HAZE[1], HAZE[2])
+            px[x, y] = (int(r + (glow[0] - r) * share), int(g + (glow[1] - g) * share), int(b + (glow[2] - b) * share), 255)
+    for _ in range(3 * step):
+        x, y = rnd.randrange(16), rnd.randrange(16)
+        px[x, y] = SPARK + (255,)
+    return copper
+
+
+def creative_foil():
+    """The full jar's foil with its hue turned purple, the creative jar's band."""
+    import colorsys
+    img = jar_foil(4)
+    px = img.load()
+    for y in range(16):
+        for x in range(16):
+            r, g, b, a = px[x, y]
+            h, l, sat = colorsys.rgb_to_hls(r / 255, g / 255, b / 255)
+            r2, g2, b2 = colorsys.hls_to_rgb(0.78, min(l * 0.9, 0.85), max(sat, 0.55))
+            px[x, y] = (int(r2 * 255), int(g2 * 255), int(b2 * 255), a)
+    return img
+
+
+def fork(px, rnd, colour, w, h, x0=None):
+    """A jagged bolt from the top of a w*h tile down to its bottom."""
+    x = rnd.randrange(w) if x0 is None else x0
+    for y in range(h):
+        px[x % w, y] = colour + (255,)
+        x += rnd.choice((-1, 0, 0, 1))
+
+
+def storm_aercloud():
+    frames = 4
+    img = Image.new("RGBA", (16, 16 * frames))
+    px = img.load()
+    for f in range(frames):
+        rnd = random.Random(7)
+        for y in range(16):
+            for x in range(16):
+                v = 70 + int(25 * rnd.random())
+                px[x, f * 16 + y] = (v - 10, v, v + 22, 200)
+        # forks of light: one every frame, two in the last
+        frnd = random.Random(31 + f)
+        for _ in range(1 if f < frames - 1 else 2):
+            tile = Image.new("RGBA", (16, 16), (0, 0, 0, 0))
+            fork(tile.load(), frnd, SPARK, 16, 16)
+            for y in range(16):
+                for x in range(16):
+                    if tile.getpixel((x, y))[3]:
+                        px[x, f * 16 + y] = SPARK + (230,)
+    return img
+
+
+def generator_spark():
+    frames = 4
+    img = Image.new("RGBA", (16, 16 * frames), (0, 0, 0, 0))
+    px = img.load()
+    for f in range(frames):
+        rnd = random.Random(50 + f)
+        for _ in range(3):
+            tile = Image.new("RGBA", (16, 16), (0, 0, 0, 0))
+            fork(tile.load(), rnd, SPARK, 16, 16)
+            for y in range(16):
+                for x in range(16):
+                    if tile.getpixel((x, y))[3]:
+                        px[x, f * 16 + y] = SPARK + (255,)
+                        # a soft blue edge
+                        for dx, dy in ((1, 0), (-1, 0)):
+                            nx = x + dx
+                            if 0 <= nx < 16 and not px[nx, f * 16 + y][3]:
+                                px[nx, f * 16 + y] = HAZE + (140,)
+    return img
+
+
+def static_boots():
+    with zipfile.ZipFile(VANILLA) as jar:
+        boots = Image.open(io.BytesIO(jar.read("assets/minecraft/textures/item/leather_boots.png"))).convert("RGBA")
+    px = boots.load()
+    for y in range(16):
+        for x in range(16):
+            r, g, b, a = px[x, y]
+            if a:
+                # leather's grey base, tinted to storm slate
+                v = (r + g + b) // 3
+                px[x, y] = (int(v * 0.55), int(v * 0.62), int(v * 0.78), a)
+    # a zig-zag up each boot
+    for x, y in ((3, 12), (4, 11), (3, 10), (4, 9), (10, 12), (11, 11), (10, 10), (11, 9)):
+        if px[x, y][3]:
+            px[x, y] = SPARK + (255,)
+    return boots
+
+
+def main():
+    for step in range(1, 5):
+        old = ROOT / f"block/aether_jar_charge_{step}.png"
+        if old.exists():
+            old.unlink()
+    for step in range(0, 5):
+        save(jar_foil(step), ROOT / f"block/aether_jar_foil_{step}.png")
+    save(creative_foil(), ROOT / "block/creative_aether_jar_foil.png")
+    save(storm_aercloud(), ROOT / "block/storm_aercloud.png", frames=3)
+    save(generator_spark(), ROOT / "block/squall_generator_spark.png", frames=2)
+    save(static_boots(), ROOT / "item/static_boots.png")
+
+
+if __name__ == "__main__":
+    main()

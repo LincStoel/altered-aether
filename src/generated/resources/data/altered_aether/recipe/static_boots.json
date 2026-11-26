@@ -1,0 +1,16 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "equipment",
+  "ingredients": [
+    {
+      "item": "minecraft:leather_boots"
+    },
+    {
+      "item": "altered_aether:storm_aercloud"
+    }
+  ],
+  "result": {
+    "count": 1,
+    "id": "altered_aether:static_boots"
+  }
+}

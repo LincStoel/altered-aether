@@ -1,0 +1,128 @@
+{
+  "multipart": [
+    {
+      "apply": {
+        "model": "altered_aether:block/squall_generator"
+      },
+      "when": {
+        "facing": "up",
+        "lit": "false"
+      }
+    },
+    {
+      "apply": {
+        "model": "altered_aether:block/squall_generator_lit"
+      },
+      "when": {
+        "facing": "up",
+        "lit": "true"
+      }
+    },
+    {
+      "apply": {
+        "model": "altered_aether:block/squall_generator",
+        "x": 180
+      },
+      "when": {
+        "facing": "down",
+        "lit": "false"
+      }
+    },
+    {
+      "apply": {
+        "model": "altered_aether:block/squall_generator_lit",
+        "x": 180
+      },
+      "when": {
+        "facing": "down",
+        "lit": "true"
+      }
+    },
+    {
+      "apply": {
+        "model": "altered_aether:block/squall_generator",
+        "x": 90
+      },
+      "when": {
+        "facing": "north",
+        "lit": "false"
+      }
+    },
+    {
+      "apply": {
+        "model": "altered_aether:block/squall_generator_lit",
+        "x": 90
+      },
+      "when": {
+        "facing": "north",
+        "lit": "true"
+      }
+    },
+    {
+      "apply": {
+        "model": "altered_aether:block/squall_generator",
+        "x": 90,
+        "y": 90
+      },
+      "when": {
+        "facing": "east",
+        "lit": "false"
+      }
+    },
+    {
+      "apply": {
+        "model": "altered_aether:block/squall_generator_lit",
+        "x": 90,
+        "y": 90
+      },
+      "when": {
+        "facing": "east",
+        "lit": "true"
+      }
+    },
+    {
+      "apply": {
+        "model": "altered_aether:block/squall_generator",
+        "x": 90,
+        "y": 180
+      },
+      "when": {
+        "facing": "south",
+        "lit": "false"
+      }
+    },
+    {
+      "apply": {
+        "model": "altered_aether:block/squall_generator_lit",
+        "x": 90,
+        "y": 180
+      },
+      "when": {
+        "facing": "south",
+        "lit": "true"
+      }
+    },
+    {
+      "apply": {
+        "model": "altered_aether:block/squall_generator",
+        "x": 90,
+        "y": 270
+      },
+      "when": {
+        "facing": "west",
+        "lit": "false"
+      }
+    },
+    {
+      "apply": {
+        "model": "altered_aether:block/squall_generator_lit",
+        "x": 90,
+        "y": 270
+      },
+      "when": {
+        "facing": "west",
+        "lit": "true"
+      }
+    }
+  ]
+}

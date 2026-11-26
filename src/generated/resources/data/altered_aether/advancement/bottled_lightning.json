@@ -1,0 +1,26 @@
+{
+  "parent": "altered_aether:tempest_peaks",
+  "criteria": {
+    "struck": {
+      "conditions": {},
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "display": {
+    "description": {
+      "translate": "advancements.altered_aether.bottled_lightning.description"
+    },
+    "frame": "task",
+    "icon": {
+      "id": "altered_aether:aether_jar"
+    },
+    "title": {
+      "translate": "advancements.altered_aether.bottled_lightning.title"
+    }
+  },
+  "requirements": [
+    [
+      "struck"
+    ]
+  ]
+}

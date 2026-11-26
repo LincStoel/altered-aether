@@ -1,0 +1,484 @@
+{
+  "parent": "minecraft:block/block",
+  "elements": [
+    {
+      "faces": {
+        "down": {
+          "texture": "#rod",
+          "uv": [
+            0.0,
+            4.0,
+            2.0,
+            16.0
+          ]
+        },
+        "east": {
+          "texture": "#rod",
+          "uv": [
+            0.0,
+            4.0,
+            2.0,
+            16.0
+          ]
+        },
+        "north": {
+          "texture": "#rod",
+          "uv": [
+            0.0,
+            4.0,
+            2.0,
+            16.0
+          ]
+        },
+        "south": {
+          "texture": "#rod",
+          "uv": [
+            0.0,
+            4.0,
+            2.0,
+            16.0
+          ]
+        },
+        "up": {
+          "texture": "#rod",
+          "uv": [
+            0.0,
+            4.0,
+            2.0,
+            16.0
+          ]
+        },
+        "west": {
+          "texture": "#rod",
+          "uv": [
+            0.0,
+            4.0,
+            2.0,
+            16.0
+          ]
+        }
+      },
+      "from": [
+        7.5,
+        1.0,
+        7.5
+      ],
+      "to": [
+        8.5,
+        13.0,
+        8.5
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#rod",
+          "uv": [
+            0.0,
+            4.0,
+            2.0,
+            6.0
+          ]
+        },
+        "east": {
+          "texture": "#rod",
+          "uv": [
+            0.0,
+            4.0,
+            2.0,
+            7.0
+          ]
+        },
+        "north": {
+          "texture": "#rod",
+          "uv": [
+            0.0,
+            4.0,
+            2.0,
+            7.0
+          ]
+        },
+        "south": {
+          "texture": "#rod",
+          "uv": [
+            0.0,
+            4.0,
+            2.0,
+            7.0
+          ]
+        },
+        "up": {
+          "texture": "#rod",
+          "uv": [
+            0.0,
+            4.0,
+            2.0,
+            6.0
+          ]
+        },
+        "west": {
+          "texture": "#rod",
+          "uv": [
+            0.0,
+            4.0,
+            2.0,
+            7.0
+          ]
+        }
+      },
+      "from": [
+        7.0,
+        13.0,
+        7.0
+      ],
+      "to": [
+        9.0,
+        16.0,
+        9.0
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#foil",
+          "uv": [
+            2.75,
+            2.75,
+            13.25,
+            13.25
+          ]
+        },
+        "east": {
+          "texture": "#foil",
+          "uv": [
+            2.75,
+            10.0,
+            13.25,
+            15.75
+          ]
+        },
+        "north": {
+          "texture": "#foil",
+          "uv": [
+            2.75,
+            10.0,
+            13.25,
+            15.75
+          ]
+        },
+        "south": {
+          "texture": "#foil",
+          "uv": [
+            2.75,
+            10.0,
+            13.25,
+            15.75
+          ]
+        },
+        "west": {
+          "texture": "#foil",
+          "uv": [
+            2.75,
+            10.0,
+            13.25,
+            15.75
+          ]
+        }
+      },
+      "from": [
+        2.75,
+        0.25,
+        2.75
+      ],
+      "neoforge_data": {
+        "block_light": 15,
+        "sky_light": 15
+      },
+      "to": [
+        13.25,
+        6.0,
+        13.25
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#glass",
+          "uv": [
+            3.0,
+            3.0,
+            13.0,
+            13.0
+          ]
+        },
+        "east": {
+          "texture": "#glass",
+          "uv": [
+            3.0,
+            5.0,
+            13.0,
+            16.0
+          ]
+        },
+        "north": {
+          "texture": "#glass",
+          "uv": [
+            3.0,
+            5.0,
+            13.0,
+            16.0
+          ]
+        },
+        "south": {
+          "texture": "#glass",
+          "uv": [
+            3.0,
+            5.0,
+            13.0,
+            16.0
+          ]
+        },
+        "up": {
+          "texture": "#glass",
+          "uv": [
+            3.0,
+            3.0,
+            13.0,
+            13.0
+          ]
+        },
+        "west": {
+          "texture": "#glass",
+          "uv": [
+            3.0,
+            5.0,
+            13.0,
+            16.0
+          ]
+        }
+      },
+      "from": [
+        3.0,
+        0.0,
+        3.0
+      ],
+      "to": [
+        13.0,
+        11.0,
+        13.0
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#glass",
+          "uv": [
+            4.0,
+            4.0,
+            12.0,
+            12.0
+          ]
+        },
+        "east": {
+          "texture": "#glass",
+          "uv": [
+            4.0,
+            4.0,
+            12.0,
+            5.0
+          ]
+        },
+        "north": {
+          "texture": "#glass",
+          "uv": [
+            4.0,
+            4.0,
+            12.0,
+            5.0
+          ]
+        },
+        "south": {
+          "texture": "#glass",
+          "uv": [
+            4.0,
+            4.0,
+            12.0,
+            5.0
+          ]
+        },
+        "up": {
+          "texture": "#glass",
+          "uv": [
+            4.0,
+            4.0,
+            12.0,
+            12.0
+          ]
+        },
+        "west": {
+          "texture": "#glass",
+          "uv": [
+            4.0,
+            4.0,
+            12.0,
+            5.0
+          ]
+        }
+      },
+      "from": [
+        4.0,
+        11.0,
+        4.0
+      ],
+      "to": [
+        12.0,
+        12.0,
+        12.0
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#glass",
+          "uv": [
+            6.0,
+            6.0,
+            10.0,
+            10.0
+          ]
+        },
+        "east": {
+          "texture": "#glass",
+          "uv": [
+            6.0,
+            3.0,
+            10.0,
+            4.0
+          ]
+        },
+        "north": {
+          "texture": "#glass",
+          "uv": [
+            6.0,
+            3.0,
+            10.0,
+            4.0
+          ]
+        },
+        "south": {
+          "texture": "#glass",
+          "uv": [
+            6.0,
+            3.0,
+            10.0,
+            4.0
+          ]
+        },
+        "up": {
+          "texture": "#glass",
+          "uv": [
+            6.0,
+            6.0,
+            10.0,
+            10.0
+          ]
+        },
+        "west": {
+          "texture": "#glass",
+          "uv": [
+            6.0,
+            3.0,
+            10.0,
+            4.0
+          ]
+        }
+      },
+      "from": [
+        6.0,
+        12.0,
+        6.0
+      ],
+      "to": [
+        10.0,
+        13.0,
+        10.0
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "texture": "#stopper",
+          "uv": [
+            5.0,
+            5.0,
+            11.0,
+            11.0
+          ]
+        },
+        "east": {
+          "texture": "#stopper",
+          "uv": [
+            5.0,
+            1.0,
+            11.0,
+            3.0
+          ]
+        },
+        "north": {
+          "texture": "#stopper",
+          "uv": [
+            5.0,
+            1.0,
+            11.0,
+            3.0
+          ]
+        },
+        "south": {
+          "texture": "#stopper",
+          "uv": [
+            5.0,
+            1.0,
+            11.0,
+            3.0
+          ]
+        },
+        "up": {
+          "texture": "#stopper",
+          "uv": [
+            5.0,
+            5.0,
+            11.0,
+            11.0
+          ]
+        },
+        "west": {
+          "texture": "#stopper",
+          "uv": [
+            5.0,
+            1.0,
+            11.0,
+            3.0
+          ]
+        }
+      },
+      "from": [
+        5.0,
+        13.0,
+        5.0
+      ],
+      "to": [
+        11.0,
+        15.0,
+        11.0
+      ]
+    }
+  ],
+  "render_type": "minecraft:translucent",
+  "textures": {
+    "foil": "altered_aether:block/aether_jar_foil_1",
+    "glass": "aether:block/construction/aerogel",
+    "particle": "aether:block/construction/aerogel",
+    "rod": "minecraft:block/lightning_rod",
+    "stopper": "aether:block/construction/skyroot_planks"
+  }
+}

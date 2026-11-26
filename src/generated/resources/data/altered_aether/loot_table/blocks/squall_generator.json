@@ -1,0 +1,20 @@
+{
+  "type": "minecraft:block",
+  "pools": [
+    {
+      "conditions": [
+        {
+          "condition": "minecraft:survives_explosion"
+        }
+      ],
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "name": "altered_aether:squall_generator"
+        }
+      ],
+      "rolls": 1
+    }
+  ],
+  "random_sequence": "altered_aether:blocks/squall_generator"
+}

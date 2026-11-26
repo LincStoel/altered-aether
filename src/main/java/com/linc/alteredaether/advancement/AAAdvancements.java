@@ -29,6 +29,9 @@ public final class AAAdvancements {
     public static final ResourceLocation FAVORITE_SNACK = AlteredAether.id("favorite_snack");
     public static final ResourceLocation AIRBORNE_CARGO = AlteredAether.id("airborne_cargo");
     public static final ResourceLocation LIVING_LIGHTNING_ROD = AlteredAether.id("living_lightning_rod");
+    /** Saw lightning charge an Aether Jar, and caught a squall in a Squall Insulator (see electric/). */
+    public static final ResourceLocation BOTTLED_LIGHTNING = AlteredAether.id("bottled_lightning");
+    public static final ResourceLocation CAUGHT_IN_A_BOWL = AlteredAether.id("caught_in_a_bowl");
     /** Gravitite golems: built one, linked two, had a big network sort itself. */
     public static final ResourceLocation MIND_OVER_MATTER = AlteredAether.id("mind_over_matter");
     public static final ResourceLocation HIVE_MIND = AlteredAether.id("hive_mind");

@@ -1,0 +1,27 @@
+{
+  "neoforge:conditions": [
+    {
+      "type": "altered_aether:mod_enabled",
+      "modid": "create"
+    }
+  ],
+  "type": "minecraft:crafting_shaped",
+  "category": "redstone",
+  "key": {
+    "A": {
+      "item": "aether:aerogel"
+    },
+    "L": {
+      "tag": "aether:skyroot_logs"
+    }
+  },
+  "pattern": [
+    "AAA",
+    "ALA",
+    "AAA"
+  ],
+  "result": {
+    "count": 1,
+    "id": "altered_aether:aerogel_wheel"
+  }
+}

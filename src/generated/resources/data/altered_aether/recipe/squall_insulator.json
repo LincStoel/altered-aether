@@ -1,0 +1,24 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "redstone",
+  "key": {
+    "A": {
+      "item": "aether:aerogel"
+    },
+    "P": {
+      "item": "aether:skyroot_planks"
+    },
+    "S": {
+      "item": "aether:skyroot_slab"
+    }
+  },
+  "pattern": [
+    "S S",
+    "A A",
+    "PPP"
+  ],
+  "result": {
+    "count": 1,
+    "id": "altered_aether:squall_insulator"
+  }
+}

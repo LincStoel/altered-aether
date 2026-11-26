@@ -69,7 +69,8 @@ public final class AATagProvider extends JsonDataProvider {
                 "altered_aether:gleam_vines", "altered_aether:gleam_vines_plant");
         // the raw gravitite block mines like the ore it comes from
         tag("block", ResourceLocation.withDefaultNamespace("mineable/pickaxe"),
-                concat(new String[]{"altered_aether:raw_gravitite_block"}, AAStoneProvider.ids(null)));
+                concat(concat(new String[]{"altered_aether:raw_gravitite_block"}, AAStoneProvider.ids(null)),
+                        AAElectricProvider.PICKAXE));
         tag("block", ResourceLocation.withDefaultNamespace("needs_iron_tool"), "altered_aether:raw_gravitite_block");
         // dead bushes may stand on the dunes' quicksoil
         tag("block", ResourceLocation.withDefaultNamespace("dead_bush_may_place_on"), "aether:quicksoil");
@@ -348,17 +349,20 @@ public final class AATagProvider extends JsonDataProvider {
         return out;
     }
 
+    /** Writes a tag. Other mods' entries are optional, and so is any marked with a leading {@code ?}. */
     private void tag(String registry, ResourceLocation id, String... entries) {
         JsonArray values = new JsonArray();
-        for (String entry : entries) {
+        for (String marked : entries) {
+            boolean optional = marked.startsWith("?");
+            String entry = optional ? marked.substring(1) : marked;
             String namespace = entry.replace("#", "").split(":")[0];
-            if (REQUIRED.contains(namespace)) {
+            if (REQUIRED.contains(namespace) && !optional) {
                 values.add(entry);
             } else {
-                JsonObject optional = new JsonObject();
-                optional.addProperty("id", entry);
-                optional.addProperty("required", false);
-                values.add(optional);
+                JsonObject soft = new JsonObject();
+                soft.addProperty("id", entry);
+                soft.addProperty("required", false);
+                values.add(soft);
             }
         }
         JsonObject json = new JsonObject();

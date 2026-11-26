@@ -1,0 +1,10 @@
+{
+  "type": "altered_aether:flash_blasting",
+  "ingredient": {
+    "item": "minecraft:sand"
+  },
+  "result": {
+    "count": 1,
+    "id": "minecraft:glass"
+  }
+}

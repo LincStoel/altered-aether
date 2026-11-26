@@ -1,0 +1,10 @@
+{
+  "type": "altered_aether:flash_blasting",
+  "ingredient": {
+    "item": "aether:quicksoil"
+  },
+  "result": {
+    "count": 1,
+    "id": "aether:quicksoil_glass"
+  }
+}

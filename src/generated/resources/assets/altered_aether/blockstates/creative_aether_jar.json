@@ -1,0 +1,134 @@
+{
+  "variants": {
+    "charge=0,facing=down": {
+      "model": "altered_aether:block/creative_aether_jar",
+      "x": 180
+    },
+    "charge=0,facing=east": {
+      "model": "altered_aether:block/creative_aether_jar",
+      "x": 90,
+      "y": 90
+    },
+    "charge=0,facing=north": {
+      "model": "altered_aether:block/creative_aether_jar",
+      "x": 90
+    },
+    "charge=0,facing=south": {
+      "model": "altered_aether:block/creative_aether_jar",
+      "x": 90,
+      "y": 180
+    },
+    "charge=0,facing=up": {
+      "model": "altered_aether:block/creative_aether_jar"
+    },
+    "charge=0,facing=west": {
+      "model": "altered_aether:block/creative_aether_jar",
+      "x": 90,
+      "y": 270
+    },
+    "charge=1,facing=down": {
+      "model": "altered_aether:block/creative_aether_jar",
+      "x": 180
+    },
+    "charge=1,facing=east": {
+      "model": "altered_aether:block/creative_aether_jar",
+      "x": 90,
+      "y": 90
+    },
+    "charge=1,facing=north": {
+      "model": "altered_aether:block/creative_aether_jar",
+      "x": 90
+    },
+    "charge=1,facing=south": {
+      "model": "altered_aether:block/creative_aether_jar",
+      "x": 90,
+      "y": 180
+    },
+    "charge=1,facing=up": {
+      "model": "altered_aether:block/creative_aether_jar"
+    },
+    "charge=1,facing=west": {
+      "model": "altered_aether:block/creative_aether_jar",
+      "x": 90,
+      "y": 270
+    },
+    "charge=2,facing=down": {
+      "model": "altered_aether:block/creative_aether_jar",
+      "x": 180
+    },
+    "charge=2,facing=east": {
+      "model": "altered_aether:block/creative_aether_jar",
+      "x": 90,
+      "y": 90
+    },
+    "charge=2,facing=north": {
+      "model": "altered_aether:block/creative_aether_jar",
+      "x": 90
+    },
+    "charge=2,facing=south": {
+      "model": "altered_aether:block/creative_aether_jar",
+      "x": 90,
+      "y": 180
+    },
+    "charge=2,facing=up": {
+      "model": "altered_aether:block/creative_aether_jar"
+    },
+    "charge=2,facing=west": {
+      "model": "altered_aether:block/creative_aether_jar",
+      "x": 90,
+      "y": 270
+    },
+    "charge=3,facing=down": {
+      "model": "altered_aether:block/creative_aether_jar",
+      "x": 180
+    },
+    "charge=3,facing=east": {
+      "model": "altered_aether:block/creative_aether_jar",
+      "x": 90,
+      "y": 90
+    },
+    "charge=3,facing=north": {
+      "model": "altered_aether:block/creative_aether_jar",
+      "x": 90
+    },
+    "charge=3,facing=south": {
+      "model": "altered_aether:block/creative_aether_jar",
+      "x": 90,
+      "y": 180
+    },
+    "charge=3,facing=up": {
+      "model": "altered_aether:block/creative_aether_jar"
+    },
+    "charge=3,facing=west": {
+      "model": "altered_aether:block/creative_aether_jar",
+      "x": 90,
+      "y": 270
+    },
+    "charge=4,facing=down": {
+      "model": "altered_aether:block/creative_aether_jar",
+      "x": 180
+    },
+    "charge=4,facing=east": {
+      "model": "altered_aether:block/creative_aether_jar",
+      "x": 90,
+      "y": 90
+    },
+    "charge=4,facing=north": {
+      "model": "altered_aether:block/creative_aether_jar",
+      "x": 90
+    },
+    "charge=4,facing=south": {
+      "model": "altered_aether:block/creative_aether_jar",
+      "x": 90,
+      "y": 180
+    },
+    "charge=4,facing=up": {
+      "model": "altered_aether:block/creative_aether_jar"
+    },
+    "charge=4,facing=west": {
+      "model": "altered_aether:block/creative_aether_jar",
+      "x": 90,
+      "y": 270
+    }
+  }
+}

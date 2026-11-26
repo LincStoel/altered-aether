@@ -16,8 +16,16 @@ package com.linc.alteredaether.entity;
 
 import com.aetherteam.aether.entity.monster.Zephyr;
 import com.linc.alteredaether.AlteredAether;
+import com.linc.alteredaether.electric.SquallCapture;
 import com.linc.alteredaether.registry.AARegistries;
 import com.linc.alteredaether.storm.TempestStorms;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.syncher.EntityDataAccessor;
+import net.minecraft.network.syncher.EntityDataSerializers;
+import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LightningBolt;
@@ -71,9 +79,21 @@ public class Squall extends Zephyr {
     /** Climb per block of horizontal retreat. */
     private static final double RETREAT_CLIMB = 0.8;
 
+    /** At or under this share of its health, a squall is spent for a while (see {@link #isSpent}). */
+    private static final float SPENT_HEALTH = 0.3F;
+    /** Ticks a spent squall stays spent, and the share of its health it comes back with. */
+    private static final int SPENT_TICKS = 300;
+    private static final float RECOVERED_HEALTH = 0.5F;
+    /** Height above the ground a spent squall sinks to, low enough to reach. */
+    private static final double SPENT_HOVER = 1.5;
+    private static final int GROUND_SEARCH = 24;
+    private static final EntityDataAccessor<Boolean> DATA_SPENT =
+            SynchedEntityData.defineId(Squall.class, EntityDataSerializers.BOOLEAN);
+
     private final int hoverHeight;
     /** Unit heading of the current retreat; set at each strike. */
     private Vec3 retreat = Vec3.ZERO;
+    private int spentTicks;
 
     public Squall(EntityType<? extends Squall> type, Level level) {
         super(type, level);
@@ -87,6 +107,92 @@ public class Squall extends Zephyr {
         goalSelector.addGoal(7, new Zephyr.ZephyrLookGoal(this));
         goalSelector.addGoal(7, new CallLightningGoal(this));
         targetSelector.addGoal(1, new NearestAttackableTargetGoal<>(this, Player.class, true, false));
+    }
+
+    @Override
+    protected void defineSynchedData(SynchedEntityData.Builder builder) {
+        super.defineSynchedData(builder);
+        builder.define(DATA_SPENT, false);
+    }
+
+    /**
+     * Worn down to {@value #SPENT_HEALTH} of its health, a squall is spent: it stops hunting, sinks to just over the
+     * ground, and fizzles for {@value #SPENT_TICKS} ticks, when a Squall Insulator can be used on it to catch it (see
+     * electric/SquallInsulatorItem). Then it gathers itself, back to half its health.
+     */
+    public boolean isSpent() {
+        return entityData.get(DATA_SPENT);
+    }
+
+    @Override
+    public void aiStep() {
+        super.aiStep();
+        if (!(level() instanceof ServerLevel level) || !isAlive()) {
+            return;
+        }
+        if (!isSpent()) {
+            if (getHealth() <= getMaxHealth() * SPENT_HEALTH) {
+                spend(true);
+            }
+            return;
+        }
+        if (--spentTicks <= 0) {
+            setHealth(Math.max(getHealth(), getMaxHealth() * RECOVERED_HEALTH));
+            spend(false);
+            return;
+        }
+        if (spentTicks % 5 == 0) {
+            getMoveControl().setWantedPosition(getX(), sinkTo(), getZ(), 0.5);
+        }
+        if (spentTicks % 10 == 0) {
+            level.sendParticles(ParticleTypes.SMOKE, getX(), getY() + getBbHeight() * 0.5, getZ(), 3, 0.6, 0.3, 0.6, 0.01);
+            level.sendParticles(ParticleTypes.ELECTRIC_SPARK, getX(), getY() + getBbHeight() * 0.5, getZ(), 1, 0.6, 0.3, 0.6,
+                    0.05);
+        }
+    }
+
+    private void spend(boolean spent) {
+        entityData.set(DATA_SPENT, spent);
+        spentTicks = spent ? SPENT_TICKS : 0;
+        if (spent) {
+            setTarget(null);
+            setChargeTime(0);
+            goalSelector.disableControlFlag(Goal.Flag.MOVE);
+            targetSelector.disableControlFlag(Goal.Flag.TARGET);
+            getMoveControl().setWantedPosition(getX(), sinkTo(), getZ(), 0.5);
+        } else {
+            goalSelector.enableControlFlag(Goal.Flag.MOVE);
+            targetSelector.enableControlFlag(Goal.Flag.TARGET);
+        }
+    }
+
+    /** Just over the ground below, or a little lower if there is none in reach (over the void it keeps sinking). */
+    private double sinkTo() {
+        BlockPos.MutableBlockPos at = blockPosition().mutable();
+        for (int i = 0; i < GROUND_SEARCH && at.getY() > level().getMinBuildHeight(); i++) {
+            at.move(Direction.DOWN);
+            if (!level().getBlockState(at).getCollisionShape(level(), at).isEmpty()) {
+                return at.getY() + 1 + SPENT_HOVER;
+            }
+        }
+        return getY() - 2;
+    }
+
+    @Override
+    public void addAdditionalSaveData(CompoundTag tag) {
+        super.addAdditionalSaveData(tag);
+        if (isSpent()) {
+            tag.putInt("altered_aether:spent", spentTicks);
+        }
+    }
+
+    @Override
+    public void readAdditionalSaveData(CompoundTag tag) {
+        super.readAdditionalSaveData(tag);
+        if (tag.getInt("altered_aether:spent") > 0) {
+            spend(true);
+            spentTicks = tag.getInt("altered_aether:spent");
+        }
     }
 
     /** Lightning is a squall's own; its bolts, and the storms', pass through it. */
@@ -187,7 +293,7 @@ public class Squall extends Zephyr {
 
         @Override
         public boolean canUse() {
-            return squall.getTarget() != null;
+            return squall.getTarget() != null && !squall.isSpent();
         }
 
         @Override
@@ -232,7 +338,7 @@ public class Squall extends Zephyr {
                 }
                 TempestStorms.warningSparks(level, aim, WARNING_TICKS - warned, WARNING_TICKS);
                 if (warned >= WARNING_TICKS) {
-                    strike(level, aim);
+                    strike(level, aim, squall);
                     aim = null;
                     warned = -1;
                     squall.setChargeTime(-COOLDOWN_TICKS);
@@ -251,10 +357,12 @@ public class Squall extends Zephyr {
                     && squall.hasLineOfSight(target);
         }
 
-        private static void strike(ServerLevel level, Vec3 at) {
+        private static void strike(ServerLevel level, Vec3 at, Squall squall) {
             LightningBolt bolt = EntityType.LIGHTNING_BOLT.create(level);
             if (bolt != null) {
                 bolt.moveTo(at);
+                // where it lands can catch the squall in a Squall Insulator
+                SquallCapture.called(bolt, squall);
                 level.addFreshEntity(bolt);
             }
         }

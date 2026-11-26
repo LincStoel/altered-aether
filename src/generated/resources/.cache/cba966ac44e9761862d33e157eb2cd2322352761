@@ -1,9 +1,11 @@
-// 1.21.1	2026-11-19T19:12:03.7659874	Altered Aether advancements
+// 1.21.1	2026-11-25T00:06:49.5350572	Altered Aether advancements
 6b0bbdb4842ffb603caf7f8239d078d0bbdfd92b data/altered_aether/advancement/aether_plateau.json
 f6a6daf0bf94dfcc310fd3a41f538ba65b795ad5 data/altered_aether/advancement/airborne_cargo.json
 39a829edeb79b4e021bbfd58722f1e3aeecd5753 data/altered_aether/advancement/altered_cartographer.json
 3031d3f5bebe79b13260a71ef8dfa19a40a9205f data/altered_aether/advancement/archwood_grove.json
 c94aec8d4c8bace6e306b6000c3d145fd51898e8 data/altered_aether/advancement/atoll.json
+1d278b416e969009ff104296f4cf7b326ae11144 data/altered_aether/advancement/bottled_lightning.json
+f25b92bec966b84d7ca914cb9eff1b71f34ea691 data/altered_aether/advancement/caught_in_a_bowl.json
 12fb5c8ba422267027154fb44ae3fb7e5085918a data/altered_aether/advancement/double_atoll.json
 ccc589b52b4af013e4d8d2d7d0fdc1ac6bf16ef6 data/altered_aether/advancement/favorite_snack.json
 02d456fe639f3a2184b35d6b2f18ba0fdff89f1f data/altered_aether/advancement/flower_bowl.json

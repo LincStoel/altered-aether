@@ -1,0 +1,10 @@
+{
+  "replace": false,
+  "values": [
+    "altered_aether:storm_aercloud",
+    {
+      "id": "deep_aether:sterling_aercloud",
+      "required": false
+    }
+  ]
+}
