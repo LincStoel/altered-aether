@@ -59,6 +59,7 @@ public final class AAJeiPlugin implements IModPlugin {
     public void registerCategories(IRecipeCategoryRegistration registration) {
         GolemPebbleCategory.register(registration);
         FlashBlastingCategory.register(registration);
+        EssenceInfusionCategory.register(registration);
         fanEnchanting = null;
         if (ModList.get().isLoaded(CreateCompat.MOD)) {
             fanEnchanting = FanEnchantingCategory.create();
@@ -73,6 +74,7 @@ public final class AAJeiPlugin implements IModPlugin {
         }
         GolemPebbleCategory.registerRecipes(registration);
         FlashBlastingCategory.registerRecipes(registration);
+        EssenceInfusionCategory.registerRecipes(registration);
         // the gravitite golem guide, on its pebble and spawn egg: everything a golem answers to
         registration.addItemStackInfo(List.of(new ItemStack(AARegistries.STORAGE_PEBBLE.get()),
                 new ItemStack(AARegistries.GRAVITITE_GOLEM_SPAWN_EGG.get())), golemGuide());
@@ -114,6 +116,7 @@ public final class AAJeiPlugin implements IModPlugin {
         }
         GolemPebbleCategory.registerCatalysts(registration);
         FlashBlastingCategory.registerCatalysts(registration);
+        EssenceInfusionCategory.registerCatalysts(registration);
     }
 
     @Override

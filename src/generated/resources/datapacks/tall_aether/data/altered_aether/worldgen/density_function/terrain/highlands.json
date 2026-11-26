@@ -9,50 +9,7 @@
         "argument1": 0.125,
         "argument2": {
           "type": "minecraft:add",
-          "argument1": {
-            "type": "minecraft:add",
-            "argument1": {
-              "type": "minecraft:add",
-              "argument1": 200.0,
-              "argument2": {
-                "type": "minecraft:mul",
-                "argument1": 26.0,
-                "argument2": {
-                  "type": "minecraft:flat_cache",
-                  "argument": {
-                    "type": "minecraft:shifted_noise",
-                    "noise": "altered_aether:highlands_level",
-                    "shift_x": "minecraft:shift_x",
-                    "shift_y": 0.0,
-                    "shift_z": "minecraft:shift_z",
-                    "xz_scale": 1.0,
-                    "y_scale": 0.0
-                  }
-                }
-              }
-            },
-            "argument2": {
-              "type": "minecraft:mul",
-              "argument1": 7.0,
-              "argument2": {
-                "type": "minecraft:flat_cache",
-                "argument": {
-                  "type": "minecraft:clamp",
-                  "input": {
-                    "type": "minecraft:add",
-                    "argument1": 0.0,
-                    "argument2": {
-                      "type": "minecraft:mul",
-                      "argument1": 5.0,
-                      "argument2": "altered_aether:terrain/highlands_excess"
-                    }
-                  },
-                  "max": 1.0,
-                  "min": 0.0
-                }
-              }
-            }
-          },
+          "argument1": "altered_aether:terrain/highlands_top",
           "argument2": {
             "type": "minecraft:mul",
             "argument1": -1.0,
@@ -160,23 +117,7 @@
         }
       }
     },
-    "argument2": {
-      "type": "minecraft:add",
-      "argument1": {
-        "type": "minecraft:mul",
-        "argument1": 8.0,
-        "argument2": "altered_aether:terrain/highlands_excess"
-      },
-      "argument2": {
-        "type": "minecraft:mul",
-        "argument1": 10.0,
-        "argument2": {
-          "type": "minecraft:add",
-          "argument1": "altered_aether:terrain/highlands_allowed",
-          "argument2": -1.0
-        }
-      }
-    }
+    "argument2": "altered_aether:terrain/highlands_presence"
   },
   "argument2": {
     "type": "minecraft:mul",

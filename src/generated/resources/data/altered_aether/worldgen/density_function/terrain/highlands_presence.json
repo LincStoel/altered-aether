@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:add",
+  "argument1": {
+    "type": "minecraft:mul",
+    "argument1": 8.0,
+    "argument2": "altered_aether:terrain/highlands_excess"
+  },
+  "argument2": {
+    "type": "minecraft:mul",
+    "argument1": 10.0,
+    "argument2": {
+      "type": "minecraft:add",
+      "argument1": "altered_aether:terrain/highlands_allowed",
+      "argument2": -1.0
+    }
+  }
+}

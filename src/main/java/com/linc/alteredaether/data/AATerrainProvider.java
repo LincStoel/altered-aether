@@ -79,7 +79,7 @@ public final class AATerrainProvider extends JsonDataProvider {
     private static final Set<String> HEIGHT_DEPENDENT =
             Set.of("crag_3d_noise", "jag", "crags", "tempest", "tempest_spires", "dune_ridges", "dune_centre", "dune_sheet",
                     "plateau", "plateau_terraced", "island", "tall_base_3d_noise", "rift",
-                    "grove_land", "grove_land_broken", "cloud_sheet", "island_mass", "highlands", "caves", "tundra_land", "bowl_land", "cold_lift");
+                    "grove_land", "grove_land_broken", "cloud_sheet", "island_mass", "highlands", "highlands_top", "caves", "tundra_land", "bowl_land", "cold_lift");
 
     /**
      * The tall Aether's island floor: where the Aether's own island noise starts to fade in, its stock y 8. Raised from
@@ -429,17 +429,21 @@ public final class AATerrainProvider extends JsonDataProvider {
         // Islets crowd the open sky but are rare over islands, and rarer still over the plateau: the footprint has
         // to pass 0.42 over the void or the cloud sea, up to 0.82 over solid ground and 0.94 over the plateau.
         JsonObject landBelow = max(ramp(terrain("island_mass"), -4.0 / 6, 1.0 / 6), terrain("bowl_weight"));
-        df("highlands_excess", flatCache(add(shiftedNoise(NS + "highlands_footprint", 1.0, 0.0),
+        df("highlands_footprint", shiftedNoise(NS + "highlands_footprint", 1.0, 0.0));
+        df("highlands_excess", flatCache(add(terrain("highlands_footprint"),
                 add(-0.42, mul(-1.0, max(mul(0.40, landBelow), mul(0.52, terrain("plateau_weight"))))))));
         JsonObject core = flatCache(ramp(terrain("highlands_excess"), 0.0, 5.0));
         JsonObject isletLevel = add(mode.y(200), mul(mode.height(26), flatCache(shiftedNoise(NS + "highlands_level", 1.0, 0.0))));
-        JsonObject islandTop = add(isletLevel, mul(mode.height(7), core));
+        df("highlands_top", add(isletLevel, mul(mode.height(7), core)));
         JsonObject isletBottom = add(isletLevel, mul(-mode.height(1), add(8.0, mul(22.0, mul(core,
                 add(0.7, mul(0.3, column(shiftedNoise(NS + "highlands_root", 1.0, 0.0)))))))));
-        JsonObject lens = min(min(mul(0.125, add(islandTop, mul(-1.0, Df.y()))),
+        // Where an islet stands, positive and the larger the further in; its top and this are read off the router's
+        // HighlandsMarker too, to find Essence Channels (see highlandsMarker).
+        df("highlands_presence", add(mul(8.0, terrain("highlands_excess")),
+                mul(10.0, add(terrain("highlands_allowed"), -1.0))));
+        JsonObject lens = min(min(mul(0.125, add(terrain("highlands_top"), mul(-1.0, Df.y()))),
                         mul(1.0 / 6, add(Df.y(), mul(-1.0, isletBottom)))),
-                add(mul(8.0, terrain("highlands_excess")),
-                        mul(10.0, add(terrain("highlands_allowed"), -1.0))));
+                terrain("highlands_presence"));
         df("highlands", add(lens, mul(0.3, terrain("jag"))));
 
         // The caves themselves, negative inside: broad caverns where the cheese noise dips, and winding tunnels where
@@ -615,6 +619,7 @@ public final class AATerrainProvider extends JsonDataProvider {
         router.add("final_density", carve);
         if (mode == HeightMode.TALL) {
             cloudSheet(router);
+            highlandsMarker(router);
         }
 
         if (mode == HeightMode.TALL) {
@@ -694,6 +699,19 @@ public final class AATerrainProvider extends JsonDataProvider {
         JsonObject marker = Df.type(NS + "cloud_sea");
         marker.add("argument", terrain("cloud_sheet"));
         router.add("barrier", marker);
+    }
+
+    /**
+     * The tall Aether's Highlands, for finding Essence Channels on them: a {@code HighlandsMarker} carrying the islets'
+     * footprint noise, presence and top, in the router's {@code fluid_level_floodedness} slot, which, like the barrier,
+     * nothing evaluates. It refers to the very functions the terrain does, so it adds no work to a chunk.
+     */
+    private void highlandsMarker(JsonObject router) {
+        JsonObject marker = Df.type(NS + "highlands");
+        marker.add("footprint", terrain("highlands_footprint"));
+        marker.add("presence", terrain("highlands_presence"));
+        marker.add("top", terrain("highlands_top"));
+        router.add("fluid_level_floodedness", marker);
     }
 
     /** The island expression's height anchors, remapped to the tall band, and its base noise stretched to match. */

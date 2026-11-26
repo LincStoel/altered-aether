@@ -360,6 +360,7 @@ public final class AARegistries {
         DENSITY_FUNCTIONS.register("grove_break", () -> com.linc.alteredaether.worldgen.density.GroveBreak.MAP_CODEC);
         DENSITY_FUNCTIONS.register("atoll", () -> Atoll.MAP_CODEC);
         DENSITY_FUNCTIONS.register("cloud_sea", () -> com.linc.alteredaether.worldgen.density.CloudSeaMarker.MAP_CODEC);
+        DENSITY_FUNCTIONS.register("highlands", () -> com.linc.alteredaether.worldgen.density.HighlandsMarker.MAP_CODEC);
         DENSITY_FUNCTIONS.register("biome_edge", () -> com.linc.alteredaether.worldgen.density.BiomeEdge.MAP_CODEC);
         DENSITY_FUNCTIONS.register("island_mass", () -> com.linc.alteredaether.worldgen.density.IslandMass.MAP_CODEC);
         DENSITY_FUNCTIONS.register("cave_carve", () -> com.linc.alteredaether.worldgen.density.CaveCarve.MAP_CODEC);
@@ -448,6 +449,8 @@ public final class AARegistries {
             FEATURES.register("spawn_entity", SpawnEntityFeature::new);
     public static final DeferredHolder<Feature<?>, LandmarkFeature> LANDMARK =
             FEATURES.register("landmark", LandmarkFeature::new);
+    public static final DeferredHolder<Feature<?>, com.linc.alteredaether.worldgen.feature.EssenceOrbFeature> ESSENCE_ORBS =
+            FEATURES.register("essence_orbs", com.linc.alteredaether.worldgen.feature.EssenceOrbFeature::new);
 
     public static final DeferredRegister<PlacementModifierType<?>> PLACEMENT_MODIFIERS =
             DeferredRegister.create(Registries.PLACEMENT_MODIFIER_TYPE, AlteredAether.MOD_ID);

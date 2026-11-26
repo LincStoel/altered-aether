@@ -25,6 +25,7 @@ import com.linc.alteredaether.worldgen.TerrainProbe;
 import com.linc.alteredaether.worldgen.grove.BreakField;
 import com.linc.alteredaether.worldgen.grove.GroveField;
 import com.linc.alteredaether.worldgen.landmark.LandmarkField;
+import com.linc.alteredaether.worldgen.essence.EssenceField;
 import com.linc.alteredaether.worldgen.sea.CloudSea;
 import com.linc.alteredaether.worldgen.skirt.SkirtField;
 import net.minecraft.world.level.levelgen.DensityFunction;
@@ -77,6 +78,7 @@ public final class RegionBinding {
         List<IslandMass> masses = new ArrayList<>();
         List<CaveCarve> caves = new ArrayList<>();
         List<PlateauStacks> stacks = new ArrayList<>();
+        List<HighlandsMarker> highlands = new ArrayList<>();
         RandomState randomState = level.getChunkSource().randomState();
         randomState.router().mapAll(new DensityFunction.Visitor() {
             @Override
@@ -93,6 +95,8 @@ public final class RegionBinding {
                     breaks.add(groveBreak);
                 } else if (function instanceof CloudSeaMarker sea) {
                     seas.add(sea);
+                } else if (function instanceof HighlandsMarker marker) {
+                    highlands.add(marker);
                 } else if (function instanceof BiomeEdge edge && edge.binding() != null) {
                     edges.add(edge);
                 } else if (function instanceof IslandMass mass && mass.binding() != null) {
@@ -129,6 +133,13 @@ public final class RegionBinding {
                 ColumnMassField.put(level.dimension(), field);
             }
             bindFields(level, randomState, source, carves, atolls, fractures, breaks, caves, stacks);
+            // The Essence Channels on the Highlands, in the tall Aether, whose terrain alone carries the marker. Its
+            // biome edges and island mass were bound above, with the terrain's own.
+            if (!highlands.isEmpty() && level.getMinBuildHeight() < 0) {
+                HighlandsMarker marker = (HighlandsMarker) TerrainProbe.columnMemo(highlands.getFirst());
+                EssenceField.put(level.dimension(), new EssenceField(level.getSeed(), marker.footprint(),
+                        marker.presence(), marker.top()));
+            }
         } else {
             AlteredAether.LOGGER.warn("{} uses Altered Aether's region mask but its biome source has no TerraBlender "
                     + "regions; our landforms are disabled there.", level.dimension().location());
@@ -240,6 +251,7 @@ public final class RegionBinding {
             GroveField.put(level.dimension(), null);
             SkirtField.put(level.dimension(), null);
             CloudSea.put(level.dimension(), null);
+            EssenceField.put(level.dimension(), null);
         }
     }
 

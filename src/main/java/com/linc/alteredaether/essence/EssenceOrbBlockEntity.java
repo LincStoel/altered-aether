@@ -27,6 +27,7 @@ import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientGamePacketListener;
 import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.tags.BlockTags;
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.InteractionHand;
@@ -155,6 +156,9 @@ public class EssenceOrbBlockEntity extends BlockEntity {
     }
 
     private void tick(ServerLevel level, BlockPos pos) {
+        if (grade < 0 && settle(level, pos)) {
+            return;
+        }
         if (grade < 0) {
             RandomSource roll = RandomSource.create(level.getSeed() ^ Mth.getSeed(pos) ^ 0x5EEDE55E11CEL);
             setGrade(roll.nextDouble());
@@ -173,6 +177,31 @@ public class EssenceOrbBlockEntity extends BlockEntity {
             pour(level, pos, level.getGameTime());
         }
         sync(level);
+    }
+
+    /**
+     * On a new orb's first tick: a tree from a neighbouring chunk may have grown its leaves up round where the orb was
+     * hung, so if there are leaves just below it, it rises clear of them. Returns whether it moved (this block entity
+     * is then gone).
+     */
+    private boolean settle(ServerLevel level, BlockPos pos) {
+        for (int lift = 0; lift <= 8; lift++) {
+            BlockPos at = pos.above(lift);
+            if (lift > 0 && !level.getBlockState(at).isAir()) {
+                return false;
+            }
+            if (!level.getBlockState(at.below()).is(BlockTags.LEAVES)
+                    && !level.getBlockState(at.below(2)).is(BlockTags.LEAVES)) {
+                if (lift == 0) {
+                    return false;
+                }
+                BlockState state = getBlockState();
+                level.removeBlock(pos, false);
+                level.setBlock(at, state, Block.UPDATE_ALL);
+                return true;
+            }
+        }
+        return false;
     }
 
     /** Finds the capstones and the plinth. */

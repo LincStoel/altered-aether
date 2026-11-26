@@ -196,6 +196,39 @@ public final class LandmarkField {
         return Optional.ofNullable(best);
     }
 
+    /**
+     * The landmarks within {@code range} blocks of (x, z) that have already been found (by world generation, rumour
+     * maps or their warmup); cells not yet searched are skipped. Never searches, so safe on the server thread.
+     */
+    public List<Landmark> knownNear(int x, int z, int range) {
+        List<Landmark> found = new ArrayList<>();
+        if (rarity() <= 0) {
+            return found;
+        }
+        for (LandmarkType type : LandmarkType.values()) {
+            int cell = gridCell(type);
+            if (cell <= 0) {
+                continue;
+            }
+            for (int cx = Math.floorDiv(x - range, cell); cx <= Math.floorDiv(x + range, cell); cx++) {
+                for (int cz = Math.floorDiv(z - range, cell); cz <= Math.floorDiv(z + range, cell); cz++) {
+                    Optional<? extends Landmark> site;
+                    if (type.gridded()) {
+                        site = cells.get(type).getIfPresent(((long) cx << 32) ^ (cz & 0xFFFFFFFFL));
+                    } else {
+                        Optional<com.linc.alteredaether.worldgen.basin.AtollSite> atoll = basins.doubleIfKnown(cx, cz);
+                        site = atoll == null ? null : atoll.map(DoubleAtoll::new);
+                    }
+                    if (site != null && site.isPresent()
+                            && Math.hypot(site.get().x() - x, site.get().z() - z) <= range) {
+                        found.add(site.get());
+                    }
+                }
+            }
+        }
+        return found;
+    }
+
     private static boolean touches(Landmark site, int minX, int minZ, int maxX, int maxZ) {
         double dx = Math.max(0, Math.max(minX - site.x(), site.x() - maxX));
         double dz = Math.max(0, Math.max(minZ - site.z(), site.z() - maxZ));

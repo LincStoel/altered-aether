@@ -53,6 +53,11 @@ record DoubleAtoll(AtollSite site) implements Landmark {
     @Override
     public List<BlockPos> points(String kind) {
         BlockPos islet = site.isletCentre();
-        return kind.equals("islet") && islet != null ? List.of(islet.atY(Integer.MIN_VALUE)) : List.of();
+        if (islet == null) {
+            return List.of();
+        }
+        // the orb hangs over the islet too, above its oak
+        return kind.equals("islet") ? List.of(islet.atY(Integer.MIN_VALUE)) : kind.equals(ORB) ? List.of(islet)
+                : List.of();
     }
 }

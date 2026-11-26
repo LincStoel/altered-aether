@@ -205,6 +205,10 @@ record VillageTreeSite(int x, int z, Giant giant, List<RuinPlan> ruins, List<Rui
 
     @Override
     public List<BlockPos> points(String kind) {
+        if (kind.equals(ORB)) {
+            // over the crown, clear of its highest leaves
+            return List.of(new BlockPos(giant.x(), giant.bounds().maxY() + 3, giant.z()));
+        }
         return giant.points(kind);
     }
 

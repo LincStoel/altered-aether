@@ -201,6 +201,21 @@ record GrandCascade(int x, int z, List<Tier> tiers, double vertical, long salt) 
     }
 
     @Override
+    public List<BlockPos> points(String kind) {
+        if (!kind.equals(ORB) || tiers.isEmpty()) {
+            return List.of();
+        }
+        // over the highest pool (the first: each spills down into the next)
+        Tier top = tiers.getFirst();
+        for (Tier tier : tiers) {
+            if (tier.water() > top.water()) {
+                top = tier;
+            }
+        }
+        return List.of(new BlockPos(Mth.floor(top.x()), top.water() + 4, Mth.floor(top.z())));
+    }
+
+    @Override
     public int visitY() {
         return tiers.getFirst().water() + 8;
     }

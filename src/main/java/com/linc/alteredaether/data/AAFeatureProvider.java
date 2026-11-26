@@ -32,6 +32,7 @@ public final class AAFeatureProvider extends JsonDataProvider {
     static final String BASIN_SEAL = NS + "basin_seal";
     /** The landmark builder, and the decoration placed at landmarks' points, in the order they run. */
     static final String LANDMARK = NS + "landmark/build";
+    static final String ESSENCE_ORBS = NS + "essence/orbs";
     /** The giant-tree builder of the Skyroot Cathedral and Nurselog Hollow. */
     static final String GROVE = NS + "grove/build";
     /** The roots hanging under the grove islands. */
@@ -123,6 +124,9 @@ public final class AAFeatureProvider extends JsonDataProvider {
     private void landmarks() {
         configured("landmark/build", NS + "landmark", new JsonObject());
         placed("landmark/build", LANDMARK, new JsonArray());
+        // the essence sources: Channels over Highlands islets, Wellsprings over the landmarks (see EssenceOrbFeature)
+        configured("essence/orbs", NS + "essence_orbs", new JsonObject());
+        placed("essence/orbs", ESSENCE_ORBS, new JsonArray());
 
         placed("landmark/tempest_ring", NS + "copper_spike/cluster", Placement.list(
                 Placement.landmarkPoints("tempest_spires", "ring", 1), Placement.heightmap("WORLD_SURFACE_WG")));

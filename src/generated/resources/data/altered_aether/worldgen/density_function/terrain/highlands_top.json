@@ -1,0 +1,44 @@
+{
+  "type": "minecraft:add",
+  "argument1": {
+    "type": "minecraft:add",
+    "argument1": 176.0,
+    "argument2": {
+      "type": "minecraft:mul",
+      "argument1": 17.333333333333332,
+      "argument2": {
+        "type": "minecraft:flat_cache",
+        "argument": {
+          "type": "minecraft:shifted_noise",
+          "noise": "altered_aether:highlands_level",
+          "shift_x": "minecraft:shift_x",
+          "shift_y": 0.0,
+          "shift_z": "minecraft:shift_z",
+          "xz_scale": 1.0,
+          "y_scale": 0.0
+        }
+      }
+    }
+  },
+  "argument2": {
+    "type": "minecraft:mul",
+    "argument1": 4.666666666666667,
+    "argument2": {
+      "type": "minecraft:flat_cache",
+      "argument": {
+        "type": "minecraft:clamp",
+        "input": {
+          "type": "minecraft:add",
+          "argument1": 0.0,
+          "argument2": {
+            "type": "minecraft:mul",
+            "argument1": 5.0,
+            "argument2": "altered_aether:terrain/highlands_excess"
+          }
+        },
+        "max": 1.0,
+        "min": 0.0
+      }
+    }
+  }
+}

@@ -25,6 +25,12 @@ import java.util.List;
  * spans can each build their own columns of it, in any order, and meet with no seams; see LandmarkFeature.
  */
 public interface Landmark {
+    /**
+     * The point an essence Wellspring hangs over: the landmark's highest point, its y the least height the orb may
+     * hang at. The orb goes a few blocks over whatever stands there up to 40 blocks higher. The Great Fracture has none.
+     */
+    String ORB = "orb";
+
     LandmarkType type();
 
     int x();
