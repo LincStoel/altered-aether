@@ -517,7 +517,7 @@ public final class AACommonConfig {
         b.pop();
 
         b.comment("Tempest Peaks electricity: the Aether Jar, the Squall Generator, the Aerogel Wheel and the Static Boots.",
-                        "Energy is in FE; t is a game tick.")
+                        "Energy is in FE (shown in game as Æ, Aether Essence); t is a game tick.")
                 .push("electricity");
         JAR_CAPACITY = b.comment("FE an Aether Jar holds.")
                 .defineInRange("jar_capacity", 720_000, 1_000, Integer.MAX_VALUE);
