@@ -211,7 +211,7 @@ public final class EssenceTour {
             if (level.getBlockEntity(origin) instanceof EssencePlinthBlockEntity plinth) {
                 plinth.insert(new ItemStack(ElectricRegistries.AETHER_JAR_ITEM.get(), 3), false);
             }
-        }, new Vec3(0.5, 2.6, 4.2), new Vec3(0.5, 1.6, 0.5), 80, false, null));
+        }, new Vec3(1.6, 2.6, 2.8), new Vec3(0.5, 1.4, 0.5), 80, false, null));
         steps.add(new Step("plinth_close", level -> { }, new Vec3(0.5, 1.9, 2.0), new Vec3(0.5, 0.8, 0.5), 30,
                 false, null));
         steps.add(new Step("rod_jars", level -> { }, new Vec3(0.5, 2.8, 6.5), new Vec3(0.5, 1.5, 2.5), 60, false,
