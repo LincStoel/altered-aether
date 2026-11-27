@@ -19,6 +19,7 @@ import com.linc.alteredaether.advancement.AAAdvancements;
 import com.linc.alteredaether.config.AACommonConfig;
 import com.linc.alteredaether.electric.AetherJarBlock;
 import com.linc.alteredaether.electric.AetherJarBlockEntity;
+import com.linc.alteredaether.electric.AetherJarItem;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
@@ -516,7 +517,17 @@ public class EssenceOrbBlockEntity extends BlockEntity {
             }
         }
         if (plinth != null && plinthActive) {
-            streams.add(new Vec3(plinth.getX() + 0.5, plinth.getY() + EssencePlinthBlock.TOP + 0.1, plinth.getZ() + 0.5));
+            Vec3 top = new Vec3(plinth.getX() + 0.5, plinth.getY() + EssencePlinthBlock.TOP + 0.05, plinth.getZ() + 0.5);
+            if (infusing(level)) {
+                // an infusion: a cascade pours down onto the plinth
+                if (random.nextInt(3) != 0) {
+                    double start = centre.y - 0.2;
+                    level.addParticle(EssenceRegistries.ESSENCE_CASCADE.get(), top.x, start, top.z,
+                            0, start - top.y, 0);
+                }
+            } else {
+                streams.add(top.add(0, 0.05, 0));
+            }
         }
         for (BlockPos jar : charging) {
             Vec3 tip = rodTip(level, jar);
@@ -545,6 +556,12 @@ public class EssenceOrbBlockEntity extends BlockEntity {
                         centre.z + (random.nextDouble() - 0.5) * 0.15, 0, 0, 0);
             }
         }
+    }
+
+    /** Whether the plinth is infusing something rather than charging a jar. */
+    private boolean infusing(Level level) {
+        return level.getBlockEntity(plinth) instanceof EssencePlinthBlockEntity entity && !entity.work().isEmpty()
+                && !(entity.work().getItem() instanceof AetherJarItem);
     }
 
     /** The tip of the lightning rod on a jar's top, where a mote ends. */

@@ -28,7 +28,7 @@ import net.minecraft.world.phys.Vec3;
 /**
  * The light about an essence source, slow and soft where a squall's sparks are quick and sharp: notes that flit about
  * the orb and twinkle, and motes that drift out along a lazy curve to a capstone, a jar or the plinth and fade as they
- * arrive. Both are full bright.
+ * arrive, and the cascade that pours onto a plinth as it infuses. All are full bright.
  */
 public final class EssenceParticles {
     private static final int FULL_BRIGHT = 0xF000F0;
@@ -147,6 +147,84 @@ public final class EssenceParticles {
         }
     }
 
+    /**
+     * A drop of the cascade that pours down onto a plinth while it infuses: it falls from under the orb, gathering a
+     * little speed and turning slowly about the column as it narrows, then spills out across the plinth's top and fades.
+     * Its {@code dy} is how far it falls.
+     */
+    public static final class Cascade extends TextureSheetParticle {
+        private static final int SPILL = 14;
+        private final double centreX, centreZ, top, drop;
+        private final float turn, spin, shimmer;
+        private final double radius;
+        private final int fall;
+
+        Cascade(ClientLevel level, double x, double y, double z, double drop, SpriteSet sprites) {
+            super(level, x, y, z);
+            this.centreX = x;
+            this.centreZ = z;
+            this.top = y;
+            this.drop = Math.max(0.5, drop);
+            this.radius = 0.06 + random.nextDouble() * 0.1;
+            this.turn = random.nextFloat() * Mth.TWO_PI;
+            this.spin = (random.nextBoolean() ? 1 : -1) * (0.04F + random.nextFloat() * 0.04F);
+            this.shimmer = random.nextFloat() * Mth.TWO_PI;
+            this.fall = 24 + (int) (this.drop * 9) + random.nextInt(12);
+            this.lifetime = fall + SPILL + random.nextInt(8);
+            this.quadSize = 0.035F + random.nextFloat() * 0.025F;
+            this.gravity = 0;
+            this.hasPhysics = false;
+            setSprite(sprites.get(random.nextInt(2), 1));
+            alpha = 0;
+            place();
+        }
+
+        @Override
+        public void tick() {
+            xo = x;
+            yo = y;
+            zo = z;
+            if (age++ >= lifetime) {
+                remove();
+                return;
+            }
+            place();
+            float shine = 0.75F + 0.25F * Mth.sin(age * 0.4F + shimmer);
+            float in = Math.min(1, age / 6.0F);
+            float out = age <= fall ? 1 : 1 - (float) (age - fall) / (lifetime - fall);
+            alpha = in * out * shine * 0.85F;
+        }
+
+        /** Where it is now: down the column while it falls, then out over the top. */
+        private void place() {
+            float angle = turn + age * spin;
+            double r;
+            if (age <= fall) {
+                double t = (double) age / fall;
+                // gathers speed as it pours, but never rushes
+                double fallen = t * (0.35 + 0.65 * t);
+                y = top - drop * fallen;
+                r = radius * (1 - 0.45 * t);
+            } else {
+                double spill = (double) (age - fall) / SPILL;
+                y = top - drop + 0.02 * Math.sin(spill * Math.PI);
+                r = radius * 0.55 + spill * 0.32;
+            }
+            x = centreX + Mth.cos(angle) * r;
+            z = centreZ + Mth.sin(angle) * r;
+        }
+
+        @Override
+        public ParticleRenderType getRenderType() {
+            return ParticleRenderType.PARTICLE_SHEET_TRANSLUCENT;
+        }
+
+        @Override
+        protected int getLightColor(float partialTick) {
+            return FULL_BRIGHT;
+        }
+    }
+
     public record NoteProvider(SpriteSet sprites) implements ParticleProvider<SimpleParticleType> {
         @Override
         public Particle createParticle(SimpleParticleType type, ClientLevel level, double x, double y, double z,
@@ -160,6 +238,14 @@ public final class EssenceParticles {
         public Particle createParticle(EssenceMoteOptions options, ClientLevel level, double x, double y, double z,
                                        double dx, double dy, double dz) {
             return new Mote(level, x, y, z, options, sprites);
+        }
+    }
+
+    public record CascadeProvider(SpriteSet sprites) implements ParticleProvider<SimpleParticleType> {
+        @Override
+        public Particle createParticle(SimpleParticleType type, ClientLevel level, double x, double y, double z,
+                                       double dx, double dy, double dz) {
+            return new Cascade(level, x, y, z, dy, sprites);
         }
     }
 

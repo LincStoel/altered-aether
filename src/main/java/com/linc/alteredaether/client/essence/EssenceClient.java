@@ -38,6 +38,7 @@ public final class EssenceClient {
     public static void registerParticles(RegisterParticleProvidersEvent event) {
         event.registerSpriteSet(EssenceRegistries.ESSENCE_NOTE.get(), EssenceParticles.NoteProvider::new);
         event.registerSpriteSet(EssenceRegistries.ESSENCE_MOTE.get(), EssenceParticles.MoteProvider::new);
+        event.registerSpriteSet(EssenceRegistries.ESSENCE_CASCADE.get(), EssenceParticles.CascadeProvider::new);
     }
 
     @SubscribeEvent

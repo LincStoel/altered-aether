@@ -136,6 +136,9 @@ public final class EssenceRegistries {
     /** A mote drifting from an orb to what it feeds. */
     public static final DeferredHolder<ParticleType<?>, EssenceMoteOptions.Type> ESSENCE_MOTE =
             PARTICLE_TYPES.register("essence_mote", EssenceMoteOptions.Type::new);
+    /** A drop of the cascade onto an infusing plinth; its {@code dy} is how far it falls. */
+    public static final DeferredHolder<ParticleType<?>, SimpleParticleType> ESSENCE_CASCADE =
+            PARTICLE_TYPES.register("essence_cascade", () -> new SimpleParticleType(false));
 
     /** A block's item with what it does on its tooltip ({@code tooltip.altered_aether.<block>}). */
     public static final class TooltipBlockItem extends BlockItem {

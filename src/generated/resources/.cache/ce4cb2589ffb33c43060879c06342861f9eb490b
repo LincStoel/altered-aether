@@ -1,4 +1,4 @@
-// 1.21.1	2026-11-26T21:11:46.447843	Altered Aether essence
+// 1.21.1	2026-11-26T21:44:07.0569144	Altered Aether essence
 14a6d6119f015bd5ee440553c6eba34b5f39d37c assets/altered_aether/blockstates/essence_capstone.json
 68331af23871bcb9eeaa39caefa5c943b4a85199 assets/altered_aether/blockstates/essence_channel.json
 476de07e2f435356c20d6f494d7a084843cd262c assets/altered_aether/blockstates/essence_plinth.json
@@ -18,6 +18,7 @@ bde267183123f40d3250aab795cea9d1838598ab assets/altered_aether/models/item/dowsi
 7f29dbe5b28bc0f845702b23c25278b0981d8ede assets/altered_aether/models/item/essence_capstone.json
 6043284fc7e82c08b8587255c9767554b5f6c321 assets/altered_aether/models/item/essence_plinth.json
 38af21ea1be1f8ca9ab22cc6a9c6b9e2783e33d2 assets/altered_aether/models/item/quintessence_phial.json
+30d7cc1813c26dbe4dff91abf1cabbb7aa9644a8 assets/altered_aether/particles/essence_cascade.json
 30d7cc1813c26dbe4dff91abf1cabbb7aa9644a8 assets/altered_aether/particles/essence_mote.json
 591d477f3147a5b7365f5318f598be3a25066d8c assets/altered_aether/particles/essence_note.json
 d7d70d8ac92a47bb371824a89f08005efea4d865 data/altered_aether/loot_table/blocks/essence_capstone.json

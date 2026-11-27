@@ -231,10 +231,12 @@ public final class AAEssenceProvider extends JsonDataProvider {
         tag("block", ResourceLocation.fromNamespaceAndPath("create", "non_movable"), orbs);
     }
 
-    /** The notes are four sprites that twinkle; the motes two. */
+    /** The notes are four sprites that twinkle; the motes two, which the cascade shares. */
     private void particles() {
         asset("particles", AlteredAether.id("essence_note"), particle("essence_note", 4));
         asset("particles", AlteredAether.id("essence_mote"), particle("essence_mote", 2));
+        // the cascade's drops are motes
+        asset("particles", AlteredAether.id("essence_cascade"), particle("essence_mote", 2));
     }
 
     private static JsonObject particle(String name, int frames) {
