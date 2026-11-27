@@ -56,7 +56,7 @@ public final class AABlockEvents {
                     AARegistries.AMBROSIUM_CAMPFIRE_ITEM.get().getDefaultInstance(),
                     net.minecraft.world.item.CreativeModeTab.TabVisibility.PARENT_AND_SEARCH_TABS);
         }
-        if (event.getTabKey().equals(CreativeModeTabs.NATURAL_BLOCKS) || event.getTabKey().equals(CreativeModeTabs.FOOD_AND_DRINKS)) {
+        if (event.getTabKey().equals(CreativeModeTabs.FOOD_AND_DRINKS)) {
             event.insertAfter(Items.GLOW_BERRIES.getDefaultInstance(), AARegistries.GLEAMBERRIES.get().getDefaultInstance(),
                     net.minecraft.world.item.CreativeModeTab.TabVisibility.PARENT_AND_SEARCH_TABS);
         }
