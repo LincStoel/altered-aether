@@ -70,7 +70,8 @@ public final class EssenceTour {
     private static final String LABEL = System.getProperty("altered_aether.essence_tour", "");
     private static final ResourceKey<Level> THE_AETHER =
             ResourceKey.create(Registries.DIMENSION, ResourceLocation.fromNamespaceAndPath("aether", "the_aether"));
-    private static final int STAGE_Y = 280, STAGE_OFFSET = 1200;
+    private static final int STAGE_Y = 280;
+    private static final int STAGE_OFFSET = Integer.getInteger("altered_aether.essence_tour_offset", 1200);
     /** The orb, from the stage's origin; the plinth stands right under it on the floor. */
     private static final BlockPos ORB = new BlockPos(0, 4, 0);
 

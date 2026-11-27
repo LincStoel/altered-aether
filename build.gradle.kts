@@ -66,6 +66,8 @@ neoForge {
             // -PaaEssenceTour=<label> quick-plays it too and runs the scripted essence source check in debug/EssenceTour.
             val essenceTour = findProperty("aaEssenceTour") as String?
             systemProperty("altered_aether.essence_tour", essenceTour ?: "")
+            // -PaaEssenceTourOffset=<blocks> moves its stage west of spawn (default 1200), onto ground not yet generated.
+            systemProperty("altered_aether.essence_tour_offset", findProperty("aaEssenceTourOffset") as String? ?: "1200")
             if (tour != null || jeiShot != null || golemTour != null || gravititeTour != null || cloudTour != null
                     || electricTour != null || essenceTour != null) {
                 programArguments.addAll("--quickPlaySingleplayer", "tour")
