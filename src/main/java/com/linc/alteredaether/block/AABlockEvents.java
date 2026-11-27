@@ -18,11 +18,10 @@ import com.linc.alteredaether.AlteredAether;
 import com.linc.alteredaether.compat.CreateCompat;
 import com.linc.alteredaether.config.AACommonConfig;
 import com.linc.alteredaether.registry.AARegistries;
+import com.linc.alteredaether.registry.TabInserts;
 import com.aetherteam.aether.block.AetherBlocks;
 import com.aetherteam.aether.item.AetherCreativeTabs;
-import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.CreativeModeTabs;
-import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.ItemLike;
 import net.minecraft.world.level.block.Block;
@@ -47,29 +46,24 @@ public final class AABlockEvents {
 
     /**
      * The campfire right after the soul campfire, gleamberries after glow berries wherever those are listed, and the
-     * squall's and gravitite golem's spawn eggs with the others, and the whale whistle and storage pebble among the tools.
+     * squall's and gravitite golem's spawn eggs with the others, and the whale whistle and storage pebble among the tools,
+     * all through {@link TabInserts}, which another mod changing these tabs can't trip up.
      */
     @SubscribeEvent
     public static void onCreativeTab(BuildCreativeModeTabContentsEvent event) {
         if (event.getTabKey().equals(CreativeModeTabs.FUNCTIONAL_BLOCKS)) {
-            event.insertAfter(Items.SOUL_CAMPFIRE.getDefaultInstance(),
-                    AARegistries.AMBROSIUM_CAMPFIRE_ITEM.get().getDefaultInstance(),
-                    net.minecraft.world.item.CreativeModeTab.TabVisibility.PARENT_AND_SEARCH_TABS);
+            TabInserts.after(event, Items.SOUL_CAMPFIRE, AARegistries.AMBROSIUM_CAMPFIRE_ITEM.get());
         }
-        if (event.getTabKey().equals(CreativeModeTabs.FOOD_AND_DRINKS)) {
-            event.insertAfter(Items.GLOW_BERRIES.getDefaultInstance(), AARegistries.GLEAMBERRIES.get().getDefaultInstance(),
-                    net.minecraft.world.item.CreativeModeTab.TabVisibility.PARENT_AND_SEARCH_TABS);
-        }
-        if (event.getTabKey().equals(CreativeModeTabs.NATURAL_BLOCKS)) {
-            insertAfter(event, Items.GLOW_BERRIES, AARegistries.GLEAMBERRIES.get());
+        if (event.getTabKey().equals(CreativeModeTabs.FOOD_AND_DRINKS) || event.getTabKey().equals(CreativeModeTabs.NATURAL_BLOCKS)) {
+            TabInserts.after(event, Items.GLOW_BERRIES, AARegistries.GLEAMBERRIES.get());
         }
         if (event.getTabKey().equals(CreativeModeTabs.TOOLS_AND_UTILITIES)) {
-            event.accept(AARegistries.WHALE_WHISTLE.get());
-            event.accept(AARegistries.STORAGE_PEBBLE.get());
+            TabInserts.add(event, AARegistries.WHALE_WHISTLE.get());
+            TabInserts.add(event, AARegistries.STORAGE_PEBBLE.get());
         }
         if (event.getTabKey().equals(CreativeModeTabs.SPAWN_EGGS)) {
-            event.accept(AARegistries.SQUALL_SPAWN_EGG.get());
-            event.accept(AARegistries.GRAVITITE_GOLEM_SPAWN_EGG.get());
+            TabInserts.add(event, AARegistries.SQUALL_SPAWN_EGG.get());
+            TabInserts.add(event, AARegistries.GRAVITITE_GOLEM_SPAWN_EGG.get());
         }
         stones(event);
     }
@@ -79,19 +73,19 @@ public final class AABlockEvents {
         if (event.getTabKey().equals(AetherCreativeTabs.AETHER_NATURAL_BLOCKS.getKey())) {
             ItemLike after = AetherBlocks.MOSSY_HOLYSTONE.get();
             for (StoneSet stone : StoneSet.ALL) {
-                after = insertAfter(event, after, stone.natural.block().get());
+                after = TabInserts.after(event, after, stone.natural.block().get());
             }
         }
         if (event.getTabKey().equals(AetherCreativeTabs.AETHER_BUILDING_BLOCKS.getKey())) {
             ItemLike after = AetherBlocks.HOLYSTONE_BRICK_WALL.get();
             for (StoneSet stone : StoneSet.ALL) {
                 for (DeferredBlock<? extends Block> block : stone.blocks()) {
-                    after = insertAfter(event, after, block.get());
+                    after = TabInserts.after(event, after, block.get());
                 }
             }
         }
         if (event.getTabKey().equals(AetherCreativeTabs.AETHER_INGREDIENTS.getKey())) {
-            nadiriteProcessing(event::accept);
+            nadiriteProcessing(item -> TabInserts.add(event, item));
         }
     }
 
@@ -102,17 +96,6 @@ public final class AABlockEvents {
             output.accept(AARegistries.NADIRITE_GRIT.get());
             output.accept(AARegistries.AETHER_CRUST_MIX.get());
         }
-    }
-
-    /** Inserts {@code item} after {@code anchor}, or at the end if another mod has taken the anchor out of the tab. */
-    private static ItemLike insertAfter(BuildCreativeModeTabContentsEvent event, ItemLike anchor, ItemLike item) {
-        boolean present = event.getParentEntries().stream().anyMatch(stack -> stack.is(anchor.asItem()));
-        if (present) {
-            event.insertAfter(new ItemStack(anchor), new ItemStack(item), CreativeModeTab.TabVisibility.PARENT_AND_SEARCH_TABS);
-        } else {
-            event.accept(item);
-        }
-        return item;
     }
 
     private AABlockEvents() {

@@ -18,6 +18,7 @@ import com.aetherteam.aether.item.AetherCreativeTabs;
 import com.linc.alteredaether.AlteredAether;
 import com.linc.alteredaether.config.AACommonConfig;
 import com.linc.alteredaether.registry.AARegistries;
+import com.linc.alteredaether.registry.TabInserts;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.server.packs.resources.ResourceManagerReloadListener;
@@ -101,10 +102,10 @@ public final class GravititeRework {
                 return;
             }
             if (event.getTabKey().equals(AetherCreativeTabs.AETHER_NATURAL_BLOCKS.getKey())) {
-                event.accept(AARegistries.RAW_GRAVITITE_BLOCK_ITEM.get());
+                TabInserts.add(event, AARegistries.RAW_GRAVITITE_BLOCK_ITEM.get());
             }
             if (event.getTabKey().equals(AetherCreativeTabs.AETHER_INGREDIENTS.getKey())) {
-                ingredients(event::accept);
+                ingredients(item -> TabInserts.add(event, item));
             }
         }
 
