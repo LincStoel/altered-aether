@@ -27,6 +27,7 @@ import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.tags.BlockTags;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.Heightmap;
@@ -169,11 +170,22 @@ public final class EssenceProbe {
                 below = below.below();
                 gap++;
             }
-            AlteredAether.LOGGER.info("ESSENCE {} at {}, {} ({}): orb {} at y {}, {} open blocks over {}",
+            BlockPos solid = found.below();
+            while (solid.getY() > aether.getMinBuildHeight() && soft(aether.getBlockState(solid))) {
+                solid = solid.below();
+            }
+            AlteredAether.LOGGER.info("ESSENCE {} at {}, {} ({}): orb {} at y {}, {} open blocks over {}, {} over solid {}",
                     target.what(), target.x(), target.z(), expected,
                     aether.getBlockState(found).getBlock().getDescriptionId(), found.getY(), gap,
-                    aether.getBlockState(below).getBlock().getDescriptionId());
+                    aether.getBlockState(below).getBlock().getDescriptionId(), found.getY() - solid.getY(),
+                    aether.getBlockState(solid).getBlock().getDescriptionId());
         }
+    }
+
+    /** What a channel sees through on its way down to the ground: air, trees and soft plants. */
+    private static boolean soft(BlockState state) {
+        return state.getFluidState().isEmpty() && (!state.isSolid() || state.is(BlockTags.LOGS)
+                || state.is(BlockTags.LEAVES));
     }
 
     private EssenceProbe() {

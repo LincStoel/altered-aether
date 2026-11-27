@@ -33,8 +33,8 @@ import java.util.concurrent.ConcurrentHashMap;
  * Where the tall Aether's Essence Channels hang: at most one in each {@value #CELL}-block cell, over the top of a
  * Highlands islet. A cell first rolls whether it has one at all ({@code channel_chance}), then a point it would like
  * the channel near, then looks over the middle of the cell for islets: a coarse grid of the islets' footprint noise
- * rules most columns out cheaply, the survivors are checked for an islet really standing there, the one nearest the
- * point is taken, and a fine grid round it finds the islet's highest column. A channel is never more than
+ * rules most columns out cheaply, the survivors are checked for an islet really standing there, and the one nearest the
+ * point is taken, wherever on the islet it falls (not its highest column). A channel is never more than
  * {@value #SPREAD} blocks from its cell's middle, so two are always at least {@code CELL - 2 * SPREAD} apart.
  *
  * <p>Everything is read off the 2D functions the router's HighlandsMarker carries, never the 3D terrain, and a cell's
@@ -44,8 +44,8 @@ public final class EssenceField {
     public static final int CELL = 512;
     public static final int SPREAD = 128;
     private static final long SALT = 0xE55E_1CE5_C4A7_7E15L;
-    /** The coarse grid's step and the fine grid's, in blocks. */
-    private static final int COARSE = 16, FINE = 4;
+    /** The grid's step, in blocks. */
+    private static final int COARSE = 16;
     /** Below this the footprint can't hold an islet anywhere (its least threshold is 0.42). */
     private static final double FOOTPRINT_MIN = 0.42;
     /** How far into an islet a channel must hang over: well inside, not at its rim. */
@@ -126,28 +126,7 @@ public final class EssenceField {
         if (bestDistance == Double.MAX_VALUE) {
             return null;
         }
-        // the islet's highest column near there, kept well in from its rim and inside the spread
-        double bestTop = Double.NEGATIVE_INFINITY;
-        int siteX = bestX, siteZ = bestZ;
-        for (int dx = -2; dx <= 2; dx++) {
-            for (int dz = -2; dz <= 2; dz++) {
-                int x = Mth.clamp(bestX + dx * FINE, midX - SPREAD, midX + SPREAD);
-                int z = Mth.clamp(bestZ + dz * FINE, midZ - SPREAD, midZ + SPREAD);
-                if (sample(presence, x, z) < 1.0) {
-                    continue;
-                }
-                double height = sample(top, x, z);
-                if (height > bestTop) {
-                    bestTop = height;
-                    siteX = x;
-                    siteZ = z;
-                }
-            }
-        }
-        if (bestTop == Double.NEGATIVE_INFINITY) {
-            bestTop = sample(top, bestX, bestZ);
-        }
-        return new Site(siteX, siteZ, Mth.ceil(bestTop + JAG));
+        return new Site(bestX, bestZ, Mth.ceil(sample(top, bestX, bestZ) + JAG));
     }
 
     private static double sample(DensityFunction function, int x, int z) {
