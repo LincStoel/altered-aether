@@ -28,7 +28,12 @@ import net.minecraft.world.item.Items;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.bus.api.EventPriority;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
+import net.neoforged.neoforge.event.BuildCreativeModeTabContentsEvent;
+import com.aetherteam.aether.item.AetherCreativeTabs;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.world.item.CreativeModeTab.TabVisibility;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -37,7 +42,12 @@ import java.util.List;
  * Where gleamberries sit in the vanilla creative tabs, in a running client: with the system property
  * {@code altered_aether.tab_check} set (the client run's {@code -PaaTabCheck=<label>}), it quick-plays the world
  * "tour", opens Natural Blocks and Food & Drinks scrolled to the berries, logs each tab's berries and their
- * neighbours under "Tab check", shoots {@code screenshots/tabs_<label>/NN_tab.png} and quits.
+ * neighbours under "Tab check", shoots {@code screenshots/tabs_<label>/NN_tab.png} and quits. It also logs every one of
+ * the mod's items in each tab the mod adds to, with the item before it.
+ *
+ * <p>The label {@code hostile} first plays another mod that has already changed those tabs, before the mod's own
+ * listener runs: glow berries gone from Natural Blocks and from Food & Drinks' search list only, the soul campfire
+ * gone, the whale whistle and gleamberries already listed. The mod's additions must neither crash nor double up.
  */
 public final class TabCheck {
     private static final String LABEL = System.getProperty("altered_aether.tab_check", "");
@@ -47,6 +57,63 @@ public final class TabCheck {
 
     private static void log(String message, Object... args) {
         AlteredAether.LOGGER.info("Tab check: " + message, args);
+    }
+
+    private static final List<ResourceKey<CreativeModeTab>> TOUCHED = List.of(CreativeModeTabs.FUNCTIONAL_BLOCKS,
+            CreativeModeTabs.FOOD_AND_DRINKS, CreativeModeTabs.NATURAL_BLOCKS, CreativeModeTabs.TOOLS_AND_UTILITIES,
+            CreativeModeTabs.SPAWN_EGGS, AetherCreativeTabs.AETHER_NATURAL_BLOCKS.getKey(),
+            AetherCreativeTabs.AETHER_BUILDING_BLOCKS.getKey(), AetherCreativeTabs.AETHER_INGREDIENTS.getKey());
+
+    /** Another mod's changes to the tabs, made before the mod's own listener (see the class comment). */
+    @EventBusSubscriber(modid = AlteredAether.MOD_ID, bus = EventBusSubscriber.Bus.MOD)
+    public static final class Hostile {
+        @SubscribeEvent(priority = EventPriority.HIGHEST)
+        public static void onCreativeTab(BuildCreativeModeTabContentsEvent event) {
+            if (!LABEL.equals("hostile")) {
+                return;
+            }
+            var key = event.getTabKey();
+            if (key.equals(CreativeModeTabs.NATURAL_BLOCKS)) {
+                event.remove(new ItemStack(Items.GLOW_BERRIES), TabVisibility.PARENT_AND_SEARCH_TABS);
+                event.accept(AARegistries.GLEAMBERRIES.get());
+            }
+            if (key.equals(CreativeModeTabs.FOOD_AND_DRINKS)) {
+                event.remove(new ItemStack(Items.GLOW_BERRIES), TabVisibility.SEARCH_TAB_ONLY);
+            }
+            if (key.equals(CreativeModeTabs.FUNCTIONAL_BLOCKS)) {
+                event.remove(new ItemStack(Items.SOUL_CAMPFIRE), TabVisibility.PARENT_AND_SEARCH_TABS);
+            }
+            if (key.equals(CreativeModeTabs.TOOLS_AND_UTILITIES)) {
+                event.accept(AARegistries.WHALE_WHISTLE.get());
+            }
+        }
+
+        private Hostile() {
+        }
+    }
+
+    /** Each of the mod's items in each tab it adds to, with what comes before it, and any it lists twice. */
+    private static void logOurs() {
+        for (var key : TOUCHED) {
+            CreativeModeTab tab = BuiltInRegistries.CREATIVE_MODE_TAB.getOrThrow(key);
+            List<ItemStack> items = new ArrayList<>(tab.getDisplayItems());
+            List<String> ours = new ArrayList<>();
+            java.util.Map<Item, Integer> counts = new java.util.HashMap<>();
+            for (int i = 0; i < items.size(); i++) {
+                var id = BuiltInRegistries.ITEM.getKey(items.get(i).getItem());
+                if (id.getNamespace().equals(AlteredAether.MOD_ID)) {
+                    counts.merge(items.get(i).getItem(), 1, Integer::sum);
+                    String before = i == 0 ? "start" : BuiltInRegistries.ITEM.getKey(items.get(i - 1).getItem()).toString();
+                    ours.add(i + "=" + id.getPath() + " (after " + before + ")");
+                }
+            }
+            log("{} [{} items, {} in search]: {}", key.location(), items.size(), tab.getSearchTabDisplayItems().size(), ours);
+            counts.forEach((item, n) -> {
+                if (n > 1) {
+                    log("DUPLICATE {} x{} in {}", BuiltInRegistries.ITEM.getKey(item), n, key.location());
+                }
+            });
+        }
     }
 
     /** Opens {@code tab} in the creative inventory scrolled to its berries, and logs them. */
@@ -132,6 +199,7 @@ public final class TabCheck {
                 if (++ticks < 100) {
                     return;
                 }
+                logOurs();
                 TABS[0] = BuiltInRegistries.CREATIVE_MODE_TAB.getOrThrow(CreativeModeTabs.NATURAL_BLOCKS);
                 TABS[1] = BuiltInRegistries.CREATIVE_MODE_TAB.getOrThrow(CreativeModeTabs.FOOD_AND_DRINKS);
                 index = 0;
