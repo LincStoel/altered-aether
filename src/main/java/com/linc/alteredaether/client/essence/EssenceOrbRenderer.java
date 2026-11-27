@@ -33,9 +33,10 @@ import net.minecraft.world.phys.AABB;
 import org.joml.Quaternionf;
 
 /**
- * Draws an essence source: a small white orb of light bobbing in its block, and about it, for each pair of opposite
- * gemmed capstones, one ring of an armillary sphere, a soft band of the same white light turning slowly, faster as the
- * source's breath swells. Everything is full bright and translucent, drawn with the entity shader (as the squall in a
+ * Draws an essence source: a small white orb of light hanging still in its block, and about it, for each pair of
+ * opposite gemmed capstones, one ring of an armillary sphere, a soft band of the same white light. The rings are held
+ * together like a real armillary's and the whole sphere turns slowly about its upright pole, so the colures sweep round
+ * the orb and the ecliptic rocks against the still equator. Everything is full bright and translucent, drawn with the entity shader (as the squall in a
  * generator is), which shaderpacks keep glowing.
  */
 public class EssenceOrbRenderer implements BlockEntityRenderer<EssenceOrbBlockEntity> {
@@ -52,6 +53,8 @@ public class EssenceOrbRenderer implements BlockEntityRenderer<EssenceOrbBlockEn
     private static final float BAND = 0.07F;
     private static final int SEGMENTS = 48;
     private static final int RING_ALPHA = 80;
+    /** Ticks for the sphere to turn once about its pole. */
+    private static final int TURN_TICKS = 1200;
 
     public EssenceOrbRenderer(BlockEntityRendererProvider.Context context) {
     }
@@ -66,23 +69,26 @@ public class EssenceOrbRenderer implements BlockEntityRenderer<EssenceOrbBlockEn
         long gameTime = level.getGameTime();
         float time = gameTime + partialTick;
         float seed = (orb.getBlockPos().asLong() & 0xFF) * 0.37F;
-        double breath = orb.breath(gameTime);
         pose.pushPose();
-        pose.translate(0.5, 0.5 + Mth.sin(time * 0.045F + seed) * 0.07F, 0.5);
+        pose.translate(0.5, 0.5, 0.5);
 
         int gems = orb.pairedGems();
         if (gems != 0) {
             VertexConsumer ring = buffers.getBuffer(RenderType.entityTranslucentEmissive(RING));
-            float spin = time * (0.6F + 0.25F * (float) breath);
+            // the whole sphere turns as one about its pole; the game time is wrapped to a turn first so the float
+            // keeps its sub-tick precision on old worlds
+            float turn = ((gameTime + (long) seed) % TURN_TICKS + partialTick) / TURN_TICKS * 360;
+            pose.pushPose();
+            pose.mulPose(Axis.YP.rotationDegrees(turn));
             for (int pair = 0; pair < 4; pair++) {
                 if ((gems >> pair & 1) == 1 && (gems >> (pair + 4) & 1) == 1) {
                     pose.pushPose();
                     pose.mulPose(TILT[pair]);
-                    pose.mulPose(Axis.YP.rotationDegrees(spin * (pair % 2 == 0 ? 1 : -1) + pair * 45));
                     band(pose, ring, RADIUS[pair]);
                     pose.popPose();
                 }
             }
+            pose.popPose();
         }
 
         // the orb itself: a glow facing the camera, and a smaller, brighter core in it

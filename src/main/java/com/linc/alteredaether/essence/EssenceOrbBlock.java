@@ -32,7 +32,7 @@ import net.minecraft.world.phys.shapes.VoxelShape;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * An essence source: a small white orb of light bobbing in its block, an endless spring of Æ. It cannot be broken,
+ * An essence source: a small white orb of light hanging in its block, an endless spring of Æ. It cannot be broken,
  * carried or moved (no item; hardness -1, which Create's and Sable's movement checks refuse). Its block entity does the
  * work: see {@link EssenceOrbBlockEntity}.
  */
