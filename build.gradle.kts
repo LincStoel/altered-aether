@@ -97,6 +97,8 @@ neoForge {
             systemProperty("altered_aether.perf", (findProperty("aaPerf") as String?) ?: "")
             systemProperty("altered_aether.perf.tag", (findProperty("aaPerfTag") as String?) ?: "perf")
             systemProperty("altered_aether.perf.fly", (findProperty("aaPerfFly") as String?) ?: "")
+            // -PaaUnload=<rounds>[,<base x>|auto[,<A ticks>[,<sync gap ticks>]]] reproduces the chunk unload hang on fresh ground and stops (debug/UnloadProbe).
+            systemProperty("altered_aether.unload", (findProperty("aaUnload") as String?) ?: "")
             // -PaaWorld=<name> plays that world (made fresh if it doesn't exist) instead of server.properties'
             // level-name, so a measurement needn't edit the shared file.
             val world = findProperty("aaWorld") as String?
