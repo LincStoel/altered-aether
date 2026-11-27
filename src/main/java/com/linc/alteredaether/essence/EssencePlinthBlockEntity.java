@@ -304,6 +304,8 @@ public class EssencePlinthBlockEntity extends BlockEntity {
     @Override
     public CompoundTag getUpdateTag(HolderLookup.Provider registries) {
         CompoundTag tag = new CompoundTag();
+        // never empty: the client skips loading an empty data packet, so an emptied plinth would keep showing its items
+        tag.putBoolean("synced", true);
         put(tag, "input", input, registries);
         put(tag, "work", work, registries);
         put(tag, "output", output, registries);
