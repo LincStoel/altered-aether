@@ -15,7 +15,9 @@
 package com.linc.alteredaether.compat.jade;
 
 import com.linc.alteredaether.AlteredAether;
+import com.linc.alteredaether.electric.AetherJarBlockEntity;
 import com.linc.alteredaether.electric.AetherJarItem;
+import com.linc.alteredaether.electric.ElectricRegistries;
 import com.linc.alteredaether.essence.EssenceOrbBlock;
 import com.linc.alteredaether.essence.EssenceOrbBlockEntity;
 import com.linc.alteredaether.essence.EssencePlinthBlock;
@@ -23,6 +25,7 @@ import com.linc.alteredaether.essence.EssencePlinthBlockEntity;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.ItemStack;
 import snownee.jade.api.BlockAccessor;
 import snownee.jade.api.IBlockComponentProvider;
 import snownee.jade.api.IServerDataProvider;
@@ -30,10 +33,13 @@ import snownee.jade.api.ITooltip;
 import snownee.jade.api.IWailaClientRegistration;
 import snownee.jade.api.IWailaCommonRegistration;
 import snownee.jade.api.config.IPluginConfig;
+import snownee.jade.api.ui.BoxStyle;
+import snownee.jade.api.ui.IElementHelper;
+import snownee.jade.api.ui.ProgressStyle;
 
 /**
  * Jade lines for the essence sources: how much the circle draws now, how many capstones it has gemmed and how many
- * jars it is charging; and on the plinth, how far an infusion has come.
+ * jars it is charging; and on the plinth, a bar for how far an infusion has come or how full the jar being charged is.
  */
 final class EssenceJade {
     private static final String KEY = "jade." + AlteredAether.MOD_ID + ".essence.";
@@ -87,21 +93,45 @@ final class EssenceJade {
 
         private static final ResourceLocation UID = AlteredAether.id("essence_plinth");
 
+        /** Icy blue for a jar's charge, like the electricity; essence gold for an infusion. */
+        private static final int JAR_COLOR = 0xFF6FC3F0;
+        private static final int JAR_COLOR_DARK = 0xFF2F7FB8;
+        private static final int INFUSE_COLOR = 0xFFF0D070;
+        private static final int INFUSE_COLOR_DARK = 0xFFB08A28;
+
         @Override
         public void appendServerData(CompoundTag data, BlockAccessor accessor) {
             if (accessor.getBlockEntity() instanceof EssencePlinthBlockEntity plinth) {
-                data.putInt("aa_progress", plinth.progress());
-                data.putInt("aa_cost", plinth.cost());
+                ItemStack work = plinth.work();
+                if (work.getItem() instanceof AetherJarItem
+                        && !work.is(ElectricRegistries.CREATIVE_AETHER_JAR_ITEM.get())) {
+                    data.putInt("aa_jar", AetherJarItem.energy(work));
+                } else {
+                    data.putInt("aa_progress", plinth.progress());
+                    data.putInt("aa_cost", plinth.cost());
+                }
             }
         }
 
         @Override
         public void appendTooltip(ITooltip tooltip, BlockAccessor accessor, IPluginConfig config) {
             CompoundTag data = accessor.getServerData();
-            if (data.getInt("aa_cost") > 0) {
-                tooltip.add(Component.translatable(KEY + "plinth", AetherJarItem.fe(data.getInt("aa_progress")),
-                        AetherJarItem.fe(data.getInt("aa_cost"))));
+            if (data.contains("aa_jar")) {
+                int energy = data.getInt("aa_jar");
+                int capacity = AetherJarBlockEntity.capacity();
+                bar(tooltip, (float) energy / capacity, Component.translatable(KEY + "plinth_jar",
+                        AetherJarItem.fe(energy), AetherJarItem.fe(capacity)), JAR_COLOR, JAR_COLOR_DARK);
+            } else if (data.getInt("aa_cost") > 0) {
+                float ratio = Math.min(1F, (float) data.getInt("aa_progress") / data.getInt("aa_cost"));
+                bar(tooltip, ratio, Component.translatable(KEY + "plinth", (int) (ratio * 100)),
+                        INFUSE_COLOR, INFUSE_COLOR_DARK);
             }
+        }
+
+        private static void bar(ITooltip tooltip, float ratio, Component text, int color, int dark) {
+            IElementHelper helper = IElementHelper.get();
+            ProgressStyle style = helper.progressStyle().color(color, dark).textColor(0xFFFFFFFF);
+            tooltip.add(helper.progress(Math.clamp(ratio, 0F, 1F), text, style, BoxStyle.getNestedBox(), true));
         }
 
         @Override

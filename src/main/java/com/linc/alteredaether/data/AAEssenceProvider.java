@@ -72,7 +72,8 @@ public final class AAEssenceProvider extends JsonDataProvider {
         lang.put(jade + "essence.flow", "Flow: %s Æ/t");
         lang.put(jade + "essence.capture", "Circle: %s of 8 capstones");
         lang.put(jade + "essence.charging", "Charging %s jars");
-        lang.put(jade + "essence.plinth", "Infusing: %s / %s Æ");
+        lang.put(jade + "essence.plinth", "Infusing: %s%%");
+        lang.put(jade + "essence.plinth_jar", "Charging: %s / %s Æ");
         lang.put("jei." + AlteredAether.MOD_ID + ".essence_infusion", "Essence Infusion");
         lang.put("jei." + AlteredAether.MOD_ID + ".essence_infusion.cost", "%s Æ");
         lang.put("jei." + AlteredAether.MOD_ID + ".essence_infusion.source", "Stronger from a Wellspring");
