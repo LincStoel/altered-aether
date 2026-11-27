@@ -15,6 +15,7 @@
 package com.linc.alteredaether;
 
 import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.item.Item;
@@ -60,6 +61,13 @@ public final class AATags {
     /** Leather and gem boots, the only ones that keep charged copper from calling a strike. */
     public static final TagKey<Item> INSULATING_BOOTS =
             TagKey.create(Registries.ITEM, AlteredAether.id("insulating_boots"));
+
+    /**
+     * Create's tag for items that stand upright on belts and depots instead of lying flat; an essence plinth sets them
+     * down the same way. Only a tag key, so it needs no Create on the classpath.
+     */
+    public static final TagKey<Item> UPRIGHT_ON_BELT =
+            TagKey.create(Registries.ITEM, ResourceLocation.fromNamespaceAndPath("create", "upright_on_belt"));
 
     /** Gems an essence capstone takes; any one switches it on. */
     public static final TagKey<Item> CAPSTONE_GEMS = TagKey.create(Registries.ITEM, AlteredAether.id("capstone_gems"));

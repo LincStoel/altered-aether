@@ -1,4 +1,4 @@
-// 1.21.1	2026-11-26T08:42:06.6852961	Altered Aether tags
+// 1.21.1	2026-11-26T21:25:16.9364232	Altered Aether tags
 7d2776eb2dd31e5afa703d02d730e95dcd56b568 data/aether/tags/block/holystone_ore_replaceables.json
 990b335858acf336e8a538535e594723a0de3348 data/aether/tags/block/treated_as_aether_block.json
 d6fbd15e38cbc5bfe964ebfae9264827d640bc7c data/aether/tags/worldgen/biome/is_aether.json
@@ -35,6 +35,7 @@ b9cb72fb4859bb228260166a46afc3921c7f737b data/altered_aether/tags/worldgen/biome
 8cf8a4cb0dc6acc9f95a83ab65901cc331d98695 data/altered_aether/tags/worldgen/biome/has_storms.json
 10a0a888f22292e5dc436f96a92e8168c8b006fd data/altered_aether/tags/worldgen/biome/midair_zephyrs.json
 56ec7456c37fbf5edbd08d84896d3455ded5c0cd data/ars_nouveau/tags/block/harvest/foliage.json
+1e0f6fdde0554567ce86cc5d72f4545151897b26 data/create/tags/item/upright_on_belt.json
 a41a7b87bf0e679a7976f8eae0c2be538dde0a74 data/c/tags/block/stones.json
 a0bf1fc0c566444ccfdba18f668aa2501187ba7d data/c/tags/item/foods/berry.json
 a41a7b87bf0e679a7976f8eae0c2be538dde0a74 data/c/tags/item/stones.json

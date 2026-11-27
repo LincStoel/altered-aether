@@ -92,6 +92,9 @@ public final class AATagProvider extends JsonDataProvider {
         // Tamed aerwhales (see TamedAerwhale).
         tag("item", AlteredAether.id("aerwhale_taming_food"), "aether:blue_gummy_swet");
         tag("item", AlteredAether.id("aerwhale_breeding_food"), "aether:enchanted_berry");
+        // Jars stand on Create's belts and depots, and on essence plinths, rather than lying on their side.
+        tag("item", ResourceLocation.fromNamespaceAndPath("create", "upright_on_belt"), "altered_aether:aether_jar",
+                "altered_aether:creative_aether_jar");
         gleamVines();
         stones();
         aetherBiomes();
