@@ -70,7 +70,7 @@ public class EssenceOrbRenderer implements BlockEntityRenderer<EssenceOrbBlockEn
         pose.pushPose();
         pose.translate(0.5, 0.5 + Mth.sin(time * 0.045F + seed) * 0.07F, 0.5);
 
-        int gems = orb.gems();
+        int gems = orb.pairedGems();
         if (gems != 0) {
             VertexConsumer ring = buffers.getBuffer(RenderType.entityTranslucentEmissive(RING));
             float spin = time * (0.6F + 0.25F * (float) breath);

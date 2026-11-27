@@ -53,7 +53,7 @@ import java.util.List;
 /**
  * An essence source at work. Every second it looks for its circle: a capstone at each of the eight compass points,
  * level with the orb and in plain sight of it (3 to 6 blocks out on the cardinals, 2 to 4 each way on the diagonals);
- * each one with a gem catches an eighth of the flow ({@link #capture}). Below it, up to six blocks down, it looks for
+ * a gemmed capstone catches an eighth of the flow only while the one opposite it holds a gem too and stands just as far out ({@link #capture}). Below it, up to six blocks down, it looks for
  * an essence plinth, and around it, within six blocks and up to six down, for Aether Jars with a lightning rod on top.
  * Every half second it pours its flow, times the capture, into the plinth and into every one of those jars alike, and
  * blesses the circle: it heals players, mends what they hold, and quickens crops and saplings.
@@ -114,9 +114,31 @@ public class EssenceOrbBlockEntity extends BlockEntity {
         return gems;
     }
 
-    /** The share of the flow the circle catches: an eighth for each gemmed capstone. */
+    /**
+     * The capstones that work: bit {@code i} set when the capstone at compass point {@code i} and the one opposite it
+     * both hold gems and stand the same distance out. Each pair may stand at its own distance.
+     */
+    public int pairedGems() {
+        int paired = 0;
+        for (int point = 0; point < 4; point++) {
+            int opposite = point + 4;
+            if ((gems >> point & 1) == 1 && (gems >> opposite & 1) == 1
+                    && reach(capstones[point]) == reach(capstones[opposite])) {
+                paired |= 1 << point | 1 << opposite;
+            }
+        }
+        return paired;
+    }
+
+    /** How many steps out along its compass line the capstone at {@code at} stands. */
+    private int reach(@Nullable BlockPos at) {
+        return at == null ? -1
+                : Math.max(Math.abs(at.getX() - worldPosition.getX()), Math.abs(at.getZ() - worldPosition.getZ()));
+    }
+
+    /** The share of the flow the circle catches: an eighth for each capstone of a working pair. */
     public double capture() {
-        return Integer.bitCount(gems) / 8.0;
+        return Integer.bitCount(pairedGems()) / 8.0;
     }
 
     @Nullable
@@ -478,13 +500,14 @@ public class EssenceOrbBlockEntity extends BlockEntity {
                     centre.z + (random.nextDouble() - 0.5) * 0.5,
                     (random.nextDouble() - 0.5) * 0.02, random.nextDouble() * 0.01, (random.nextDouble() - 0.5) * 0.02);
         }
-        if (gems == 0) {
+        int working = pairedGems();
+        if (working == 0) {
             return;
         }
         List<Vec3> targets = new ArrayList<>(8 + charging.size());
         List<Vec3> streams = new ArrayList<>(2);
         for (int point = 0; point < 8; point++) {
-            if ((gems >> point & 1) == 1 && capstones[point] != null) {
+            if ((working >> point & 1) == 1 && capstones[point] != null) {
                 targets.add(Vec3.atCenterOf(capstones[point]));
             }
         }

@@ -74,8 +74,46 @@ public final class EssenceTests {
         capstone(helper, ORB.offset(3, 1, 3), true);          // SE but a block high
         helper.runAfterDelay(45, () -> {
             helper.assertValueEqual(orb.gems(), 0b0000_0111, "the gemmed capstones seen");
-            helper.assertValueEqual(orb.capture(), 3 / 8.0, "the capture");
+            // N, NE and E have no gemmed partner opposite (S is bare, SW empty, W walled off): none of them works
+            helper.assertValueEqual(orb.pairedGems(), 0, "the working pairs");
+            helper.assertValueEqual(orb.capture(), 0.0, "the capture");
             helper.assertTrue(orb.capstone(4) != null, "the ungemmed southern capstone isn't part of the circle");
+            helper.succeed();
+        });
+    }
+
+    @GameTest(template = "arena", timeoutTicks = 100)
+    public static void capstonesWorkInOppositePairs(GameTestHelper helper) {
+        EssenceOrbBlockEntity orb = orb(helper, ORB, EssenceKind.CHANNEL);
+        capstone(helper, ORB.north(4), true);                 // N, paired with S four out
+        capstone(helper, ORB.south(4), true);                 // S
+        capstone(helper, ORB.east(3), true);                  // E, alone: W is bare
+        capstone(helper, ORB.west(3), false);                 // W, no gem
+        capstone(helper, ORB.offset(2, 0, -2), true);         // NE, alone: nothing at SW
+        capstone(helper, ORB.offset(3, 0, 3), true);          // SE three out, paired with NW three out
+        capstone(helper, ORB.offset(-3, 0, -3), true);        // NW (a pair at its own distance)
+        capstone(helper, ORB.offset(-2, 0, 2), true);         // SW two out: NE is two out too, so they pair
+        helper.runAfterDelay(45, () -> {
+            helper.assertValueEqual(orb.gems(), 0b1111_1111 & ~(1 << 6), "the gemmed capstones seen");
+            helper.assertValueEqual(orb.pairedGems(), 0b1011_1011, "the working pairs");
+            helper.assertValueEqual(orb.capture(), 6 / 8.0, "the capture");
+            helper.succeed();
+        });
+    }
+
+    @GameTest(template = "arena", timeoutTicks = 100)
+    public static void pairedCapstonesMustStandTheSameDistanceOut(GameTestHelper helper) {
+        EssenceOrbBlockEntity orb = orb(helper, ORB, EssenceKind.CHANNEL);
+        capstone(helper, ORB.north(4), true);                 // N four out
+        capstone(helper, ORB.south(5), true);                 // S five out: no match
+        capstone(helper, ORB.east(6), true);                  // E six out
+        capstone(helper, ORB.west(6), true);                  // W six out: a pair
+        capstone(helper, ORB.offset(2, 0, -2), true);         // NE two out
+        capstone(helper, ORB.offset(-4, 0, 4), true);         // SW four out: no match
+        helper.runAfterDelay(45, () -> {
+            helper.assertValueEqual(orb.gems(), 0b0111_0111, "the gemmed capstones seen");
+            helper.assertValueEqual(orb.pairedGems(), 0b0100_0100, "the working pair");
+            helper.assertValueEqual(orb.capture(), 2 / 8.0, "the capture");
             helper.succeed();
         });
     }

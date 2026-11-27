@@ -57,7 +57,7 @@ final class EssenceJade {
         public void appendServerData(CompoundTag data, BlockAccessor accessor) {
             if (accessor.getBlockEntity() instanceof EssenceOrbBlockEntity orb && orb.getLevel() != null) {
                 data.putDouble("aa_flow", orb.flow(orb.getLevel().getGameTime()) * orb.capture());
-                data.putInt("aa_gems", Integer.bitCount(orb.gems()));
+                data.putInt("aa_gems", Integer.bitCount(orb.pairedGems()));
                 data.putInt("aa_charging", orb.charging().size() + (orb.plinthActive() ? 1 : 0));
             }
         }
