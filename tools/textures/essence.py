@@ -26,6 +26,7 @@ PLACEHOLDER textures for Essence Channels and Wellsprings, to be redrawn by hand
 - item/quintessence_phial: a glass bottle of white light.
 - item/dowsing_rod: a forked skyroot rod with an ambrosium bead at the fork; item/dowsing_rod_glow_1..3: its icy blue
   glow, drawn full bright over it, stronger at each step.
+- mob_effect/quintessence: the Quintessence effect icon, the Aether's square spiral in Aether blue with a white outline.
 
 Usage:  python tools/textures/essence.py   (overwrites all of them)
 """
@@ -263,6 +264,36 @@ def dowsing_glow(level):
     return img
 
 
+AETHER_BLUE = (78, 160, 232)
+
+
+def quintessence_icon():
+    """An 18x18 effect icon: a two-pixel square spiral, open at its top right, outlined in white."""
+    arm = set()
+
+    def rect(x0, x1, y0, y1):
+        arm.update((x, y) for x in range(x0, x1 + 1) for y in range(y0, y1 + 1))
+
+    rect(2, 10, 0, 1); arm.add((1, 1))  # outer arm, from its open end leftwards
+    rect(0, 1, 2, 11); arm.add((1, 12))
+    rect(2, 11, 12, 13); arm.add((12, 12))
+    rect(12, 13, 3, 11); arm.discard((13, 3))
+    rect(4, 11, 3, 4)  # second turn
+    rect(3, 4, 5, 9)
+    rect(5, 8, 9, 10)
+    rect(9, 10, 6, 10); arm.discard((10, 6))
+    rect(6, 8, 6, 7)  # centre
+    blue = {(x + 2, y + 2) for x, y in arm}
+    img = Image.new("RGBA", (18, 18), (0, 0, 0, 0))
+    for y in range(18):
+        for x in range(18):
+            if (x, y) in blue:
+                img.putpixel((x, y), AETHER_BLUE + (255,))
+            elif any((x + i, y + j) in blue for i in (-1, 0, 1) for j in (-1, 0, 1)):
+                img.putpixel((x, y), WHITE + (255,))
+    return img
+
+
 def main():
     block, entity, particle, item = ROOT / "block", ROOT / "entity", ROOT / "particle", ROOT / "item"
     for gem in GEMS:
@@ -281,6 +312,7 @@ def main():
     save(dowsing_rod(), item / "dowsing_rod.png")
     for level in range(1, 4):
         save(dowsing_glow(level), item / f"dowsing_rod_glow_{level}.png")
+    save(quintessence_icon(), ROOT / "mob_effect" / "quintessence.png")
 
 
 if __name__ == "__main__":
