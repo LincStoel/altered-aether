@@ -34,6 +34,7 @@ import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.ClipContext;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
@@ -53,7 +54,7 @@ import java.util.List;
 /**
  * An essence source at work. Every second it looks for its circle: a capstone at each of the eight compass points,
  * level with the orb and in plain sight of it (3 to 6 blocks out on the cardinals, 2 to 4 each way on the diagonals);
- * a gemmed capstone catches an eighth of the flow only while the one opposite it holds a gem too and stands just as far out ({@link #capture}). Below it, up to six blocks down, it looks for
+ * a gemmed capstone catches an eighth of the flow only while the one opposite it holds the same gem and stands just as far out ({@link #capture}). Below it, up to six blocks down, it looks for
  * an essence plinth, and around it, within six blocks and up to six down, for Aether Jars with a lightning rod on top.
  * Every half second it pours its flow, times the capture, into the plinth and into every one of those jars alike, and
  * blesses the circle: it heals players, mends what they hold, and quickens crops and saplings.
@@ -81,6 +82,8 @@ public class EssenceOrbBlockEntity extends BlockEntity {
     private double grade = -1;
     /** Bit {@code i} set when the capstone at compass point {@code i} holds a gem. */
     private int gems;
+    /** Of {@link #gems}, the capstones whose opposite holds the same gem the same distance out: the ones that work. */
+    private int paired;
     private final BlockPos[] capstones = new BlockPos[8];
     @Nullable
     private BlockPos plinth;
@@ -116,24 +119,10 @@ public class EssenceOrbBlockEntity extends BlockEntity {
 
     /**
      * The capstones that work: bit {@code i} set when the capstone at compass point {@code i} and the one opposite it
-     * both hold gems and stand the same distance out. Each pair may stand at its own distance.
+     * hold the same gem and stand the same distance out. Each pair may stand at its own distance, with its own gem.
      */
     public int pairedGems() {
-        int paired = 0;
-        for (int point = 0; point < 4; point++) {
-            int opposite = point + 4;
-            if ((gems >> point & 1) == 1 && (gems >> opposite & 1) == 1
-                    && reach(capstones[point]) == reach(capstones[opposite])) {
-                paired |= 1 << point | 1 << opposite;
-            }
-        }
         return paired;
-    }
-
-    /** How many steps out along its compass line the capstone at {@code at} stands. */
-    private int reach(@Nullable BlockPos at) {
-        return at == null ? -1
-                : Math.max(Math.abs(at.getX() - worldPosition.getX()), Math.abs(at.getZ() - worldPosition.getZ()));
     }
 
     /** The share of the flow the circle catches: an eighth for each capstone of a working pair. */
@@ -228,8 +217,10 @@ public class EssenceOrbBlockEntity extends BlockEntity {
 
     /** Finds the capstones and the plinth. */
     private void scanCircle(ServerLevel level, BlockPos pos) {
-        int before = gems;
+        int before = paired;
         gems = 0;
+        Item[] set = new Item[8];
+        int[] reach = new int[8];
         Vec3 centre = Vec3.atCenterOf(pos);
         for (int point = 0; point < 8; point++) {
             capstones[point] = null;
@@ -241,15 +232,26 @@ public class EssenceOrbBlockEntity extends BlockEntity {
                 if (state.getBlock() instanceof EssenceCapstoneBlock) {
                     if (inSight(level, centre, at)) {
                         capstones[point] = at;
-                        if (EssenceCapstoneBlock.gemmed(state)) {
+                        reach[point] = r;
+                        if (EssenceCapstoneBlock.gemmed(state)
+                                && level.getBlockEntity(at) instanceof EssenceCapstoneBlockEntity capstone
+                                && !capstone.gem().isEmpty()) {
                             gems |= 1 << point;
+                            set[point] = capstone.gem().getItem();
                         }
                     }
                     break;
                 }
             }
         }
-        if (gems == 0xFF && before != 0xFF) {
+        paired = 0;
+        for (int point = 0; point < 4; point++) {
+            int opposite = point + 4;
+            if (set[point] != null && set[point] == set[opposite] && reach[point] == reach[opposite]) {
+                paired |= 1 << point | 1 << opposite;
+            }
+        }
+        if (paired == 0xFF && before != 0xFF) {
             for (Player player : level.getEntitiesOfClass(Player.class, new AABB(pos).inflate(16))) {
                 AAAdvancements.award(player, AAAdvancements.FULL_CIRCLE, "circle");
             }
@@ -420,6 +422,7 @@ public class EssenceOrbBlockEntity extends BlockEntity {
         CompoundTag tag = new CompoundTag();
         tag.putDouble("grade", grade());
         tag.putInt("gems", gems);
+        tag.putInt("paired", paired);
         long[] stones = new long[8];
         for (int i = 0; i < 8; i++) {
             stones[i] = capstones[i] == null ? Long.MIN_VALUE : capstones[i].asLong();
@@ -440,6 +443,7 @@ public class EssenceOrbBlockEntity extends BlockEntity {
     private void readCircle(CompoundTag tag) {
         grade = tag.getDouble("grade");
         gems = tag.getInt("gems");
+        paired = tag.getInt("paired");
         long[] stones = tag.getLongArray("capstones");
         for (int i = 0; i < 8; i++) {
             capstones[i] = i < stones.length && stones[i] != Long.MIN_VALUE ? BlockPos.of(stones[i]) : null;

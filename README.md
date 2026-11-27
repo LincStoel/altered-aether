@@ -159,9 +159,9 @@ pointed toward the nearest one within 256 blocks.
 - **The circle.** Set an **Essence Capstone** level with the orb at each of the eight compass points (3 to 6 blocks out
   on the north, south, east and west; 2 to 4 each way on the diagonals), in plain sight of it, with a gem in its
   middle: zanite, skyjade, an enchanted gravitite ingot or an ambrosium shard. Capstones work in opposite pairs, the two
-  the same distance from the orb (each pair may stand at its own distance): each gemmed pair catches a quarter of the
-  flow and lights a ring of an armillary sphere round the orb, while a capstone with no gemmed partner just as far out
-  across the orb catches nothing.
+  holding the same gem and standing the same distance from the orb (each pair may have its own gem and distance): each
+  such pair catches a quarter of the flow and lights a ring of an armillary sphere round the orb, while a capstone with
+  no matching partner across the orb catches nothing.
 - **Flow.** A Channel gives a full circle 24 to 80 Æ a tick, most near 40; a Wellspring 80 to 128. It swells and ebbs
   a quarter either way over about 20 minutes.
 - **Charging.** Æ leaves only in Aether Jars. An **Essence Plinth** set right below the orb (up to six down) holds items

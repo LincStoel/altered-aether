@@ -38,7 +38,7 @@ import net.minecraft.world.phys.BlockHitResult;
 /**
  * A celezite capstone for an essence circle: set level with the orb at a compass point, with a gem from
  * {@code #altered_aether:capstone_gems} in the slot at its middle, it catches an eighth of the source's flow, but only
- * while the capstone at the opposite compass point holds a gem too and stands just as far out. Use a gem
+ * while the capstone at the opposite compass point holds the same gem and stands just as far out. Use a gem
  * on it to set one, an empty hand to take it back; a broken capstone drops its gem. The gem shows on every side
  * ({@link #GEM}); the stack itself is kept in the block entity, so a gem a pack adds comes back as it went in.
  */

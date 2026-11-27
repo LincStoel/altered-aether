@@ -36,6 +36,7 @@ import net.minecraft.core.Direction;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.Blocks;
@@ -48,6 +49,7 @@ import net.neoforged.neoforge.common.util.FakePlayer;
 import net.neoforged.neoforge.common.util.FakePlayerFactory;
 import net.neoforged.neoforge.gametest.GameTestHolder;
 import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.UUID;
 
@@ -97,6 +99,23 @@ public final class EssenceTests {
             helper.assertValueEqual(orb.gems(), 0b1111_1111 & ~(1 << 6), "the gemmed capstones seen");
             helper.assertValueEqual(orb.pairedGems(), 0b1011_1011, "the working pairs");
             helper.assertValueEqual(orb.capture(), 6 / 8.0, "the capture");
+            helper.succeed();
+        });
+    }
+
+    @GameTest(template = "arena", timeoutTicks = 100)
+    public static void pairedCapstonesMustHoldTheSameGem(GameTestHelper helper) {
+        EssenceOrbBlockEntity orb = orb(helper, ORB, EssenceKind.CHANNEL);
+        capstone(helper, ORB.north(4), AetherItems.ZANITE_GEMSTONE.get());     // N zanite
+        capstone(helper, ORB.south(4), AetherItems.AMBROSIUM_SHARD.get());     // S ambrosium: no match
+        capstone(helper, ORB.east(4), AetherItems.AMBROSIUM_SHARD.get());      // E ambrosium
+        capstone(helper, ORB.west(4), AetherItems.AMBROSIUM_SHARD.get());      // W ambrosium: a pair
+        capstone(helper, ORB.offset(3, 0, -3), AARegistries.ENCHANTED_GRAVITITE_INGOT.get()); // NE
+        capstone(helper, ORB.offset(-3, 0, 3), AARegistries.ENCHANTED_GRAVITITE_INGOT.get()); // SW, a pair of its own gem
+        helper.runAfterDelay(45, () -> {
+            helper.assertValueEqual(orb.gems(), 0b0111_0111, "the gemmed capstones seen");
+            helper.assertValueEqual(orb.pairedGems(), 0b0110_0110, "the working pairs");
+            helper.assertValueEqual(orb.capture(), 4 / 8.0, "the capture");
             helper.succeed();
         });
     }
@@ -255,11 +274,15 @@ public final class EssenceTests {
 
     /** A capstone at {@code pos}, with a zanite gem if {@code gem}. */
     private static void capstone(GameTestHelper helper, BlockPos pos, boolean gem) {
+        capstone(helper, pos, gem ? AetherItems.ZANITE_GEMSTONE.get() : null);
+    }
+
+    private static void capstone(GameTestHelper helper, BlockPos pos, @Nullable Item gem) {
+        ItemStack stack = gem == null ? ItemStack.EMPTY : new ItemStack(gem);
         helper.setBlock(pos, EssenceRegistries.ESSENCE_CAPSTONE.get().defaultBlockState()
-                .setValue(EssenceCapstoneBlock.GEM, gem ? CapstoneGem.ZANITE : CapstoneGem.NONE));
-        if (gem) {
-            ((EssenceCapstoneBlockEntity) helper.getBlockEntity(pos))
-                    .setGem(new ItemStack(AetherItems.ZANITE_GEMSTONE.get()));
+                .setValue(EssenceCapstoneBlock.GEM, CapstoneGem.of(stack)));
+        if (gem != null) {
+            ((EssenceCapstoneBlockEntity) helper.getBlockEntity(pos)).setGem(stack);
         }
     }
 

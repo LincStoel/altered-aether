@@ -201,8 +201,7 @@ public final class EssenceTour {
         // the diagonals too, with the other gems: all four rings and the motes to every capstone
         steps.add(new Step("four_rings", level -> {
             gems(level, AetherItems.AMBROSIUM_SHARD.get(), 1, 5);
-            gems(level, AARegistries.ENCHANTED_GRAVITITE_INGOT.get(), 3);
-            gems(level, AetherItems.ZANITE_GEMSTONE.get(), 7);
+            gems(level, AARegistries.ENCHANTED_GRAVITITE_INGOT.get(), 3, 7);
         }, close, orb, 60, false, null));
         steps.add(new Step("circle_full", level -> { }, wide, centre, 80, false, null));
         steps.add(new Step("capstone_gems", level -> { }, new Vec3(2.5, 4.6, -1.6), new Vec3(4.5, 4.5, -3.5), 20,

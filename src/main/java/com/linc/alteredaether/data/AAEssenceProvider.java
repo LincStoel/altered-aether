@@ -66,7 +66,7 @@ public final class AAEssenceProvider extends JsonDataProvider {
         lang.put("effect." + AlteredAether.MOD_ID + ".quintessence", "Quintessence");
         lang.put(tip + "phial.channel", "Drawn from an Essence Channel");
         lang.put(tip + "phial.wellspring", "Drawn from an Essence Wellspring");
-        lang.put(tip + "essence_capstone", "Set level with an essence source, 3 to 6 blocks out; needs a gem, and a gemmed partner opposite at the same distance");
+        lang.put(tip + "essence_capstone", "Set level with an essence source, 3 to 6 blocks out; needs a gem, and a partner opposite with the same gem at the same distance");
         lang.put(tip + "essence_plinth", "Set below an essence source: charges Aether Jars and infuses items");
         lang.put(tip + "dowsing_rod", "Glows icy blue when pointed at the nearest essence source");
         lang.put(jade + "essence.flow", "Flow: %s Æ/t");

@@ -383,7 +383,7 @@
   "tooltip.altered_aether.creative_aether_jar": "Endless Æ out of its top",
   "tooltip.altered_aether.dowsing_rod": "Glows icy blue when pointed at the nearest essence source",
   "tooltip.altered_aether.energy": "%s / %s Æ",
-  "tooltip.altered_aether.essence_capstone": "Set level with an essence source, 3 to 6 blocks out; needs a gem, and a gemmed partner opposite at the same distance",
+  "tooltip.altered_aether.essence_capstone": "Set level with an essence source, 3 to 6 blocks out; needs a gem, and a partner opposite with the same gem at the same distance",
   "tooltip.altered_aether.essence_plinth": "Set below an essence source: charges Aether Jars and infuses items",
   "tooltip.altered_aether.phial.channel": "Drawn from an Essence Channel",
   "tooltip.altered_aether.phial.wellspring": "Drawn from an Essence Wellspring",
