@@ -68,8 +68,11 @@ neoForge {
             systemProperty("altered_aether.essence_tour", essenceTour ?: "")
             // -PaaEssenceTourOffset=<blocks> moves its stage west of spawn (default 1200), onto ground not yet generated.
             systemProperty("altered_aether.essence_tour_offset", findProperty("aaEssenceTourOffset") as String? ?: "1200")
+            // -PaaTabCheck=<label> quick-plays it too and logs and shoots where gleamberries sit in the vanilla tabs (debug/TabCheck).
+            val tabCheck = findProperty("aaTabCheck") as String?
+            systemProperty("altered_aether.tab_check", tabCheck ?: "")
             if (tour != null || jeiShot != null || golemTour != null || gravititeTour != null || cloudTour != null
-                    || electricTour != null || essenceTour != null) {
+                    || electricTour != null || essenceTour != null || tabCheck != null) {
                 programArguments.addAll("--quickPlaySingleplayer", "tour")
             }
             // -PaaJoin=host:port joins that server on start, to check a dedicated server end to end.
