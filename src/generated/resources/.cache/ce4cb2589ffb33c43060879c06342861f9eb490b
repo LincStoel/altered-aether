@@ -1,4 +1,4 @@
-// 1.21.1	2026-11-26T08:42:06.6858006	Altered Aether essence
+// 1.21.1	2026-11-26T21:11:46.447843	Altered Aether essence
 14a6d6119f015bd5ee440553c6eba34b5f39d37c assets/altered_aether/blockstates/essence_capstone.json
 68331af23871bcb9eeaa39caefa5c943b4a85199 assets/altered_aether/blockstates/essence_channel.json
 476de07e2f435356c20d6f494d7a084843cd262c assets/altered_aether/blockstates/essence_plinth.json
@@ -11,10 +11,10 @@ dcfe93a11d12f466f05ce68337f090411c3e20d6 assets/altered_aether/models/block/esse
 3b45936ae23385b99fe4793b051ff0070e24d56e assets/altered_aether/models/block/essence_capstone_zanite.json
 d5efc7d9d2565fa015e903fb51f59ca285ce5b72 assets/altered_aether/models/block/essence_orb.json
 6f825c30428c0345d614866597d05d6d23d8d7b2 assets/altered_aether/models/block/essence_plinth.json
-6b7ac7f694e0dc15d6c78d802519d1720a7f4939 assets/altered_aether/models/item/dowsing_rod.json
-c3640ffa54508ae7dba4bb7a6da969eea3ab3dfd assets/altered_aether/models/item/dowsing_rod_1.json
-be0a68a4dcfdb94eb8a2857c64e203b837e9c02f assets/altered_aether/models/item/dowsing_rod_2.json
-43452aabd853e3e10a186d7a3d436898902a7ff3 assets/altered_aether/models/item/dowsing_rod_3.json
+522a82928d4fead3c1cbf57d1aa9b11ae774e664 assets/altered_aether/models/item/dowsing_rod.json
+dccd574e5d0d53f3f5364de01e3baebbe6b22514 assets/altered_aether/models/item/dowsing_rod_glow_1.json
+5bf1c2bb3564fe6d0eee630424f9919d368518b6 assets/altered_aether/models/item/dowsing_rod_glow_2.json
+bde267183123f40d3250aab795cea9d1838598ab assets/altered_aether/models/item/dowsing_rod_glow_3.json
 7f29dbe5b28bc0f845702b23c25278b0981d8ede assets/altered_aether/models/item/essence_capstone.json
 6043284fc7e82c08b8587255c9767554b5f6c321 assets/altered_aether/models/item/essence_plinth.json
 38af21ea1be1f8ca9ab22cc6a9c6b9e2783e33d2 assets/altered_aether/models/item/quintessence_phial.json

@@ -33,9 +33,10 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Objects;
 
 /**
- * A forked skyroot Dowsing Rod: held, it dips toward the nearest essence source within {@code dowsing_range} blocks,
- * the more the straighter it is pointed at it, and twitches faster the nearer it is. The server keeps the source in
- * the {@code dowsing_target} component; the dip is the item model's {@code altered_aether:dip} ({@link #dip}).
+ * A forked skyroot Dowsing Rod: held, it glows icy blue when pointed toward the nearest essence source within
+ * {@code dowsing_range} blocks, the brighter the straighter it points, and shimmers faster the nearer it is. The server
+ * keeps the source in the {@code dowsing_target} component; the glow is the item model's {@code altered_aether:glow}
+ * ({@link #glow}).
  */
 public class DowsingRodItem extends Item {
     private static final int LOOK_EVERY = 20;
@@ -76,10 +77,10 @@ public class DowsingRodItem extends Item {
     }
 
     /**
-     * How far the rod dips, 0 to 1, for {@code holder} at {@code time}: how straight it points at the source, pulled
-     * down and up again faster the nearer the source is; 0 with no source.
+     * How brightly the rod glows, 0 to 1, for {@code holder} at {@code time}: how straight it points at the source,
+     * shimmering faster the nearer the source is; 0 with no source.
      */
-    public static float dip(ItemStack stack, @Nullable LivingEntity holder, long time) {
+    public static float glow(ItemStack stack, @Nullable LivingEntity holder, long time) {
         BlockPos target = stack.get(EssenceRegistries.DOWSING_TARGET.get());
         if (target == null || holder == null) {
             return 0;

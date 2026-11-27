@@ -25,7 +25,7 @@ import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
 import net.neoforged.neoforge.client.event.EntityRenderersEvent;
 import net.neoforged.neoforge.client.event.RegisterParticleProvidersEvent;
 
-/** The essence sources' renderers, their motes of light, and the Dowsing Rod's dip. */
+/** The essence sources' renderers, their motes of light, and the Dowsing Rod's glow. */
 @EventBusSubscriber(modid = AlteredAether.MOD_ID, bus = EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
 public final class EssenceClient {
     @SubscribeEvent
@@ -42,8 +42,8 @@ public final class EssenceClient {
 
     @SubscribeEvent
     public static void setup(FMLClientSetupEvent event) {
-        event.enqueueWork(() -> ItemProperties.register(EssenceRegistries.DOWSING_ROD.get(), AlteredAether.id("dip"),
-                (stack, level, entity, seed) -> DowsingRodItem.dip(stack, entity,
+        event.enqueueWork(() -> ItemProperties.register(EssenceRegistries.DOWSING_ROD.get(), AlteredAether.id("glow"),
+                (stack, level, entity, seed) -> DowsingRodItem.glow(stack, entity,
                         level != null ? level.getGameTime() : entity != null ? entity.level().getGameTime() : 0)));
     }
 

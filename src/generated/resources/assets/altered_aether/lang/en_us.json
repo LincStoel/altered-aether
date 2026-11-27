@@ -381,7 +381,7 @@
   "subtitles.altered_aether.storm.incoming_lightning": "Lightning gathers",
   "tooltip.altered_aether.aerogel_wheel": "Spun by two charged Aether Jars through lightning rods on their tops, two blocks either side",
   "tooltip.altered_aether.creative_aether_jar": "Endless Æ out of its top",
-  "tooltip.altered_aether.dowsing_rod": "Dips toward the nearest essence source",
+  "tooltip.altered_aether.dowsing_rod": "Glows icy blue when pointed at the nearest essence source",
   "tooltip.altered_aether.energy": "%s / %s Æ",
   "tooltip.altered_aether.essence_capstone": "Set level with an essence source, 3 to 6 blocks out; needs a gem",
   "tooltip.altered_aether.essence_plinth": "Set below an essence source: charges Aether Jars and infuses items",

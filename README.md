@@ -154,8 +154,8 @@ Energy under another name: other mods' cables and machines connect to these bloc
 
 **Essence Channels and Wellsprings.** Small white orbs of light, endless springs of Æ that can't be broken or moved.
 Channels hang over Highlands islets, uncommon and never within 256 blocks of each other (tall Aether only); each
-landmark but the Great Fracture has a stronger Wellspring over its highest point. A **Dowsing Rod** dips toward the
-nearest one within 256 blocks.
+landmark but the Great Fracture has a stronger Wellspring over its highest point. A **Dowsing Rod** glows icy blue when
+pointed toward the nearest one within 256 blocks.
 - **The circle.** Set an **Essence Capstone** level with the orb at each of the eight compass points (3 to 6 blocks out
   on the north, south, east and west; 2 to 4 each way on the diagonals), in plain sight of it, with a gem in its
   middle: zanite, skyjade, an enchanted gravitite ingot or an ambrosium shard. Each gemmed capstone catches an eighth

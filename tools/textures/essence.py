@@ -24,7 +24,8 @@ PLACEHOLDER textures for Essence Channels and Wellsprings, to be redrawn by hand
 - entity/essence_orb: the orb the renderer draws, a soft white disc; entity/essence_ring: a ring band's cross-section.
 - particle/essence_note_0..3: twinkling notes of light; particle/essence_mote_0..1: the motes.
 - item/quintessence_phial: a glass bottle of white light.
-- item/dowsing_rod_0..3: a forked skyroot rod with an ambrosium bead at the fork, dipping further at each step.
+- item/dowsing_rod: a forked skyroot rod with an ambrosium bead at the fork; item/dowsing_rod_glow_1..3: its icy blue
+  glow, drawn full bright over it, stronger at each step.
 
 Usage:  python tools/textures/essence.py   (overwrites all of them)
 """
@@ -220,29 +221,45 @@ def line(img, x0, y0, x1, y1, colours):
             img.putpixel((x, y), colours[i % len(colours)] + (255,))
 
 
-def dowsing_rod(dip):
+ROD_HAND, ROD_FORK, ROD_TIPS = (2, 13), (8, 8), ((12, 2), (14, 5))
+ICE = [(214, 246, 255), (150, 220, 255), (96, 186, 250)]
+
+
+def dowsing_rod():
     stick = read(AETHER, "assets/aether/textures/item/materials/skyroot_stick.png")
     palette = sorted({p[:3] for p in stick.get_flattened_data() if p[3]}, key=sum)
     wood = [palette[-2], palette[-1], palette[-3]]
     img = Image.new("RGBA", (16, 16))
-    # a Y: the stem from the fork down to the holder's hand, two prongs on up; it swings down about the hand
-    hand = (2.5, 13.5)
-    angle = math.radians(12 * dip)
-
-    def turn(x, y):
-        dx, dy = x - hand[0], y - hand[1]
-        return (hand[0] + dx * math.cos(angle) - dy * math.sin(angle),
-                hand[1] + dx * math.sin(angle) + dy * math.cos(angle))
-
-    fork = turn(8, 8)
-    line(img, *turn(*hand), *fork, wood)
-    line(img, *fork, *turn(12.5, 1.5), wood)
-    line(img, *fork, *turn(14.5, 5.5), wood)
+    # a Y: the stem from the fork down to the holder's hand, two prongs on up
+    line(img, *ROD_HAND, *ROD_FORK, wood)
+    for tip in ROD_TIPS:
+        line(img, *ROD_FORK, *tip, wood)
     bead = (255, 236, 120)
-    fx, fy = round(fork[0]), round(fork[1])
+    fx, fy = ROD_FORK
     for (x, y) in ((fx, fy), (fx + 1, fy), (fx, fy - 1)):
-        if 0 <= x < 16 and 0 <= y < 16:
-            img.putpixel((x, y), bead + (255,))
+        img.putpixel((x, y), bead + (255,))
+    return img
+
+
+def dowsing_glow(level):
+    """The rod's glow at level 1 to 3: the prongs and fork lit icy blue, brightest at the tips, in a soft fringe."""
+    rod = dowsing_rod()
+    img = Image.new("RGBA", (16, 16))
+    strength = (0.0, 0.4, 0.7, 1.0)[level]
+    hx, hy = ROD_HAND
+    reach = math.hypot(14 - hx, 2 - hy)
+    for y in range(16):
+        for x in range(16):
+            # stronger toward the prongs' tips than at the hand
+            along = 0.35 + 0.65 * min(1.0, math.hypot(x - hx, y - hy) / reach)
+            if rod.getpixel((x, y))[3]:
+                tone = ICE[0] if along > 0.8 else ICE[1]
+                img.putpixel((x, y), tone + (int(255 * min(1.0, strength * (0.55 + 0.45 * along))),))
+                continue
+            near = min((math.hypot(x - u, y - v) for v in range(16) for u in range(16) if rod.getpixel((u, v))[3]))
+            if near <= 1.5 and level > 1 or near <= 1.0:
+                fringe = (1.0 if near <= 1.0 else 0.45) * strength * along * 0.55
+                img.putpixel((x, y), ICE[2] + (int(255 * fringe),))
     return img
 
 
@@ -261,8 +278,9 @@ def main():
     for frame in range(2):
         save(mote(frame), particle / f"essence_mote_{frame}.png")
     save(phial(), item / "quintessence_phial.png")
-    for dip in range(4):
-        save(dowsing_rod(dip), item / f"dowsing_rod_{dip}.png")
+    save(dowsing_rod(), item / "dowsing_rod.png")
+    for level in range(1, 4):
+        save(dowsing_glow(level), item / f"dowsing_rod_glow_{level}.png")
 
 
 if __name__ == "__main__":

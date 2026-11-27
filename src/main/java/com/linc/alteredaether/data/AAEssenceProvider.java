@@ -26,7 +26,7 @@ import java.util.Map;
 
 /**
  * Essence Channels' and Wellsprings' files (see essence/): the orbs' bare models (their renderer draws them), the
- * capstone with a model for each gem, the plinth, the phial and the Dowsing Rod with its dip, drops, recipes, the
+ * capstone with a model for each gem, the plinth, the phial and the Dowsing Rod with its glow, drops, recipes, the
  * infusion recipes, tags, the motes' particle definitions, and the language lines ({@link #language}). The textures
  * come from tools/textures/essence.py.
  */
@@ -34,8 +34,8 @@ public final class AAEssenceProvider extends JsonDataProvider {
     private static final String M = AlteredAether.MOD_ID + ":";
     /** Blocks mined faster with a pickaxe, for the mineable tag (see AATagProvider). */
     static final String[] PICKAXE = {M + "essence_capstone", M + "essence_plinth"};
-    /** The Dowsing Rod's model for each dip, from upright (0) to bowed right down (3). */
-    private static final int DIPS = 4;
+    /** The Dowsing Rod's glow steps: plain (0) up to its brightest icy blue (3). */
+    private static final int GLOWS = 4;
 
     public AAEssenceProvider(PackOutput output) {
         super(output, "essence");
@@ -68,7 +68,7 @@ public final class AAEssenceProvider extends JsonDataProvider {
         lang.put(tip + "phial.wellspring", "Drawn from an Essence Wellspring");
         lang.put(tip + "essence_capstone", "Set level with an essence source, 3 to 6 blocks out; needs a gem");
         lang.put(tip + "essence_plinth", "Set below an essence source: charges Aether Jars and infuses items");
-        lang.put(tip + "dowsing_rod", "Dips toward the nearest essence source");
+        lang.put(tip + "dowsing_rod", "Glows icy blue when pointed at the nearest essence source");
         lang.put(jade + "essence.flow", "Flow: %s Æ/t");
         lang.put(jade + "essence.capture", "Circle: %s of 8 capstones");
         lang.put(jade + "essence.charging", "Charging %s jars");
@@ -153,19 +153,17 @@ public final class AAEssenceProvider extends JsonDataProvider {
 
     private void items() {
         asset("models/item", AlteredAether.id("quintessence_phial"), generated("quintessence_phial"));
-        JsonObject rod = generated("dowsing_rod_0");
+        JsonObject rod = generated("dowsing_rod");
         rod.addProperty("parent", "minecraft:item/handheld");
         JsonArray overrides = new JsonArray();
-        for (int dip = 1; dip < DIPS; dip++) {
+        for (int glow = 1; glow < GLOWS; glow++) {
             JsonObject predicate = new JsonObject();
-            predicate.addProperty(M + "dip", (dip - 0.5) / (DIPS - 1));
+            predicate.addProperty(M + "glow", (glow - 0.5) / (GLOWS - 1));
             JsonObject override = new JsonObject();
             override.add("predicate", predicate);
-            override.addProperty("model", M + "item/dowsing_rod_" + dip);
+            override.addProperty("model", M + "item/dowsing_rod_glow_" + glow);
             overrides.add(override);
-            JsonObject frame = generated("dowsing_rod_" + dip);
-            frame.addProperty("parent", "minecraft:item/handheld");
-            asset("models/item", AlteredAether.id("dowsing_rod_" + dip), frame);
+            asset("models/item", AlteredAether.id("dowsing_rod_glow_" + glow), glowingRod(glow));
         }
         rod.add("overrides", overrides);
         asset("models/item", AlteredAether.id("dowsing_rod"), rod);
@@ -173,6 +171,31 @@ public final class AAEssenceProvider extends JsonDataProvider {
         key.add("S", item("aether:skyroot_stick"));
         key.add("A", item("aether:ambrosium_shard"));
         shaped("dowsing_rod", "tools", key, 1, "S S", " A ", " S ");
+    }
+
+    /** The rod with its glow at step {@code glow} drawn over it full bright, so it shows in the dark. */
+    private static JsonObject glowingRod(int glow) {
+        JsonObject model = new JsonObject();
+        model.addProperty("parent", "minecraft:item/handheld");
+        model.addProperty("loader", "neoforge:item_layers");
+        JsonObject textures = new JsonObject();
+        textures.addProperty("layer0", M + "item/dowsing_rod");
+        textures.addProperty("layer1", M + "item/dowsing_rod_glow_" + glow);
+        model.add("textures", textures);
+        JsonObject bright = new JsonObject();
+        bright.addProperty("block_light", 15);
+        bright.addProperty("sky_light", 15);
+        JsonObject layers = new JsonObject();
+        layers.add("1", bright);
+        JsonObject data = new JsonObject();
+        data.add("layers", layers);
+        model.add("neoforge_data", data);
+        JsonObject renderTypes = new JsonObject();
+        JsonArray translucent = new JsonArray();
+        translucent.add(1);
+        renderTypes.add("minecraft:translucent", translucent);
+        model.add("render_types", renderTypes);
+        return model;
     }
 
     /** The infusions an essence plinth works out of the box. */
