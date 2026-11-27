@@ -322,6 +322,8 @@ on cold aerclouds.
   15 by default).
 - `[tall_mode]`: structures the tall Aether should leave at their own heights.
 - `[compat]`: one switch per optional mod, the Beyond Parity campfire swap, and `disable_overworld_archwood`.
+- `[fixes]`: `defer_stuck_unloads`, the fix for chunks that stop loading after a long teleport or a change of
+  dimension until you relog.
 
 `config/altered_aether-client.toml`: storm fog, sky flashes, local rain, particle density, how the effects adapt
 to shaderpacks, and for gravitite golems the glow colour, whether it shows through walls (off by default), how long

@@ -178,6 +178,7 @@ public final class AACommonConfig {
     public static final BooleanValue DEEP_AETHER_FALLBACKS;
     public static final BooleanValue DISABLE_COCKATRICE_REBALANCE;
     public static final BooleanValue DISABLE_OVERWORLD_ARCHWOOD;
+    public static final BooleanValue DEFER_STUCK_UNLOADS;
 
     public static final List<String> BASIN_TYPES =
             List.of("pool", "deep_lake", "cascading_lake", "frozen_pool", "poison_pool", "atoll_lagoon", "lake",
@@ -582,6 +583,13 @@ public final class AACommonConfig {
                         "yagroot swamps. Set true to leave their spawn density as the mods have it. Takes effect on the",
                         "next world load.")
                 .define("disable_cockatrice_rebalance", false);
+        b.pop();
+
+        b.comment("Fixes for problems in Minecraft itself.").push("fixes");
+        DEFER_STUCK_UNLOADS = b.comment("Work round a Minecraft 1.21.1 hang where chunks stop loading after a long teleport or a",
+                        "change of dimension until you relog: a chunk waiting to unload on unfinished generation is retried",
+                        "once a tick instead of in a loop that starves that generation.")
+                .define("defer_stuck_unloads", true);
         b.pop();
 
         SPEC = b.build();

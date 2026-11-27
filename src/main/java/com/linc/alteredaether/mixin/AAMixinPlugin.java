@@ -44,6 +44,10 @@ public final class AAMixinPlugin implements IMixinConfigPlugin {
         if (mixinClassName.endsWith(".DeepAetherWhaleCargoMixin")) {
             return AerwhaleMode.deepAetherCancelled();
         }
+        if (mixinClassName.endsWith(".ChunkUnloadRetryMixin")) {
+            // Moonrise replaces the chunk system, and with it the unload loop this works round
+            return LoadingModList.get().getModFileById("moonrise") == null;
+        }
         if (mixinClassName.endsWith(".BasinHeatMixin")) {
             // a Squall Generator heats a basin, only with Create there to have one
             return LoadingModList.get().getModFileById("create") != null;
