@@ -15,6 +15,7 @@
 package com.linc.alteredaether.client.essence;
 
 import com.linc.alteredaether.AlteredAether;
+import com.linc.alteredaether.essence.EssenceKind;
 import com.linc.alteredaether.essence.EssenceOrbBlockEntity;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
@@ -37,7 +38,7 @@ import org.joml.Quaternionf;
  * opposite gemmed capstones, one ring of an armillary sphere, a soft band of the same white light. The rings are held
  * together like a real armillary's and the whole sphere turns slowly about its upright pole, so the colures sweep round
  * the orb and the ecliptic rocks against the still equator. Everything is full bright and translucent, drawn with the entity shader (as the squall in a
- * generator is), which shaderpacks keep glowing.
+ * generator is), which shaderpacks keep glowing. A Wellspring's rings are golden and a little more opaque.
  */
 public class EssenceOrbRenderer implements BlockEntityRenderer<EssenceOrbBlockEntity> {
     private static final ResourceLocation ORB = AlteredAether.id("textures/entity/essence_orb.png");
@@ -53,6 +54,9 @@ public class EssenceOrbRenderer implements BlockEntityRenderer<EssenceOrbBlockEn
     private static final float BAND = 0.07F;
     private static final int SEGMENTS = 48;
     private static final int RING_ALPHA = 80;
+    /** A Wellspring's rings: golden, and a little more opaque than a Channel's white ones. */
+    private static final int WELLSPRING_RING_RGB = 0xFFC94A;
+    private static final int WELLSPRING_RING_ALPHA = 110;
     /** Ticks for the sphere to turn once about its pole. */
     private static final int TURN_TICKS = 1200;
 
@@ -75,6 +79,9 @@ public class EssenceOrbRenderer implements BlockEntityRenderer<EssenceOrbBlockEn
         int gems = orb.pairedGems();
         if (gems != 0) {
             VertexConsumer ring = buffers.getBuffer(RenderType.entityTranslucentEmissive(RING));
+            boolean wellspring = orb.kind() == EssenceKind.WELLSPRING;
+            int rgb = wellspring ? WELLSPRING_RING_RGB : 0xFFFFFF;
+            int alpha = wellspring ? WELLSPRING_RING_ALPHA : RING_ALPHA;
             // the whole sphere turns as one about its pole; the game time is wrapped to a turn first so the float
             // keeps its sub-tick precision on old worlds
             float turn = ((gameTime + (long) seed) % TURN_TICKS + partialTick) / TURN_TICKS * 360;
@@ -84,7 +91,7 @@ public class EssenceOrbRenderer implements BlockEntityRenderer<EssenceOrbBlockEn
                 if ((gems >> pair & 1) == 1 && (gems >> (pair + 4) & 1) == 1) {
                     pose.pushPose();
                     pose.mulPose(TILT[pair]);
-                    band(pose, ring, RADIUS[pair]);
+                    band(pose, ring, RADIUS[pair], rgb, alpha);
                     pose.popPose();
                 }
             }
@@ -101,7 +108,7 @@ public class EssenceOrbRenderer implements BlockEntityRenderer<EssenceOrbBlockEn
     }
 
     /** A flat ring band of radius {@code radius} about the y axis, its width standing along y. */
-    private static void band(PoseStack pose, VertexConsumer buffer, float radius) {
+    private static void band(PoseStack pose, VertexConsumer buffer, float radius, int rgb, int alpha) {
         PoseStack.Pose last = pose.last();
         float half = BAND / 2;
         for (int i = 0; i < SEGMENTS; i++) {
@@ -111,25 +118,25 @@ public class EssenceOrbRenderer implements BlockEntityRenderer<EssenceOrbBlockEn
             // the band's texture is the same all along it, so each segment takes all of it
             float u0 = 0, u1 = 1;
             float nx = Mth.cos((a0 + a1) / 2), nz = Mth.sin((a0 + a1) / 2);
-            vertex(buffer, last, x0, -half, z0, u0, 0, RING_ALPHA, nx, 0, nz);
-            vertex(buffer, last, x0, half, z0, u0, 1, RING_ALPHA, nx, 0, nz);
-            vertex(buffer, last, x1, half, z1, u1, 1, RING_ALPHA, nx, 0, nz);
-            vertex(buffer, last, x1, -half, z1, u1, 0, RING_ALPHA, nx, 0, nz);
+            vertex(buffer, last, x0, -half, z0, u0, 0, rgb, alpha, nx, 0, nz);
+            vertex(buffer, last, x0, half, z0, u0, 1, rgb, alpha, nx, 0, nz);
+            vertex(buffer, last, x1, half, z1, u1, 1, rgb, alpha, nx, 0, nz);
+            vertex(buffer, last, x1, -half, z1, u1, 0, rgb, alpha, nx, 0, nz);
         }
     }
 
     /** A square of half-size {@code half} in the pose's xy plane. */
     private static void quad(PoseStack pose, VertexConsumer buffer, float half, int alpha) {
         PoseStack.Pose last = pose.last();
-        vertex(buffer, last, -half, -half, 0, 0, 1, alpha, 0, 0, 1);
-        vertex(buffer, last, half, -half, 0, 1, 1, alpha, 0, 0, 1);
-        vertex(buffer, last, half, half, 0, 1, 0, alpha, 0, 0, 1);
-        vertex(buffer, last, -half, half, 0, 0, 0, alpha, 0, 0, 1);
+        vertex(buffer, last, -half, -half, 0, 0, 1, 0xFFFFFF, alpha, 0, 0, 1);
+        vertex(buffer, last, half, -half, 0, 1, 1, 0xFFFFFF, alpha, 0, 0, 1);
+        vertex(buffer, last, half, half, 0, 1, 0, 0xFFFFFF, alpha, 0, 0, 1);
+        vertex(buffer, last, -half, half, 0, 0, 0, 0xFFFFFF, alpha, 0, 0, 1);
     }
 
     private static void vertex(VertexConsumer buffer, PoseStack.Pose pose, float x, float y, float z, float u, float v,
-                               int alpha, float nx, float ny, float nz) {
-        buffer.addVertex(pose, x, y, z).setColor(255, 255, 255, alpha).setUv(u, v)
+                               int rgb, int alpha, float nx, float ny, float nz) {
+        buffer.addVertex(pose, x, y, z).setColor(rgb >> 16 & 0xFF, rgb >> 8 & 0xFF, rgb & 0xFF, alpha).setUv(u, v)
                 .setOverlay(OverlayTexture.NO_OVERLAY).setLight(LightTexture.FULL_BRIGHT).setNormal(pose, nx, ny, nz);
     }
 
