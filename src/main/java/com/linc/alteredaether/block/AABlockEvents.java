@@ -46,7 +46,7 @@ public final class AABlockEvents {
     }
 
     /**
-     * The campfire right after the soul campfire, gleamberries after glow berries wherever those are listed, and the
+     * The campfire right after the soul campfire, gleamberries after glow berries among the food and after sweet berries among the natural blocks, and the
      * squall's and gravitite golem's spawn eggs with the others, and the whale whistle and storage pebble among the tools.
      */
     @SubscribeEvent
@@ -59,6 +59,9 @@ public final class AABlockEvents {
         if (event.getTabKey().equals(CreativeModeTabs.FOOD_AND_DRINKS)) {
             event.insertAfter(Items.GLOW_BERRIES.getDefaultInstance(), AARegistries.GLEAMBERRIES.get().getDefaultInstance(),
                     net.minecraft.world.item.CreativeModeTab.TabVisibility.PARENT_AND_SEARCH_TABS);
+        }
+        if (event.getTabKey().equals(CreativeModeTabs.NATURAL_BLOCKS)) {
+            insertAfter(event, Items.SWEET_BERRIES, AARegistries.GLEAMBERRIES.get());
         }
         if (event.getTabKey().equals(CreativeModeTabs.TOOLS_AND_UTILITIES)) {
             event.accept(AARegistries.WHALE_WHISTLE.get());
