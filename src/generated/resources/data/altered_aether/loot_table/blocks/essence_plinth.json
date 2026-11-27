@@ -1,0 +1,20 @@
+{
+  "type": "minecraft:block",
+  "pools": [
+    {
+      "conditions": [
+        {
+          "condition": "minecraft:survives_explosion"
+        }
+      ],
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "name": "altered_aether:essence_plinth"
+        }
+      ],
+      "rolls": 1
+    }
+  ],
+  "random_sequence": "altered_aether:blocks/essence_plinth"
+}

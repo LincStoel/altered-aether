@@ -69,6 +69,13 @@ public final class AABiomeModifierProvider extends JsonDataProvider {
         skirts.add("features", clouds);
         skirts.addProperty("step", "top_layer_modification");
         data(FOLDER, AlteredAether.id("cloud_skirts"), skirts);
+        // The essence sources, in every Aether chunk they fall in, last of all: they hang over what grew there.
+        JsonObject orbs = new JsonObject();
+        orbs.addProperty("type", "neoforge:add_features");
+        orbs.addProperty("biomes", IS_AETHER);
+        orbs.addProperty("features", AAFeatureProvider.ESSENCE_ORBS);
+        orbs.addProperty("step", "top_layer_modification");
+        data(FOLDER, AlteredAether.id("essence_orbs"), orbs);
 
         // Landmarks, like basins, are built in every Aether chunk they reach, whatever its biome. The builder runs
         // before all other decoration; what dresses them runs with the surface structures.

@@ -173,6 +173,10 @@ public final class AAAdvancementProvider extends JsonDataProvider {
         advancement(all, "perfectly_organized", "mind_over_matter", "minecraft:chest", "goal", 50,
                 "Perfectly Organized", "Watch a gravitite golem finish sorting sixteen or more linked chests",
                 Map.of("sorted", criterion("minecraft:impossible")));
+        // Awarded in code by EssenceOrbBlockEntity, to everyone near when the eighth gem goes in.
+        advancement(all, "full_circle", ROOT, AlteredAether.MOD_ID + ":essence_capstone", "goal", 0, "Full Circle",
+                "Set a gem in all eight capstones around an essence source",
+                Map.of("circle", criterion("minecraft:impossible")));
         // Awarded in code by MountUnsaddling.
         advancement(all, "take_a_load_off", ROOT, "minecraft:saddle", "task", 0, "Take a Load Off",
                 "Sneak and take the saddle off a phyg or flying cow",

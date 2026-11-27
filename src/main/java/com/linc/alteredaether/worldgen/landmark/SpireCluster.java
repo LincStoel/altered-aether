@@ -238,6 +238,14 @@ record SpireCluster(int x, int z, List<Needle> needles, long salt) implements La
     /** "ring": the copper crystals around the cluster, at the ground beneath each point. */
     @Override
     public List<BlockPos> points(String kind) {
+        if (kind.equals(ORB) && !needles.isEmpty()) {
+            // over the centre needle's tip, or rather the lightning rod on it: the needle tapers away a little short of
+            // its tip, so the height is left to what is found there
+            Needle centre = needles.getFirst();
+            double rise = centre.tip() - centre.base();
+            return List.of(new BlockPos(Mth.floor(centre.x() + centre.leanX() * rise), centre.tip() - 16,
+                    Mth.floor(centre.z() + centre.leanZ() * rise)));
+        }
         if (!kind.equals("ring")) {
             return List.of();
         }

@@ -45,6 +45,8 @@
     {
       "id": "altered_aether:aerogel_wheel",
       "required": false
-    }
+    },
+    "altered_aether:essence_capstone",
+    "altered_aether:essence_plinth"
   ]
 }

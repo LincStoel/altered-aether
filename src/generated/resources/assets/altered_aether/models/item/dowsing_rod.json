@@ -1,0 +1,26 @@
+{
+  "parent": "minecraft:item/handheld",
+  "overrides": [
+    {
+      "model": "altered_aether:item/dowsing_rod_1",
+      "predicate": {
+        "altered_aether:dip": 0.16666666666666666
+      }
+    },
+    {
+      "model": "altered_aether:item/dowsing_rod_2",
+      "predicate": {
+        "altered_aether:dip": 0.5
+      }
+    },
+    {
+      "model": "altered_aether:item/dowsing_rod_3",
+      "predicate": {
+        "altered_aether:dip": 0.8333333333333334
+      }
+    }
+  ],
+  "textures": {
+    "layer0": "altered_aether:item/dowsing_rod_0"
+  }
+}

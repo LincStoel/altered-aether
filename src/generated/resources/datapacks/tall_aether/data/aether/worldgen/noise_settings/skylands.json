@@ -106,7 +106,12 @@
       },
       "vertical_scale": 1.0
     },
-    "fluid_level_floodedness": 0.0,
+    "fluid_level_floodedness": {
+      "type": "altered_aether:highlands",
+      "footprint": "altered_aether:terrain/highlands_footprint",
+      "presence": "altered_aether:terrain/highlands_presence",
+      "top": "altered_aether:terrain/highlands_top"
+    },
     "fluid_level_spread": 0.0,
     "initial_density_without_jaggedness": 0.0,
     "lava": 0.0,

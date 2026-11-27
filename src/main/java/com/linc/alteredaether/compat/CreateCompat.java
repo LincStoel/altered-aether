@@ -65,12 +65,18 @@ public final class CreateCompat {
     private static final DeferredRegister<FanProcessingType> FAN_TYPES =
             DeferredRegister.create(CreateRegistries.FAN_PROCESSING_TYPE, AlteredAether.MOD_ID);
 
+    /** A mechanical arm works an essence plinth as it does a depot. */
+    private static final DeferredRegister<com.simibubi.create.content.kinetics.mechanicalArm.ArmInteractionPointType>
+            ARM_POINTS = DeferredRegister.create(CreateRegistries.ARM_INTERACTION_POINT_TYPE, AlteredAether.MOD_ID);
+
     static {
         FAN_TYPES.register("enchanting", Enchanting::new);
+        ARM_POINTS.register("essence_plinth", com.linc.alteredaether.compat.create.PlinthArmPoint::new);
     }
 
     public static void register(IEventBus modBus) {
         FAN_TYPES.register(modBus);
+        ARM_POINTS.register(modBus);
     }
 
     /** The altar's enchanting, done in the fan's air stream. */

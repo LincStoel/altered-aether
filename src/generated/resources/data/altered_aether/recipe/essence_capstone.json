@@ -1,0 +1,21 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "building",
+  "key": {
+    "C": {
+      "item": "altered_aether:chiseled_celezite"
+    },
+    "P": {
+      "item": "altered_aether:polished_celezite"
+    }
+  },
+  "pattern": [
+    "PPP",
+    "PCP",
+    "PPP"
+  ],
+  "result": {
+    "count": 2,
+    "id": "altered_aether:essence_capstone"
+  }
+}

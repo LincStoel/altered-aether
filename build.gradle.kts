@@ -63,8 +63,13 @@ neoForge {
             // -PaaElectricTour=<label> quick-plays it too and runs the scripted electricity check in debug/ElectricTour.
             val electricTour = findProperty("aaElectricTour") as String?
             systemProperty("altered_aether.electric_tour", electricTour ?: "")
+            // -PaaEssenceTour=<label> quick-plays it too and runs the scripted essence source check in debug/EssenceTour.
+            val essenceTour = findProperty("aaEssenceTour") as String?
+            systemProperty("altered_aether.essence_tour", essenceTour ?: "")
+            // -PaaEssenceTourOffset=<blocks> moves its stage west of spawn (default 1200), onto ground not yet generated.
+            systemProperty("altered_aether.essence_tour_offset", findProperty("aaEssenceTourOffset") as String? ?: "1200")
             if (tour != null || jeiShot != null || golemTour != null || gravititeTour != null || cloudTour != null
-                    || electricTour != null) {
+                    || electricTour != null || essenceTour != null) {
                 programArguments.addAll("--quickPlaySingleplayer", "tour")
             }
             // -PaaJoin=host:port joins that server on start, to check a dedicated server end to end.
@@ -79,6 +84,8 @@ neoForge {
             programArgument("--nogui")
             // -PaaReport=radius,step prints a worldgen report for the Aether on startup, then stops the server.
             systemProperty("altered_aether.report", (findProperty("aaReport") as String?) ?: "")
+            // -PaaEssence=radius checks the essence sources generate (debug/EssenceProbe), then stops the server.
+            systemProperty("altered_aether.essence", (findProperty("aaEssence") as String?) ?: "")
             // -PaaBench=radius[,biome] generates that many chunks around a point in the Aether (centred on the nearest
             // biome if one is named), logs the time and a surface tally, then stops.
             systemProperty("altered_aether.bench", (findProperty("aaBench") as String?) ?: "")

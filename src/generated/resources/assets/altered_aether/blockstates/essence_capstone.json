@@ -1,0 +1,22 @@
+{
+  "variants": {
+    "gem=ambrosium": {
+      "model": "altered_aether:block/essence_capstone_ambrosium"
+    },
+    "gem=gravitite": {
+      "model": "altered_aether:block/essence_capstone_gravitite"
+    },
+    "gem=none": {
+      "model": "altered_aether:block/essence_capstone_none"
+    },
+    "gem=other": {
+      "model": "altered_aether:block/essence_capstone_other"
+    },
+    "gem=skyjade": {
+      "model": "altered_aether:block/essence_capstone_skyjade"
+    },
+    "gem=zanite": {
+      "model": "altered_aether:block/essence_capstone_zanite"
+    }
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "replace": false,
+  "values": [
+    "aether:zanite_gemstone",
+    {
+      "id": "deep_aether:skyjade",
+      "required": false
+    },
+    "altered_aether:enchanted_gravitite_ingot",
+    "aether:ambrosium_shard"
+  ]
+}

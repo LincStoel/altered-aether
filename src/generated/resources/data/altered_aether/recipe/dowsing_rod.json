@@ -1,0 +1,21 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "tools",
+  "key": {
+    "A": {
+      "item": "aether:ambrosium_shard"
+    },
+    "S": {
+      "item": "aether:skyroot_stick"
+    }
+  },
+  "pattern": [
+    "S S",
+    " A ",
+    " S "
+  ],
+  "result": {
+    "count": 1,
+    "id": "altered_aether:dowsing_rod"
+  }
+}

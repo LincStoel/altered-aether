@@ -1,4 +1,4 @@
-// 1.21.1	2026-11-25T00:06:49.5350572	Altered Aether advancements
+// 1.21.1	2026-11-26T08:42:06.6888084	Altered Aether advancements
 6b0bbdb4842ffb603caf7f8239d078d0bbdfd92b data/altered_aether/advancement/aether_plateau.json
 f6a6daf0bf94dfcc310fd3a41f538ba65b795ad5 data/altered_aether/advancement/airborne_cargo.json
 39a829edeb79b4e021bbfd58722f1e3aeecd5753 data/altered_aether/advancement/altered_cartographer.json
@@ -11,6 +11,7 @@ ccc589b52b4af013e4d8d2d7d0fdc1ac6bf16ef6 data/altered_aether/advancement/favorit
 02d456fe639f3a2184b35d6b2f18ba0fdff89f1f data/altered_aether/advancement/flower_bowl.json
 f1acd84f3b7ff07860d98822053e8485affce9b9 data/altered_aether/advancement/frozen_crags.json
 c52603c8c5e2bc18e30452d66664472d03c498bb data/altered_aether/advancement/frozen_spire.json
+c46ecfdfae626e5d89570cb4bacf6a27048dfc1b data/altered_aether/advancement/full_circle.json
 6f0f1a30d7f951b27862864b1a6b1e18ac0fa05e data/altered_aether/advancement/grandfather.json
 cb8695adffb6fc3415d5082d6effbf3eca08ef81 data/altered_aether/advancement/grand_cascade.json
 47cff58fc97cd793818aee98c879ad4281750e2e data/altered_aether/advancement/great_fracture.json

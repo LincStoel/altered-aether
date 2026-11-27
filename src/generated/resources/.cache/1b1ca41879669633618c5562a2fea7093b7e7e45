@@ -1,4 +1,4 @@
-// 1.21.1	2026-11-25T00:17:29.822851	Altered Aether tags
+// 1.21.1	2026-11-26T08:42:06.6852961	Altered Aether tags
 7d2776eb2dd31e5afa703d02d730e95dcd56b568 data/aether/tags/block/holystone_ore_replaceables.json
 990b335858acf336e8a538535e594723a0de3348 data/aether/tags/block/treated_as_aether_block.json
 d6fbd15e38cbc5bfe964ebfae9264827d640bc7c data/aether/tags/worldgen/biome/is_aether.json
@@ -45,7 +45,7 @@ a41a7b87bf0e679a7976f8eae0c2be538dde0a74 data/c/tags/item/stones.json
 480983c81f5804ad1eae130e6c1491ba46ac6f17 data/minecraft/tags/block/climbable.json
 c6381fa8eec6c45ea083b0125723f175d95dfe99 data/minecraft/tags/block/dead_bush_may_place_on.json
 321ecb60c5b87a7ca940124f0881814faa6dca7d data/minecraft/tags/block/mineable/axe.json
-171a0ebf43c397946e926b266518e9460a46e974 data/minecraft/tags/block/mineable/pickaxe.json
+fbd343bf65141694bc3118f890a4e57de4b24fc0 data/minecraft/tags/block/mineable/pickaxe.json
 89e146ad69fe81b721c39c1eb47e7278cd57cef4 data/minecraft/tags/block/needs_iron_tool.json
 a41a7b87bf0e679a7976f8eae0c2be538dde0a74 data/minecraft/tags/block/sculk_replaceable.json
 3f22dce90afc09c46898eec91ac317ce4a953077 data/minecraft/tags/block/slabs.json

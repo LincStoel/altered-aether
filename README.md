@@ -152,6 +152,28 @@ Energy under another name: other mods' cables and machines connect to these bloc
 - JEI has a flash blasting page; Jade shows a jar's charge and a generator's fuel. All the numbers are in the
   `[electricity]` config section.
 
+**Essence Channels and Wellsprings.** Small white orbs of light, endless springs of Æ that can't be broken or moved.
+Channels hang over Highlands islets, uncommon and never within 256 blocks of each other (tall Aether only); each
+landmark but the Great Fracture has a stronger Wellspring over its highest point. A **Dowsing Rod** dips toward the
+nearest one within 256 blocks.
+- **The circle.** Set an **Essence Capstone** level with the orb at each of the eight compass points (3 to 6 blocks out
+  on the north, south, east and west; 2 to 4 each way on the diagonals), in plain sight of it, with a gem in its
+  middle: zanite, skyjade, an enchanted gravitite ingot or an ambrosium shard. Each gemmed capstone catches an eighth
+  of the flow, and each opposite pair lights a ring of an armillary sphere round the orb.
+- **Flow.** A Channel gives a full circle 24 to 80 Æ a tick, most near 40; a Wellspring 80 to 128. It swells and ebbs
+  a quarter either way over about 20 minutes.
+- **Charging.** Æ leaves only in Aether Jars. An **Essence Plinth** set right below the orb (up to six down) holds items
+  as a Create depot does: jars on it are filled one at a time and set aside full. Any jar with a lightning rod on top,
+  within six blocks of the orb and up to six below it, charges too, each at the full rate.
+- **Infusion.** Other things on the plinth are infused, the stronger the source the faster: holystone into celezite
+  (2,000 Æ), a glass bottle into a **Quintessence Phial** (100,000 Æ). Datapacks can add their own `essence_infusion`
+  recipes.
+- **Blessings.** Inside the circle players heal (a heart every 5 s at a Channel, 2.5 s at a Wellspring), what they hold
+  is slowly mended, and crops and saplings grow faster. A Quintessence Phial carries the blessing away for 3 minutes,
+  twice as strong if a Wellspring made it.
+- Hoppers, funnels and Create's mechanical arms work the plinth. JEI has an infusion page; Jade shows the flow. All the
+  numbers are in the `[essence]` config section.
+
 **Ambrosium campfire**: a campfire of skyroot and ambrosium that burns in the Aether. Aether: Beyond Parity's
 campfire is replaced by it when that mod is installed.
 

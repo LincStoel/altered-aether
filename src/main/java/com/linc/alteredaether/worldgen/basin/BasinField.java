@@ -273,6 +273,15 @@ public final class BasinField {
     }
 
     /**
+     * The double atoll in a cell of its own grid as far as it is already known: empty if it has none, null if it
+     * hasn't been looked for yet. Never searches, so safe on the server thread.
+     */
+    @Nullable
+    public Optional<AtollSite> doubleIfKnown(int cx, int cz) {
+        return atoll == null ? Optional.empty() : doubles.getIfPresent(((long) cx << 32) ^ (cz & 0xFFFFFFFFL));
+    }
+
+    /**
      * Whether a column lies in an atoll's lagoon, or on its shore within {@code margin} blocks of the water, for the
      * lagoon's spawn rules. Only the atoll grids are asked.
      */

@@ -1,0 +1,11 @@
+{
+  "type": "altered_aether:essence_infusion",
+  "cost": 2000,
+  "ingredient": {
+    "item": "aether:holystone"
+  },
+  "result": {
+    "count": 1,
+    "id": "altered_aether:celezite"
+  }
+}

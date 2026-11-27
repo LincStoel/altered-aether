@@ -60,6 +60,7 @@ public final class AAJadePlugin implements IWailaPlugin {
         registration.registerEntityDataProvider(Golem.INSTANCE, GravititeGolem.class);
         registration.registerBlockDataProvider(Storage.INSTANCE, BlockEntity.class);
         ElectricJade.register(registration);
+        EssenceJade.register(registration);
     }
 
     @Override
@@ -68,6 +69,7 @@ public final class AAJadePlugin implements IWailaPlugin {
         registration.registerBlockComponent(Storage.INSTANCE, Block.class);
         registration.registerBlockComponent(GravititeLift.INSTANCE, FloatingBlock.class);
         ElectricJade.registerClient(registration);
+        EssenceJade.registerClient(registration);
     }
 
     /**

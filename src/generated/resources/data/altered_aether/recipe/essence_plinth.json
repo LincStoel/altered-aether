@@ -1,0 +1,21 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "building",
+  "key": {
+    "C": {
+      "item": "altered_aether:polished_celezite"
+    },
+    "N": {
+      "item": "altered_aether:polished_nadirite"
+    }
+  },
+  "pattern": [
+    "CCC",
+    "CCC",
+    "NNN"
+  ],
+  "result": {
+    "count": 1,
+    "id": "altered_aether:essence_plinth"
+  }
+}

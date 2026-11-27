@@ -1,7 +1,7 @@
-// 1.21.1	2026-11-19T21:04:30.7399025	Altered Aether terrain (tall)
+// 1.21.1	2026-11-26T08:50:16.1910367	Altered Aether terrain (tall)
 f42ea67ddb2a016ae6e8bcabfc213cce31a103fe datapacks/tall_aether/data/aether/dimension_type/the_aether.json
 e7d8bc7b25714231079ba52b6565836a7cc0e594 datapacks/tall_aether/data/aether/worldgen/configured_feature/quicksoil_shelf.json
-6a75657b8358c3b0d7d61e87932a5aff9d6a2754 datapacks/tall_aether/data/aether/worldgen/noise_settings/skylands.json
+9c685aec3cb32c58b5ef218262fec49ab9bf87e6 datapacks/tall_aether/data/aether/worldgen/noise_settings/skylands.json
 78d8bcbcdba119434d1c210d802c554b1b3bd056 datapacks/tall_aether/data/aether/worldgen/structure/bronze_dungeon.json
 fe240419f7da67646c2b49776eac062f025c6a30 datapacks/tall_aether/data/aether/worldgen/structure/gold_dungeon.json
 ff56f6ae4025bdda1cdd2f68a6ca5454f85d339b datapacks/tall_aether/data/aether/worldgen/structure/large_aercloud.json
@@ -19,7 +19,8 @@ f6f14e6dd90d604a9e68ee0f3104ef1a6e6b062f datapacks/tall_aether/data/altered_aeth
 a4d2291b31bf3a9f730e13245fb7cea3db28b451 datapacks/tall_aether/data/altered_aether/worldgen/density_function/terrain/dune_sheet.json
 ad83a910ab0cf1c8590db02d47e8bdb003995a3d datapacks/tall_aether/data/altered_aether/worldgen/density_function/terrain/grove_land.json
 dcd5a0aced10a4413b3e5d81328bba5251b3e305 datapacks/tall_aether/data/altered_aether/worldgen/density_function/terrain/grove_land_broken.json
-b1ab036f70786ba12098a60f83ca8d81c64a1e18 datapacks/tall_aether/data/altered_aether/worldgen/density_function/terrain/highlands.json
+dda008825f18b89665ef030b48441a76e82e9a08 datapacks/tall_aether/data/altered_aether/worldgen/density_function/terrain/highlands.json
+43986d250c711c65c0cd1763c8e0edcd9e72f16e datapacks/tall_aether/data/altered_aether/worldgen/density_function/terrain/highlands_top.json
 3e6fbbc83142f5c25c55afaf02d51bcd1cf0e512 datapacks/tall_aether/data/altered_aether/worldgen/density_function/terrain/island.json
 3f5aab43fc3aef60a41617e8d2b6df556fa13487 datapacks/tall_aether/data/altered_aether/worldgen/density_function/terrain/island_mass.json
 36858a69c5cfcdbe54be5dfc4e904e4d5a43b111 datapacks/tall_aether/data/altered_aether/worldgen/density_function/terrain/jag.json

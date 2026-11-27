@@ -250,6 +250,10 @@ record FrozenSpire(int x, int z, int base, int tip, double radius, double twist,
     /** "foot": spots around the spire's foot, for snow drifts. */
     @Override
     public List<BlockPos> points(String kind) {
+        if (kind.equals(ORB)) {
+            double rise = tip - base;
+            return List.of(new BlockPos(Mth.floor(x + leanX * rise), tip + 4, Mth.floor(z + leanZ * rise)));
+        }
         if (!kind.equals("foot")) {
             return List.of();
         }

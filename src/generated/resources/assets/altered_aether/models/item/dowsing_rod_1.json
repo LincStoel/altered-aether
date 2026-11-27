@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:item/handheld",
+  "textures": {
+    "layer0": "altered_aether:item/dowsing_rod_1"
+  }
+}

@@ -172,6 +172,23 @@ public final class AACommonConfig {
     public static final DoubleValue STATIC_BOOTS_JUMP;
     public static final DoubleValue STATIC_BOOTS_KNOCKBACK;
 
+    // [essence]
+    public static final IntValue CHANNEL_MIN_FLOW;
+    public static final IntValue CHANNEL_MAX_FLOW;
+    public static final IntValue WELLSPRING_MIN_FLOW;
+    public static final IntValue WELLSPRING_MAX_FLOW;
+    public static final DoubleValue ESSENCE_BREATH;
+    public static final IntValue ESSENCE_BREATH_TICKS;
+    public static final DoubleValue CHANNEL_CHANCE;
+    public static final IntValue MAX_ROD_JARS;
+    public static final IntValue CHANNEL_REGEN_TICKS;
+    public static final IntValue WELLSPRING_REGEN_TICKS;
+    public static final IntValue CHANNEL_GROWTH_TICKS;
+    public static final IntValue WELLSPRING_GROWTH_TICKS;
+    public static final IntValue ESSENCE_REPAIR_TICKS;
+    public static final IntValue PHIAL_TICKS;
+    public static final IntValue DOWSING_RANGE;
+
     // [compat]
     public static final Map<String, BooleanValue> COMPAT_ENABLED = new LinkedHashMap<>();
     public static final BooleanValue DISABLE_BEYOND_PARITY_CAMPFIRE;
@@ -562,6 +579,45 @@ public final class AACommonConfig {
                 .defineInRange("static_boots_jump", 0.5, 0.0, 1.0);
         STATIC_BOOTS_KNOCKBACK = b.comment("Knockback resistance Static Boots give.")
                 .defineInRange("static_boots_knockback", 0.5, 0.0, 1.0);
+        b.pop();
+
+        b.comment("Essence Channels (on Highlands islets) and Wellsprings (over the landmarks): endless sources of Æ",
+                        "(FE), gathered by a circle of gemmed capstones into Aether Jars. t is a game tick.")
+                .push("essence");
+        CHANNEL_MIN_FLOW = b.comment("Least FE per tick an Essence Channel gives a full circle, before breathing.")
+                .defineInRange("channel_min_flow", 24, 0, 1_000_000);
+        CHANNEL_MAX_FLOW = b.comment("Most FE per tick an Essence Channel gives a full circle, before breathing; most",
+                        "channels sit near the low end.")
+                .defineInRange("channel_max_flow", 80, 0, 1_000_000);
+        WELLSPRING_MIN_FLOW = b.comment("Least FE per tick an Essence Wellspring gives a full circle, before breathing.")
+                .defineInRange("wellspring_min_flow", 80, 0, 1_000_000);
+        WELLSPRING_MAX_FLOW = b.comment("Most FE per tick an Essence Wellspring gives a full circle, before breathing.")
+                .defineInRange("wellspring_max_flow", 128, 0, 1_000_000);
+        ESSENCE_BREATH = b.comment("How far a source's flow swells and ebbs about its own, as a share of it.")
+                .defineInRange("breath", 0.25, 0.0, 1.0);
+        ESSENCE_BREATH_TICKS = b.comment("Ticks one breath (swell and ebb) takes.")
+                .defineInRange("breath_ticks", 24_000, 20, 10_000_000);
+        CHANNEL_CHANCE = b.comment("Chance each 512-block cell holds an Essence Channel, where it has a Highlands islet.",
+                        "Changes the world's generation.")
+                .defineInRange("channel_chance", 0.6, 0.0, 1.0);
+        MAX_ROD_JARS = b.comment("Most Aether Jars with a lightning rod on top one source charges at once, nearest",
+                        "first; 0 for no limit. The jar on the plinth does not count.")
+                .defineInRange("max_rod_jars", 0, 0, 10_000);
+        CHANNEL_REGEN_TICKS = b.comment("Ticks between the heart a full Essence Channel circle heals.")
+                .defineInRange("channel_regen_ticks", 100, 1, 100_000);
+        WELLSPRING_REGEN_TICKS = b.comment("Ticks between the heart a full Essence Wellspring circle heals.")
+                .defineInRange("wellspring_regen_ticks", 50, 1, 100_000);
+        CHANNEL_GROWTH_TICKS = b.comment("Extra random ticks a second a full Essence Channel circle gives the crops and",
+                        "saplings in it (#altered_aether:essence_quickened), shared among them.")
+                .defineInRange("channel_growth_ticks", 2, 0, 1_000);
+        WELLSPRING_GROWTH_TICKS = b.comment("The same for a full Essence Wellspring circle.")
+                .defineInRange("wellspring_growth_ticks", 6, 0, 1_000);
+        ESSENCE_REPAIR_TICKS = b.comment("Ticks between each point of durability a full circle mends on held items.")
+                .defineInRange("repair_ticks", 100, 1, 100_000);
+        PHIAL_TICKS = b.comment("Ticks a Quintessence Phial's blessing lasts.")
+                .defineInRange("phial_ticks", 3_600, 1, 1_000_000);
+        DOWSING_RANGE = b.comment("Blocks a Dowsing Rod reaches for an Essence Channel or Wellspring.")
+                .defineInRange("dowsing_range", 256, 16, 4_096);
         b.pop();
 
         b.comment("Optional mod integrations. Each only takes effect when that mod is loaded.").push("compat");

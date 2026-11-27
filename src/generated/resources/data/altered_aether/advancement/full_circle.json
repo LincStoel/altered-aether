@@ -1,0 +1,26 @@
+{
+  "parent": "altered_aether:root",
+  "criteria": {
+    "circle": {
+      "conditions": {},
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "display": {
+    "description": {
+      "translate": "advancements.altered_aether.full_circle.description"
+    },
+    "frame": "goal",
+    "icon": {
+      "id": "altered_aether:essence_capstone"
+    },
+    "title": {
+      "translate": "advancements.altered_aether.full_circle.title"
+    }
+  },
+  "requirements": [
+    [
+      "circle"
+    ]
+  ]
+}

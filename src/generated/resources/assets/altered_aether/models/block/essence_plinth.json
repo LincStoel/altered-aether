@@ -1,0 +1,356 @@
+{
+  "parent": "minecraft:block/block",
+  "elements": [
+    {
+      "faces": {
+        "down": {
+          "cullface": "down",
+          "texture": "#top",
+          "uv": [
+            2.0,
+            2.0,
+            14.0,
+            14.0
+          ]
+        },
+        "east": {
+          "texture": "#side",
+          "uv": [
+            2.0,
+            3.0,
+            14.0,
+            16.0
+          ]
+        },
+        "north": {
+          "texture": "#side",
+          "uv": [
+            2.0,
+            3.0,
+            14.0,
+            16.0
+          ]
+        },
+        "south": {
+          "texture": "#side",
+          "uv": [
+            2.0,
+            3.0,
+            14.0,
+            16.0
+          ]
+        },
+        "up": {
+          "texture": "#top",
+          "uv": [
+            2.0,
+            2.0,
+            14.0,
+            14.0
+          ]
+        },
+        "west": {
+          "texture": "#side",
+          "uv": [
+            2.0,
+            3.0,
+            14.0,
+            16.0
+          ]
+        }
+      },
+      "from": [
+        2.0,
+        0.0,
+        2.0
+      ],
+      "to": [
+        14.0,
+        13.0,
+        14.0
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "cullface": "down",
+          "texture": "#frame",
+          "uv": [
+            1.0,
+            1.0,
+            15.0,
+            2.0
+          ]
+        },
+        "east": {
+          "texture": "#frame",
+          "uv": [
+            1.0,
+            14.0,
+            2.0,
+            16.0
+          ]
+        },
+        "north": {
+          "texture": "#frame",
+          "uv": [
+            1.0,
+            14.0,
+            15.0,
+            16.0
+          ]
+        },
+        "south": {
+          "texture": "#frame",
+          "uv": [
+            1.0,
+            14.0,
+            15.0,
+            16.0
+          ]
+        },
+        "up": {
+          "texture": "#frame",
+          "uv": [
+            1.0,
+            1.0,
+            15.0,
+            2.0
+          ]
+        },
+        "west": {
+          "texture": "#frame",
+          "uv": [
+            1.0,
+            14.0,
+            2.0,
+            16.0
+          ]
+        }
+      },
+      "from": [
+        1.0,
+        0.0,
+        1.0
+      ],
+      "to": [
+        15.0,
+        2.0,
+        2.0
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "cullface": "down",
+          "texture": "#frame",
+          "uv": [
+            1.0,
+            14.0,
+            15.0,
+            15.0
+          ]
+        },
+        "east": {
+          "texture": "#frame",
+          "uv": [
+            14.0,
+            14.0,
+            15.0,
+            16.0
+          ]
+        },
+        "north": {
+          "texture": "#frame",
+          "uv": [
+            1.0,
+            14.0,
+            15.0,
+            16.0
+          ]
+        },
+        "south": {
+          "texture": "#frame",
+          "uv": [
+            1.0,
+            14.0,
+            15.0,
+            16.0
+          ]
+        },
+        "up": {
+          "texture": "#frame",
+          "uv": [
+            1.0,
+            14.0,
+            15.0,
+            15.0
+          ]
+        },
+        "west": {
+          "texture": "#frame",
+          "uv": [
+            14.0,
+            14.0,
+            15.0,
+            16.0
+          ]
+        }
+      },
+      "from": [
+        1.0,
+        0.0,
+        14.0
+      ],
+      "to": [
+        15.0,
+        2.0,
+        15.0
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "cullface": "down",
+          "texture": "#frame",
+          "uv": [
+            1.0,
+            2.0,
+            2.0,
+            14.0
+          ]
+        },
+        "east": {
+          "texture": "#frame",
+          "uv": [
+            2.0,
+            14.0,
+            14.0,
+            16.0
+          ]
+        },
+        "north": {
+          "texture": "#frame",
+          "uv": [
+            1.0,
+            14.0,
+            2.0,
+            16.0
+          ]
+        },
+        "south": {
+          "texture": "#frame",
+          "uv": [
+            1.0,
+            14.0,
+            2.0,
+            16.0
+          ]
+        },
+        "up": {
+          "texture": "#frame",
+          "uv": [
+            1.0,
+            2.0,
+            2.0,
+            14.0
+          ]
+        },
+        "west": {
+          "texture": "#frame",
+          "uv": [
+            2.0,
+            14.0,
+            14.0,
+            16.0
+          ]
+        }
+      },
+      "from": [
+        1.0,
+        0.0,
+        2.0
+      ],
+      "to": [
+        2.0,
+        2.0,
+        14.0
+      ]
+    },
+    {
+      "faces": {
+        "down": {
+          "cullface": "down",
+          "texture": "#frame",
+          "uv": [
+            14.0,
+            2.0,
+            15.0,
+            14.0
+          ]
+        },
+        "east": {
+          "texture": "#frame",
+          "uv": [
+            2.0,
+            14.0,
+            14.0,
+            16.0
+          ]
+        },
+        "north": {
+          "texture": "#frame",
+          "uv": [
+            14.0,
+            14.0,
+            15.0,
+            16.0
+          ]
+        },
+        "south": {
+          "texture": "#frame",
+          "uv": [
+            14.0,
+            14.0,
+            15.0,
+            16.0
+          ]
+        },
+        "up": {
+          "texture": "#frame",
+          "uv": [
+            14.0,
+            2.0,
+            15.0,
+            14.0
+          ]
+        },
+        "west": {
+          "texture": "#frame",
+          "uv": [
+            2.0,
+            14.0,
+            14.0,
+            16.0
+          ]
+        }
+      },
+      "from": [
+        14.0,
+        0.0,
+        2.0
+      ],
+      "to": [
+        15.0,
+        2.0,
+        14.0
+      ]
+    }
+  ],
+  "textures": {
+    "frame": "altered_aether:block/polished_nadirite",
+    "particle": "altered_aether:block/essence_plinth_top",
+    "side": "altered_aether:block/essence_plinth_side",
+    "top": "altered_aether:block/essence_plinth_top"
+  }
+}

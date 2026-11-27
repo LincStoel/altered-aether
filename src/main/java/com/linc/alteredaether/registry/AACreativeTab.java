@@ -18,6 +18,7 @@ import com.linc.alteredaether.block.AABlockEvents;
 import com.linc.alteredaether.block.StoneSet;
 import com.linc.alteredaether.compat.GravititeRework;
 import com.linc.alteredaether.electric.ElectricRegistries;
+import com.linc.alteredaether.essence.EssenceRegistries;
 import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.level.block.Block;
 import net.neoforged.neoforge.registries.DeferredBlock;
@@ -43,6 +44,7 @@ final class AACreativeTab {
         output.accept(AARegistries.AMBROSIUM_CAMPFIRE_ITEM.get());
         output.accept(AARegistries.GLEAMBERRIES.get());
         ElectricRegistries.creativeTab(output);
+        EssenceRegistries.creativeTab(output);
 
         if (GravititeRework.active()) {
             output.accept(AARegistries.RAW_GRAVITITE_BLOCK_ITEM.get());

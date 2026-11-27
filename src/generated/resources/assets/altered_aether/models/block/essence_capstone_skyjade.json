@@ -1,0 +1,7 @@
+{
+  "parent": "minecraft:block/cube_column",
+  "textures": {
+    "end": "altered_aether:block/essence_capstone_end",
+    "side": "altered_aether:block/essence_capstone_skyjade"
+  }
+}
